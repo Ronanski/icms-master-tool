@@ -52,6 +52,8 @@ const block =
   fs.readFileSync(__dirname + '/../training/loopcheck.css', 'utf8') +
   fs.readFileSync(__dirname + '/../training/split.css', 'utf8') +
   fs.readFileSync(__dirname + '/../ladder/ladder.css', 'utf8') +
+  /* 3.2.1 re-shell layout C, step 1: the new status strip, only with ?shell=c */
+  fs.readFileSync(__dirname + '/../shellc/shellc.css', 'utf8') +
   '</style><script id="shelljs">' +
   fs.readFileSync(__dirname + '/ditl.js', 'utf8') +
   '\n' +
@@ -113,6 +115,9 @@ const block =
   '\n' +
   /* 3.2.0-beta.25: ladder view (preview) of a DITL sheet, made from its logic */
   fs.readFileSync(__dirname + '/../ladder/ladder.js', 'utf8') +
+  '\n' +
+  /* 3.2.1 re-shell layout C, step 1: the new status strip, only with ?shell=c */
+  fs.readFileSync(__dirname + '/../shellc/shellc.js', 'utf8') +
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');
