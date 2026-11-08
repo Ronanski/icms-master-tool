@@ -1,24 +1,29 @@
 /* ===== RE-SHELL LAYOUT C, step 6 (shellc-ui.js): search pill and search panel, banners under the strip, the message line, the Settings
-   panel, the tablet and Training dock form of the strip. Only with body.sc; colours = the --sc-* tokens of shellc.css ===== */
+   panel, the tablet and Training dock form of the strip. Only with body.sc; colours = the --sc-* tokens of shellc.css.
+   Shell audit 2026-11-09 (Yuna, team-files/reshell/MEASURE_STANDARD.md; Jennie's design-auditor pass): text at least 12 px (S1), spacing
+   on the 4 px scale (S2), targets 24 px PC / 40 px tablet / 44 px touch (S3), one centre line in the pill row (S5), nothing cut (S6),
+   z-index from the ladder of shellc.css (--z-base 10, --z-float 60, --z-drop 90, --z-modal 120, --z-toast 300) ===== */
 
 /* ---------- (a) search ---------- */
-#scstrip .scsrp kbd{font:600 .625rem var(--sc-num);padding:.0625rem .3125rem;border:1px solid var(--sc-line2);border-radius:.25rem;color:var(--sc-ink2);background:var(--sc-paper)}
+#scstrip .scsrp kbd{font:600 .75rem var(--sc-num);padding:0 .25rem;border:1px solid var(--sc-line2);border-radius:.25rem;color:var(--sc-ink2);background:var(--sc-paper)}
 body.sc #crband > #srchbtn{display:none!important}
 /* the app's search box: hidden in the band, a panel under the strip while the search is open (pill, / or Ctrl+K) */
 body.sc #crband > .gs-search{display:none!important}
-body.sc.scsearch #crband > .gs-search,body.sc.scsearch #crband > .gs-search:focus-within{display:flex!important;flex-wrap:wrap;align-items:center;gap:.5rem;position:fixed!important;top:calc(var(--top) + .25rem)!important;left:50%!important;right:auto!important;transform:translateX(-50%);z-index:88;width:min(40rem,calc(100vw - 2rem))!important;max-width:none;padding:.625rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-steel);border-radius:.5rem;box-shadow:0 .75rem 2rem rgba(34,46,57,.22)!important}
-body.sc.scsearch #gsbar .gs-search #ansb{flex:1 1 14rem;height:2.5rem!important;min-height:2.5rem;padding:0 .75rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:.375rem!important;color:var(--sc-ink)!important;font:500 .9375rem var(--sc-num)!important;background-image:none!important}
+body.sc.scsearch #crband > .gs-search,body.sc.scsearch #crband > .gs-search:focus-within{display:flex!important;flex-wrap:wrap;align-items:center;gap:.5rem;position:fixed!important;top:calc(var(--top) + .25rem)!important;left:50%!important;right:auto!important;transform:translateX(-50%);z-index:var(--z-drop,90);width:min(40rem,calc(100vw - 2rem))!important;max-width:none;padding:.75rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-steel);border-radius:.5rem;box-shadow:0 .75rem 2rem rgba(34,46,57,.22)!important}
+body.sc.scsearch #gsbar .gs-search #ansb{flex:1 1 14rem;height:2.5rem!important;min-height:2.5rem;padding:0 .75rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:.25rem!important;color:var(--sc-ink)!important;font:500 1rem var(--sc-num)!important;background-image:none!important}
 body.sc.scsearch #gsbar .gs-search #ansb:focus{border-color:var(--sc-steel)!important;box-shadow:0 0 0 3px rgba(43,108,165,.2)!important}
 body.sc.scsearch #gsbar .gs-search .skbd{display:none}
-body.sc.scsearch #gsbar .gs-search #gscope{display:inline-flex!important;gap:0;border:1px solid var(--sc-steel);border-radius:.375rem;overflow:hidden}
+body.sc.scsearch #gsbar .gs-search #gscope{display:inline-flex!important;gap:0;border:1px solid var(--sc-steel);border-radius:.25rem;overflow:hidden}
 body.sc.scsearch #gsbar .gs-search #gscope button{min-height:2rem!important;padding:0 .75rem!important;border:0!important;border-radius:0!important;background:var(--sc-white)!important;color:var(--sc-steel)!important;font:600 .75rem var(--sc-ui)!important;box-shadow:none!important}
 body.sc.scsearch #gsbar .gs-search #gscope button.on{background:var(--sc-steel)!important;color:var(--sc-white)!important}
-/* the results */
-body.sc #anfind{z-index:132!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:.5rem!important;box-shadow:0 .75rem 2rem rgba(34,46,57,.22)!important;color:var(--sc-ink);font-family:var(--sc-ui)}
-body.sc #anfind > :not(button):not(.scsr){color:var(--sc-ink2)!important}
-body.sc #anfind .scsr{display:flex;align-items:center;gap:.375rem;border-bottom:1px solid var(--sc-line)}
-body.sc #anfind .scsr > button:first-child{flex:1 1 auto;min-width:0}
-body.sc #anfind .scsr > :is(.scso,.scsw){display:inline-flex!important;flex:none;width:auto!important;justify-content:center!important;min-height:2rem!important;padding:0 .75rem!important;border-radius:.25rem!important;font:600 .75rem var(--sc-ui)!important;white-space:nowrap}
+/* the results (above the search panel) */
+body.sc #anfind{z-index:calc(var(--z-drop,90) + 1)!important;padding:.25rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:.5rem!important;box-shadow:0 .75rem 2rem rgba(34,46,57,.22)!important;color:var(--sc-ink);font-family:var(--sc-ui)}
+body.sc #anfind > :not(button):not(.scsr){color:var(--sc-ink2)!important;font-size:.75rem!important}
+body.sc #anfind .scsr{display:flex;align-items:center;gap:.5rem;padding:.25rem 0;border-bottom:1px solid var(--sc-line)}
+/* M26: the result text wraps (no ellipsis) */
+body.sc #anfind .scsr > button:first-child{flex:1 1 auto;min-width:0;white-space:normal!important;flex-wrap:wrap}
+body.sc #anfind .scsr > button:first-child .st{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+body.sc #anfind .scsr > :is(.scso,.scsw){display:inline-flex!important;align-items:center;flex:none;width:auto!important;justify-content:center!important;min-height:2rem!important;padding:0 .75rem!important;border-radius:.25rem!important;font:600 .75rem var(--sc-ui)!important;white-space:nowrap}
 body.sc #anfind .scsr > .scso{background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;color:var(--sc-ink)!important}
 body.sc #anfind .scsr > .scsw{background:var(--sc-steel)!important;border:1px solid var(--sc-steel)!important;color:var(--sc-white)!important}
 body.sc #anfind .scsr > .scsw:disabled{background:var(--sc-band)!important;border-color:var(--sc-line2)!important;color:var(--sc-ink2)!important}
@@ -26,15 +31,16 @@ body.sc #anfind .scsr > :is(.scso,.scsw):focus-visible{outline:2px solid var(--s
 body.sc #anfind .sn{font-family:var(--sc-num)!important;color:var(--sc-ink)}
 body.sc #anfind .st{color:var(--sc-ink2)!important}
 
-/* ---------- (b) banners under the strip, never over it ---------- */
-body.sc #updask{top:var(--top)!important;z-index:78!important;justify-content:space-between!important;background:#e9eff5!important;color:var(--sc-ink)!important;border-bottom:1px solid var(--sc-steel)!important;box-shadow:none!important;padding:.5rem 1rem!important;font:400 .8125rem/1.4 var(--sc-ui)!important}
+/* ---------- (b) banners under the strip, never over it (above the overview, z 80) ---------- */
+body.sc #updask{top:var(--top)!important;z-index:var(--z-drop,90)!important;justify-content:space-between!important;gap:.5rem 1rem!important;background:#e9eff5!important;color:var(--sc-ink)!important;border-bottom:1px solid var(--sc-steel)!important;box-shadow:none!important;padding:.5rem 1rem!important;font:400 .875rem/1.4 var(--sc-ui)!important}
 body.sc #updask b{font-weight:600}
-body.sc #updask button{min-height:2rem;padding:0 .875rem!important;border-radius:.25rem!important;font:600 .8125rem var(--sc-ui)!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;color:var(--sc-ink)!important}
+body.sc #updask button{min-height:2rem;padding:0 1rem!important;border-radius:.25rem!important;font:600 .875rem var(--sc-ui)!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;color:var(--sc-ink)!important}
 body.sc #updask button:first-child{background:var(--sc-steel)!important;border-color:var(--sc-steel)!important;color:var(--sc-white)!important}
 /* the update question waits while the plant runs (update-question.js); one that is already up goes away while RUN */
 body.sc.scrun #updask{display:none!important}
-body.sc :is(#errbn,#engerr){top:var(--top)!important;z-index:78!important;background:var(--sc-run)!important;color:var(--sc-white)!important;padding:.5rem 7rem .5rem 1rem!important;font:400 .8125rem/1.4 var(--sc-ui)!important;max-height:40vh;overflow:auto}
-body.sc > .scbx{position:fixed;right:1rem;z-index:79;min-height:2rem;padding:0 .875rem;border:1px solid var(--sc-white);border-radius:.25rem;background:var(--sc-white);color:var(--sc-run);font:600 .8125rem var(--sc-ui);cursor:pointer}
+body.sc :is(#errbn,#engerr){top:var(--top)!important;z-index:var(--z-drop,90)!important;background:var(--sc-run)!important;color:var(--sc-white)!important;padding:.5rem 7rem .5rem 1rem!important;font:400 .875rem/1.4 var(--sc-ui)!important;max-height:40vh;overflow:auto}
+body.sc > .scbx{position:fixed;right:1rem;z-index:calc(var(--z-drop,90) + 1);min-height:2rem;padding:0 1rem;border:1px solid var(--sc-white);border-radius:.25rem;background:var(--sc-white);color:var(--sc-run);font:600 .875rem var(--sc-ui);cursor:pointer}
+body.sc > .scbx[hidden]{display:none}
 body.sc :is(#errbn,#engerr).scgone{display:none!important}
 body.sc #updtoast{background:var(--sc-white)!important;color:var(--sc-ink)!important;border-color:var(--sc-steel)!important;font:400 .875rem var(--sc-ui)!important}
 /* the message line: the old status bar in the C colours, one line */
@@ -42,37 +48,58 @@ body.sc #sfoot{--c-status:var(--sc-band);--c-statustx:var(--sc-ink2);border-top:
 body.sc #sfoot > *{border-right-color:var(--sc-line)!important}
 body.sc #sfoot :is(#st,.shint,.smsg){white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis}
 
-/* ---------- (c) Settings ---------- */
+/* ---------- (c) Settings (M32: text 12 px and up, spacing 4 / 8 / 12 / 16) ---------- */
 #scstrip .scgearb{padding:0 .5rem!important;min-width:2rem;justify-content:center}
-#scset{position:fixed;top:calc(var(--top) + .25rem);right:.5rem;z-index:330;width:min(23rem,calc(100vw - 1rem));padding:.75rem .875rem;background:var(--sc-white);border:1px solid var(--sc-steel);border-radius:.5rem;box-shadow:0 .75rem 2rem rgba(34,46,57,.22);font-family:var(--sc-ui);color:var(--sc-ink);display:grid;gap:.625rem}
+/* over the start screen too (z 300 there) when its Settings link opens it */
+#scset{position:fixed;top:calc(var(--top) + .25rem);right:.5rem;z-index:calc(var(--z-toast,300) + 1);width:min(24rem,calc(100vw - 1rem));padding:1rem;background:var(--sc-white);border:1px solid var(--sc-steel);border-radius:.5rem;box-shadow:0 .75rem 2rem rgba(34,46,57,.22);font-family:var(--sc-ui);color:var(--sc-ink);display:grid;gap:.75rem}
 #scset[hidden]{display:none}
 #scset .scshd{display:flex;align-items:center;justify-content:space-between}
-#scset .scshd b{font:600 .875rem var(--sc-ui)}
+#scset .scshd b{font:600 1rem var(--sc-ui)}
 #scset .scsx{min-height:2rem;width:2rem;border:0;background:transparent;color:var(--sc-ink2);cursor:pointer;font-size:.875rem}
 #scset .scsrow{display:flex;align-items:center;justify-content:space-between;gap:.75rem}
-#scset .scsl{font-size:.8125rem}
-#scset .scsl small{display:block;font-size:.6875rem;color:var(--sc-ink2)}
-#scset .scseg{display:inline-flex;border:1px solid var(--sc-steel);border-radius:.375rem;overflow:hidden;flex:none}
-#scset .scseg button{min-height:2rem;padding:0 .625rem;border:0;background:var(--sc-white);color:var(--sc-steel);font:600 .75rem var(--sc-ui);cursor:pointer}
+#scset .scsl{font-size:.875rem}
+#scset .scsl small{display:block;margin-top:.25rem;font-size:.75rem;line-height:1.35;color:var(--sc-ink2)}
+#scset .scseg{display:inline-flex;border:1px solid var(--sc-steel);border-radius:.25rem;overflow:hidden;flex:none}
+#scset .scseg button{min-height:2rem;padding:0 .75rem;border:0;background:var(--sc-white);color:var(--sc-steel);font:600 .75rem var(--sc-ui);cursor:pointer}
 #scset .scseg button + button{border-left:1px solid var(--sc-steel)}
 #scset .scseg button.on{background:var(--sc-steel);color:var(--sc-white)}
-#scset .scsbtn{min-height:2rem;padding:0 .75rem;border:1px solid var(--sc-line2);border-radius:.25rem;background:var(--sc-white);color:var(--sc-ink);font:600 .8125rem var(--sc-ui);cursor:pointer;flex:none}
-#scset .scsver{font:500 .8125rem var(--sc-num);color:var(--sc-ink)}
+#scset .scsbtn{min-height:2rem;padding:0 .75rem;border:1px solid var(--sc-line2);border-radius:.25rem;background:var(--sc-white);color:var(--sc-ink);font:600 .875rem var(--sc-ui);cursor:pointer;flex:none}
+#scset .scsver{font:500 .875rem var(--sc-num);color:var(--sc-ink)}
 #scset button:focus-visible{outline:2px solid var(--sc-steel);outline-offset:2px}
 
-/* ---------- (d) tablet and Training dock: the strip in 2 rows (values, then the buttons) by the width of the band ---------- */
+/* ---------- (d) the pill row: one height, one centre line (M08), it wraps instead of running under the Training dock (M06) ---------- */
+body.sc #gsbar #scstrip .scp{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:.5rem;row-gap:.25rem;min-width:0}
+body.sc #gsbar #scstrip .scp > :is(.pill,#plchip,.scgearb){box-sizing:border-box;height:2rem!important;min-height:2rem!important;margin:0!important}
+body.sc #gsbar #scstrip .scp > .seg{box-sizing:border-box;height:2rem!important;margin:0!important}
+body.sc #gsbar #scstrip .scp > .seg button{height:100%!important;min-height:0!important}
+body.sc #gsbar #scstrip .scp > .spd > .pill{box-sizing:border-box;height:2rem!important;min-height:2rem!important}
+body.sc #gsbar #scstrip .scp #plchip{display:inline-flex!important;align-items:center;gap:.25rem;padding:0 .75rem!important;font:600 .75rem var(--sc-ui)!important;line-height:1!important}
+body.sc #gsbar #scstrip .scp #plchip *{font-size:.75rem!important}
+/* the strip in 2 rows (values, then the buttons) by the width of the band: tablet, Training dock */
 @container crband (max-width:79.99rem){
   body.sc #scstrip{flex-wrap:wrap;align-content:center;row-gap:.25rem}
   body.sc #gsbar #scstrip .scv{flex:1 1 100%}
-  body.sc #scstrip .scp{margin-left:auto;flex-wrap:nowrap}
+  body.sc #gsbar #scstrip .scp{margin-left:auto}
   body.sc #gsbar #scstrip .sck{max-width:none}
-  body.sc #gsbar #scstrip .sck i{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
 @container crband (max-width:60rem){
-  body.sc #gsbar #scstrip .sck small{display:none}
-  body.sc #gsbar #scstrip .sck i{font-size:.6875rem!important}
   body.sc #scstrip .scsrp kbd{display:none}
 }
 /* the overview in a narrower page (Training dock open): 3 tiles a row, as the tablet */
 html.gd-side body.sc #scov .scgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
-body.sc > .scbx[hidden]{display:none}
+/* the scale of the overview trend line (shellc-home.js, Mina step 2 note 11c) */
+#scov .scscale{margin-top:-.25rem;text-align:right;font:400 .75rem var(--sc-num);font-variant-numeric:tabular-nums;color:var(--sc-ink2);min-height:1rem}
+
+/* ---------- targets: 40 px on a tablet (1024 wide, S3), 44 px on a touch screen (design-auditor pass) ---------- */
+@media (max-width:1279px){
+  body.sc #gsbar #scstrip .scp > :is(.pill,#plchip,.scgearb,.seg),body.sc #gsbar #scstrip .scp > .spd > .pill{height:2.5rem!important;min-height:2.5rem!important}
+  body.sc #gsbar #scstrip .scp > .scgearb{min-width:2.5rem}
+  body.sc #anfind .scsr > :is(.scso,.scsw),body.sc.scsearch #gsbar .gs-search #gscope button,#scset :is(.scseg button,.scsbtn,.scsx),body.sc #updask button,body.sc > .scbx{min-height:2.5rem!important}
+  #scset .scsx{width:2.5rem}
+  body.sc #anfind .scsr > button:first-child{min-height:2.5rem!important}
+}
+@media (pointer:coarse){
+  body.sc #gsbar #scstrip .scp > :is(.pill,#plchip,.scgearb,.seg),body.sc #gsbar #scstrip .scp > .spd > .pill{height:2.75rem!important;min-height:2.75rem!important}
+  body.sc #anfind .scsr > :is(.scso,.scsw),body.sc #anfind .scsr > button:first-child,body.sc.scsearch #gsbar .gs-search #gscope button,#scset :is(.scseg button,.scsbtn,.scsx),body.sc #updask button,body.sc > .scbx{min-height:2.75rem!important}
+  #scset .scsx{width:2.75rem}
+}

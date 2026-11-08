@@ -6,28 +6,28 @@ body.sc{
   --sc-ink:#222e39; --sc-ink2:#4d5b6a; --sc-line:#ccd1d6; --sc-line2:#a1aab3;
   --sc-steel:#2b6ca5; --sc-run:#ce3a34; --sc-stop:#1f8149; --sc-amber:#966816; --sc-violet:#7656b8;
   --sc-ui:"IBM Plex Sans",system-ui,"Segoe UI",sans-serif; --sc-num:"IBM Plex Mono",ui-monospace,Consolas,monospace;
-  --top:3.5rem;
+  --top:56px;
 }
-@media (max-width:1279px){body.sc{--top:5.75rem}}
+@media (max-width:1279px){body.sc{--top:92px}}
 /* the old unit name, the old values and the old alarm line give their place to the new strip; search and VIEW | RUN stay */
 body.sc #crband > .crunit, body.sc #crband > .crkpis{display:none!important}
 /* the old alarm line is hidden, but its alarm list (with ACK) and the forced-signal list still open under the new strip */
-body.sc #crband > #cralarm{position:absolute!important;right:.5rem;top:0;height:100%;width:0!important;min-width:0!important;padding:0!important;margin:0!important;border:0!important;background:none!important;overflow:visible!important;flex:none!important}
+body.sc #crband > #cralarm{position:absolute!important;right:8px;top:0;height:100%;width:0!important;min-width:0!important;padding:0!important;margin:0!important;border:0!important;background:none!important;overflow:visible!important;flex:none!important}
 body.sc #crband > #cralarm > :not(#cralist):not(#crflist){display:none!important}
-body.sc #gsbar > #crband{position:relative;gap:.5rem!important;padding:0 .5rem!important;background:var(--sc-band)!important;border-bottom:1px solid var(--sc-line2)!important}
-#scstrip{display:flex;align-items:center;gap:.375rem;flex:1 1 auto;min-width:0;height:100%;font-family:var(--sc-ui);color:var(--sc-ink)}
-@media (max-width:1279px){#scstrip{flex-wrap:wrap;align-content:center;row-gap:.25rem}}
+body.sc #gsbar > #crband{position:relative;gap:8px!important;padding:0 8px!important;background:var(--sc-band)!important;border-bottom:1px solid var(--sc-line2)!important}
+#scstrip{display:flex;align-items:center;gap:8px;flex:1 1 auto;min-width:0;height:100%;font-family:var(--sc-ui);color:var(--sc-ink)}
+@media (max-width:1279px){#scstrip{flex-wrap:wrap;align-content:center;row-gap:4px}}
 #scstrip .scv{display:flex;flex-wrap:wrap;flex:1 1 auto;min-width:0;gap:0}
-#scstrip .sck{display:flex;flex-direction:column;justify-content:center;min-width:4.25rem;max-width:6.5rem;padding:.125rem .5rem;border-left:1px solid var(--sc-line);line-height:1.15;cursor:default}
+#scstrip .sck{display:flex;flex-direction:column;justify-content:center;min-width:68px;max-width:104px;padding:4px 8px;border-left:1px solid var(--sc-line);line-height:1.15;cursor:default}
 #scstrip .sck:first-child{border-left:0}
-#scstrip .sck i{font:500 .625rem/1.15 var(--sc-ui);font-style:normal;color:var(--sc-ink2);white-space:normal}
-#scstrip .sck b{font:600 .9375rem/1.2 var(--sc-num);font-variant-numeric:tabular-nums;color:var(--sc-ink);white-space:nowrap}
-#scstrip .sck small{font:400 .625rem var(--sc-ui);color:var(--sc-ink2)}
-#scstrip .sck.na b{color:var(--sc-line2)}
-#scstrip .scp{display:flex;align-items:center;gap:.375rem;flex:none}
-#scstrip .pill{display:inline-flex;align-items:center;gap:.375rem;min-height:2rem!important;height:auto!important;padding:0 .75rem!important;border:1px solid var(--sc-line2)!important;border-radius:1rem!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 .75rem var(--sc-ui)!important;white-space:nowrap;cursor:pointer;box-shadow:none!important}
+#scstrip .sck i{font:500 12px/1.15 var(--sc-ui);font-style:normal;color:var(--sc-ink2);white-space:normal}
+#scstrip .sck b{font:600 14px/1.2 var(--sc-num);font-variant-numeric:tabular-nums;color:var(--sc-ink);white-space:nowrap}
+#scstrip .sck small{font:400 12px var(--sc-ui);color:var(--sc-ink2)}
+#scstrip .sck.na b{color:var(--sc-ink2)}
+#scstrip .scp{display:flex;align-items:center;gap:8px;flex:none}
+#scstrip .pill{display:inline-flex;align-items:center;gap:8px;min-height:32px!important;height:auto!important;padding:0 12px!important;border:1px solid var(--sc-line2)!important;border-radius:16px!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 12px var(--sc-ui)!important;white-space:nowrap;cursor:pointer;box-shadow:none!important}
 #scstrip .pill:hover{border-color:var(--sc-steel)!important}
-#scstrip .pill .dot{width:.625rem;height:.625rem;border-radius:50%;background:var(--sc-stop);flex:none}
+#scstrip .pill .dot{width:10px;height:10px;border-radius:50%;background:var(--sc-stop);flex:none}
 #scstrip .pill.trip{border-color:var(--sc-run)!important;color:var(--sc-run)!important}
 #scstrip .pill.trip .dot{background:var(--sc-run)}
 #scstrip .pill.alm{background:#f6e7cf!important;border-color:var(--sc-amber)!important;color:#5c3f0b!important}
@@ -35,65 +35,65 @@ body.sc #gsbar > #crband{position:relative;gap:.5rem!important;padding:0 .5rem!i
 #scstrip .pill.alm.new{animation:scblink 1s steps(2,start) infinite}
 @keyframes scblink{to{background:var(--sc-white)}}
 @media (prefers-reduced-motion:reduce){#scstrip .pill.alm.new{animation:none}}
-#scstrip .seg{display:inline-flex;border:1px solid var(--sc-steel);border-radius:.375rem;overflow:hidden;flex:none}
-#scstrip .seg button{min-height:2rem!important;height:auto!important;padding:0 .75rem!important;border:0!important;border-radius:0!important;background:var(--sc-white)!important;color:var(--sc-steel)!important;font:600 .75rem var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
+#scstrip .seg{display:inline-flex;border:1px solid var(--sc-steel);border-radius:6px;overflow:hidden;flex:none}
+#scstrip .seg button{min-height:32px!important;height:auto!important;padding:0 12px!important;border:0!important;border-radius:0!important;background:var(--sc-white)!important;color:var(--sc-steel)!important;font:600 12px var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
 #scstrip .seg button.on{background:var(--sc-steel)!important;color:var(--sc-white)!important}
 #scstrip .spd{position:relative}
-#scstrip .spdm{position:absolute;right:0;top:calc(100% + .25rem);z-index:120;display:none;gap:.25rem;padding:.375rem;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.375rem;box-shadow:0 .5rem 1.5rem rgba(34,46,57,.18)}
+#scstrip .spdm{position:absolute;right:0;top:calc(100% + 4px);z-index:120;display:none;gap:4px;padding:8px;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:6px;box-shadow:0 8px 24px rgba(34,46,57,.18)}
 #scstrip .spd.open .spdm{display:flex}
-#scstrip .spdm button{min-height:2rem!important;padding:0 .625rem!important;border:1px solid var(--sc-line2)!important;border-radius:.25rem!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 .75rem var(--sc-num)!important}
+#scstrip .spdm button{min-height:32px!important;padding:0 12px!important;border:1px solid var(--sc-line2)!important;border-radius:4px!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 12px var(--sc-num)!important}
 #scstrip .spdm button.on{background:var(--sc-steel)!important;border-color:var(--sc-steel)!important;color:var(--sc-white)!important}
-#scstrip .old{min-height:2rem!important;padding:0 .5rem!important;border:0!important;background:transparent!important;color:var(--sc-ink2)!important;font:500 .6875rem var(--sc-ui)!important;text-decoration:underline;box-shadow:none!important;cursor:pointer}
+#scstrip .old{min-height:32px!important;padding:0 8px!important;border:0!important;background:transparent!important;color:var(--sc-ink2)!important;font:500 12px var(--sc-ui)!important;text-decoration:underline;box-shadow:none!important;cursor:pointer}
 #scstrip :focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}
 /* Mina beta.209: the old rules of the top bar (#gsbar b {display:none}, the VIEW | RUN colours and the hidden .seg on some pages) reached
    into the strip: the values were never drawn and Engineer turned green. The strip keeps its own look on every page */
-body.sc #gsbar #scstrip .sck b{display:block!important;font:600 1rem/1.2 var(--sc-num)!important;color:var(--sc-ink)!important}
-body.sc #gsbar #scstrip .sck.na b{color:var(--sc-line2)!important}
-body.sc #gsbar #scstrip .sck i{font:500 .75rem/1.15 var(--sc-ui)!important;font-style:normal!important}
-body.sc #gsbar #scstrip .sck small{font:400 .75rem/1.15 var(--sc-ui)!important}
-body.sc #gsbar #scstrip .sck{flex:1 1 0;min-width:0;max-width:7.5rem;padding:.125rem .375rem}
+body.sc #gsbar #scstrip .sck b{display:block!important;font:600 16px/1.2 var(--sc-num)!important;color:var(--sc-ink)!important}
+body.sc #gsbar #scstrip .sck.na b{color:var(--sc-ink2)!important}
+body.sc #gsbar #scstrip .sck i{font:500 12px/1.15 var(--sc-ui)!important;font-style:normal!important}
+body.sc #gsbar #scstrip .sck small{font:400 12px/1.15 var(--sc-ui)!important}
+body.sc #gsbar #scstrip .sck{flex:1 1 0;min-width:0;max-width:120px;padding:4px 8px}
 body.sc #gsbar #scstrip .seg{display:inline-flex!important}
 body.sc #gsbar #scstrip .seg button{min-width:0!important;letter-spacing:0!important}
 body.sc #gsbar #scstrip .seg button.on{background:var(--sc-steel)!important;color:var(--sc-white)!important;box-shadow:none!important}
-body.sc #gsbar #scstrip .pill b{display:inline!important;font:700 .75rem var(--sc-num)!important}
+body.sc #gsbar #scstrip .pill b{display:inline!important;font:700 12px var(--sc-num)!important}
 body.sc #gsbar #scstrip .scv{flex-wrap:nowrap}
 /* Mina beta.216 (HIGH): at 1366 the search, Run / Pause, Instructor and the old VIEW | RUN and PLANT chip shared one row with the
    values, and the 11 cells shrank to 35 px, the numbers printed over each other. The values have a row of their own at every width;
    the buttons go to the row under it (the top bar takes the height of both rows, shellc.js) */
-body.sc #gsbar #scstrip{flex-wrap:wrap!important;align-content:center;row-gap:.25rem}
-body.sc #gsbar #scstrip .scv{flex:1 1 100%!important;flex-wrap:wrap!important;row-gap:.25rem}
+body.sc #gsbar #scstrip{flex-wrap:wrap!important;align-content:center;row-gap:4px}
+body.sc #gsbar #scstrip .scv{flex:1 1 100%!important;flex-wrap:wrap!important;row-gap:4px}
 body.sc #gsbar #scstrip .scp{margin-left:auto}
-body.sc #gsbar #scstrip .sck{min-width:5.5rem}
+body.sc #gsbar #scstrip .sck{min-width:88px}
 @media (max-width:1279px){body.sc #gsbar #scstrip .scv{flex:1 1 100%}}
 /* ===== step 5: Instructor console and the training step card ===== */
 body.sc #gsbar #scstrip .pill.ins{border-color:var(--sc-violet)!important;color:var(--sc-violet)!important}
 body.sc #gsbar #scstrip .pill.ins.on{background:var(--sc-violet)!important;color:var(--sc-white)!important}
-#scins{position:fixed;top:calc(var(--scb,var(--top)) + .25rem);right:.5rem;z-index:131;width:min(34rem,calc(100vw - 1rem));max-height:calc(100vh - var(--top) - var(--foot) - 1rem);display:flex;flex-direction:column;background:var(--sc-white);border:1px solid var(--sc-violet);border-radius:.5rem;box-shadow:0 .75rem 2rem rgba(34,46,57,.22);font-family:var(--sc-ui);color:var(--sc-ink)}
+#scins{position:fixed;top:calc(var(--scb,var(--top)) + 4px);right:8px;z-index:131;width:min(544px,calc(100vw - 16px));max-height:calc(100vh - var(--scb,var(--top)) - var(--footH,var(--foot)) - 16px);display:flex;flex-direction:column;background:var(--sc-white);border:1px solid var(--sc-violet);border-radius:8px;box-shadow:0 12px 32px rgba(34,46,57,.22);font-family:var(--sc-ui);color:var(--sc-ink)}
 #scins[hidden]{display:none!important}
-#scins .scihd{display:flex;align-items:center;justify-content:space-between;padding:.5rem .75rem;border-bottom:1px solid var(--sc-line)}
-#scins .scihd b{font:600 .9375rem var(--sc-ui);color:var(--sc-violet)}
-#scins .scibody{overflow:auto;padding:.25rem .75rem .75rem;display:grid;gap:.375rem}
-#scins h4{margin:.5rem 0 0;font:600 .6875rem var(--sc-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--sc-ink2)}
-#scins .scirow{display:flex;flex-wrap:wrap;gap:.375rem}
-#scins button{min-height:2rem!important;height:auto!important;padding:.25rem .75rem!important;border:1px solid var(--sc-line2)!important;border-radius:.25rem!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:500 .8125rem var(--sc-ui)!important;box-shadow:none!important;cursor:pointer;white-space:normal;text-align:left}
+#scins .scihd{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--sc-line)}
+#scins .scihd b{font:600 14px var(--sc-ui);color:var(--sc-violet)}
+#scins .scibody{overflow:auto;padding:4px 12px 12px;display:grid;gap:8px}
+#scins h4{margin:8px 0 0;font:600 12px var(--sc-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--sc-ink2)}
+#scins .scirow{display:flex;flex-wrap:wrap;gap:8px}
+#scins button{min-height:32px!important;height:auto!important;padding:4px 12px!important;border:1px solid var(--sc-line2)!important;border-radius:4px!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:500 13px var(--sc-ui)!important;box-shadow:none!important;cursor:pointer;white-space:normal;text-align:left}
 #scins button:hover{border-color:var(--sc-violet)!important}
 #scins button.on{background:var(--sc-violet)!important;border-color:var(--sc-violet)!important;color:var(--sc-white)!important}
 #scins button.flt.on{background:#f6e7cf!important;border-color:var(--sc-amber)!important;color:#5c3f0b!important}
 #scins button.trip{border-color:var(--sc-run)!important;color:var(--sc-run)!important}
 #scins button[data-arm]{background:var(--sc-run)!important;border-color:var(--sc-run)!important;color:var(--sc-white)!important}
-#scins .scx{padding:0 .625rem!important}
-#sccard{position:fixed;right:.75rem;bottom:calc(var(--foot) + .75rem);z-index:95;width:min(22rem,calc(100vw - 1.5rem));display:grid;gap:.5rem;padding:.75rem .875rem;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.5rem;box-shadow:0 .5rem 1.5rem rgba(34,46,57,.18);font-family:var(--sc-ui);color:var(--sc-ink)}
+#scins .scx{padding:0 12px!important}
+#sccard{position:fixed;right:12px;bottom:calc(var(--footH,var(--foot)) + 12px);z-index:95;width:min(352px,calc(100vw - 24px));display:grid;gap:8px;padding:12px 16px;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:8px;box-shadow:0 8px 24px rgba(34,46,57,.18);font-family:var(--sc-ui);color:var(--sc-ink)}
 #sccard[hidden]{display:none!important}
-#sccard .scctop{display:flex;align-items:center;justify-content:space-between;font:500 .6875rem var(--sc-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--sc-ink2)}
-#sccard .sclink{min-height:2rem!important;padding:0 .25rem!important;border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:600 .8125rem var(--sc-ui)!important;box-shadow:none!important;cursor:pointer;text-transform:none;letter-spacing:0}
-#sccard .sccbar{height:.25rem;background:var(--sc-line);border-radius:.125rem;overflow:hidden}
+#sccard .scctop{display:flex;align-items:center;justify-content:space-between;font:500 12px var(--sc-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--sc-ink2)}
+#sccard .sclink{min-height:32px!important;padding:0 4px!important;border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:600 13px var(--sc-ui)!important;box-shadow:none!important;cursor:pointer;text-transform:none;letter-spacing:0}
+#sccard .sccbar{height:4px;background:var(--sc-line);border-radius:2px;overflow:hidden}
 #sccard .sccbar i{display:block;height:100%;background:var(--sc-steel)}
-#sccard .scct{font:600 .9375rem/1.3 var(--sc-ui)}
-#sccard .sccyn{display:flex;align-items:center;gap:.5rem;font-size:.8125rem}
-#sccard .sccyn span:first-child{display:inline-flex;align-items:center;justify-content:center;width:1.25rem;height:1.25rem;font:700 .75rem var(--sc-num);color:var(--sc-white);border-radius:.125rem}
+#sccard .scct{font:600 14px/1.3 var(--sc-ui)}
+#sccard .sccyn{display:flex;align-items:center;gap:8px;font-size:13px}
+#sccard .sccyn span:first-child{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;font:700 12px var(--sc-num);color:var(--sc-white);border-radius:2px}
 #sccard .sccyn .y{background:var(--sc-run)}#sccard .sccyn .n{background:var(--sc-stop)}
-#sccard .sccbs{display:flex;gap:.5rem}
-#sccard .sccbs button{min-height:2.25rem!important;padding:0 .875rem!important;border:1px solid var(--sc-line2)!important;border-radius:.25rem!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 .8125rem var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
+#sccard .sccbs{display:flex;gap:8px}
+#sccard .sccbs button{min-height:36px!important;padding:0 16px!important;border:1px solid var(--sc-line2)!important;border-radius:4px!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 13px var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
 #sccard .sccbs button:disabled{opacity:.5;cursor:default}
 body.sc.sccard #gdtab{display:none!important}
 /* ===== Mina beta.210 fixes ===== */
@@ -107,81 +107,141 @@ body.sc.plant[data-tab="operate"]:not(.scov) .sccrumb:not(:has(b:empty)){display
 #scboot{position:fixed;inset:0;z-index:299;background:#eef0f2}
 #scstart .scsbox{margin:0 auto}
 /* Mina beta.216: the start screen links were still 11.5 px: the app rule for buttons (body.app2 ... :not(#zbar *)) counts an id, so these rules carry two */
-#scstart:not(#scnone) .scsub,#scstart:not(#scnone) .sccard span,#scstart:not(#scnone) .sccont span,#scstart:not(#scnone) .scgear,#scstart:not(#scnone) .scskip{font-size:.875rem!important}
-#scstart .scver{font-size:.8125rem}
+#scstart:not(#scnone) .scsub,#scstart:not(#scnone) .sccard span,#scstart:not(#scnone) .sccont span,#scstart:not(#scnone) .scgear,#scstart:not(#scnone) .scskip{font-size:14px!important}
+#scstart .scver{font-size:13px}
 /* Live screenshots of beta.219 / 220: the tiles and the alarm tile were centred (the app's own button rule, which counts an id through
    :not(#zbar *), outranked #scov .sctile): two ids here, left aligned as the mockup */
 #scov:not(#scnone) .sctile{text-align:left!important;align-items:stretch!important;justify-content:flex-start!important}
 #scov:not(#scnone) .sctile h3,#scov:not(#scnone) .sctile .sckv,#scov:not(#scnone) .sctile .sclamp,#scov:not(#scnone) .sctile .scar,#scov:not(#scnone) .sctile .scnone{text-align:left!important;justify-content:flex-start;width:100%}
-#scov:not(#scnone) .scar{display:grid!important;grid-template-columns:6rem minmax(0,1fr) auto}
+#scov:not(#scnone) .scar{display:grid!important;grid-template-columns:96px minmax(0,1fr) auto}
 #scov:not(#scnone) .sckv{display:grid!important;grid-template-columns:1fr auto}
-#scins .scinp{flex:1 1 12rem;min-width:0;min-height:2rem;padding:0 .5rem;border:1px solid var(--sc-line2);border-radius:.25rem;font:400 .8125rem var(--sc-ui);color:var(--sc-ink);background:var(--sc-white)}
-#scins .scsvl{display:grid;gap:.25rem}
-#scins .scsvr{display:flex;align-items:center;gap:.375rem;font-size:.8125rem}
+#scins .scinp{flex:1 1 192px;min-width:0;min-height:32px;padding:0 8px;border:1px solid var(--sc-line2);border-radius:4px;font:400 13px var(--sc-ui);color:var(--sc-ink);background:var(--sc-white)}
+#scins .scsvl{display:grid;gap:4px}
+#scins .scsvr{display:flex;align-items:center;gap:8px;font-size:13px}
 #scins .scsvr span{flex:1;min-width:0;overflow-wrap:anywhere}
-body.sc.sccard #scov .scgrid{padding-bottom:12rem}
+body.sc.sccard #scov .scgrid{padding-bottom:192px}
 /* ===== step 2: overview, breadcrumb, alarm list, start screen ===== */
-#scov{display:none;position:fixed;top:var(--scb,var(--top));left:var(--scl,var(--railW,0));right:0;bottom:var(--foot);z-index:89;overflow:auto;background:var(--sc-page);font-family:var(--sc-ui);color:var(--sc-ink)}
+#scov{display:none;position:fixed;top:var(--scb,var(--top));left:var(--scl,var(--railW,0));right:0;bottom:var(--footH,var(--foot));z-index:89;overflow:auto;background:var(--sc-page);font-family:var(--sc-ui);color:var(--sc-ink)}
 body.sc.scov #scov{display:flex;flex-direction:column}
-#scov .scbar{display:flex;align-items:center;gap:.375rem;padding:.5rem 1rem;font-size:.8125rem;border-bottom:1px solid var(--sc-line);background:var(--sc-paper)}
+#scov .scbar{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:13px;border-bottom:1px solid var(--sc-line);background:var(--sc-paper)}
 .scbc{color:var(--sc-steel);text-decoration:underline}.scsep{color:var(--sc-ink2)}
-#scov .scgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;padding:.75rem 1rem 1rem}
+#scov .scgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:12px 16px 16px}
 @media (max-width:1279px){#scov .scgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-#scov .sctile{display:flex;flex-direction:column;align-items:stretch;gap:.375rem;min-height:9.5rem!important;height:auto!important;padding:.75rem .875rem!important;text-align:left;background:var(--sc-paper)!important;border:1px solid var(--sc-line2)!important;border-radius:.375rem!important;color:var(--sc-ink)!important;box-shadow:none!important;cursor:pointer;font:inherit!important;white-space:normal}
+#scov .sctile{display:flex;flex-direction:column;align-items:stretch;gap:8px;min-height:152px!important;height:auto!important;padding:12px 16px!important;text-align:left;background:var(--sc-paper)!important;border:1px solid var(--sc-line2)!important;border-radius:6px!important;color:var(--sc-ink)!important;box-shadow:none!important;cursor:pointer;font:inherit!important;white-space:normal}
 #scov .sctile:hover{border-color:var(--sc-steel)!important}
 #scov .sctile:focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}
-#scov .sctile h3{margin:0;font:600 .9375rem var(--sc-ui)}
-#scov .sckv{display:grid;grid-template-columns:1fr auto;gap:.125rem .75rem;font-size:.8125rem;color:var(--sc-ink2)}
-#scov .sckv b{font:600 .875rem var(--sc-num);font-variant-numeric:tabular-nums;color:var(--sc-ink);text-align:right;white-space:nowrap}
-#scov .scspark{width:100%;height:2.5rem;flex:1 1 auto;min-height:1.5rem}
+#scov .sctile h3{margin:0;font:600 14px var(--sc-ui)}
+#scov .sckv{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:13px;color:var(--sc-ink2)}
+#scov .sckv b{font:600 14px var(--sc-num);font-variant-numeric:tabular-nums;color:var(--sc-ink);text-align:right;white-space:nowrap}
+#scov .scspark{width:100%;height:40px;flex:1 1 auto;min-height:24px}
 #scov .scspark polyline{fill:none;stroke:var(--sc-steel);stroke-width:1.5;vector-effect:non-scaling-stroke}
-#scov .sclamp{display:flex;align-items:center;gap:.375rem;font-size:.75rem;color:var(--sc-ink2);min-height:1rem}
-#scov .sclamp .dot{width:.625rem;height:.625rem;border-radius:50%;flex:none}
+#scov .sclamp{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sc-ink2);min-height:16px}
+#scov .sclamp .dot{width:10px;height:10px;border-radius:50%;flex:none}
 .sclamp .dot.run{background:var(--sc-run)}.sclamp .dot.stop{background:var(--sc-stop)}.sclamp .dot.trip{background:var(--sc-run);animation:scblink 1s steps(2,start) infinite}
 #scov .scalm{grid-column:span 2;background:#f6e7cf!important;border-color:var(--sc-amber)!important}
 #scov .scalm:not(.on){background:var(--sc-paper)!important;border-color:var(--sc-line2)!important}
-#scov .scar{display:grid;grid-template-columns:6rem minmax(0,1fr) auto;gap:.5rem;font-size:.8125rem}
+#scov .scar{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:8px;font-size:13px}
 #scov .scar .sct{font-family:var(--sc-num);color:var(--sc-ink2)}
 #scov .scar .scn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #scov .scar .scs{font-weight:600;color:var(--sc-ink2)}
 #scov .scar.new .scs{color:#5c3f0b}
-.scnone{margin:0;font-size:.8125rem;color:var(--sc-ink2)}
-.sccrumb{display:none;position:fixed;top:calc(var(--scb,var(--top)) + .375rem);left:calc(var(--scl,var(--railW,0px)) + .5rem);z-index:79;align-items:center;gap:.375rem;min-height:2rem!important;padding:0 .75rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:1rem!important;color:var(--sc-ink)!important;font:500 .8125rem var(--sc-ui)!important;box-shadow:0 .125rem .5rem rgba(34,46,57,.12)!important;cursor:pointer}
+.scnone{margin:0;font-size:13px;color:var(--sc-ink2)}
+.sccrumb{display:none;position:fixed;top:calc(var(--scb,var(--top)) + 8px);left:calc(var(--scl,var(--railW,0px)) + 8px);z-index:79;align-items:center;gap:8px;min-height:32px!important;padding:0 12px!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:16px!important;color:var(--sc-ink)!important;font:500 13px var(--sc-ui)!important;box-shadow:0 2px 8px rgba(34,46,57,.12)!important;cursor:pointer}
 body.sc[data-tab="operate"]:not(.scov) .sccrumb{display:inline-flex}
 body.sc.pvout .sccrumb{display:none!important}
-#scal{position:fixed;top:calc(var(--scb,var(--top)) + .25rem);right:.5rem;z-index:130;width:min(36rem,calc(100vw - 1rem));max-height:calc(100vh - var(--top) - var(--foot) - 1rem);display:flex;flex-direction:column;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.5rem;box-shadow:0 .75rem 2rem rgba(34,46,57,.22);font-family:var(--sc-ui);color:var(--sc-ink)}
+#scal{position:fixed;top:calc(var(--scb,var(--top)) + 4px);right:8px;z-index:130;width:min(576px,calc(100vw - 16px));max-height:calc(100vh - var(--scb,var(--top)) - var(--footH,var(--foot)) - 16px);display:flex;flex-direction:column;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:8px;box-shadow:0 12px 32px rgba(34,46,57,.22);font-family:var(--sc-ui);color:var(--sc-ink)}
 #scal[hidden]{display:none!important}
-#scal .schd{display:flex;align-items:center;gap:.5rem;padding:.5rem;border-bottom:1px solid var(--sc-line)}
-#scal .sctabs{display:flex;gap:.25rem;flex:1}
-#scal .sctabs button,#scal .scx,#scal .scack,#scal .scrow button{min-height:2rem!important;padding:0 .75rem!important;border:1px solid var(--sc-line2)!important;border-radius:.25rem!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 .8125rem var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
+#scal .schd{display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid var(--sc-line)}
+#scal .sctabs{display:flex;gap:4px;flex:1}
+#scal .sctabs button,#scal .scx,#scal .scack,#scal .scrow button{min-height:32px!important;padding:0 12px!important;border:1px solid var(--sc-line2)!important;border-radius:4px!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 13px var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
 #scal .sctabs button.on{background:var(--sc-steel)!important;border-color:var(--sc-steel)!important;color:var(--sc-white)!important}
-#scal .scack{margin:.5rem .5rem 0;align-self:flex-start}
-#scal .scbody{overflow:auto;padding:.25rem .5rem .5rem}
-#scal .scrow{display:grid;grid-template-columns:5.5rem minmax(0,1fr) auto;align-items:center;gap:.5rem;padding:.375rem .25rem;border-bottom:1px solid var(--sc-line);font-size:.8125rem}
-#scal .scrow.ev{grid-template-columns:5.5rem 3.5rem minmax(0,1fr)}
+#scal .scack{margin:8px 8px 0;align-self:flex-start}
+#scal .scbody{overflow:auto;padding:4px 8px 8px}
+#scal .scrow{display:grid;grid-template-columns:88px minmax(0,1fr) auto;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--sc-line);font-size:13px}
+#scal .scrow.ev{grid-template-columns:88px 56px minmax(0,1fr)}
 #scal .scrow .sct{font-family:var(--sc-num);color:var(--sc-ink2)}
-#scal .scrow .sck2{font:600 .6875rem var(--sc-num);color:var(--sc-ink2)}
+#scal .scrow .sck2{font:600 12px var(--sc-num);color:var(--sc-ink2)}
 #scal .scrow .scn{overflow-wrap:anywhere}
 #scal .scrow.new .scn{font-weight:600}
 #scal .scrow.trip.new .scn{color:var(--sc-run)}
-#scal .scrow .scs{font-size:.75rem;color:var(--sc-ink2)}
-#scstart{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:1rem;background:var(--sc-page);font-family:var(--sc-ui);color:var(--sc-ink);overflow:auto}
-#scstart .scsbox{width:min(46rem,100%);display:grid;gap:1rem}
-#scstart h1{margin:0;font:600 1.5rem var(--sc-ui);text-align:center;text-wrap:balance}
-#scstart .scsub{margin:-.5rem 0 0;text-align:center;color:var(--sc-ink2);font-size:.875rem}
-#scstart .sccards{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+#scal .scrow .scs{font-size:12px;color:var(--sc-ink2)}
+#scstart{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--sc-page);font-family:var(--sc-ui);color:var(--sc-ink);overflow:auto}
+#scstart .scsbox{width:min(736px,100%);display:grid;gap:16px}
+#scstart h1{margin:0;font:600 24px var(--sc-ui);text-align:center;text-wrap:balance}
+#scstart .scsub{margin:-8px 0 0;text-align:center;color:var(--sc-ink2);font-size:14px}
+#scstart .sccards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media (max-width:600px){#scstart .sccards{grid-template-columns:1fr}}
-#scstart .sccard{display:flex;flex-direction:column;align-items:flex-start;gap:.5rem;min-height:9rem!important;height:auto!important;padding:1.25rem!important;text-align:left;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:.5rem!important;color:var(--sc-ink)!important;box-shadow:none!important;cursor:pointer;white-space:normal;font:inherit!important}
+#scstart .sccard{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-height:144px!important;height:auto!important;padding:20px!important;text-align:left;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:8px!important;color:var(--sc-ink)!important;box-shadow:none!important;cursor:pointer;white-space:normal;font:inherit!important}
 #scstart .sccard:hover,#scstart .sccard:focus-visible{border-color:var(--sc-steel)!important;outline:2px solid var(--sc-steel);outline-offset:1px}
-#scstart .sccard b{font:600 1.25rem var(--sc-ui);color:var(--sc-steel)}
-#scstart .sccard span{font-size:.875rem;color:var(--sc-ink2)}
-#scstart .sclab{text-align:center;font:600 .6875rem var(--sc-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--sc-ink2)}
-#scstart .scchips{display:flex;justify-content:center;flex-wrap:wrap;gap:.5rem;margin-top:-.5rem}
-#scstart .scchips button{min-height:2.25rem!important;padding:0 1rem!important;border:1px solid var(--sc-line2)!important;border-radius:1.25rem!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 .875rem var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
+#scstart .sccard b{font:600 20px var(--sc-ui);color:var(--sc-steel)}
+#scstart .sccard span{font-size:14px;color:var(--sc-ink2)}
+#scstart .sclab{text-align:center;font:600 12px var(--sc-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--sc-ink2)}
+#scstart .scchips{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:-8px}
+#scstart .scchips button{min-height:36px!important;padding:0 16px!important;border:1px solid var(--sc-line2)!important;border-radius:20px!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 14px var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
 #scstart .scchips button.on{background:var(--sc-steel)!important;border-color:var(--sc-steel)!important;color:var(--sc-white)!important}
-#scstart .sccont{display:flex;align-items:center;gap:.75rem;min-height:2.75rem!important;padding:0 1rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:.375rem!important;color:var(--sc-ink)!important;font:inherit!important;box-shadow:none!important;cursor:pointer;text-align:left}
-#scstart .sccont span{font-size:.8125rem;color:var(--sc-ink2)}
+#scstart .sccont{display:flex;align-items:center;gap:12px;min-height:44px!important;padding:0 16px!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:6px!important;color:var(--sc-ink)!important;font:inherit!important;box-shadow:none!important;cursor:pointer;text-align:left}
+#scstart .sccont span{font-size:13px;color:var(--sc-ink2)}
 #scstart .sccont:disabled{opacity:.7;cursor:default}
-#scstart .scsfoot{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
-#scstart .scgear,#scstart .scskip{min-height:2rem!important;padding:0 .5rem!important;border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:500 .8125rem var(--sc-ui)!important;text-decoration:underline;box-shadow:none!important;cursor:pointer}
-#scstart .scver{margin-left:auto;font:400 .75rem var(--sc-num);color:var(--sc-ink2)}
+#scstart .scsfoot{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+#scstart .scgear,#scstart .scskip{min-height:32px!important;padding:0 8px!important;border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:500 13px var(--sc-ui)!important;text-decoration:underline;box-shadow:none!important;cursor:pointer}
+#scstart .scver{margin-left:auto;font:400 12px var(--sc-num);color:var(--sc-ink2)}
+/* ===== Shell size audit 2026-11-09 (Yuna measure rows M01-M31, team-files/reshell/MEASURE_STANDARD.md; design-auditor code audit).
+   The app sets html font-size by the screen (13.5 px at 1024, 14.2 px at 1366), so rem sizes fell under 12 px and off the 4 px grid:
+   the shell is written in px. Text 12 px or more (S1, design-auditor references/typography.md, ui-ux-pro-max readable-font-size);
+   spacing on 4 / 8 (S2, design-auditor references/spacing.md, ui-ux-pro-max spacing-scale); tablet targets 40 px (S3, WCAG 2.5.8,
+   ui-ux-pro-max touch-target-size); nothing cut, nothing covered (S6 / S7, web-design-guidelines Content Handling) ===== */
+body.sc{--z-page:89;--z-float:95;--z-menu:120;--z-panel:131;--z-cover:300}
+/* M03 / M05: labels wrap to two lines, never an ellipsis; M04: 4 px between label, value and unit */
+body.sc #gsbar #scstrip .sck{gap:4px;min-width:80px!important;max-width:128px;padding:4px 8px}
+body.sc #gsbar #scstrip .sck i{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:normal;word-break:normal}
+body.sc #gsbar #scstrip .sck :is(i,b,small){margin:0!important}
+/* M05: with the Training dock open the 11 cells keep one row at 1366 (80 px each); below 880 px they wrap, never cut */
+body.sc #gsbar #scstrip .scv{flex-wrap:wrap!important}
+body.sc #gsbar #scstrip .pill{font-size:13px!important}
+body.sc #gsbar #scstrip .seg button{font-size:13px!important}
+/* M07: tablet targets 40 px (Operator / Engineer, the strip pills, the speed menu) */
+@media (max-width:1279px),(pointer:coarse){
+  body.sc #gsbar #scstrip :is(.pill,.seg button,.spdm button){min-height:40px!important}
+  #scins button,#scins .scinp,#scal :is(.sctabs button,.scx,.scack,.scrow button),#sccard .sccbs button,#sccard .sclink,#scstart:not(#scnone) .scchips button{min-height:40px!important}
+}
+/* M09: rail labels 12 px; M10 / M11: footer text 12 px and the faint clock / info colour from the shell set (5.70:1 on the band) */
+body.sc.cr #crrail .tabs button{font-size:12px!important;line-height:1.2!important}
+body.sc #sfoot{--c-statusdim:var(--sc-ink2)}
+body.sc #sfoot > *,body.sc #sfoot :is(#st,.shint,.smsg,.sclock,.sinfo,.ssel,#evbtn){font-size:12px!important}
+body.sc #sfoot #stchip span,body.sc #sfoot :is(.spm,.sforce){font-size:12px!important}
+/* M11: the footer message takes the free width (less of it is cut) */
+body.sc #sfoot :is(#st,.shint,.smsg){flex:1 1 0!important}
+/* M13: the start cards stay inside the screen and centred (the grid columns may shrink; the app button rule kept nowrap) */
+#scstart:not(#scnone) .scsbox{width:min(736px,100%);margin:0 auto}
+#scstart:not(#scnone) .sccards{grid-template-columns:repeat(2,minmax(0,1fr))}
+#scstart:not(#scnone) .sccard{min-width:0;white-space:normal!important}
+#scstart:not(#scnone) .sccard :is(b,span){white-space:normal!important;overflow-wrap:anywhere}
+/* M14: start screen small text */
+#scstart:not(#scnone) .sclab{font-size:12px!important}
+#scstart:not(#scnone) .scver{font-size:12px!important}
+#scstart:not(#scnone) .scsub,#scstart:not(#scnone) .sccard span,#scstart:not(#scnone) .sccont span{font-size:14px!important}
+/* M15: the overview ends on the footer's real top and its tiles scroll */
+#scov .scgrid{flex:none}
+/* M27: alarm list text 13 px, the Events kind 12 px */
+#scal:not(#scnone) .scrow{font-size:13px!important}
+#scal:not(#scnone) .scrow :is(.sck2,.scs){font-size:12px!important}
+/* M28 / M29: the Instructor console and the alarm list end above the footer (their last buttons scroll inside, never under the footer) */
+#scins,#scal{max-height:calc(100vh - var(--scb,var(--top)) - var(--footH,var(--foot)) - 12px)!important}
+#scins h4{font-size:12px!important}
+#scins:not(#scnone) button{font-size:13px!important}
+/* M31: training card text */
+#sccard:not(#scnone) .scctop{font-size:12px!important}
+#sccard:not(#scnone) .sccbs button,#sccard:not(#scnone) .sclink{font-size:13px!important}
+/* M30: on a tablet the training card is a bar under the page (mockup C), so it never covers the Why box or a faceplate.
+   --sccardh tells the other shell boxes (Why box, shellc-eng) how much of the bottom it takes */
+@media (max-width:1279px){
+  #sccard:not(#scnone){left:var(--scl,var(--railW,0px));right:0;bottom:var(--footH,var(--foot));width:auto;border-radius:0;border-width:1px 0 0;box-shadow:0 -4px 12px rgba(34,46,57,.12);display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:8px 16px}
+  #sccard:not(#scnone) .sccbar{position:absolute;left:0;right:0;top:0;height:4px;border-radius:0}
+  #sccard:not(#scnone) .scctop{gap:12px}
+  #sccard:not(#scnone) .scct{flex:1 1 240px;min-width:0}
+  #sccard:not(#scnone) .sccbs{margin-left:auto}
+  body.sc.sccard{--sccardh:64px}
+  body.sc.sccard #scov .scgrid{padding-bottom:80px}
+}
+/* design-auditor animation: the blinking trip lamp stops for people who turn motion off */
+@media (prefers-reduced-motion:reduce){.sclamp .dot.trip{animation:none}}
