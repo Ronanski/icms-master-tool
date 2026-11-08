@@ -220,6 +220,19 @@
     return d ? tag + ' ' + d : tag;
   }
   const MSEEN = new Map();
+  /* transmitters that the drawing alarms by comparators (not by an ALM block): tag, sheet, AI address, limits (kg/cm2) */
+  const XALM = [{ tag: 'PIMS1002', d: 'main steam pressure (PT-MS1002, finishing superheater outlet header)', sh: 'ABC-001C', ai: 'AI0131', hh: 134, h: 130, l: 100, ll: 72.9 }];
+  function xalmVal(A, p) {
+    const sh = A.sheets.find(x => x.name === p.sh),
+      S = sh && sh.S;
+    if (!S || !S.rt) return NaN;
+    if (p.S !== S) {
+      const b = S.blk.find(z => z.k === 'AI' && z.o && z.o.length && String(A.nm(S, z.o[0]) || '').replace(/^S\d\s*/, '').trim() === p.ai);
+      p.S = S;
+      p.n = b ? b.o[0] : -1;
+    }
+    return p.n >= 0 ? +S.rt.v[p.n] : NaN;
+  }
   function almScan() {
     const A = window.AN;
     if (!A || !A.sheets || (A.plantOn && !A.startState)) return;
@@ -263,6 +276,16 @@
     /* Mina #M15: the expansion tank T-1109 HIGH level (alarm list LT-CW1109, PD-021: H 1700 mm / L 800 mm in the DCS): the level is the
        plant model's (unit.js etAlm, LICW1109), no ABC alarm block reads it. HIGH only: the cold tank stands at L (0.8 m), a shutdown alarm */
     if (A.unit && A.unit.etAlm === 'H') now.set('U|LICW1109', { sh: 'MAKE-UP WATER', kind: 'ALM', nm: 'LICW1109 expansion tank T-1109 level', lv: 'HIGH' });
+    /* Mina beta.173 (Faults: main steam pressure transmitter over range, PT-MS1002 = 150.0, no alarm): no ALM block reads AI0131. The
+       drawing alarms it with comparators on ABC-001C (> 134 O.0177, > 130 M.3109, < 100 M.310A, < 72.9 M.310D) into the annunciator
+       DITL-40 (MAIN STEAM PRESSURE H.H. / HIGH / LOW / LOW LOW); the alarm list has the same set points for PT-MS1002 (HH 134, H 131 / 130,
+       L 100, LL 72.9 kg/cm2). The header alarm from the transmitter value of ABC-001C with those limits */
+    for (const p of XALM) {
+      const x = xalmVal(A, p);
+      if (!isFinite(x)) continue;
+      const lv = x > p.hh ? 'HIGH-HIGH' : x > p.h ? 'HIGH' : x < p.ll ? 'LOW-LOW' : x < p.l ? 'LOW' : null;
+      if (lv) now.set('X|' + p.tag, { sh: p.sh, kind: 'ALM', nm: p.tag + ' ' + p.d, lv });
+    }
     if (window.WORLD && WORLD.on && WORLD.idx)
       for (const s of dSheets()) {
         if (!s.nl) continue;
