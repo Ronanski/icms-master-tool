@@ -2023,6 +2023,17 @@
       },
       true
     );
+    /* Mina beta.175 (800 x 600, Training dock, Worker): a click inside the plant page left the menu open. A press of the pointer
+       anywhere else closes it too, as the Training section list does (dock.js, Mina #M11): the first event of a press, on window in
+       the capture phase, so no handler of a page under it (pan / drag of the plant drawing, a click that never comes) can keep the
+       menu open; a press on the chip itself is left to its own toggle */
+    addEventListener(
+      'pointerdown',
+      e => {
+        if (!pop.hidden && !pop.contains(e.target) && !chip.contains(e.target)) pop.hidden = true;
+      },
+      true
+    );
     addEventListener('keydown', e => {
       if (e.key === 'Escape') pop.hidden = true;
     });
