@@ -36347,7 +36347,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.187';
-      c3.textContent += ' · build 21c6bef'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 765578c'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -91525,6 +91525,17 @@ body.lssplit #dp { max-width: 34% !important; }
       'click',
       e => {
         if (e.isTrusted && !pop.hidden && !pop.contains(e.target) && !chip.contains(e.target)) pop.hidden = true;
+      },
+      true
+    );
+    /* Mina beta.175 (800 x 600, Training dock, Worker): a click inside the plant page left the menu open. A press of the pointer
+       anywhere else closes it too, as the Training section list does (dock.js, Mina #M11): the first event of a press, on window in
+       the capture phase, so no handler of a page under it (pan / drag of the plant drawing, a click that never comes) can keep the
+       menu open; a press on the chip itself is left to its own toggle */
+    addEventListener(
+      'pointerdown',
+      e => {
+        if (!pop.hidden && !pop.contains(e.target) && !chip.contains(e.target)) pop.hidden = true;
       },
       true
     );
