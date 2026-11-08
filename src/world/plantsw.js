@@ -225,6 +225,15 @@
      "#1 Boiler sand injection system remote"; DITL-771 row 5 -> M.081D REMOTE CONTROL -> DITL-777 row 3; NOT REMOTE CONTROL is in the OR of
      SYSTEM TRIP, E10210-3-777) had no source and read 0. 20.PNG at 149.5 MW: "SAND SYSTEM REMOTE" checked (1). The selector stands at REMOTE */
   L.push(['(SIL-SD1300)', baSw('rem'), 0.5, 'hi', 0, 0, null, /\)DITL-77\d$/]);
+  /* 3.2.1 d1 (LISA): the sootblower lances at rest. 18.PNG (150 MW): "N1011 ~ N1038, N1040, N1042 STOP / ENAB, all RETRACT, no blowing"
+     (S/B NO. 0, ALL RETRACT). The position signals the program reads stand at that state: the retract limit switch of each lance (DITL-80G
+     row 12 ZSR-N1011 and its 27 copies), the reset positions of the air heater blowers N-1040 / N-1042 (DITL-80K rows 24 / 22), and the
+     "ALL ON RETRACT" memories that DITL-80L makes from them (M.4008, M.4246, M.4240, M.4242; DITL-80L is not in the app). The travel of a
+     lance while it blows is NO-SOURCE (no stroke time in the documents), so these stay at rest */
+  const sbRest = () => 1;
+  L.push(['SOOTBLOWER', sbRest, 0.5, 'hi', 0, 0, /SOOTBLOWER RETRACT POSITION/, /\)DITL-80G( #N-\d+)?$/]);
+  L.push(['AIR', sbRest, 0.5, 'hi', 0, 0, /S\/B RESET POSITION/, /\)DITL-80K$/]);
+  for (const m of ['M.4008', 'M.4246', 'M.4240', 'M.4242']) L.push([m, sbRest, 0.5, 'hi', 0, 0, /ALL ON RETRACT/, /\)DITL-80[GKO]?$/]);
   const sdSilo = () => (window.AN && AN.unit && AN.unit.sd && isFinite(AN.unit.sd.silo) ? AN.unit.sd.silo : NaN);
   L.push(['LISD1800.PV', sdSilo, 60, 'lo', 0, 0, /< ?60 ?%/, /\)DITL-BA6[35]$/]);
   L.push(['LISD1800.PV', sdSilo, 80, 'hi', 0, 0, /> ?80 ?%/, /\)DITL-BA65$/]);
