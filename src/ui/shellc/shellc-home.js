@@ -71,6 +71,45 @@
     }, 100);
   }
 
+  /* Mina beta.213: the alarm list had no row for the turbine trip or the MFT (they are logic signals, not motor alarms of lsAlarms):
+     the unit trips are rows of their own at the top (ABC-050 I.0400 turbine trip, I.000F MFT, the same as the trip pill), with their
+     own Acknowledge; the strip counts the same rows (lsShellC.alarms) */
+  const UACK = {},
+    USEEN = {};
+  function unitTrips() {
+    const out = [];
+    if (none()) return out;
+    let tt = 0,
+      mft = 0;
+    try {
+      const l = AN.unit && AN.unit.vtrip;
+      tt = l && +l.S.rt.v[l.n] > 0.5 ? 1 : 0;
+    } catch (e) {}
+    try {
+      mft = +LS_LIVE.val("I.000F") > 0.5 ? 1 : 0;
+    } catch (e) {}
+    const clk = () => call(() => (lsEvents[0] && lsEvents[0].t) || "", "");
+    for (const [k, on, nm] of [["U|TT", tt, "TURBINE TRIP (ABC-050 I.0400)"], ["U|MFT", mft, "MASTER FUEL TRIP (MFT, I.000F)"]]) {
+      if (!on) {
+        delete UACK[k];
+        delete USEEN[k];
+        continue;
+      }
+      if (!USEEN[k]) USEEN[k] = clk();
+      out.push({ k, nm, lv: "", t: USEEN[k], kind: "TRIP", ack: !!UACK[k], unit: 1 });
+    }
+    return out;
+  }
+  function allAlarms() {
+    return [...call(() => lsAlarms.list().filter(a => !a.rtn && !a.sd), []), ...unitTrips()];
+  }
+  const ackOne = a => (a.unit ? (UACK[a.k] = 1) : call(() => lsAlarms.ack(a.k)));
+  const ackAllU = () => {
+    for (const a of unitTrips()) UACK[a.k] = 1;
+    call(() => lsAlarms.ack());
+  };
+  window.lsShellC = Object.assign(window.lsShellC || {}, { alarms: allAlarms });
+
   /* ---------- overview ---------- */
   let ov = null,
     crumb = null,
@@ -170,7 +209,7 @@
       } else t.pl.removeAttribute('points');
     });
     /* the alarm tile: the newest six */
-    const AL = call(() => lsAlarms.list().filter(a => !a.rtn && !a.sd), []).slice(-6).reverse();
+    const AL = allAlarms().slice(-6).reverse();
     almTile.textContent = '';
     almTile.append(E('h3', '', 'Alarms · newest first'));
     if (!AL.length) almTile.append(E('p', 'scnone', 'No alarm'));
@@ -228,7 +267,7 @@
   function fillAl() {
     if (!al || al.hidden) return;
     /* redrawn only when the list changed, so a button is never replaced under the mouse */
-    const sig = alTab + '|' + call(() => lsAlarms.list().map(a => a.k + (a.ack ? 1 : 0) + (a.rtn ? 1 : 0)).join(), '') + '|' + call(() => lsEvents.length, 0);
+    const sig = alTab + '|' + allAlarms().map(a => a.k + (a.ack ? 1 : 0)).join() + '|' + call(() => lsEvents.length, 0);
     if (sig === alSig) return;
     alSig = sig;
     al.textContent = '';
@@ -243,7 +282,7 @@
       b.onclick = () => ((alTab = k), (alSig = ''), fillAl());
       tabs.append(b);
     };
-    const AL = call(() => lsAlarms.list().filter(a => !a.rtn && !a.sd), []).reverse(),
+    const AL = allAlarms().reverse(),
       un = AL.filter(a => !a.ack).length;
     tb('alarms', 'Alarms ' + AL.length);
     tb('events', 'Events ' + call(() => lsEvents.length, 0));
@@ -259,7 +298,7 @@
       const ackAll = E('button', 'scack', 'Acknowledge all (' + un + ')');
       ackAll.type = 'button';
       ackAll.disabled = !un;
-      ackAll.onclick = () => (call(() => lsAlarms.ack()), (alSig = ''), fillAl());
+      ackAll.onclick = () => (ackAllU(), (alSig = ''), fillAl());
       al.append(ackAll);
       if (!AL.length) body.append(E('p', 'scnone', 'No alarm'));
       for (const a of AL) {
@@ -268,7 +307,7 @@
         if (!a.ack) {
           const b = E('button', '', 'Acknowledge');
           b.type = 'button';
-          b.onclick = () => (call(() => lsAlarms.ack(a.k)), (alSig = ''), fillAl());
+          b.onclick = () => (ackOne(a), (alSig = ''), fillAl());
           r.append(b);
         } else r.append(E('span', 'scs', 'acknowledged'));
         body.append(r);

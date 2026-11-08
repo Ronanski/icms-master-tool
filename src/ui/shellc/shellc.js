@@ -176,7 +176,8 @@
     /* one count with the alarm list (shellc-home.js): the standing alarms of lsAlarms (not returned, not suppressed) */
     let AL = [];
     try {
-      AL = window.lsAlarms ? lsAlarms.list().filter(a => !a.rtn && !a.sd) : [];
+      /* the same rows as the alarm list, the unit trips included (shellc-home.js lsShellC.alarms) */
+      AL = window.lsShellC && lsShellC.alarms ? lsShellC.alarms() : window.lsAlarms ? lsAlarms.list().filter(a => !a.rtn && !a.sd) : [];
     } catch (e) {}
     const eqT = AL.filter(a => a.kind === 'TRIP');
     S.trip.classList.toggle('trip', !!(tt || mft || eqT.length));
@@ -196,6 +197,19 @@
     S.alm.classList.toggle('alm', n > 0);
     S.alm.classList.toggle('new', un > 0);
     S.almT.textContent = n ? n + (n === 1 ? ' alarm' : ' alarms') + (un ? ' · ' + un + ' new' : '') : 'No alarm';
+    /* Mina beta.213: at 1366 the strip (two-line labels, value, unit) was taller than the top bar and the page under it covered the
+       units and the reheat values: the top bar takes the height the strip needs (any width, dock open or not) */
+    try {
+      const st = document.getElementById('scstrip'),
+        /* the content of the strip (its rows), not the strip itself: the strip is as tall as the bar */
+        tops = [...st.children].map(c => c.getBoundingClientRect()).filter(r => r.height > 0),
+        need = Math.ceil(Math.max(...tops.map(r => r.bottom)) - Math.min(...tops.map(r => r.top))) + 12,
+        cur = parseFloat(getComputedStyle(document.body).getPropertyValue('--top')) * (/rem/.test(getComputedStyle(document.body).getPropertyValue('--top')) ? 16 : 1);
+      if (need > 40 && Math.abs(need - cur) > 2) {
+        document.body.style.setProperty('--top', need + 'px');
+        dispatchEvent(new Event('resize'));
+      }
+    } catch (e) {}
     const on = !!(window.AN && AN.run && !AN.view);
     S.runB.classList.toggle('on', on);
     const rt = on ? 'Running' : 'Paused';
