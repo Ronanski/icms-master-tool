@@ -239,6 +239,7 @@
       for (const s of dSheets()) {
         if (!s.nl) continue;
         const fresh = !DSEEN.has(s.name);
+        const seen0 = !fresh; /* Mina beta.121: the units that run on the 150 MW snapshot showed STOP until the first RUN scan, then "started by its logic" */
         /* seen only once the world has scanned it twice since the load (Mina #M1, Worker: the page scans the alarms before the first
            patch of the engine brings the cold DITL-777 trip, so the sheet was "seen" without it and its standing trip came as NEW) */
         if (((WORLD.tk || 0) - (almScan.tk0 || 0)) >= 2 || (WORLD.tk || 0) < (almScan.tk0 || 0)) DSEEN.add(s.name);
@@ -249,7 +250,7 @@
         const ms = motState(s),
           ms0 = MSEEN.get(s.name);
         MSEEN.set(s.name, ms);
-        if (ms0 === 'STOP' && ms === 'RUN' && !LOG.slice(0, 12).some(e => e.sh === dnm(s) && /START/.test(e.text || '')))
+        if (seen0 && ms0 === 'STOP' && ms === 'RUN' && !LOG.slice(0, 12).some(e => e.sh === dnm(s) && /START/.test(e.text || '')))
           add({ rt: { t } }, { name: dnm(s) }, 'DCS', (o.trip ? o.trip.name.replace(/\s+TRIP$/, '').replace(/^Output row \d+ · /, '').replace(/\s*·.*$/, '') : dnm(s)) + ' started by its logic (auto start)');
         if (motState(s) === 'TRIP')
           now.set('D|' + s.name, {
