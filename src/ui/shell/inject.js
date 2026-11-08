@@ -55,6 +55,7 @@ const block =
   /* 3.2.1 re-shell layout C, step 1: the new status strip, only with ?shell=c */
   fs.readFileSync(__dirname + '/../shellc/shellc.css', 'utf8') +
   fs.readFileSync(__dirname + '/../shellc/shellc-pages.css', 'utf8') +
+  fs.readFileSync(__dirname + '/../shellc/shellc-ui.css', 'utf8') +
   '</style><script id="shelljs">' +
   fs.readFileSync(__dirname + '/ditl.js', 'utf8') +
   '\n' +
@@ -127,6 +128,8 @@ const block =
   '\n' +
   /* step 5: Instructor console and the training step card */
   fs.readFileSync(__dirname + '/../shellc/shellc-ins.js', 'utf8') +
+  '\n' +
+  fs.readFileSync(__dirname + '/../shellc/shellc-ui.js', 'utf8') +
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');
