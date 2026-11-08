@@ -4,7 +4,8 @@
 DITL-89 input 15 (I.0931), GCB 52G1 OFF = DITL-03H input 18 (MIG-52G1-2); the other breaker signals are digital inputs of the I/O list
 with no sheet (MIL-52G1 I.0930, MIG-52G1-3 ~ 6 I.0933 ~ I.0936, RY-52G I.041B, RY-52L I.041C, MIT-GEN I.041A); generator MW =
 GCP-AI1001 / 1002; bearing No. 3 / 4 = the turbine oil model (tcs.js tcsOil, AN.unit loM3 / loM4 / loTb3 / loTb4 / loVx3 ...).
-NO-SOURCE: the TCS-only values (TCA3xx, TCA775, cooling air, stator coil, 86G-A / B, leakage), the field breaker.
+kV / Hz / MVar / power factor / kA / field / energy and the field breaker = the generator model (unit.js anGenEl).
+NO-SOURCE: the TCS-only values (TCA3xx, TCA775, cooling air, stator coil, 86G-A / B, leakage).
 Run: python3 tools/hmi-mock/p17.py"""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -30,18 +31,22 @@ p.sub1('<path d="M230 306 V334" stroke="#ff6b6b"', '<path d="M230 306 V334" data
 p.inner(254, 394, DY(G1, 'CLOSED', 'OPEN') + ' · ' + DI('MIL-52G1', 'REMOTE', 'LOCAL'))
 p.rect(216, 366, f'data-dyr="{G1}"')
 p.sub1('<path d="M230 366 V394" stroke="#ff6b6b"', f'<path d="M230 366 V394" data-dyr="{G1}" stroke="#ff6b6b"')
-p.inner(364, 578, NS)
-p.rect(350, 516, 'data-dyr="NS"')
-p.sub1('<path d="M350 530 H378" stroke="#ff6b6b"', '<path d="M350 530 H378" data-dyr="NS" stroke="#ff6b6b"')
+FB = 'gen.fcb|1|CLOSED|OPEN'  # the field breaker = the TCS excitation (unit.js anGenEl)
+p.inner(364, 578, f'<tspan data-uy="{FB}">-----</tspan>')
+p.rect(350, 516, f'data-uyr="{FB}"')
+p.sub1('<path d="M350 530 H378" stroke="#ff6b6b"', f'<path d="M350 530 H378" data-uyr="{FB}" stroke="#ff6b6b"')
 p.inner(188, 492, V('GCP-AI1001', 1, ' MW'))
-p.inner(188, 508, NS + ' kV')
-p.inner(480, 552, NS + ' VDC · ' + NS + ' A')
+p.inner(188, 508, V('GEN.KV') + ' kV')
+p.inner(480, 552, V('GEN.VF') + ' VDC · ' + V('GEN.IF') + ' A')
 # generator values
 p.inner(950, 82, V('GCP-AI1001', 1, ' MW'))
 p.inner(950, 118, V('GCP-AI1002', 1, ' MW'))
-for y, u in ((154, ' MVar'), (190, ''), (226, ' Hz'), (262, ' kV'), (298, ' kV'), (334, ' kV'), (370, ' kA'), (406, ' kA'), (442, ' kA'),
-             (478, ' VDC'), (514, ' A'), (550, ' MWh'), (586, ' MVarh')):
-    p.inner(950, y, NS + u)
+# the generator model (unit.js anGenEl: data sheet GAE-2013-0136 R2 + snapshot 37.PNG)
+for y, t, dp, u in ((154, 'GEN.MVAR', 1, ' MVar'), (190, 'GEN.PF', 3, ''), (226, 'GEN.HZ', 1, ' Hz'), (262, 'GEN.KV', 1, ' kV'),
+                    (298, 'GEN.KV', 1, ' kV'), (334, 'GEN.KV', 1, ' kV'), (370, 'GEN.KA', 2, ' kA'), (406, 'GEN.KA', 2, ' kA'),
+                    (442, 'GEN.KA', 2, ' kA'), (478, 'GEN.VF', 1, ' VDC'), (514, 'GEN.IF', 1, ' A'), (550, 'GEN.MWH', 0, ' MWh'),
+                    (586, 'GEN.MVARH', 0, ' MVarh')):
+    p.inner(950, y, V(t, dp) + u)
 # breaker status and protection check list
 CK = {86: ('di', 'MIL-52G1'), 124: ('dy', 'DITL-89|i|14'), 162: ('dy', 'DITL-03H|i|17'), 200: ('di', 'MIG-52G1-3'), 238: ('di', 'MIG-52G1-4'),
       276: ('di', 'MIG-52G1-5'), 314: ('di', 'MIG-52G1-6'), 352: ('dy', 'DITL-03E|i|1'), 390: ('dy', 'NS'), 428: ('dy', 'NS'),
