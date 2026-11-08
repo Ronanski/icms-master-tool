@@ -164,7 +164,13 @@ const AN_UNIT = {
   kcool: 60 /* 2.2.0-beta.21: cooling of the unfired boiler by the air, T/H steam-equivalent at the anchor air and 300 C (ASSUMED, Fig. 5) */,
   kamb: 1 /* 2.2.0-beta.21: bottled boiler loss to the ambient, T/H steam-equivalent at 300 C (ASSUMED) */,
   tauB: 900,
-  tauBc: 14400,
+  /* 3.2.1 b6 (plant cold start trend 2026-11-08, plant-study 14 Scenario 2): the oil-only heat-up of the plant is faster than FHI Fig 2 (bed
+     TIFG1090 339 C at 1.5 h, 523 C at 4 h, 726 C at 6 h; simulator 141 C at 2 h). Fit on the bed of the model (TIFG1090 = 30 + 1.127 x
+     (Tb - 30), the 954 / 850 snapshot ratio): lag 1.9 h at 1.5 h, 2.6 h at 4 h -> 9000 s; the trend outranks the design curve */
+  tauBc: 9000,
+  /* the start-up law exponent (fuel share / air share)^k: plant oil-only plateau TIFG1090 730 C on 4.5 T/H oil with PA 177 + SA 222 T/H
+     (k = ln 0.756 / ln 0.19 = 0.168), check 796 C on 6 T/H oil at 10 h (model 765). Was 0.45 ASSUMED */
+  kBedSU: 0.168,
   Tb0: 850,
   /* 3.2.0-beta.15 (phase B, utilities): CONDENSER VACUUM. The turbine exhausts to the condenser, cooled by the seawater pumps (SWP-A ~ C
      M.3353 ~ M.3355) with the condensate pumps (CP-A / B M.3350 / M.3351) taking the water out (PR-OPE-5002: SWP, CEP and VACUUM UP
@@ -1663,7 +1669,7 @@ const AN_PA_FURN = 328.2 / 354.0;
 const AN_BED = { s: [0.43, 0.525, 0.626, 0.715, 0.86, 1], t: [798, 819, 840, 840, 840, 840], a: [0.612, 0.557, 0.622, 0.716, 0.861, 1] };
 function anBedSS(U, fs, as) {
   const K = AN_BED,
-    start = U.Tamb + (U.Tb0 - U.Tamb) * Math.pow(Math.min(3, fs / as), 0.45),
+    start = U.Tamb + (U.Tb0 - U.Tamb) * Math.pow(Math.min(3, fs / as), U.kBedSU != null ? U.kBedSU : 0.45),
     x = Math.min(1.1, fs),
     ip = Y => {
       if (x <= K.s[0]) return Y[0];
