@@ -726,7 +726,15 @@ function tcsStep(U, dt) {
         c.tm = 0;
         c.holdMin = TCS.hold(c.mode);
         tcsGcb(U, true);
-      } else if (c.ph === 'init' && U.MW >= 0.9 * tb.aim && c.tm >= c.holdMin * 60) tcsDone(U, 5);
+      } else if (c.ph === 'init' && U.MW >= 0.9 * tb.aim && c.tm >= c.holdMin * 60) {
+        /* plan c3: PR-OPE-5002 9082 ~ 9088 / 9123: the initial load is held also until the LP exhaust hood is below 52 C (the hood spray
+           cools it below 15 % load); before, only the 80 C of criterion 1.12 was checked */
+        if (isFinite(c.Tx) && c.Tx >= 52) c.hold = 'Waiting: LP exhaust hood ' + c.Tx.toFixed(0) + ' C, below 52 C before load up (PR-OPE-5002)';
+        else {
+          if (/LP exhaust hood/.test(c.hold || '')) c.hold = '';
+          tcsDone(U, 5);
+        }
+      }
       break;
     case 8 /* SHUT-DOWN (775 page 29, 776 page 14 criteria 2.11): generator load < 20 %, 52G open command, 41 open, turbine trip */:
       if (c.ph === 'in') {
