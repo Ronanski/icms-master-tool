@@ -82,7 +82,7 @@ body.sc #gsbar #scstrip .pill.ins.on{background:var(--sc-violet)!important;color
 #scins button.trip{border-color:var(--sc-run)!important;color:var(--sc-run)!important}
 #scins button[data-arm]{background:var(--sc-run)!important;border-color:var(--sc-run)!important;color:var(--sc-white)!important}
 #scins .scx{padding:0 .625rem!important}
-#sccard{position:fixed;right:.75rem;bottom:calc(var(--foot) + .75rem);z-index:85;width:min(22rem,calc(100vw - 1.5rem));display:grid;gap:.5rem;padding:.75rem .875rem;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.5rem;box-shadow:0 .5rem 1.5rem rgba(34,46,57,.18);font-family:var(--sc-ui);color:var(--sc-ink)}
+#sccard{position:fixed;right:.75rem;bottom:calc(var(--foot) + .75rem);z-index:95;width:min(22rem,calc(100vw - 1.5rem));display:grid;gap:.5rem;padding:.75rem .875rem;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.5rem;box-shadow:0 .5rem 1.5rem rgba(34,46,57,.18);font-family:var(--sc-ui);color:var(--sc-ink)}
 #sccard[hidden]{display:none!important}
 #sccard .scctop{display:flex;align-items:center;justify-content:space-between;font:500 .6875rem var(--sc-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--sc-ink2)}
 #sccard .sclink{min-height:2rem!important;padding:0 .25rem!important;border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:600 .8125rem var(--sc-ui)!important;box-shadow:none!important;cursor:pointer;text-transform:none;letter-spacing:0}
@@ -115,7 +115,7 @@ body.sc.plant[data-tab="operate"]:not(.scov) .sccrumb:not(:has(b:empty)){display
 #scins .scsvr span{flex:1;min-width:0;overflow-wrap:anywhere}
 body.sc.sccard #scov .scgrid{padding-bottom:12rem}
 /* ===== step 2: overview, breadcrumb, alarm list, start screen ===== */
-#scov{display:none;position:fixed;top:var(--scb,var(--top));left:var(--railW,0);right:0;bottom:var(--foot);z-index:80;overflow:auto;background:var(--sc-page);font-family:var(--sc-ui);color:var(--sc-ink)}
+#scov{display:none;position:fixed;top:var(--scb,var(--top));left:var(--scl,var(--railW,0));right:0;bottom:var(--foot);z-index:89;overflow:auto;background:var(--sc-page);font-family:var(--sc-ui);color:var(--sc-ink)}
 body.sc.scov #scov{display:flex;flex-direction:column}
 #scov .scbar{display:flex;align-items:center;gap:.375rem;padding:.5rem 1rem;font-size:.8125rem;border-bottom:1px solid var(--sc-line);background:var(--sc-paper)}
 .scbc{color:var(--sc-steel);text-decoration:underline}.scsep{color:var(--sc-ink2)}
@@ -140,7 +140,7 @@ body.sc.scov #scov{display:flex;flex-direction:column}
 #scov .scar .scs{font-weight:600;color:var(--sc-ink2)}
 #scov .scar.new .scs{color:#5c3f0b}
 .scnone{margin:0;font-size:.8125rem;color:var(--sc-ink2)}
-.sccrumb{display:none;position:fixed;top:calc(var(--scb,var(--top)) + .375rem);left:calc(var(--railW,0px) + .5rem);z-index:79;align-items:center;gap:.375rem;min-height:2rem!important;padding:0 .75rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:1rem!important;color:var(--sc-ink)!important;font:500 .8125rem var(--sc-ui)!important;box-shadow:0 .125rem .5rem rgba(34,46,57,.12)!important;cursor:pointer}
+.sccrumb{display:none;position:fixed;top:calc(var(--scb,var(--top)) + .375rem);left:calc(var(--scl,var(--railW,0px)) + .5rem);z-index:79;align-items:center;gap:.375rem;min-height:2rem!important;padding:0 .75rem!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:1rem!important;color:var(--sc-ink)!important;font:500 .8125rem var(--sc-ui)!important;box-shadow:0 .125rem .5rem rgba(34,46,57,.12)!important;cursor:pointer}
 body.sc[data-tab="operate"]:not(.scov) .sccrumb{display:inline-flex}
 body.sc.pvout .sccrumb{display:none!important}
 #scal{position:fixed;top:calc(var(--scb,var(--top)) + .25rem);right:.5rem;z-index:130;width:min(36rem,calc(100vw - 1rem));max-height:calc(100vh - var(--top) - var(--foot) - 1rem);display:flex;flex-direction:column;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:.5rem;box-shadow:0 .75rem 2rem rgba(34,46,57,.22);font-family:var(--sc-ui);color:var(--sc-ink)}
