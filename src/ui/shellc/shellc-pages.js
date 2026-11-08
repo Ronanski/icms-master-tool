@@ -87,8 +87,12 @@
       const t = e.target && e.target.closest ? e.target : null,
         m = $('plmid');
       if (!t || !m || !m.contains(t) || t.closest('.fpo-box,#plfp,#sctsp,.plbar')) return;
-      const a = t.closest('[data-hit],[data-mdh],[data-fan],[data-dmp],[data-eqb],[data-vth],[data-fvh]') || t.closest('g') || t;
-      anchor = { el: a, r: a.getBoundingClientRect(), at: Date.now() };
+      const a = t.closest('[data-yn],[data-hit],[data-mdh],[data-fan],[data-dmp],[data-eqb],[data-vth],[data-fvh]') || t.closest('g') || t;
+      /* Mina beta.213 (Y/N of seawater pump A covered the pumps): the Y/N square stands for its equipment, so the faceplate keeps clear of
+         the square AND the machine it belongs to (data-yn = the id of its data-hit) */
+      const yn = a.dataset && a.dataset.yn,
+        mh = yn ? m.querySelector('[data-hit="' + CSS.escape(yn) + '"]') : null;
+      anchor = { el: a, mh, r: a.getBoundingClientRect(), at: Date.now() };
     },
     true
   );
@@ -106,6 +110,8 @@
     }
     const pb = bar && bar.offsetParent ? bar.getBoundingClientRect() : null;
     if (pb && pb.bottom > a.top && pb.bottom < a.bottom) a.top = pb.bottom;
+    const tp = tsp && !tsp.hidden ? tsp.getBoundingClientRect() : null;
+    if (tp && tp.height && tp.bottom > a.top && tp.bottom < a.bottom) a.top = tp.bottom;
     return { R, a };
   }
   /* points along every line of the drawing that touches the equipment (pipes, ducts, signal lines), in screen pixels */
@@ -141,7 +147,9 @@
     const { R, a } = area(),
       w = el.offsetWidth,
       h = el.offsetHeight,
-      r = anchor.el.isConnected ? anchor.el.getBoundingClientRect() : anchor.r;
+      r0 = anchor.el.isConnected ? anchor.el.getBoundingClientRect() : anchor.r,
+      q = anchor.mh && anchor.mh.isConnected ? anchor.mh.getBoundingClientRect() : null,
+      r = q && q.width ? { left: Math.min(r0.left, q.left), top: Math.min(r0.top, q.top), right: Math.max(r0.right, q.right), bottom: Math.max(r0.bottom, q.bottom) } : r0;
     if (!w || !h) return;
     const P = pipePts(r),
       other = [...document.querySelectorAll('.fpo-box,#plfp.fpo-near')].filter(x => x !== el && x.offsetParent).map(x => x.getBoundingClientRect()),
@@ -189,10 +197,46 @@
     new MutationObserver(L => {
       for (const x of L)
         for (const n of x.addedNodes)
-          if (n.nodeType === 1 && (n.classList.contains('fpo-box') || n.id === 'plfp'))
+          if (n.nodeType === 1 && (n.classList.contains('fpo-box') || n.id === 'plfp')) {
+            words(n);
             requestAnimationFrame(() => requestAnimationFrame(() => placeC(n)));
+          }
     }).observe(m, { childList: true });
     return true;
+  }
+  /* Mina beta.213 (COMMANDMENT 5, no acronyms as labels): in the C layout the faceplate shows full English words; the name of the
+     equipment on top and its tag under it. Only the text on screen changes (fp-pop.js builds and drives the faceplate as before) */
+  const LBL = { DCS: 'Control room', LCP: 'Local panel', 'E-STOP': 'Emergency stop', VCB: 'Breaker', RELAY: 'Protection relay', STATUS: 'Status', SELECTOR: 'Selector', MODE: 'Mode', POSITION: 'Position', AUXILIARY: 'Auxiliary' };
+  function words(box) {
+    const fix = () => {
+      for (const l of box.querySelectorAll('.fpo-l')) if (LBL[l.textContent.trim()]) l.textContent = LBL[l.textContent.trim()];
+      for (const p of box.querySelectorAll('.fpo-lp')) {
+        const tn = [...p.childNodes].find(x => x.nodeType === 3 && x.nodeValue.trim() === 'VCB');
+        if (tn) tn.nodeValue = 'Breaker';
+      }
+      /* the permissive rows: Y = red = complete, N = green = not complete (COMMANDMENT 5); "must be 0" stays in the tooltip */
+      for (const li of box.querySelectorAll('.fpo-il li')) {
+        const i = li.querySelector(':scope > i');
+        if (!i || !(li.classList.contains('ok') || li.classList.contains('bad'))) continue;
+        const y = li.classList.contains('ok') ? 'Y' : 'N';
+        if (i.textContent !== y) i.textContent = y;
+      }
+    };
+    /* the header once: "SWP-A" over "Seawater pump A · DITL-29A" becomes "Seawater pump A" over "SWP-A · DITL-29A" */
+    const b = box.querySelector('.fpo-tt > b, .plfph > b'),
+      sm = box.querySelector('.fpo-tt > small');
+    if (b && sm && !box.dataset.scw) {
+      const tag = b.textContent.trim(),
+        parts = sm.textContent.split(' · '),
+        name = (parts[0] || '').trim();
+      if (name && name.includes(' ') && !tag.includes(' ')) {
+        b.textContent = name;
+        sm.textContent = [tag, ...parts.slice(1)].join(' · ');
+      }
+      box.dataset.scw = '1';
+    }
+    fix();
+    new MutationObserver(fix).observe(box, { childList: true, subtree: true });
   }
   /* tablet (narrow): the faceplate is a panel at the right of the page (mockup tablet 07 / 08) */
   const narrow = () => document.body.classList.toggle('scnarrow', innerWidth < 1100);
@@ -239,7 +283,11 @@
       return { b, id };
     });
     tsp.append(hd, tsv, row);
-    m.append(tsp);
+    /* Mina beta.213: floating over the page it covered the MSV / RSV / CV drawing and its last button went under the status bar: it is a
+       band under the page bar now, the drawing gets the rest of the height */
+    const pb = m.querySelector('.plbar');
+    if (pb) pb.after(tsp);
+    else m.prepend(tsp);
     return true;
   }
   const kv = (k, v) => {
