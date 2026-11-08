@@ -1636,6 +1636,93 @@
       });
     rst('loadwarm', 'warm', 'Warm restart (down 8 ~ 56 h)', 'FHI Fig 3: drum 40 kg/cm2, bed about 360 C, turbine metal in the WARM band; every machine stopped as in Cold. The furnace purge is needed (bed below 700 C)', 'Warm restart: drum 40 kg/cm2, bed about 360 C, turbine WARM. Press Run, then start the utilities, fans, purge and burners as in the cold start.');
     rst('loadhot', 'hot', 'Hot restart (down under 8 h)', 'FHI Fig 4: drum 100 kg/cm2, bed about 700 C, turbine metal in the HOT band; every machine stopped as in Cold', 'Hot restart: drum 100 kg/cm2, bed about 700 C, turbine HOT. Press Run, then start the utilities and fans; the logic decides the purge.');
+    /* 3.2.1 SAVE POINTS (user 2026-11-08 "approved lahat", testing plan 1): the whole plant at this moment (every ABC and DITL sheet, the
+       turbine, the plant models, the modes, the Training ticks and step) is kept in this browser (IndexedDB) under a name; LOAD puts it
+       back and pauses, so a test goes on from the step before a fault instead of from Cold */
+    d.head('Save points (whole plant)');
+    const SVDB = () =>
+      new Promise((ok, no) => {
+        const r = indexedDB.open('ls-saves', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('s', { keyPath: 'id' });
+        r.onsuccess = () => ok(r.result);
+        r.onerror = () => no(r.error);
+      });
+    const svDo = (mode, fn) =>
+      SVDB().then(
+        db =>
+          new Promise((ok, no) => {
+            const t = db.transaction('s', mode),
+              q = fn(t.objectStore('s'));
+            t.oncomplete = () => ok(q && q.result);
+            t.onerror = () => no(t.error);
+          })
+      );
+    const svList = () => svDo('readonly', st => st.getAll()).then(L => (L || []).sort((x, y) => x.at - y.at));
+    const svCap = () => {
+      if (window.ENG && ENG.mode === 'mirror' && ENG.peek) return ENG.peek().then(m => ({ kf: m.kf, kd: m.kd }));
+      if (AN.sched && AN.sched.flush) AN.sched.flush();
+      return Promise.resolve({ kf: AN.engState.capture(), kd: ditlCapture() });
+    };
+    const svName = () => {
+      const U = AN.unit || {},
+        tm = new Date();
+      return (U.on ? (+U.MW || 0).toFixed(1) + ' MW' : 'plant') + ' · sim ' + Math.round((+U.t || 0) / 60) + ' min · ' + tm.toTimeString().slice(0, 5);
+    };
+    const svPick = (L, what) => {
+      if (!L.length) return msg('No save point yet: press SAVE first.'), null;
+      const x = prompt(what + ': type its number
+' + L.map((e, i) => i + 1 + '. ' + e.name).join('
+'), String(L.length));
+      const i = +x - 1;
+      return x && L[i] ? L[i] : null;
+    };
+    btn('savenow', 'SAVE the plant now', 'Keeps the whole plant at this moment (ABC, DITL, turbine, plant model, modes, Training) in this browser under a name. LOAD puts it back.', () => {
+      if (AN._loading) return msg('Wait: a starting state is still loading.');
+      const nm = prompt('Name of this save point:', svName());
+      if (!nm) return;
+      msg('Saving the whole plant...');
+      svCap()
+        .then(sv => {
+          const G = window.LS_GUIDE,
+            L = window.LS_LIVE;
+          sv.tr = { lat: L && L.done ? JSON.parse(JSON.stringify(L.done())) : null, cur: G && G.on ? G.cur : null };
+          sv.id = 'sv' + Date.now();
+          sv.at = Date.now();
+          sv.name = nm;
+          sv.ver = typeof APP_VERSION !== 'undefined' ? APP_VERSION : '';
+          return svDo('readwrite', st => st.put(sv)).then(() => msg('Saved: ' + nm + '. LOAD a save point puts the plant back here.'));
+        })
+        .catch(e => msg('Could not save: ' + e.message));
+    });
+    btn('loadsave', 'LOAD a save point…', 'Puts the whole plant back as it was saved, then pauses: press Run to go on.', () =>
+      svList()
+        .then(L => {
+          const e = svPick(L, 'Load which save point');
+          if (!e) return;
+          if (AN.pauseOn && AN.run) AN.pauseOn();
+          msg('Loading save point ' + e.name + '...');
+          return Promise.resolve(DITL150.savePut({ kf: e.kf, kd: e.kd })).then(() => {
+            const G = window.LS_GUIDE,
+              Lv = window.LS_LIVE;
+            if (e.tr && e.tr.lat && Lv && Lv.load) Lv.load(e.tr.lat);
+            if (e.tr && e.tr.cur != null && G && G.on && G.open) G.open(e.tr.cur);
+            if (AN.pauseOn && AN.run) AN.pauseOn();
+            if (AN.paint) AN.paint();
+            if (window.lsEventAdd) lsEventAdd('DCS', 'DCS', 'Save point loaded: ' + e.name);
+            msg('Plant back at: ' + e.name + '. Paused: press Run to go on.');
+          });
+        })
+        .catch(x => msg('Could not load: ' + x.message))
+    );
+    btn('delsave', 'Delete a save point…', 'Removes one save point from this browser.', () =>
+      svList()
+        .then(L => {
+          const e = svPick(L, 'Delete which save point');
+          if (!e) return;
+          return svDo('readwrite', st => st.delete(e.id)).then(() => msg('Deleted: ' + e.name));
+        })
+        .catch(x => msg('Could not delete: ' + x.message))
+    );
     d.head('TCS panel (turbine)');
     const tcs = (id, label, title, cmd, arg, ok) =>
       btn(id, label, title, () => {

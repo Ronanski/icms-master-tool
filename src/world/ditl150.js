@@ -249,6 +249,15 @@
     }
     return rep;
   };
+  /* 3.2.1 save points (user 2026-11-08 "approved lahat"): the whole plant back from a save (the ABC keyframe of engine/state.js and the
+     DITL keyframe of digital/parts/03d-state.js, the same two halves the Web Worker hand-over carries). With the Worker this runs in the
+     engine only (world/eng.js HEAVY) and the page gets the whole state after it */
+  D.savePut = sv => {
+    if (!sv || !sv.kf || !sv.kd) return 0;
+    AN.engState.apply(sv.kf);
+    (typeof ditlApply === 'function' ? ditlApply : window.DITL.ditlApply)(sv.kd);
+    return 1;
+  };
   /* 2. scans of the whole world (dt seconds each) */
   D.scan = (n, dt) => {
     for (let k = 0; k < n; k++) WORLD.tick(dt, { noAbc: !WORLD.on });
