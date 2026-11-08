@@ -33,6 +33,11 @@ jobs:
         run: |
           set -o pipefail
           node tests/regress/ditl150.js 2>&1 | tee -a sim.log
+      - name: Generator breaker 52G1 on the DITL at 150 MW and after a turbine trip
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node tests/regress/gcb.js 2>&1 | tee -a sim.log
       - name: Summary (PASS / FAIL lines)
         if: always()
         run: |
