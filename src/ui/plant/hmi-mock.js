@@ -100,7 +100,14 @@
         qa(`[data-dir="${tag}"]`).forEach(r => r.setAttribute('stroke', v == null ? C.none : v ? C.run : C.stop));
       };
       new Set([...qa('[data-di]')].map(e => e.dataset.di.split('|')[0])).forEach(tag => {
-        api.reg({ t: 'val', tag, v: '' }, X => showDi(tag, X && isFinite(X.v) ? (+X.v >= 0.5 ? 1 : 0) : null), null);
+        /* Mina beta.143 (pages 13 / 17: DS "-----"): a field contact of the I/O list that no sheet of the logic reads shows the field as the
+           plant stands while the plant model runs: disconnect switch DS closed (snapshot 37: "52L1, DS, 52G1, field CB closed"), earth
+           switch open (a generator on the grid cannot have its earth switch closed). A sheet that reads the contact wins */
+        const FIELD_DI = { 'MIG-52G1-3': 1, 'MIG-52G1-4': 0, 'MIG-52G1-5': 0, 'MIG-52G1-6': 1 },
+          fieldDi = () => (tag in FIELD_DI && window.AN && AN.unit && AN.unit.on ? FIELD_DI[tag] : null);
+        let rd = false;
+        api.reg({ t: 'val', tag, v: '' }, X => ((rd = !!(X && isFinite(X.v))), showDi(tag, rd ? (+X.v >= 0.5 ? 1 : 0) : fieldDi())), null);
+        if (tag in FIELD_DI) setInterval(() => !rd && qa('[data-di]').length && showDi(tag, fieldDi()), 2000);
         showDi(tag, null);
         qa('[data-di]').forEach(t => {
           if (t.dataset.di.split('|')[0] !== tag) return;
