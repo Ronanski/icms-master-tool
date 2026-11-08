@@ -35891,7 +35891,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.121';
-      c3.textContent += ' · build 7613730'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 476464e'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -53488,6 +53488,27 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
   /* the bottom ash transmitter conveys to the sand silo (DITL-BA02 row 12 SAND SILO HI LEVEL, DITL-BA05 / BA03 rows MIR-M1301): its charge
      waits for the sand silo venting fan F-1301 running, the same field contact as the sand drawings (boiler.js AN_SD fan; 20.PNG: stopped) */
   L.push(['MIR-M1301', sdSw('fan'), 0.5, 'hi', 0, 0, null, BAS]);
+  /* 3.2.1 d2 (LISA): rows of the d1 list with no source.
+     - the remote selector of the sand silo venting fan F-1301 (DITL-BA03 row 5, BA11 row 1 MIL-M1301; sand DITL-774 row 13 I.0572 REMOTE):
+       at REMOTE as the other local selectors of the ash handling (20.PNG F-1301 VENTING FAN "R")
+     - the sand silo level on the bottom ash drawings (DITL-BA63 row 11, BA65 rows 10 / 11 LISD1800.PV, the set points written on the
+       rows: < 60 %, > 80 %): the silo of the sand model (boiler.js AN_SD, LT-SD1800, 20.PNG 50.1 %)
+     - the running contacts of the vibrating screens S-1092-A / B (DITL-BA59 rows 11 / 13 MIR-S-1092-A / B): made while their MCC start
+       command is on (DITL-BA63 outputs VIBRATING SCREEN-A / -B ON COMMAND); the delay of the motor contact is NO-SOURCE (none) */
+  L.push(['MIL-M1301', baSw('rem'), 0.5, 'hi', 0, 0, null, BAS]);
+  L.push(['REMOTE', baSw('rem'), 0.5, 'hi', 0, 0, /^REMOTE$/, /\)DITL-774$/]); /* the drawing reads "I.0572 REMOTE", the row text "REMOTE" */
+  const sdSilo = () => (window.AN && AN.unit && AN.unit.sd && isFinite(AN.unit.sd.silo) ? AN.unit.sd.silo : NaN);
+  L.push(['LISD1800.PV', sdSilo, 60, 'lo', 0, 0, /< ?60 ?%/, /\)DITL-BA6[35]$/]);
+  L.push(['LISD1800.PV', sdSilo, 80, 'hi', 0, 0, /> ?80 ?%/, /\)DITL-BA65$/]);
+  const scrOn = re => () => {
+    const s = (scrOn.s = scrOn.s || ((typeof S !== 'undefined' && S.sheets) || []).find(x => /\)DITL-BA63$/.test(x.name)));
+    const o = s && W._o && W._o[s.name];
+    if (!o || !s.nl) return NaN;
+    const r = (s.nl.outs || []).map(q => q.row).find(i => re.test((s.cells[i + ':RS'] || []).map(t => t.t).join(' ')));
+    return r == null ? NaN : o.has(r) ? 1 : 0;
+  };
+  L.push(['MIR-S-1092-A', scrOn(/VIBRATING SCREEN-A ON COMMAND/), 0.5, 'hi', 0, 0, null, /\)DITL-BA59$/]);
+  L.push(['MIR-S-1092-B', scrOn(/VIBRATING SCREEN-B ON COMMAND/), 0.5, 'hi', 0, 0, null, /\)DITL-BA59$/]);
   /* the speed switch is made while its machine turns: the running contact of the same machine (DITL-BA59 outputs 8 ~ 10) */
   const baRun = r => () => {
     if (!(window.AN && AN.unit && AN.unit.ba)) return NaN;
@@ -83217,6 +83238,27 @@ globalThis.AN=AN;globalThis.ENGINE={AN,E:{ensure,stepSet,anResetAll,anPlantLoad1
   /* the bottom ash transmitter conveys to the sand silo (DITL-BA02 row 12 SAND SILO HI LEVEL, DITL-BA05 / BA03 rows MIR-M1301): its charge
      waits for the sand silo venting fan F-1301 running, the same field contact as the sand drawings (boiler.js AN_SD fan; 20.PNG: stopped) */
   L.push(['MIR-M1301', sdSw('fan'), 0.5, 'hi', 0, 0, null, BAS]);
+  /* 3.2.1 d2 (LISA): rows of the d1 list with no source.
+     - the remote selector of the sand silo venting fan F-1301 (DITL-BA03 row 5, BA11 row 1 MIL-M1301; sand DITL-774 row 13 I.0572 REMOTE):
+       at REMOTE as the other local selectors of the ash handling (20.PNG F-1301 VENTING FAN "R")
+     - the sand silo level on the bottom ash drawings (DITL-BA63 row 11, BA65 rows 10 / 11 LISD1800.PV, the set points written on the
+       rows: < 60 %, > 80 %): the silo of the sand model (boiler.js AN_SD, LT-SD1800, 20.PNG 50.1 %)
+     - the running contacts of the vibrating screens S-1092-A / B (DITL-BA59 rows 11 / 13 MIR-S-1092-A / B): made while their MCC start
+       command is on (DITL-BA63 outputs VIBRATING SCREEN-A / -B ON COMMAND); the delay of the motor contact is NO-SOURCE (none) */
+  L.push(['MIL-M1301', baSw('rem'), 0.5, 'hi', 0, 0, null, BAS]);
+  L.push(['REMOTE', baSw('rem'), 0.5, 'hi', 0, 0, /^REMOTE$/, /\)DITL-774$/]); /* the drawing reads "I.0572 REMOTE", the row text "REMOTE" */
+  const sdSilo = () => (window.AN && AN.unit && AN.unit.sd && isFinite(AN.unit.sd.silo) ? AN.unit.sd.silo : NaN);
+  L.push(['LISD1800.PV', sdSilo, 60, 'lo', 0, 0, /< ?60 ?%/, /\)DITL-BA6[35]$/]);
+  L.push(['LISD1800.PV', sdSilo, 80, 'hi', 0, 0, /> ?80 ?%/, /\)DITL-BA65$/]);
+  const scrOn = re => () => {
+    const s = (scrOn.s = scrOn.s || ((typeof S !== 'undefined' && S.sheets) || []).find(x => /\)DITL-BA63$/.test(x.name)));
+    const o = s && W._o && W._o[s.name];
+    if (!o || !s.nl) return NaN;
+    const r = (s.nl.outs || []).map(q => q.row).find(i => re.test((s.cells[i + ':RS'] || []).map(t => t.t).join(' ')));
+    return r == null ? NaN : o.has(r) ? 1 : 0;
+  };
+  L.push(['MIR-S-1092-A', scrOn(/VIBRATING SCREEN-A ON COMMAND/), 0.5, 'hi', 0, 0, null, /\)DITL-BA59$/]);
+  L.push(['MIR-S-1092-B', scrOn(/VIBRATING SCREEN-B ON COMMAND/), 0.5, 'hi', 0, 0, null, /\)DITL-BA59$/]);
   /* the speed switch is made while its machine turns: the running contact of the same machine (DITL-BA59 outputs 8 ~ 10) */
   const baRun = r => () => {
     if (!(window.AN && AN.unit && AN.unit.ba)) return NaN;
