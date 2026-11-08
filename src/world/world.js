@@ -608,6 +608,30 @@
         }
       }
     }
+    /* 3.2.1 c2 gap 2 (LISA, 310SC90-773 rev 2 DI 59 / 60 / 63 / 64, TCS -> DCS): the drain valve commands of the TCS. IBD TE-1 net 66 / 67
+       (the WO gates of HP TURBINE WARMING LINE DRAIN VALVE OPEN / CLOSE, page 90) = TCS-DI1033 / 1034 I.0407 / I.0408 = DITL-75 rows 8 / 11;
+       IBD TE-6 net 45 / 18 (TURBINE GLAND STEAM LINE DRAIN VALVE FULL OPEN / CLOSE, page 94) = TCS-DI1037 / 1038 I.040B / I.040C = the
+       "TURBINE GLAND STEAM LINE GROUP" rows 8 / 11 of DITL-52, 53 and 116. The TCS sheet exports the net (n<net>, tick) */
+    const tcsOut = [];
+    for (const [id, net, sh, rn] of [
+      ['TE-1', 66, 'DITL-75', 8],
+      ['TE-1', 67, 'DITL-75', 11],
+      ['TE-6', 45, 'DITL-52', 8],
+      ['TE-6', 18, 'DITL-52', 11],
+      ['TE-6', 45, 'DITL-53', 8],
+      ['TE-6', 18, 'DITL-53', 11],
+      ['TE-6', 45, 'DITL-116', 8],
+      ['TE-6', 18, 'DITL-116', 11]
+    ]) {
+      const t = S.sheets.find(x => x.tcs === id),
+        d = S.sheets.find(x => x.name.endsWith(')' + sh)),
+        i = d ? d.rows.findIndex(r => +r.n === rn) : -1;
+      if (!t || !d || i < 0 || net >= nlOf(t).n) continue;
+      nlOf(d);
+      (t._xn = t._xn || new Set()).add(net);
+      addIn(d, i, { k: 'd', d: t, row: 'n' + net, ref: 'TCS ' + id });
+      tcsOut.push(d.name + ' r' + rn + ' <- ' + t.name + ' net ' + net);
+    }
     let fa = 0,
       ta = 0;
     const wsh = new Set();
@@ -934,6 +958,7 @@
       tcsIn,
       wireTo,
       byStn,
+      tcsOut,
       abcMiss,
       plc,
       toDitl: ta,
