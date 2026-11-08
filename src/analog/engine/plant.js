@@ -1138,7 +1138,12 @@ function anStep(S, dt) {
           const dr = (S.drv[b.i[b.svI]] || []).find(x => x.k === 'AMT');
           /* Mina beta.112 (Normal shutdown, HIC-MWRL 1.2 MW/min): a station whose AUTO leg is its OWN output (ABC-001B HIC-MWRL.MV) read
              its old output back every scan, so the operator's value never stuck (3.0 for ever). Such a station holds its own value */
-          if (dr && rt.st[dr.id] && rt.st[dr.id].pk === 'A' && !(dr.a != null && ((b.o || []).includes(dr.a) || (b.tag && (AN.nm(S, dr.a) || '').toUpperCase() === b.tag.toUpperCase() + '.MV'))))
+          /* Mina beta.116 (HIC-MWRL still 3.0 after the presses): the operator's value of such a station is kept as s.op and wins over the
+             loop read-back while the switch stays on its AUTO leg; any other leg clears it (HIC-BM in MANUAL by its BU-CMD and back) */
+          const pkA = dr && rt.st[dr.id] && rt.st[dr.id].pk === 'A';
+          if (!pkA) s.op = null;
+          if (pkA && s.op != null) s.val = s.op;
+          else if (pkA && !(dr.a != null && ((b.o || []).includes(dr.a) || (b.tag && (AN.nm(S, dr.a) || '').toUpperCase() === b.tag.toUpperCase() + '.MV'))))
             s.val = rd(b.i[b.svI]);
           /* 2.2.0-beta.9: .MAN is the MODE STATUS of the station (textbook status word; CLAUDE.md 2): while its A / M switch of the
              drawing is on the operator leg (B = COS manual, A = AUTO-MV) because the drawing forces it (BU-CMD: ABC-001C M.2013 =
