@@ -85,3 +85,6 @@ html body.sc #gsbar #scstrip #scctx:not(#scnone) .scp > .scdetb{font-size:0!impo
 /* Jennie's finding on the b250 / b255 pictures: in its "on" state the Details button was a solid steel circle with its steel icon lost
    in it. On = a light steel fill, a steel border and a steel icon, like a pressed tool button */
 html body.sc #gsbar #scstrip #scctx:not(#scnone) .scp > .scdetb.on,html body.sc #gsbar #scstrip #scctx:not(#scnone) .scmore2m > .scdetb.on{background:#e9eff5!important;border-color:var(--sc-steel)!important;color:var(--sc-steel)!important}
+/* Giselle beta.266 (Mina's live check of 263 at 1024: the column covered Width / Focus / Map of the sheet): the zoom bar of the sheet
+   stays inside the sheet pane, between the plant pane and the column, and wraps to a second row when the pane is narrow */
+html body.sc.scdet.sceng #zbar{max-width:calc(100vw - var(--scex,0px) - var(--scdw) - 32px)!important;flex-wrap:wrap!important;height:auto!important;row-gap:4px}

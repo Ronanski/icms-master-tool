@@ -1,5 +1,6 @@
 /* ===== RE-SHELL LAYOUT C, slice 3 of the redesign (user approved "two bars, one Details column", 2026-11-09 "Gawin na"; artifact
-   DMAqPXBECUGeEShYRB2QX8; PLAN.md step 5 "frame zoom", shell standard S1): a plant page opens at a READABLE size, its drawing text
+   DMAqPXBECUGeEShYRB2QX8; PLAN.md step 5 "frame zoom", shell standard S1). Since beta.266 a page opens at Fit (the whole page, Mina 263);
+   the Readable size button of the locator brings the READABLE size, its drawing text
    about 12 px on screen, anchored at the top left of the drawing where the process starts. Fit in the bar shows the whole page.
    A small locator at the lower right of the page shows which part is in view: click or drag in it to move there; at Fit it is a
    "Readable size" button. In the Engineer the plant pane fills its height (beta.254).
@@ -227,9 +228,12 @@
       id = pk ? pk.value : '';
     if (!on()) lastPg = '';
     else if (id !== lastPg) {
+      /* Giselle beta.266 (Jennie, Mina's live check of 263: a page opened from the overview was zoomed in, 2.5x at 1024, right and bottom
+         cut): a page opens at Fit, the whole page, as the Fit button does; the Readable size button of the locator zooms in */
       lastPg = id;
-      auto = true;
+      auto = false;
       tries = 0;
+      fitSoon();
     }
     const v = on() && auto && view();
     /* tries counts the presses that did not make it readable in a row (a readable view resets it) */
@@ -240,6 +244,22 @@
     }
     paint();
   }
+  /* the Fit of the bar (plant.js lsPlantFit: the page's own fit), once the page is drawn and once more for a page drawn late */
+  let ft = 0,
+    ft2 = 0;
+  function fitSoon() {
+    clearTimeout(ft);
+    clearTimeout(ft2);
+    const f = () => {
+      try {
+        if (on() && !auto && window.lsPlantFit) lsPlantFit();
+      } catch (e) {}
+    };
+    ft = setTimeout(f, 250);
+    ft2 = setTimeout(f, 900);
+  }
+  /* the page area changed (the Details column opened or closed, the window resized): Fit again, unless Readable size was pressed */
+  addEventListener('resize', () => on() && !auto && fitSoon());
   const iv = setInterval(() => {
     if (!B.classList.contains('scbars')) return;
     clearInterval(iv);
