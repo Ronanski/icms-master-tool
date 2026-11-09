@@ -108,3 +108,5 @@ body.sceng .scfsout,body.sc.sceng #plantws .plbar .scfs{display:none!important}
 html body.sc #lcdock button:not(.lc-fi){font-size:13px}
 @media (max-width:1279px){html body.sc #lcdock button:not(.lc-fi){min-height:40px!important;padding-top:4px;padding-bottom:4px}}
 @media (pointer:coarse){html body.sc #lcdock button:not(.lc-fi){min-height:44px!important}}
+/* user 2026-11-09 "ampanget": the logic sheet ends above the Why box (it was under the box); the sheet refits by itself (ditl.js ResizeObserver) */
+html body.sc.sceng.scet-logic #mid{margin-bottom:calc(var(--scewhyh,0px) + var(--sccardh,0px) + 16px)!important;min-height:0}
