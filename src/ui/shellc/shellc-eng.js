@@ -491,6 +491,65 @@
     const sh = Math.round(els.why.offsetHeight || 0) + 'px';
     if (B.style.getPropertyValue('--scewhyh') !== sh) B.style.setProperty('--scewhyh', sh);
   }
+  /* ---------- "Show" of the info card (search Why?, Library, values): Mina's live test of 254 ----------
+     DITL-23A -> Why? -> "(2)DITL-0B · row 41 · input · Show": the card closed but no sheet opened. The card's own Show only sets the
+     DITL sheet (info.js); with ?shell=c the sheets are only on the Logic page (Engineer), and the Training's "field step" note (body.lsfield)
+     can stand over the sheet. Here, as the old search and the Training open a DITL row (ditl.js DUI.goItem: that sheet, its row zoomed in
+     and flashed): the Engineer view with the logic in the right pane, the sheet at that row, the field note off (dock.js does the same when
+     a sheet is picked). An analog Show runs the card's own handler once the Engineer view is on. Nothing here changes a value */
+  document.addEventListener(
+    'click',
+    e => {
+      const b = e.target && e.target.closest && e.target.closest('#infocard button');
+      if (!b || b.textContent.trim() !== 'Show' || !B.classList.contains('sc')) return;
+      const li = b.closest('li'),
+        m = li && /^\s*(\(\w+\)[^·]+?)\s+·\s+row\s+(\d+)\s+·\s+(input|output)/.exec(li.textContent);
+      const away = B.dataset.tab !== 'logic';
+      if (!m && !away) return; /* an analog Show on the Logic page: the card does it */
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const own = b.onclick;
+      call(() => window.lsInfoClose && lsInfoClose());
+      if (away) {
+        call(() => window.lsShellC && lsShellC.hideOv && lsShellC.hideOv());
+        call(() => window.lsSetTab && lsSetTab('logic'));
+      }
+      /* after the Logic page is on (the Training may open the sheet of its step when the page opens: this comes after it) */
+      setTimeout(
+        () => {
+          if (!m) {
+            call(() => own && own.call(b));
+            if (on) setTool('logic');
+            return;
+          }
+          const nm = m[1].trim(),
+            n = +m[2],
+            side = m[3] === 'output' ? 'R' : 'L';
+          call(() => {
+            const i = S.sheets.findIndex(s => s.name === nm);
+            if (i < 0) return;
+            const s = S.sheets[i],
+              ri = (s.rows || []).findIndex(r => +r.n === n);
+            if (AN.cat !== 'dig') AN.setCat('dig');
+            B.classList.remove('lsfield');
+            if (on) setTool('logic');
+            const it = ri >= 0 ? { side, i: ri, zoom: 230 } : undefined;
+            if (window.DUI && DUI.goItem) {
+              DUI.goItem(i, undefined, null, it);
+              /* a sheet opened for the first time has no view box yet when goItem runs (it opens the sheet but cannot zoom): once more */
+              if (it) setTimeout(() => call(() => S.cur === i && DUI.goItem(i, undefined, null, it)), 150);
+            } else {
+              S.cur = i;
+              render();
+            }
+            B.classList.remove('lsfield');
+          });
+        },
+        away ? 250 : 0
+      );
+    },
+    true
+  );
   setInterval(() => call(tick), 400);
   window.lsShellC = Object.assign(window.lsShellC || {}, { engTool: setTool });
 })();
