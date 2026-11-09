@@ -34,7 +34,7 @@
   };
 
   /* ---------- (a) search: the pill opens the app's own search box under the strip ---------- */
-  const srchBox = () => document.querySelector('#crband > .gs-search') || document.querySelector('#gsbar .gs-search');
+  const srchBox = () => document.querySelector('#gsbar .gs-search');
   function openSearch() {
     B().classList.add('scsearch');
     const a = $('ansb');
@@ -55,13 +55,18 @@
     const a = $('ansb');
     if (a && document.activeElement === a) a.blur();
   }
-  /* "/" and Ctrl+K: the app's own key handler focuses #ansb; the box is shown first so the focus lands (capture, before it) */
+  /* "/" and Ctrl+K open the search at every width (Jennie, live check 264: "/" did nothing at 1024 in the Operator view, where the app's
+     own key handler opens its narrow-screen search row instead): the C search takes the key (capture, before the app's handler) */
   addEventListener(
     'keydown',
     e => {
       const t = e.target;
       if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-      if (e.key === '/' || ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K'))) B().classList.add('scsearch');
+      if (e.key === '/' || ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K'))) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        openSearch();
+      }
     },
     true
   );
@@ -77,8 +82,23 @@
     },
     true
   );
-  /* Escape closes the whole search wherever the focus is (capture: the search box stops the key for the rest of the page) */
-  addEventListener('keydown', e => e.key === 'Escape' && B().classList.contains('scsearch') && closeSearch(), true);
+  /* Escape closes the whole search wherever the focus is (capture: the search box stops the key for the rest of the page). The Why? card
+     of a result closes first (Jennie, live check 264: it closed only with its ✕), then the next Escape closes the search */
+  addEventListener(
+    'keydown',
+    e => {
+      if (e.key !== 'Escape') return;
+      const ic = $('infocard');
+      if (ic && ic.getClientRects().length && getComputedStyle(ic).display !== 'none' && window.lsInfoClose) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        call(() => lsInfoClose());
+        return;
+      }
+      if (B().classList.contains('scsearch')) closeSearch();
+    },
+    true
+  );
   /* every result: Open (the row itself) and Why? (the info card of the tag, look only, as a search opens it) */
   /* a sheet name that some DITL row names (a contents page, a page link): its card is not empty (info.js ditlPlaces reads the same cells) */
   const NAMED = new Map();

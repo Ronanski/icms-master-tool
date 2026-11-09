@@ -7,10 +7,10 @@
 
 /* ---------- (a) search ---------- */
 #scstrip .scsrp kbd{font:600 12px var(--sc-num);padding:0 4px;border:1px solid var(--sc-line2);border-radius:4px;color:var(--sc-ink2);background:var(--sc-paper)}
-body.sc #crband > #srchbtn{display:none!important}
+body.sc #gsbar #srchbtn{display:none!important}
 /* the app's search box: hidden in the band, a panel under the strip while the search is open (pill, / or Ctrl+K) */
-body.sc #crband > .gs-search{display:none!important}
-body.sc.scsearch #crband > .gs-search,body.sc.scsearch #crband > .gs-search:focus-within{display:flex!important;flex-wrap:wrap;align-items:center;gap:8px;position:fixed!important;top:calc(var(--top) + 4px)!important;left:50%!important;right:auto!important;transform:translateX(-50%);z-index:var(--z-menu,120);width:min(640px,calc(100vw - 32px))!important;max-width:none;padding:12px!important;background:var(--sc-white)!important;border:1px solid var(--sc-steel);border-radius:8px;box-shadow:0 12px 32px rgba(34,46,57,.22)!important}
+body.sc #gsbar .gs-search{display:none!important}
+html body.sc.scsearch #gsbar .gs-search,html body.sc.scsearch #gsbar .gs-search:focus-within{display:flex!important;flex-wrap:wrap;align-items:center;gap:8px;position:fixed!important;top:calc(var(--top) + 4px)!important;left:50%!important;right:auto!important;transform:translateX(-50%);z-index:var(--z-menu,120);width:min(640px,calc(100vw - 32px))!important;max-width:none;padding:12px!important;background:var(--sc-white)!important;border:1px solid var(--sc-steel);border-radius:8px;box-shadow:0 12px 32px rgba(34,46,57,.22)!important}
 body.sc.scsearch #gsbar .gs-search #ansb{flex:1 1 224px;height:40px!important;min-height:40px;padding:0 12px!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:4px!important;color:var(--sc-ink)!important;font:500 16px var(--sc-num)!important;background-image:none!important}
 body.sc.scsearch #gsbar .gs-search #ansb:focus{border-color:var(--sc-steel)!important;box-shadow:0 0 0 3px rgba(43,108,165,.2)!important}
 body.sc.scsearch #gsbar .gs-search .skbd{display:none}
