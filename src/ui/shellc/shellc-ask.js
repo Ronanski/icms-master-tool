@@ -3,6 +3,16 @@
    on Yes, presses the same button again: nothing here touches the logic, the plant model or the engine.
    Standard: Nielsen #5 error prevention, Material 3 dialogs (title = the question, text = what happens, the verb on the button,
    Cancel first and focused). The faceplate START / STOP / OPEN / CLOSE keep their own question (fp-pop.js ask). ===== */
+/* Layout C is the DEFAULT layout from beta.254 (user 2026-11-09 "Gawin na": build the redesign, then make it the default). This is the
+   first shell script, so it decides for all of them: ?shell=old or the start screen "Old layout" keeps the old layout (ls-shell = old),
+   ?shell=c brings C back; with nothing stored the app opens in C. */
+(function () {
+  try {
+    const q = new URLSearchParams(location.search).get('shell');
+    if (q === 'old') localStorage.setItem('ls-shell', 'old');
+    else if (q === 'c' || localStorage.getItem('ls-shell') !== 'old') localStorage.setItem('ls-shell', 'c');
+  } catch (e) {}
+})();
 (function () {
   let want = false;
   try {

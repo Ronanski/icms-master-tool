@@ -8,7 +8,7 @@
   try {
     const q = new URLSearchParams(location.search).get('shell');
     if (q === 'c') localStorage.setItem(KEY, 'c');
-    else if (q === 'old') localStorage.removeItem(KEY);
+    else if (q === 'old') localStorage.setItem(KEY, 'old');
   } catch (e) {}
   let want = false;
   try {
