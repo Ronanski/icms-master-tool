@@ -33,6 +33,8 @@ body.sc #anfind .sn{font-family:var(--sc-num)!important;color:var(--sc-ink)}
 body.sc #anfind .st{color:var(--sc-ink2)!important}
 
 /* ---------- (b) banners under the strip, never over it (above the overview, z 80) ---------- */
+/* the banners are the last row of the top bar (shellc-ui.js layout): the pages start under them (--scb) */
+body.sc #crband > :is(#updask,#errbn,#engerr){position:static!important;flex:1 1 100%;order:99;width:auto!important;margin:0 -8px!important;box-sizing:border-box}
 body.sc #updask{top:var(--top)!important;z-index:var(--z-float,95)!important;justify-content:space-between!important;gap:8px 16px!important;background:#e9eff5!important;color:var(--sc-ink)!important;border-bottom:1px solid var(--sc-steel)!important;box-shadow:none!important;padding:8px 16px!important;font:400 14px/1.4 var(--sc-ui)!important}
 body.sc #updask b{font-weight:600}
 body.sc #updask button{min-height:32px;padding:0 16px!important;border-radius:4px!important;font:600 14px var(--sc-ui)!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;color:var(--sc-ink)!important}
@@ -100,3 +102,8 @@ html.gd-side body.sc #scov .scgrid{grid-template-columns:repeat(3,minmax(0,1fr))
   body.sc #anfind .scsr > :is(.scso,.scsw),body.sc #anfind .scsr > button:first-child,body.sc.scsearch #gsbar .gs-search #gscope button,#scset :is(.scseg button,.scsbtn,.scsx),body.sc #updask button,body.sc > .scbx{min-height:44px!important}
   #scset .scsx{width:44px}
 }
+/* the app message as a toast under the top bar (shellc-ui.js tickToast); the footer keeps its status line */
+.sctoast{position:fixed;top:calc(var(--scb,var(--top)) + 8px);left:50%;transform:translateX(-50%);z-index:var(--z-menu,120);max-width:min(560px,calc(100vw - 32px));padding:8px 16px;background:var(--sc-white);border:1px solid var(--sc-steel);border-radius:8px;box-shadow:0 8px 24px rgba(34,46,57,.18);font:400 14px/1.4 var(--sc-ui);color:var(--sc-ink);cursor:pointer}
+.sctoast[hidden],body:not(.sc) .sctoast{display:none}
+body.sc.hasmsg #sfoot .smsg{display:none!important}
+body.sc.hasmsg #sfoot #st{display:block!important}

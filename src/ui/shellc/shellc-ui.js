@@ -132,8 +132,26 @@
     x.hidden = !on;
     if (on) x.style.top = Math.round(d.getBoundingClientRect().top + 6) + 'px';
   }
+  /* live check beta.233: the app message ("Plant at 150 MW: ... Press Run.") stood at the bottom right over the alarm tile and the footer:
+     in the C layout it is a toast under the top bar that leaves with the message (the app hides it after 7 s); a click hides it now */
+  let toast = null;
+  function tickToast() {
+    const sm = document.querySelector('#sfoot .smsg'),
+      on = B().classList.contains('hasmsg') && !!sm && !!sm.textContent.trim();
+    if (!toast) {
+      toast = E('div', 'sctoast');
+      toast.setAttribute('role', 'status');
+      toast.title = 'Click to hide';
+      toast.onclick = () => (B().classList.remove('hasmsg'), (toast.hidden = true));
+      toast.hidden = true;
+      document.body.append(toast);
+    }
+    if (on && toast.textContent !== sm.textContent) toast.textContent = sm.textContent;
+    toast.hidden = !on;
+  }
   function tickBanners() {
     B().classList.toggle('scrun', !!(window.AN && AN.run));
+    tickToast();
     dismissable('errbn');
     dismissable('engerr');
   }
@@ -291,16 +309,13 @@
   function layout() {
     const band = $('crband');
     if (!band) return;
-    /* the height of the band (--top) is set by shellc.js from the rows of the strip (Jennie, beta.216); nothing here writes --top */
-    const rail = $('crrail');
-    let pad = '';
-    if (rail && rail.offsetParent !== null && !rail.matches(':hover,:focus-within')) {
-      const r = rail.getBoundingClientRect(),
-        b = band.getBoundingClientRect();
-      if (r.width && r.right > b.left + 1 && r.left <= b.left + 1) pad = Math.ceil(r.right - b.left + 8) + 'px';
+    /* the height of the band (--top), its padding clear of the rail and the dock, and --scb are set by shellc.js (Jennie, beta.216 /
+       220): nothing here writes them. Live check beta.233: the update banner covered the top of the overview tiles; the banners stand
+       in the top bar as its last row, so the bar's real bottom (--scb, shellc.js) takes their height and the pages start under them */
+    for (const id of ['updask', 'errbn', 'engerr']) {
+      const d = $(id);
+      if (d && d.parentNode !== band) band.append(d);
     }
-    if (pad) band.style.setProperty('padding-left', pad, 'important');
-    else band.style.removeProperty('padding-left');
   }
 
   /* ---------- start ---------- */
@@ -319,6 +334,7 @@
       /* a result list left on screen with the search closed (another view took the focus) goes too */
       const t = () => (tickBanners(), pillRow(), layout(), !B().classList.contains('scsearch') && document.activeElement !== $('ansb') && hideList());
       setInterval(t, 1000);
+      new MutationObserver(tickToast).observe(document.body, { attributes: true, attributeFilter: ['class'] });
       addEventListener('resize', layout);
       t();
     }
