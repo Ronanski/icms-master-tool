@@ -633,6 +633,8 @@
                 if (L) L.reset(L.practice);
                 if (AN.runOn) AN.runOn();
                 if (L) show(L.practice);
+                /* Mina, live test of 269: this practice started the plant but opened no Training panel, or left the panel of another practice */
+                if (window.LS_GUIDE && LS_GUIDE.openStage) LS_GUIDE.openStage(10);
               });
             }))
         }),

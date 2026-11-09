@@ -68,7 +68,8 @@ body.sc.scbars.sceng #gsbar > .tbar .g-ref{display:none!important}
 body.sc.scbars.sceng #gsbar > .tbar .crwhere{min-width:0;flex:0 1 auto!important}
 body.sc.scbars.sceng #gsbar > .tbar .crwhere .crumb{min-width:0;overflow:hidden}
 body.sc.scbars.sceng #gsbar > .tbar #anmeta{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-html body.sc.scbars.sceng #plantws .plbar{position:fixed!important;left:0!important;top:var(--sctby)!important;width:var(--scex)!important;height:var(--sctbh)!important;min-height:0!important;box-sizing:border-box;padding:0 8px 0 16px!important;margin:0!important;z-index:1;background:var(--sc-paper)!important;border-bottom:1px solid var(--sc-line)!important;border-right:1px solid var(--sc-line2)!important}
+html body.sc.scbars.sceng.sctbno #plantws .plbar{flex:none;min-height:40px;box-sizing:border-box;padding:0 8px 0 16px!important;background:var(--sc-paper)!important;border-bottom:1px solid var(--sc-line)!important}
+html body.sc.scbars.sceng:not(.sctbno) #plantws .plbar{position:fixed!important;left:0!important;top:var(--sctby)!important;width:var(--scex)!important;height:var(--sctbh)!important;min-height:0!important;box-sizing:border-box;padding:0 8px 0 16px!important;margin:0!important;z-index:1;background:var(--sc-paper)!important;border-bottom:1px solid var(--sc-line)!important;border-right:1px solid var(--sc-line2)!important}
 /* the sheet pane header keeps the names of its buttons on a PC (the app turns them into icons when its tool bar is under 64 rem; the
    header starts at the sheet pane, so the names still fit: ABC | DITL | TCS, the sheet, Values … Legend = about 840 px of 905) */
 @media (min-width:1280px){

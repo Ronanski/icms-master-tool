@@ -77,6 +77,9 @@
       const s = srchBox(),
         f = $('anfind'),
         t = e.target;
+      /* the Show of a Why? card goes to the sheet: the search is finished (it stayed open over the sheet) */
+      const shw = t.closest && t.closest('#infocard button');
+      if (shw && shw.textContent.trim() === 'Show') return closeSearch();
       if ((s && s.contains(t)) || (f && f.contains(t)) || (t.closest && t.closest('.scsrp,#infocard'))) return;
       closeSearch();
     },

@@ -13,6 +13,8 @@ body:not(.sczon) #sczoom{display:none!important}
 #sczoom{position:fixed;z-index:46;display:flex;flex-direction:column;align-items:flex-end;gap:8px;font-family:var(--sc-ui)}
 #sczoom .sczmap{display:none;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:6px;box-shadow:0 4px 12px rgba(34,46,57,.14);cursor:pointer;touch-action:none}
 #sczoom.map .sczmap{display:block}
+#sczoom .sczcap{display:none;font:400 12px var(--sc-ui);color:var(--sc-ink2)}
+#sczoom.map .sczcap{display:block}
 #sczoom .sczpg{fill:var(--sc-paper);stroke:var(--sc-line2);stroke-width:1;vector-effect:non-scaling-stroke}
 #sczoom .sczvr{fill:rgba(43,108,165,.12);stroke:var(--sc-steel);stroke-width:2;vector-effect:non-scaling-stroke}
 html body.sc #sczoom .sczrb{min-height:32px!important;height:auto!important;padding:0 12px!important;border:1px solid var(--sc-line2)!important;border-radius:16px!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 13px var(--sc-ui)!important;box-shadow:0 2px 8px rgba(34,46,57,.12)!important;cursor:pointer}

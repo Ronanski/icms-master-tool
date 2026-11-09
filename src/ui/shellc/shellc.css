@@ -300,3 +300,9 @@ body.sc #gsbar #scstrip .sck b{grid-column:1}
 body.sc #gsbar #scstrip .sck small{grid-column:2;align-self:end;padding-bottom:1px}
 /* user 2026-11-09: the old page header (values) and the alarm line at the top of an HMI page repeat the strip and its alarm pill; hidden in layout C (frame, not drawing) */
 body.sc #plsvg [data-schd]{display:none}
+/* Mina, live test of 269: the close button of a console showed its icon and its text mark (the text stays for the tests and for readers) */
+body.sc :is(#scins,#scal) .scx[data-g],body.sc .scsx[data-g],body.sc .scdx[data-g]{font-size:0!important}
+/* the old Home page never shows in layout C: it flashed for about 3 s while a start state loaded (Mina, 269) */
+body.sc #homews{visibility:hidden!important}
+/* the status bar beside the Training panel: its texts stay on one line (they wrapped into 2-letter rows) */
+body.sc #sfoot > :not(#stchip){white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis}
