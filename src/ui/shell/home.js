@@ -149,6 +149,8 @@
         try {
           if (window.AN && AN.cat !== 'an' && AN.setCat) AN.setCat('an');
         } catch (e) {}
+        /* Mina, live test of 271: the old "No starting state picked" question showed behind the loading bar: the state is picked here */
+        if (window.AN) AN._askNo = 1;
         const b = $(id);
         if (b) b.click();
         goPlant();

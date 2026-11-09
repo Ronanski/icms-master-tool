@@ -3714,8 +3714,35 @@
   /* the centre follows the step when the Logic page opens (app.js setTab) */
   const followNow = () => {
     const g = GD();
-    if (g && g.on) goLogic(g.steps()[g.cur], true);
+    if (g && g.on && window.AN && AN.startState) goLogic(g.steps()[g.cur], true);
   };
+  /* Mina, live test of 271: "Step 1 is a field step" covered the Logic page at 150 MW with no Training: a Training left on from before (it
+     is remembered over a reload) followed the new plant. A new start from the start screen ends it, and so does a plant put at 150 MW: the
+     practice buttons open their own step after the load. A Cold plant keeps it (the Training starts again at step 1, guide.js) */
+  const quit = () => {
+    document.body.classList.remove('lsfield');
+    const g = GD();
+    if (g && g.on) {
+      g.stop();
+      layout();
+    }
+  };
+  document.addEventListener(
+    'click',
+    e => {
+      if (e.target.closest && e.target.closest('#load150')) quit();
+    },
+    true
+  );
+  /* Mina, live test of 271: the bar over the diagram named ABC-001A while DITL-03A was open: it names the sheet that is open */
+  const lvName = x => String(x || '').replace(/^\(\d+\)/, '').replace(/\s*#[A-D]$/, '').trim();
+  setInterval(() => {
+    const b = document.getElementById('gdlvbar');
+    if (!b || els.lvBusy || !document.documentElement.classList.contains('gd-lv')) return;
+    const n = lvName(call(() => (AN.cat === 'an' ? AN.sheets[AN.i].name : dName(S.sheets[S.cur])), '')),
+      l = b.firstChild;
+    if (n && l && lvName(l.textContent.split(' · ')[0]) !== n) l.textContent = n;
+  }, 1000);
   setTimeout(() => {
     if (document.body.dataset.tab === 'training' && window.lsSetTab) lsSetTab('training');
   }, 0);
@@ -3735,6 +3762,7 @@
     tabFix,
     menu,
     follow: followNow,
+    quit,
     start,
     resume,
     open,

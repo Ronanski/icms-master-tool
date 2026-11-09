@@ -601,6 +601,8 @@
       close();
       /* Mina beta.210: the old "No starting state picked" question showed behind the loading bar: the state is picked here */
       if (window.AN) AN._askNo = 1;
+      /* Mina, live test of 271: a Training left on from before does not follow this new plant */
+      call(() => LS_DOCK.quit());
       stale = true;
       /* Mina beta.264: Engineer from here was covered by the overview: it leaves the overview like the Engineer button of the bar */
       loadState(sel).then(() => {

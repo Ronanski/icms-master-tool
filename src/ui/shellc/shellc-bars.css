@@ -78,7 +78,7 @@ html body.sc.scbars.sceng:not(.sctbno) #plantws .plbar{position:fixed!important;
 }
 /* a long page name ("Coal, limestone and sand") pushed ‹ › out of the bar: the name is cut with … (its full name is in the tooltip
    of the breadcrumb, shellc-bars.js) and Full screen is its icon (the name stays for screen readers and in the tooltip) */
-body.sc.scbars .sccrumb b{display:inline-block;max-width:104px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+body.sc.scbars .sccrumb b{display:inline-block;min-width:104px;max-width:104px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
 html body.sc.scbars:not(.sceng) #plantws .plbar .scfs{width:32px;min-width:32px;padding:0!important;font-size:0!important;justify-content:center;display:inline-flex!important;align-items:center;border:1px solid var(--sc-line2)!important;border-radius:16px!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;text-decoration:none!important}
 html body.sc.scbars:not(.sceng) #plantws .plbar .scfs::before{content:"";width:16px;height:16px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6'%3E%3Cpath d='M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4'/%3E%3C/svg%3E") center/16px no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6'%3E%3Cpath d='M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4'/%3E%3C/svg%3E") center/16px no-repeat}
 /* the status grows ("Turbine trip · MFT", "24 alarms · 18 new") and the page tools no longer fit beside it: they go back to their own
