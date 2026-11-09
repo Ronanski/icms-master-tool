@@ -137,13 +137,14 @@ html body.sc.scbars.sceng #dmeta{margin-left:var(--scex)!important;box-sizing:bo
 html body.sc.scbars.sceng.scdet #dmeta{margin-right:var(--scdw)!important}
 /* the Why? card of a search result opens under the search box, never over it (Jennie's finding on 259; --scsrchb from shellc-bars.js) */
 html body.sc.scsearch #infocard{top:calc(var(--scsrchb,var(--topH,88px)) + 8px)!important;max-height:calc(100vh - var(--scsrchb,var(--topH,88px)) - var(--footH,24px) - 16px)!important}
-/* Jennie, live check 264 (1366, Training dock open): the 11 values got 82 px each and "Reheat steam temperature" was cut, its value drawn
-   over the name. In a narrow bar the cell keeps 4 px at each side, so a long name takes its two lines inside the cell (nothing cut,
-   nothing over the value); a single long word breaks instead of running out of the cell */
-@container crband (max-width:1100px){
-  html body.sc #gsbar #scstrip .sck{padding-left:4px!important;padding-right:4px!important}
-  html body.sc #gsbar #scstrip .sck i{overflow-wrap:anywhere!important;hyphens:auto}
-}
+/* Mina b265 (the dock open: 82 px cells at 1366, worse at 1024): a value cell narrower than its two-line name takes a second row of the
+   values bar instead (body.scvwrap, shellc-bars.js: under 104 px a cell); every cell at least 112 px, the name in its two lines, the
+   value under it, nothing cut and nothing over the value */
+html body.sc.scbars.scvwrap #gsbar #scstrip .scv:not(#scnone){height:auto!important;flex-wrap:wrap!important;overflow:visible!important}
+html body.sc.scbars.scvwrap #gsbar #scstrip .scv:not(#scnone) > .sck{flex:1 1 112px!important;min-width:112px!important;max-width:none!important;height:calc(48px*var(--scs,1));box-sizing:border-box;border-bottom:1px solid var(--sc-line)}
+/* the context bar: the buttons that do not fit take a second row (body.scctxwrap) instead of running under the dock */
+html body.sc.scbars.scctxwrap #gsbar #scstrip #scctx:not(#scnone){height:auto!important;min-height:48px;flex-wrap:wrap!important;padding-top:4px!important;padding-bottom:4px!important;row-gap:4px}
+html body.sc.scbars.scctxwrap #gsbar #scstrip #scctx:not(#scnone) > .scp{flex:1 1 auto!important;min-width:0!important;flex-wrap:wrap!important;justify-content:flex-end;row-gap:4px!important}
 /* Jennie, live check 264: the PLANT chip (and its row in the More menu) turned black under the mouse after a click (the app's button
    colours for hover, focus and pressed): the shell colours in every state; its menu rows likewise */
 html body.sc #gsbar #plchip,html body.sc #gsbar #plchip:is(:hover,:focus,:active,.on,.open,[aria-expanded="true"]){background:var(--sc-white)!important;color:var(--sc-ink)!important;border:1px solid var(--sc-line2)!important;box-shadow:none!important}
