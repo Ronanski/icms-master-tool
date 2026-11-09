@@ -119,3 +119,5 @@ html body.sc #scepane .sceit:not(#scnone){display:grid!important;justify-items:s
 html body.sc #scepane .sceit:not(#scnone) :is(b,small){display:block;min-width:0;max-width:100%;white-space:normal!important;text-align:left}
 /* Mina, live test of 272: the titles of the Sheet tools cards did not start at one left edge */
 html body.sc #scepane .sceit:not(#scnone){justify-content:stretch!important;grid-template-columns:minmax(0,1fr)!important}
+/* Mina, live test of 275: a long page name was cut on its left side beside the DITL panel */
+html body.sc.sceng #plantws .plbar .scecr .scesep ~ .scelk{display:block!important;min-width:0;flex:0 1 auto;text-align:left}

@@ -77,8 +77,6 @@ function setCat(c) {
         AN.i = i;
         AN.key = null;
         AN.lkey = null;
-        /* Mina, live test of 273 and 274: the view kept from before was off the drawing in this pane (blank until Fit): the sheet comes back fitted */
-        if (AN.av && AN.sheets[i]) delete AN.av[AN.sheets[i].name];
         render();
         coldShow();
         /* retest #57: a plant not started does not run by itself (the operator picks the starting state first) */

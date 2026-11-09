@@ -433,9 +433,11 @@
     almTile.classList.toggle('on', AL.some(a => !a.ack));
     /* the breadcrumb of a system page: the page on screen (the picker of the Plant view) */
     const pk = document.querySelector('#plantws .plpick'),
-      T = pk && TILES.find(x => x.pg === pk.value),
-      nm = T ? T.t : pk && pk.selectedOptions[0] ? pk.selectedOptions[0].textContent : '';
-    if (crumb.lastChild.textContent !== nm) crumb.lastChild.textContent = nm;
+      nm = pk && pk.selectedOptions[0] ? pk.selectedOptions[0].textContent.trim() : '';
+    if (crumb.lastChild.textContent !== nm) {
+      crumb.lastChild.textContent = nm;
+      crumb.lastChild.title = nm;
+    }
   }
 
   /* ---------- alarm list with the Events tab ---------- */

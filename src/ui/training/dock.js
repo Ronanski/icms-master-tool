@@ -1282,7 +1282,8 @@
       call(() => LOVIEW.setFocus(true));
       if (o.t) {
         if (AN.cat !== 'an' && AN.setCat) AN.setCat('an');
-        if (AN.showTag) setTimeout(() => AN.showTag(o.t, o.sh), 60);
+        /* after the Fit of LOVIEW.setFocus (80 ms), which would take the block out of the centre */
+        if (AN.showTag) setTimeout(() => AN.showTag(o.t, o.sh), 140);
       } else if (o.ad) {
         const I = call(() => interlock(o.ad), null),
           r0 = I && I.miss.find(x => !x.other),
