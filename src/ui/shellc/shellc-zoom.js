@@ -172,24 +172,53 @@
     box.style.bottom = Math.round(innerHeight - R.bottom + 12) + 'px';
   }
 
-  /* a page that opens (the picker, a breadcrumb, a step of the Training) opens at the readable size once it is drawn */
+  /* a page that opens (the picker, a breadcrumb, a step of the Training, the first page while the plant loads) is at the readable size
+     once it is drawn, and again after the page draws or fits itself (live Beta 250: the first page fitted itself at the end of the
+     20 s load and stayed small). It stops as soon as the operator zooms, drags or presses Fit (a real press, not the ones of this
+     file), and after 3 presses in a row that did not make it readable */
   let lastPg = '',
-    lastN = -1,
-    t0 = 0;
+    auto = false,
+    tries = 0;
+  const mine = e => !e.isTrusted;
+  addEventListener(
+    'wheel',
+    e => {
+      if (!mine(e) && e.target.closest && e.target.closest('#plsvg')) auto = false;
+    },
+    true
+  );
+  addEventListener(
+    'pointerdown',
+    e => {
+      if (!mine(e) && e.target.closest && e.target.closest('#plsvg')) auto = false;
+    },
+    true
+  );
+  addEventListener(
+    'click',
+    e => {
+      const b = !mine(e) && e.target.closest && e.target.closest('#plantws .plbar button, #sczoom .sczrb');
+      if (b) auto = false;
+    },
+    true
+  );
   function tick() {
     if (!box) build();
     const pk = document.querySelector('#plantws .plpick'),
-      s = svg(),
-      id = pk ? pk.value : '',
-      n = s ? s.childElementCount : -1;
-    if (on() && (id !== lastPg || n !== lastN)) {
-      if (id !== lastPg) t0 = Date.now();
-      lastPg = id;
-      lastN = n;
-      /* the page draws and fits itself first (plant.js draw / fit) */
-      if (Date.now() - t0 < 3000) setTimeout(toReadable, 250);
-    }
+      id = pk ? pk.value : '';
     if (!on()) lastPg = '';
+    else if (id !== lastPg) {
+      lastPg = id;
+      auto = true;
+      tries = 0;
+    }
+    const v = on() && auto && view();
+    /* tries counts the presses that did not make it readable in a row (a readable view resets it) */
+    if (v && readable(v)) tries = 0;
+    else if (v && v.s.childElementCount && tries < 3) {
+      tries++;
+      toReadable();
+    }
     paint();
   }
   const iv = setInterval(() => {
