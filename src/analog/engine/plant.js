@@ -367,7 +367,15 @@ AN_CYC.kgmm = {
      (plant-study 12-assumptions; the outline 12.32 x 7.3 m = 90 m2 is the upper bound) */
   hw: () => 61.9 / 0.9,
   da: () => 3.3 * 13.14 * 0.909,
-  dr: () => 2 * 0.8242 * 12.481 * (anWaterRho(typeof AN_UNIT !== 'undefined' && isFinite(AN_UNIT.Tw) ? AN_UNIT.Tw : 30) / 1000)
+  /* Water surface of the steam drum at the level y (mm from the normal water level), as-built K1AU3-B-0-004: K1AU3D-101 inside R824.2,
+     shell 12481 mm, hemispherical heads; K1AU3D-109 N.W.L. 254 mm below the drum centre. Shell = chord x length, the two heads
+     together = a circle of the sphere at that height. 21.5 m2 at N.W.L., 22.7 at +254 mm, 17.5 at -254 mm (before: flat 20.6 m2).
+     The separator cans at the surface are not taken out: their size (D-116) is NO-SOURCE in this drawing set. */
+  dr: () => {
+    const z = (isFinite(AN_CYC.y.dr) ? AN_CYC.y.dr : 0) / 1000 - 0.254,
+      w2 = Math.max(1e-6, 0.8242 * 0.8242 - z * z);
+    return (2 * Math.sqrt(w2) * 12.481 + Math.PI * w2) * (anWaterRho(typeof AN_UNIT !== 'undefined' && isFinite(AN_UNIT.Tw) ? AN_UNIT.Tw : 30) / 1000);
+  }
 };
 AN_CYC.vacLoss = (U, T) => (6 * Math.max(-1, T - 38.65) * 0.7 * U.ms) / 3600;
 AN_CYC.y = {};

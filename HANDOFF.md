@@ -24,12 +24,12 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 
 ## 4. Bukas na findings (2026-11-10)
 - Re-shell: 270 (mga natuklasan ni Mina sa 269, kasama ang plant header sa Engineer) naghihintay ng retest ni Mina; pagkatapos, buong live test ng shell C (handover 4A.5), saka Stable 3.2.1.
-- Plant: MST overshoot sa load up; hotwell -300 sa feedwater surge; RHT 512.7 sa 90 MW; Instructor turbine trip sa t = 0 (engine, naka-hold); Single Line Diagram wala sa PC.
+- Plant: hotwell -300 sa feedwater surge; Instructor turbine trip sa t = 0 (engine, naka-hold); Single Line Diagram wala sa PC. Sarado 2026-11-09 (Lisa): MST 548 / RHT 551 sa pag-akyat ng load, pasok sa plant trend 551 / 552 (Scenario 1); RHT sa 90 MW 520.3, planta 521 (beta.189 run).
 - Detalye: `docs/handoff/HANDOVER_2026-11-10.md` seksyon 4; ebidensya `team-files/findings-2026-11-09-reshell.md` (PC lang).
 
 ## 5. Kulang pa
 - History ng public repo: nilinis 2026-11-07 (bagong commit IDs). Ang lumang PR refs (`refs/pull/*`) ay hawak pa ng GitHub at may plant documents pa; GitHub Support lang ang makakapag-alis. Lumang Windows / apk links ay hindi apektado; ang lokal na lumang history ay nasa `refs/backup/2026-11-07/*`.
-- Ikabit sa model ang drum 32 t (DATA_ANSWERS item 7); ikumpara sa app ang BFP motor, generator at compressor data (`document-references/INDEX.md`).
+- Ikumpara sa app ang BFP motor, generator at compressor data (`document-references/INDEX.md`).
 - Live loop check at function test ng natitirang equipment (`docs/versions/v3.2.1/MOTOR_LOOP_CHECK.md` pagkatapos ng CW; lahat ng MOV / control valve at analog instrument gamit ang split view); page 07 test; debris filters, hypochlorite, manual valves.
 - Gaps: ID fan cold start; Sampling page blanks; per-signal ABC / DITL tracing; AI range / alarm / IO checks; DITL 9 sa 31 hindi pa na-verify.
 - Plant model: LP heater isolation / bypass; transmitter root valves; APH sootblower; ESP.
