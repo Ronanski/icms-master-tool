@@ -330,12 +330,7 @@
               call(() => $('uatb').click());
             }
           )
-        : item(
-            'Controller tuning',
-            'gain, integral and derivative of each controller',
-            null,
-            'Not in this build: the tuning rows show only with the test panel (Tools · UAT) of the test build'
-          )
+        : ''
     );
     p.append(L);
   }

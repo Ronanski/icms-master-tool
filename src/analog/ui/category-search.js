@@ -385,6 +385,11 @@ AN.gsc = (() => {
   };
   const gOpen = async (kind, i, x, y) => {
     close();
+    /* Mina, live test of 277: Open from the Operator loaded the sheet in the hidden Engineer page: the sheet is shown */
+    if (document.body.dataset.tab !== 'logic' && window.lsSetTab) {
+      if (window.LS_DOCK && LS_DOCK.noFollow) LS_DOCK.noFollow();
+      lsSetTab('logic');
+    }
     try {
       if (kind === 'abc') {
         const was = AN.cat === 'an',
