@@ -1,5 +1,5 @@
 /* ===== RE-SHELL LAYOUT C, slice 3 of the redesign (user approved "two bars, one Details column", 2026-11-09 "Gawin na"; artifact
-   DMAqPXBECUGeEShYRB2QX8; PLAN.md step 5 "frame zoom", shell standard S1). Since beta.265 a page opens at Fit (the whole page, Mina 263);
+   DMAqPXBECUGeEShYRB2QX8; PLAN.md step 5 "frame zoom", shell standard S1). Since beta.266 a page opens at Fit (the whole page, Mina 263);
    the Readable size button of the locator brings the READABLE size, its drawing text
    about 12 px on screen, anchored at the top left of the drawing where the process starts. Fit in the bar shows the whole page.
    A small locator at the lower right of the page shows which part is in view: click or drag in it to move there; at Fit it is a
@@ -228,7 +228,7 @@
       id = pk ? pk.value : '';
     if (!on()) lastPg = '';
     else if (id !== lastPg) {
-      /* Giselle beta.265 (Jennie, Mina's live check of 263: a page opened from the overview was zoomed in, 2.5x at 1024, right and bottom
+      /* Giselle beta.266 (Jennie, Mina's live check of 263: a page opened from the overview was zoomed in, 2.5x at 1024, right and bottom
          cut): a page opens at Fit, the whole page, as the Fit button does; the Readable size button of the locator zooms in */
       lastPg = id;
       auto = false;

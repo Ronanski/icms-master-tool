@@ -170,7 +170,7 @@
       dockOn = !!(dock && vis(dock) && !document.documentElement.classList.contains('gd-min') && call(() => LS_GUIDE.on, false));
     const on = ok && !dockOn && (open == null ? wide() : open);
     B.classList.toggle('scdet', on);
-    /* Giselle beta.265 (Jennie, Mina's live check of 263: at 1024 the column lay over the overview cards, the plant drawing and the
+    /* Giselle beta.266 (Jennie, Mina's live check of 263: at 1024 the column lay over the overview cards, the plant drawing and the
        sheet buttons): the page gives the column its width at every size (no overlay). Below 1280 px the column still starts closed */
     B.classList.remove('scdover');
     btn.classList.toggle('on', on);
@@ -199,7 +199,7 @@
     if (why && why.parentElement !== sec.why) sec.why.append(why);
     /* the step card of shellc-ins.js lives in the Training section */
     const card = $('sccard'),
-      /* Giselle beta.265 (Mina, live check of 263: "A training is running." on an empty plant, Open without a start state): a training
+      /* Giselle beta.266 (Mina, live check of 263: "A training is running." on an empty plant, Open without a start state): a training
          runs only with a plant loaded and its Training panel built (dock.js #gdock), not on a guide flag left from before */
       gOn = call(() => !!(LS_GUIDE.on && AN.startState && $('gdock')), false);
     if (card && card.parentElement !== sec.train) sec.train.append(card);
