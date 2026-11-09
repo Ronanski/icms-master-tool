@@ -1810,9 +1810,12 @@
     btn('tcstarget', 'TARGET MW…', 'TCS panel: a target MW of your own (reached at 7.5 MW/min) while the DCS control mode is OFF. Once I.0082 = 1 (boiler master and PIC-COBM in AUTO above 230 T/H) the TCS follows the turbine master EIC-TM of the DCS instead.', async () => {
       const x = window.lsAskText ? await lsAskText('TCS target MW (4.5 ~ 150):', '50') : prompt('TCS target MW (4.5 ~ 150):', '50');
       if (x == null) return;
+      /* Mina, live test of 280: a word or a number out of the range went on and the message named it: the question is checked here */
+      const mw = x.trim() ? +x : NaN;
+      if (!(mw >= 4.5 && mw <= 150)) return msg('TCS: target not changed. Type a number from 4.5 to 150 MW.');
       try {
-        const r = AN.turbine('loadup', Math.max(4.5, Math.min(150, +x)));
-        msg(r ? 'TCS: ' + r : 'TCS: target ' + x + ' MW at 7.5 MW/min (the DCS target takes over when I.0082 = 1).');
+        const r = AN.turbine('loadup', mw);
+        msg(r ? 'TCS: ' + r : 'TCS: target ' + mw + ' MW at 7.5 MW/min (the DCS target takes over when I.0082 = 1).');
       } catch (e) {
         msg('TCS: ' + e.message);
       }
