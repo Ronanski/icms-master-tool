@@ -154,7 +154,7 @@
     lines.append(defs);
     grid.append(lines);
     tiles = TILES.map(T => {
-      const b = E('button', 'scfb');
+      const b = E('button', 'sctile scfb');
       b.type = 'button';
       b.dataset.k = T.k;
       b.title = 'Open the ' + T.t + ' page';
@@ -308,6 +308,8 @@
     if (!box.width) return;
     for (const el of lines.parentElement.querySelectorAll('[data-k]')) {
       const r = el.getBoundingClientRect();
+      /* a hidden block ("To the grid" beside the Training dock) has no line */
+      if (!r.width) continue;
       R[el.dataset.k] = { l: r.left - box.left, t: r.top - box.top, r: r.right - box.left, b: r.bottom - box.top };
     }
     const key = Math.round(box.width) + 'x' + Math.round(box.height) + JSON.stringify(R);
@@ -377,7 +379,8 @@
         const p = a.unit ? (a.k === 'U|MFT' ? 'MK07' : 'MK13') : pageOfAlarm(a);
         if (p) (byPg[p] = byPg[p] || []).push(a);
       }
-    TILES.forEach((T, i) => {
+    /* the blocks read about 20 pages of machines: only while the overview is on screen (light app) */
+    if (document.body.classList.contains('scov')) TILES.forEach((T, i) => {
       const t = tiles[i];
       T.v.forEach(([, k, u, d], j) => {
         const x = n0 ? NaN : gv(k),
@@ -394,7 +397,7 @@
         tip = 'Open the ' + T.t + ' page';
       if (hot) {
         const last = al[al.length - 1],
-          txt = trips ? trips + (trips > 1 ? ' tripped' : ' tripped') + (al.length ? ' · ' + al.length + (al.length > 1 ? ' alarms' : ' alarm') : '') : al.length > 1 ? al.length + ' alarms · ' + (last.nm || '') : ((last.nm || '') + ' ' + (last.lv || '')).trim() || '1 alarm';
+          txt = trips ? trips + ' tripped' + (al.length ? ' · ' + al.length + (al.length > 1 ? ' alarms' : ' alarm') : '') : al.length > 1 ? al.length + ' alarms · ' + (last.nm || '') : ((last.nm || '') + ' ' + (last.lv || '')).trim() || '1 alarm';
         line = [E('span', 'scfwarn', txt)];
         tip += '. ' + (trips ? trips + ' tripped. ' : '') + al.map(a => ((a.nm || '') + ' ' + (a.lv || '')).trim()).join('; ');
       } else if (stale && m && m.n) {
@@ -595,7 +598,12 @@
       /* Mina beta.210: the old "No starting state picked" question showed behind the loading bar: the state is picked here */
       if (window.AN) AN._askNo = 1;
       stale = true;
-      loadState(sel).then(() => (toEng ? window.lsSetTab && lsSetTab('logic') : showOv()));
+      /* Mina beta.264: Engineer from here was covered by the overview: it leaves the overview like the Engineer button of the bar */
+      loadState(sel).then(() => {
+        if (!toEng) return showOv();
+        hideOv();
+        if (window.lsSetTab) lsSetTab('logic');
+      });
     };
     card('Operator', 'Run the plant from the overview and its pages, with the training guide', () => go(false));
     card('Engineer', 'Read and trace the control logic, signals and I/O of the same running plant', () => go(true));

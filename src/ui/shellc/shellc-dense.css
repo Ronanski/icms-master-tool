@@ -56,6 +56,11 @@ html body.sc #scov .scfend{align-self:center;font:600 calc(12px*var(--scs,1))/1.
 html body.sc #scov:not(#scnone) .scfalm{flex:none;display:flex;flex-direction:column;gap:calc(4px*var(--scs,1));min-height:0!important;margin:calc(4px*var(--scs,1)) calc(16px*var(--scs,1)) calc(8px*var(--scs,1));max-width:calc(1248px*var(--scs,1));padding:calc(8px*var(--scs,1)) calc(12px*var(--scs,1))!important;border-radius:calc(4px*var(--scs,1))!important;box-shadow:none!important}
 html body.sc #scov .scfalm h3{font:600 calc(13px*var(--scs,1))/1.3 var(--sc-ui)!important;margin:0 0 calc(2px*var(--scs,1))!important}
 html body.sc #scov :is(.scar,.scnone){font-size:calc(12px*var(--scs,1))!important}
+/* a narrower page (Training dock open): the four columns stay, tighter gaps, no "To the grid" column */
+html.gd-side body.sc #scov .scflow{grid-template-columns:repeat(4,minmax(0,1fr));column-gap:calc(20px*var(--scs,1))}
+html.gd-side body.sc #scov .scfend{display:none}
+/* the Instructor training card stands over the bottom of the page: the alarm box ends above it */
+html body.sc.sccard #scov:not(#scnone) .scfalm{margin-bottom:var(--sccardh,192px)}
 /* the Details column over the page on a tablet: the flow gives it its width, so no block is under it */
 html body.sc.scdet.scdover:not(.sceng) #scov{right:var(--scdw)!important}
 
