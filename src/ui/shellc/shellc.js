@@ -255,6 +255,24 @@
         const over = fp.offsetTop + fp.offsetHeight - (box.clientHeight - 6);
         if (over > 0) fp.style.top = Math.max(6, fp.offsetTop - over) + 'px';
       }
+      /* live check beta.233 (source hmi2.js frame(), Yuna): the old dark row of page buttons at the foot of every HMI page is
+         navigation, not plant drawing; shell C has the page picker and the path for that, so the row is hidden (drawing unchanged) */
+      const ps = document.getElementById('plsvg');
+      if (ps && !ps._scnav) {
+        ps._scnav = 1;
+        const hide = () => {
+          for (const r of ps.querySelectorAll('rect[height="32"]:not([data-scnav])')) {
+            if (+r.getAttribute('width') < 900 || r.getAttribute('x') !== '0') continue;
+            let e = r;
+            while (e) {
+              e.setAttribute('data-scnav', '');
+              e = e.nextElementSibling;
+            }
+          }
+        };
+        hide();
+        new MutationObserver(hide).observe(ps, { childList: true, subtree: true });
+      }
       /* the footer hint is one line now (shellc.css): its full text in the tooltip */
       for (const el of document.querySelectorAll('#sfoot #st, #sfoot .sinfo')) if (el.title !== el.textContent) el.title = el.textContent;
     } catch (e) {}
