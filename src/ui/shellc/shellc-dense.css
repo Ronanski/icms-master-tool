@@ -66,6 +66,17 @@ html body.sc #scstart:not(#scnone) .sccard{min-height:0!important;padding:calc(1
 html body.sc #scstart:not(#scnone) .sccard b{font-size:calc(16px*var(--scs,1))!important}
 html body.sc #scstart:not(#scnone) :is(.scsub,.sccard span,.sccont span,.scgear,.scskip){font-size:calc(12px*var(--scs,1))!important}
 html body.sc #scstart .scver{font-size:calc(11px*var(--scs,1))!important}
+/* the start screen box, title, start-state chips, Continue row and links grow with the screen too (262 left them at laptop size on a large monitor) */
+html body.sc #scstart .scsbox{width:min(calc(736px*var(--scs,1)),100%)!important;gap:calc(16px*var(--scs,1))!important}
+html body.sc #scstart h1{font-size:calc(20px*var(--scs,1))!important}
+html body.sc #scstart .sccards{gap:calc(12px*var(--scs,1))!important}
+html body.sc #scstart .sclab{font-size:calc(11px*var(--scs,1))!important}
+html body.sc #scstart .scchips{gap:calc(8px*var(--scs,1))!important}
+html body.sc #scstart .scchips button{min-height:calc(28px*var(--scs,1))!important;padding:0 calc(12px*var(--scs,1))!important;font-size:calc(12px*var(--scs,1))!important}
+html body.sc #scstart .sccont{min-height:calc(36px*var(--scs,1))!important;padding:0 calc(16px*var(--scs,1))!important;font-size:calc(12px*var(--scs,1))!important}
+html body.sc #scstart .scsfoot{gap:calc(16px*var(--scs,1))!important}
+/* top values bar cells keep their share of the bar on a large screen */
+html body.sc #gsbar #scstrip .sck{min-width:calc(80px*var(--scs,1))!important;max-width:calc(128px*var(--scs,1))!important}
 
 /* --- confirmation dialog: same scale --- */
 html body.sc .scaskc h3{font-size:calc(14px*var(--scs,1))!important}
@@ -81,4 +92,5 @@ html body.sc .scaskb button{height:calc(28px*var(--scs,1))!important;min-height:
   html body.sc.scbars:not(.sceng) #plantws .plbar :is(button,select,.scfs){height:36px!important}
   html body.sc #scdet .scdh{height:40px!important}
   html body.sc .scaskb button{height:36px!important}
+  html body.sc #scstart .scchips button{min-height:36px!important}
 }
