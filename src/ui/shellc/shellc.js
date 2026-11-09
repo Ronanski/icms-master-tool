@@ -129,6 +129,15 @@
     runB.append(E('span', 'dot'), runT);
     runB.onclick = () => {
       try {
+        /* Mina beta.236: on a DITL page the plant runs on the DITL Run (SIM, DPAUSE), not AN.run (world.js 1438) */
+        if (AN.cat !== 'an' && typeof SIM !== 'undefined') {
+          if (SIM && !DPAUSE) DPAUSE = true;
+          else {
+            const r = document.querySelector('.tb-run.dui-run');
+            if (r) r.click();
+          }
+          return;
+        }
         if (AN.run && !AN.view) AN.pauseOn();
         else AN.runOn();
       } catch (e) {}
@@ -276,7 +285,11 @@
       /* the footer hint is one line now (shellc.css): its full text in the tooltip */
       for (const el of document.querySelectorAll('#sfoot #st, #sfoot .sinfo')) if (el.title !== el.textContent) el.title = el.textContent;
     } catch (e) {}
-    const on = !!(window.AN && AN.run && !AN.view);
+    /* Mina beta.236: the pill said Paused while the plant ran on a DITL page; the same test as the plant clock (world.js 1438) */
+    let on = false;
+    try {
+      on = !!(window.AN && (AN.cat === 'an' ? AN.run && !AN.view : typeof SIM !== 'undefined' && SIM && !DPAUSE));
+    } catch (e) {}
     S.runB.classList.toggle('on', on);
     const rt = on ? 'Running' : 'Paused';
     if (S.runT.textContent !== rt) S.runT.textContent = rt;
