@@ -24,7 +24,7 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 
 ## 4. Bukas na findings (2026-11-10)
 - Re-shell: 270 (mga natuklasan ni Mina sa 269, kasama ang plant header sa Engineer) naghihintay ng retest ni Mina; pagkatapos, buong live test ng shell C (handover 4A.5), saka Stable 3.2.1.
-- Plant: MST overshoot sa load up; RHT 512.7 sa 90 MW; hotwell -300 (ang pump stop sa -300 mm ay tama, ABC-031 M.3211 / DITL-61A; hindi na umulit sa recorder runs ng beta.170 ~ 189, min -64 mm); Instructor turbine trip sa t = 0 at MV-MU1001 hotwell path: inayos sa branch `claude/plant-turbine`, hindi pa nasusubok ni Mina; Single Line Diagram wala sa PC.
+- Plant: MST overshoot sa load up; RHT 512.7 sa 90 MW; hotwell -300 (ang pump stop sa -300 mm ay tama, ABC-031 M.3211 / DITL-61A; hindi na umulit sa recorder runs ng beta.170 ~ 189, min -64 mm); Instructor turbine trip sa t = 0 at MV-MU1001 hotwell path: inayos sa branch `claude/plant-turbine`, hindi pa nasusubok ni Mina; Single Line Diagram nasa PC (`document-references/onedrive-2026-11-07/Single Line Diagram/`), hindi pa nakukumpara sa model (transformer, 52L1).
 - Detalye: `docs/handoff/HANDOVER_2026-11-10.md` seksyon 4; ebidensya `team-files/findings-2026-11-09-reshell.md` (PC lang).
 
 ## 5. Kulang pa
