@@ -2,7 +2,7 @@
    DMAqPXBECUGeEShYRB2QX8; PLAN.md step 5 "frame zoom", shell standard S1): a plant page opens at a READABLE size, its drawing text
    about 12 px on screen, anchored at the top left of the drawing where the process starts. Fit in the bar shows the whole page.
    A small locator at the lower right of the page shows which part is in view: click or drag in it to move there; at Fit it is a
-   "Readable size" button. Operator mode only (the plant pane of the Engineer keeps Fit).
+   "Readable size" button. In the Engineer the plant pane fills its height (beta.254).
    No drawing code changes: the zoom and the move are the page's own wheel zoom and drag (plant.js, pan and zoom), pressed here. ===== */
 (function () {
   let want = false;
@@ -25,7 +25,14 @@
     return e;
   };
   const READ = 12; /* px of drawing text on screen (MEASURE_STANDARD S1) */
-  const on = () => B.classList.contains('sc') && B.dataset.tab === 'operate' && !B.classList.contains('sceng') && !B.classList.contains('scov') && !B.classList.contains('pvout');
+  /* Engineer (Jennie's finding on beta.247, user 2026-11-09): the plant page beside the sheet was fitted whole in a tall narrow pane,
+     a third of its height with white space around; there it fills the height of the pane (or the readable size if that is less),
+     from the top left, and the locator moves along the rest */
+  const eng = () => B.classList.contains('sceng');
+  const on = () =>
+    B.classList.contains('sc') &&
+    !B.classList.contains('pvout') &&
+    (eng() ? B.classList.contains('scet-logic') && !B.classList.contains('scenopl') : B.dataset.tab === 'operate' && !B.classList.contains('scov'));
   const svg = () => $('plsvg');
   function view() {
     const s = svg();
@@ -61,7 +68,12 @@
     } catch (e) {}
     return null;
   }
-  const need = v => READ / textSize(v.s);
+  const need = v => {
+    const k = READ / textSize(v.s);
+    if (!eng()) return k;
+    const b = extent(v.s);
+    return b ? Math.min(k, v.r.height / b.height) : k;
+  };
   const readable = v => v.k >= need(v) * 0.97;
 
   /* the page's own wheel zoom, around the top left of the drawing */
