@@ -83,9 +83,39 @@ html body.sc.scbars:not(.sceng) #plantws .plbar .scfs::before{content:"";width:1
 /* the status grows ("Turbine trip · MFT", "24 alarms · 18 new") and the page tools no longer fit beside it: they go back to their own
    row on top of the page (body.scsq, shellc-bars.js), never cut. The Engineer tabs take less padding first */
 html body.sc.scbars.sceng.scsq #scetools button{padding:0 8px!important}
-/* tablet width (under 1280 px): 11 values in one row cut their labels; until the tablet slice (8 values + More) the values keep their
-   two rows of before (labels never cut) */
-@media (max-width:1279px){
-  body.sc.scbars #gsbar #scstrip .scv{height:auto;flex-wrap:wrap!important;overflow:visible}
-  body.sc.scbars #gsbar #scstrip .sck{flex:1 1 15%!important;min-width:120px!important}
+/* ===== slice 4, tablet (body.sctab: under 1280 px wide, or a touch screen narrower than 1366; shellc-bars.js): 8 values and a
+   "More" for the other 3 (Furnace pressure, Total coal flow, Total air flow); Instructor, Search, Details and Settings in a More ▾ of
+   the context bar (audit: the pill row was cut, the PLANT chip and View | Run were out of reach). Heights and text follow the one
+   compact density of shellc-dense.css (user 2026-11-09 "Nalalakihan ako"): 28 px with a mouse, 36 px on a touch screen ===== */
+html body.sc.scbars.sctab #gsbar #scstrip .scv{flex-wrap:nowrap!important;overflow:hidden}
+html body.sc.scbars.sctab #gsbar #scstrip .sck{flex:1 1 0!important;min-width:0!important;padding:4px 8px!important}
+html body.sc.scbars:not(.sctab) .sckmore{display:none!important}
+html body.sc.scbars #gsbar #scstrip .sckmore{flex:none;align-self:center;margin:0 4px 0 8px;min-height:0!important;height:28px!important;padding:0 10px!important;border:1px solid var(--sc-line2)!important;border-radius:14px!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 12px var(--sc-ui)!important;white-space:nowrap;box-shadow:none!important;cursor:pointer}
+html body.sc.scbars #gsbar #scstrip .sckmore.on{background:var(--sc-steel)!important;border-color:var(--sc-steel)!important;color:var(--sc-white)!important}
+#scvm{position:fixed;z-index:var(--z-menu,120);display:grid;gap:0;min-width:224px;padding:4px 0;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:8px;box-shadow:0 8px 24px rgba(34,46,57,.18);font-family:var(--sc-ui);color:var(--sc-ink)}
+#scvm[hidden]{display:none!important}
+html body.sc #scvm .sck{display:grid!important;grid-template-columns:1fr auto auto;align-items:baseline;gap:8px;max-width:none!important;min-width:0!important;padding:8px 16px!important;border:0!important;border-top:1px solid var(--sc-line)!important}
+html body.sc #scvm .sck:first-child{border-top:0!important}
+html body.sc #scvm .sck i{font:500 13px var(--sc-ui)!important;font-style:normal!important;color:var(--sc-ink2)}
+html body.sc #scvm .sck b{display:block!important;font:600 16px var(--sc-num)!important;color:var(--sc-ink)!important}
+html body.sc #scvm .sck small{font:400 12px var(--sc-ui)!important;color:var(--sc-ink2)}
+html body.sc.scbars:not(.sctab) .scmore2{display:none!important}
+#scctx .scp > .scmore2{order:8;position:relative;display:flex;margin-left:8px}
+html body.sc.scbars #gsbar #scstrip #scctx .scmore2b{height:28px!important;min-height:0!important;padding:0 10px!important;border:1px solid var(--sc-line2)!important;border-radius:14px!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 12px var(--sc-ui)!important;white-space:nowrap;box-shadow:none!important;cursor:pointer}
+html body.sc.scbars #gsbar #scstrip #scctx .scmore2.open .scmore2b{border-color:var(--sc-steel)!important}
+#scctx .scmore2m{position:absolute;right:0;top:calc(100% + 4px);z-index:var(--z-menu,120);display:none;flex-direction:column;align-items:stretch;gap:4px;min-width:208px;padding:8px;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:8px;box-shadow:0 8px 24px rgba(34,46,57,.18)}
+#scctx .scmore2.open .scmore2m{display:flex}
+/* in the menu every item is a full-width row with its name (the icons of the bar get their words back) */
+html body.sc #gsbar #scstrip #scctx .scmore2m > *{order:0!important;width:auto!important;min-width:0!important;height:32px!important;min-height:0!important;margin:0!important;padding:0 10px!important;justify-content:flex-start!important;gap:8px;border-radius:6px!important;font-size:12px!important}
+html body.sc #gsbar #scstrip #scctx .scmore2m > .scsrp > span{position:static!important;width:auto;height:auto;overflow:visible;clip:auto}
+html body.sc #gsbar #scstrip #scctx .scmore2m > .scgearb::after{content:"Settings";font:600 12px var(--sc-ui);margin-left:8px}
+html body.sc #gsbar #scstrip #scctx .scmore2m > .scgearb{display:flex!important;align-items:center;justify-content:flex-start!important}
+html body.sc #gsbar #scstrip #scctx .scmore2m > .scgearb svg{width:16px!important;height:16px!important;flex:none}
+/* touch screen: the targets of the density (36 px) for the two More buttons and the menu rows */
+@media (pointer:coarse){
+  html body.sc.scbars #gsbar #scstrip .sckmore,html body.sc.scbars #gsbar #scstrip #scctx .scmore2b{height:36px!important;border-radius:18px!important}
+  html body.sc #gsbar #scstrip #scctx .scmore2m > *{height:36px!important}
 }
+/* the icon buttons of the page bar (‹ › of the page, Full screen) keep their text out of sight: the compact density (shellc-dense.css)
+   gives every page bar button 12 px text, which printed "◀" and "Full screen" over their icons */
+html body.sc.scbars #plantws:not(#scnone) .plbar button:is(.scfs,.plstep){font-size:0!important}
