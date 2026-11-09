@@ -13,21 +13,14 @@ body.sceng.scenopl{--scepw:0px}
 /* the loop check panel lives in the right-hand pane here, the page keeps its width */
 html.lc-side body.sceng{width:auto!important;transform:none!important}
 
-/* ---- the bar under the strip: where you are · Logic View | Run · Plant model On | Off ---- */
-body:not(.sceng) #scebar{display:none!important}
-body.sceng #scebar{display:flex;align-items:center;gap:8px;flex:0 0 100%;width:100%;height:calc(var(--scetgt) + 10px);align-self:flex-start;overflow:hidden;padding:4px 12px;box-sizing:border-box;background:var(--sc-paper);border-top:1px solid var(--sc-line);border-bottom:1px solid var(--sc-line2);font:400 13px var(--sc-ui);color:var(--sc-ink)}
-#scebar .scecr{display:flex;align-items:center;gap:4px;min-width:0;overflow:hidden}
-#scebar .scecr .scehere{display:block!important;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#scebar .scesep{color:var(--sc-ink2)}
-#scebar .scesp{flex:1 1 auto}
-#scebar .scelab{font:600 12px var(--sc-ui);letter-spacing:.04em;text-transform:uppercase;color:var(--sc-ink2);margin-left:8px;white-space:nowrap}
-#scebar .sceseg{display:inline-flex;border:1px solid var(--sc-steel);border-radius:4px;overflow:hidden;flex:none}
-#scebar .sceseg button{min-height:var(--scetgt)!important;height:auto!important;padding:0 12px!important;border:0!important;border-radius:0!important;background:var(--sc-white)!important;color:var(--sc-steel)!important;font:600 13px var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
-#scebar .sceseg button[aria-pressed="true"]{background:var(--sc-steel)!important;color:var(--sc-white)!important}
-html body.sc.sceng :is(#scebar,#scewhy) .scelk{min-height:var(--scetgt,32px)!important;height:auto!important;padding:0 4px!important;border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:500 13px var(--sc-ui)!important;text-decoration:underline;text-underline-offset:.2em;box-shadow:none!important;cursor:pointer;white-space:nowrap}
+/* ---- where you are: Plant › page at the start of the plant page bar (Jennie's live check of beta 233: no second row under the strip;
+   VIEW | RUN is in the strip, the sheet name in the Engineer tool bar, the plant model OFF | Unit in the PLANT chip menu) ---- */
+body:not(.sceng) .scecr{display:none!important}
+body.sc.sceng #plantws .plbar .scecr{order:0;flex:none;display:flex;align-items:center;gap:4px;max-width:50%;overflow:hidden;margin-right:8px;font:400 13px var(--sc-ui);color:var(--sc-ink)}
+#plantws .plbar .scecr .scesep{color:var(--sc-ink2)}
+html body.sc.sceng #plantws .plbar .scecr .scelk{min-height:var(--scetgt,32px)!important;height:auto!important;padding:0 4px!important;border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:500 13px var(--sc-ui)!important;text-decoration:underline;text-underline-offset:.2em;box-shadow:none!important;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html body.sc.sceng #scewhy .scelk{min-height:var(--scetgt,32px)!important;height:auto!important;padding:0 4px!important;border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:500 13px var(--sc-ui)!important;text-decoration:underline;text-underline-offset:.2em;box-shadow:none!important;cursor:pointer;white-space:nowrap}
 .scelk[hidden]{display:none!important}
-/* the old VIEW | RUN of the band: in the Engineer mode the bar has it (it presses the same buttons) */
-body.sceng #crband > .seg{display:none!important}
 
 /* ---- the tool rail ---- */
 body:not(.sceng) #scetools{display:none!important}
@@ -36,7 +29,7 @@ body.sceng #scetools{position:fixed;left:var(--railW,0px);top:var(--topH,0px);bo
 #scetools button{display:block;width:100%;min-height:var(--scetgt)!important;height:auto!important;padding:4px 8px!important;text-align:left;border:0!important;border-radius:4px!important;background:transparent!important;color:var(--sc-ink)!important;font:600 13px/16px var(--sc-ui)!important;box-shadow:none!important;cursor:pointer;white-space:normal}
 #scetools button:hover{background:var(--sc-white)!important}
 #scetools button.on{background:var(--sc-steel)!important;color:var(--sc-white)!important}
-#scetools button:focus-visible,#scebar button:focus-visible,#scewhy button:focus-visible,#scepane button:focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}
+#scetools button:focus-visible,.scecr button:focus-visible,#scewhy button:focus-visible,#scepane button:focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}
 
 /* ---- the plant page (left) and the logic sheet (right) ---- */
 html body.sc.sceng #plantws{display:grid!important;left:calc(var(--railW,0px) + var(--scetw))!important;right:auto!important;width:var(--scepw)!important;border-right:1px solid var(--sc-line2)}
@@ -102,12 +95,12 @@ body.sceng #scepane:not([hidden]){position:fixed;left:var(--scex);right:0;top:va
 #scepane .sceit b{font:600 14px var(--sc-ui)}
 #scepane .sceit small{font-size:12px;color:var(--sc-ink2)}
 #scepane .scenone{margin:0;color:var(--sc-ink2)}
-/* the page bar of a narrow pane wraps; the step-2 page crumb (Operator) is not shown here: the Engineer bar has the place */
-body.sc.sceng #plantws .plbar{flex-wrap:wrap!important;row-gap:4px;padding-left:16px!important}
+/* the page bar stays one row (the last-event message shortens); the step-2 page crumb (Operator) is not shown here: the Engineer bar has the place */
+body.sc.sceng #plantws .plbar{flex-wrap:nowrap!important;padding-left:16px!important}
+html body.sc.sceng #plantws .plbar .scpev{flex:1 1 0;min-width:0;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis}
 body.sceng .sccrumb{display:none!important}
-/* the VIEW | RUN of the strip: in the Engineer mode the bar has it (marked by shellc-eng.js); the full-screen exit of the Operator pages
-   is not part of this view */
-html body.sc.sceng #gsbar #scstrip .seg.sce-hide,html body.sc.sceng .sce-hide,body.sceng .scfsout{display:none!important}
+/* full screen of a plant page (and its exit) is an Operator view: not in the narrow plant pane of the Engineer, so the bar fits one row */
+body.sceng .scfsout,body.sc.sceng #plantws .plbar .scfs{display:none!important}
 /* Loop check buttons (shell audit, Jennie 2026-11-09: card buttons 26 px on a tablet). loopcheck.css is not changed: with ?shell=c only
    (body.sc), in the Engineer pane and in the old dock alike, its buttons are 40 px at tablet width and 44 px on a touch screen
    (MEASURE_STANDARD S3; design-auditor touch 44), text 13 px (S1, the .8rem of loopcheck.css is about 11 px here). The FAIL list rows
