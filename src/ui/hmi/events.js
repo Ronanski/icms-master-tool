@@ -358,7 +358,7 @@
     const first = !!almScan.first;
     almScan.first = false;
     /* Mina, live test of 270: alarms standing at a load read 0:00 while the clock read 10:37: the first scan came before the clock of the
-       start state. They take the clock of the state when it arrives (a Cold start really begins at 0:00) */
+       start state. They take the clock of the state when it arrives */
     if (t >= 1 && A.startState !== 'plantCold')
       for (const e of AT.values())
         if (e.t0) {

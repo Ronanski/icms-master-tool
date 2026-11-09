@@ -113,3 +113,7 @@ html body.sc.sceng.scet-logic #mid{margin-bottom:calc(var(--scewhyh,0px) + var(-
 /* user 2026-11-09 "ampanget": the plant page takes 42 % of what the tool rail and the open sheet panel (--scedw, shellc-eng.js) leave, the sheet the rest */
 body.sceng{--scepw:calc((100vw - var(--railW,0px) - var(--scetw) - var(--scedw,0px)) * .42)}
 body.sceng.scenopl{--scepw:0px}
+/* Mina, live test of 271: the Sheet tools cards ran past the Details column at 1024 px: name over text, inside the pane */
+html body.sc #scepane .scetl2{grid-template-columns:minmax(0,1fr)}
+html body.sc #scepane .sceit:not(#scnone){display:grid!important;justify-items:start;width:100%;max-width:100%;min-width:0;box-sizing:border-box;white-space:normal!important}
+html body.sc #scepane .sceit:not(#scnone) :is(b,small){display:block;min-width:0;max-width:100%;white-space:normal!important;text-align:left}

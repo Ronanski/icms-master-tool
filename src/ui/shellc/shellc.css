@@ -309,3 +309,5 @@ body.sc #sfoot:not(#scnone) > :not(#stchip){white-space:nowrap!important;overflo
 body.sc #sfoot:not(#scnone) :is(#st,.shint,.smsg).sf2{white-space:nowrap!important;line-height:var(--foot)!important;font-size:12px!important}
 body.sc #sfoot:not(#scnone) :is(.sinfo,.ssel){flex:0 1 auto!important}
 body.sc #sfoot{overflow:hidden;max-width:100vw}
+/* Mina, live test of 271: at 1024 px the sheet counts took the status bar and the hint had 21 px: below 1280 px the hint has the bar */
+@media (max-width:1279px){body.sc #sfoot:not(#scnone) .sinfo{display:none!important}}

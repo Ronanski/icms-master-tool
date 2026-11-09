@@ -15,7 +15,7 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 ## 2. Kasalukuyang estado (2026-11-10 PHT)
 - **BUOD NG HANDOVER (basahin muna):** `docs/handoff/HANDOVER_2026-11-10.md` — lahat mula 2026-11-07, gawain ng bawat team member, at ang hindi pa tapos (re-shell at plant plan).
 - **Stable:** v3.2.0 (2026-11-03). Kondisyonal na GO STABLE ng user (2026-11-09): Stable 3.2.1 kapag tapos ang re-shell at pasado ang buong live test ni Mina.
-- **Beta sa `main`:** 3.2.1-beta.271 (re-shell layout C ang default; `?shell=old` = lumang layout). Ang listahan bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md`.
+- **Beta sa `main`:** 3.2.1-beta.272 (re-shell layout C ang default; `?shell=old` = lumang layout). Ang listahan bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md`.
 - **Testing:** GitHub "Simulation tests" (`.github/workflows/sim-tests.yml`, report lang) + shell smoke test `tests/regress/shellc.js`; final proof = live test ni Mina sa Beta site.
 - **Rule ng version:** sa push, version ng `main` + 1.
 
@@ -23,7 +23,7 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 - **JENNIE** (lead), **MINA** (live tester lang), **LISA** at **GISELLE** (fixers), **YUNA** (design). Claims: `team-files/CLAIMS.md`; tracker: https://claude.ai/artifact/9GBKXEkbqh8hrKu5vfDzMN
 
 ## 4. Bukas na findings (2026-11-10)
-- Re-shell: 271 (mga natuklasan ni Mina sa 270, kasama ang maling AIR PREHEATER TRIP pagkatapos ng VIEW sa DITL) naghihintay ng retest ni Mina at ng natitirang bahagi ng buong shell test (handover 4A.5), saka Stable 3.2.1.
+- Re-shell: 272 (takip na "field step" sa Logic na walang Training, at ang 7 pang natuklasan ni Mina sa 271) naghihintay ng retest ni Mina, saka Stable 3.2.1. Para sa 4B: ang orasan ng Cold at 150 MW ay nagsisimula sa oras ng pag-load ng estado (11:29, 10:37), hindi sa 0:00.
 - Plant: MST overshoot sa load up; hotwell -300 sa feedwater surge; RHT 512.7 sa 90 MW; Instructor turbine trip sa t = 0 (engine, naka-hold); Single Line Diagram wala sa PC.
 - Detalye: `docs/handoff/HANDOVER_2026-11-10.md` seksyon 4; ebidensya `team-files/findings-2026-11-09-reshell.md` (PC lang).
 

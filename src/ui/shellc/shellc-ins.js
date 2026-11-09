@@ -104,7 +104,7 @@
         con.hidden = true; /* Mina, live test of 269: the console stayed over the plant after the start */
         /* a Practise button that asks "Press again" itself gets its second press here (the trainer already pressed twice) */
         setTimeout(() => /^Press again/.test(o.textContent) && o.click(), 60);
-      }, { q: 'Start the practice: ' + t + '?', t: (o.title ? o.title + ' ' : '') + 'The running plant is replaced.', ok: 'Start practice' });
+      }, { q: 'Start the practice: ' + t + '?', t: (o.title ? o.title.replace(/\.?\s*$/, '. ') : '') + 'The running plant is replaced.', ok: 'Start practice' });
       r.append(b);
     }
     body.append(r);

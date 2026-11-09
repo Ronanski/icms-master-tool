@@ -56,6 +56,8 @@
   const tabOf = () => {
     const k = ls(eng() ? 'ls-scdet-eng' : 'ls-scdet-op');
     const L = eng() ? ENG : OP;
+    /* Mina, live test of 271: on a digital sheet the Faceplate tab is off: the column showed it chosen and empty */
+    if (eng() && k === 'fp' && !call(() => AN.cat === 'an', false)) return 'insp';
     return L.includes(k) ? k : L[0];
   };
 
