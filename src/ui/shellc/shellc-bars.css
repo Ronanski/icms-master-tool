@@ -154,3 +154,9 @@ html body.sc #gsbar #plchip :is(em,b,span,i){color:inherit!important}
 html body.sc #gsbar #plchip:focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}
 html body.sc #plpop button:is(:hover,:focus,:active){background:var(--sc-band)!important;color:var(--sc-ink)!important}
 html body.sc #plpop button.on{background:var(--sc-steel)!important;color:var(--sc-white)!important}
+/* Mina, live test of 272: ABC, RUN, 1024 px, Details closed: the bar was too full and ABC | DITL | TCS slid under Reset and the step
+   buttons. The place of the switch keeps its width (the sheet name inside it shortens); below 1280 px Inspector and Wire values are their icons (the names stay in the tooltips) */
+html body.sc.scbars.sceng #gsbar > .tbar .crwhere{min-width:176px!important}
+@media (max-width:1279px){
+  html body.sc.scbars.sceng:not(.scdet) #gsbar .tbar [data-ic][data-ic]:is([aria-label="Inspector"],[title^="Show / hide the right panel"],[title^="Show the number on analog wires"]){font-size:0!important;gap:0!important;min-width:32px!important;padding:0!important}
+}

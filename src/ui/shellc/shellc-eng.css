@@ -117,3 +117,5 @@ body.sceng.scenopl{--scepw:0px}
 html body.sc #scepane .scetl2{grid-template-columns:minmax(0,1fr)}
 html body.sc #scepane .sceit:not(#scnone){display:grid!important;justify-items:start;width:100%;max-width:100%;min-width:0;box-sizing:border-box;white-space:normal!important}
 html body.sc #scepane .sceit:not(#scnone) :is(b,small){display:block;min-width:0;max-width:100%;white-space:normal!important;text-align:left}
+/* Mina, live test of 272: the titles of the Sheet tools cards did not start at one left edge */
+html body.sc #scepane .sceit:not(#scnone){justify-content:stretch!important;grid-template-columns:minmax(0,1fr)!important}
