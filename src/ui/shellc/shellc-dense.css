@@ -1,0 +1,80 @@
+/* ===== RE-SHELL LAYOUT C: one compact density for the whole shell (user 2026-11-09 "Nalalakihan ako s mga cards at fonts.
+   Pwede bang minimalistic, simple, organized and clean?"). Loaded last, shell only: bars, overview tiles, Details column, start
+   screen. Never the HMI drawings, the logic sheets, the faceplate logic, the plant model or the engine.
+   Type scale: 11 (labels, units, notes) / 12 (text, buttons) / 13 (titles) / 14 (values in the top bar). Two families only:
+   IBM Plex Sans for words, IBM Plex Mono for numbers. Spacing on a 4 px grid. Mouse controls 28 px; touch keeps 36 px. ===== */
+
+/* --- values bar: 60 -> 48 px; the name may take two short lines, the values line up at the bottom (never cut) --- */
+html body.sc.scbars #gsbar #scstrip .scv{height:48px!important}
+html body.sc #gsbar #scstrip .sck{padding:4px 10px!important;gap:1px;line-height:1.1;justify-content:flex-end!important}
+html body.sc #gsbar #scstrip .sck i{font:500 11px/1.1 var(--sc-ui)!important;white-space:normal!important}
+html body.sc #gsbar #scstrip .sck b{font:600 14px/1.2 var(--sc-num)!important}
+html body.sc #gsbar #scstrip .sck small{font:400 11px/1.2 var(--sc-ui)!important}
+
+/* --- context bar: 48 -> 38 px, controls 28 px, 12 px text --- */
+html body.sc #scctx{height:38px!important;gap:6px!important}
+html body.sc.scbars #gsbar #scstrip #scctx :is(.pill,.plchip){height:28px!important;min-height:0!important;font-size:12px!important}
+html body.sc.scbars #gsbar #scstrip #scctx :is(.scsrp,.scgearb,.scdetb){width:28px!important;min-width:28px!important;padding:0!important;justify-content:center!important}
+html body.sc.scbars #gsbar #scstrip #scctx .seg{height:28px!important;min-height:0!important;padding:2px!important;box-sizing:border-box}
+html body.sc.scbars #gsbar #scstrip #scctx .seg button{height:24px!important;min-height:0!important;font-size:12px!important;padding:0 8px!important}
+html body.sc #scctx :is(button,a,select){font-size:12px!important}
+html body.sc #scctx .plchip :is(small,span){font-size:11px!important}
+html body.sc.scbars:not(.sceng) #plantws .plbar :is(button,select,.scfs){height:28px!important;min-height:0!important;font-size:12px!important}
+html body.sc.scbars:not(.sceng) #plantws .plbar .scfs{width:28px!important;min-width:28px!important}
+html body.sc.scbars .sccrumb{font-size:12px!important}
+
+/* --- Engineer tabs and pane bars --- */
+html body.sc.scbars.sceng #scetools button{font:600 12px var(--sc-ui)!important;padding:0 10px!important}
+html body.sc.scbars.sceng{--tool:34px}
+html body.sc.scbars.sceng #gsbar .tbar [data-ic][data-ic]{font-size:12px!important}
+
+/* --- overview: flat, short tiles (about 196 -> 116 px) --- */
+html body.sc #scov .scbar{padding:6px 12px!important;font-size:12px!important}
+html body.sc #scov .scgrid{gap:8px!important;padding:8px 12px 12px!important}
+html body.sc #scov:not(#scnone) .sctile{min-height:0!important;gap:4px!important;padding:8px 12px!important;border-color:var(--sc-line)!important;border-radius:4px!important;box-shadow:none!important}
+html body.sc #scov:not(#scnone) .sctile:hover{border-color:var(--sc-steel)!important}
+html body.sc #scov .sctile h3{font:600 13px/1.3 var(--sc-ui)!important;margin:0 0 2px!important}
+html body.sc #scov .sckv{gap:2px 8px!important;font-size:12px!important;line-height:1.35}
+html body.sc #scov .sckv span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html body.sc #scov .sckv b{font:600 12px var(--sc-num)!important}
+html body.sc #scov .scspark{flex:none!important;height:24px!important;min-height:0!important;margin-top:2px}
+html body.sc #scov .scscale{margin-top:0!important;min-height:0!important;font-size:11px!important}
+html body.sc #scov .sclamp{font-size:11px!important;min-height:0!important;gap:6px!important}
+html body.sc #scov .sclamp .dot{width:8px!important;height:8px!important}
+html body.sc #scov :is(.scar,.scnone){font-size:12px!important}
+
+/* --- Details column: 320 -> 288 px, 12 px text, tight rows --- */
+html body.sc{--scdw:288px}
+html body.sc #scdet{font:400 12px/1.4 var(--sc-ui)!important}
+html body.sc #scdet .scdh{height:34px!important}
+html body.sc #scdet .scdtl button{font-size:12px!important}
+html body.sc #scdet .scdx{width:34px!important}
+html body.sc #scdet .scdb{padding:8px 12px!important}
+html body.sc #scdet h4{font:600 11px var(--sc-ui)!important;letter-spacing:.04em!important;margin:2px 0 0!important}
+html body.sc #scdet .scdev{font-size:12px!important}
+html body.sc #scdet .scdar{grid-template-columns:44px minmax(0,1fr)!important;padding:6px 0!important;gap:0 8px!important}
+html body.sc #scdet .scdar :is(.scdt,.scds){font-size:11px!important}
+html body.sc #scdet .scdar .scdn{font-size:12px!important}
+html body.sc #scdet .scdlink{font-size:12px!important;min-height:28px!important}
+
+/* --- start screen: smaller cards --- */
+html body.sc #scstart:not(#scnone) .sccard{min-height:0!important;padding:16px 20px!important;border-radius:6px!important}
+html body.sc #scstart:not(#scnone) .sccard b{font-size:16px!important}
+html body.sc #scstart:not(#scnone) :is(.scsub,.sccard span,.sccont span,.scgear,.scskip){font-size:12px!important}
+html body.sc #scstart .scver{font-size:11px!important}
+
+/* --- confirmation dialog: same scale --- */
+html body.sc .scaskc h3{font-size:14px!important}
+html body.sc .scaskc p{font-size:12px!important}
+html body.sc .scaskb button{height:28px!important;min-height:0!important;font-size:12px!important}
+
+/* --- touch (tablet): keep 36 px targets, same smaller text --- */
+@media (pointer:coarse){
+  html body.sc #scctx{height:44px!important}
+  html body.sc.scbars #gsbar #scstrip #scctx :is(.pill,.plchip,.seg){height:36px!important}
+  html body.sc.scbars #gsbar #scstrip #scctx .seg button{height:32px!important}
+  html body.sc.scbars #gsbar #scstrip #scctx :is(.scsrp,.scgearb,.scdetb){width:36px!important;min-width:36px!important}
+  html body.sc.scbars:not(.sceng) #plantws .plbar :is(button,select,.scfs){height:36px!important}
+  html body.sc #scdet .scdh{height:40px!important}
+  html body.sc .scaskb button{height:36px!important}
+}
