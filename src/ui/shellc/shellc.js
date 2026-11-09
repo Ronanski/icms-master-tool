@@ -212,7 +212,8 @@
       const st = document.getElementById('scstrip'),
         /* the content of the strip (its rows), not the strip itself: the strip is as tall as the bar */
         tops = [...st.children].map(c => c.getBoundingClientRect()).filter(r => r.height > 0),
-        need = Math.ceil(Math.max(...tops.map(r => r.bottom)) - Math.min(...tops.map(r => r.top))) + 12,
+        /* the two bars (shellc-bars.js, user 2026-11-09 "Gawin na"): values 60 px + context 48 px, no margin around them */
+        need = Math.ceil(Math.max(...tops.map(r => r.bottom)) - Math.min(...tops.map(r => r.top))) + (document.getElementById('scctx') ? 0 : 12),
         cur = parseFloat(getComputedStyle(document.body).getPropertyValue('--top')) * (/rem/.test(getComputedStyle(document.body).getPropertyValue('--top')) ? 16 : 1);
       if (need > 40 && Math.abs(need - cur) > 2) {
         document.body.style.setProperty('--top', need + 'px');
@@ -300,7 +301,8 @@
     if (S.runT.textContent !== rt) S.runT.textContent = rt;
     S.runB.title = on ? 'The simulation runs. Click: pause' : 'The simulation is paused. Click: run';
     const sel = speedSel();
-    const sp = 'Speed ×' + (sel ? sel.value : '1');
+    /* the speed sits on the Run pill (one control, shellc-bars.css): the number only, "Simulation speed" in its tooltip */
+    const sp = '×' + (sel ? sel.value : '1');
     if (S.spdB.textContent !== sp) S.spdB.textContent = sp;
     const tab = document.body.dataset.tab;
     S.bOp.classList.toggle('on', tab === 'operate');
