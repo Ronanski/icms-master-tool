@@ -20,3 +20,12 @@ html body.sc #sczoom .sczrb:hover{border-color:var(--sc-steel)!important}
 html body.sc #sczoom .sczrb[hidden]{display:none!important}
 #sczoom :focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}
 @media (max-width:1279px),(pointer:coarse){html body.sc #sczoom .sczrb{min-height:40px!important}}
+/* nothing floats over the drawing (Jennie's finding on the b250 picture): the app message ("Plant at 150 MW: … Press Run.") is already
+   the message of the status line at the foot of the screen (#sfoot .smsg, its full text in the tooltip); the toast copy of it under
+   the bars (shellc-ui.js tickToast) stays out of sight */
+html body.sc .sctoast{display:none!important}
+/* … and that status line keeps the message while it stands (shellc-ui.css hid it while the toast showed it) */
+html body.sc.hasmsg #sfoot:not(#scnone) .smsg{display:block!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* the Readable size button on the 249 scale (12 px, 28 px; 36 px on a touch screen) */
+html body.sc #sczoom:not(#scnone) .sczrb{min-height:28px!important;padding:0 10px!important;border-radius:14px!important;font:600 12px var(--sc-ui)!important}
+@media (pointer:coarse){html body.sc #sczoom:not(#scnone) .sczrb{min-height:36px!important;border-radius:18px!important}}

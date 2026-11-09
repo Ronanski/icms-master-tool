@@ -82,3 +82,6 @@ html body.sc.scbars #gsbar #scstrip #scctx .seg button{padding:0 10px!important}
 @media (max-width:1279px),(pointer:coarse){html body.sc #gsbar #scstrip #scctx .scp > .scdetb{width:40px;min-width:40px}}
 /* the button stays an icon under the compact density (shellc-dense.css gives every button of the bar 12 px text with the same weight) */
 html body.sc #gsbar #scstrip #scctx:not(#scnone) .scp > .scdetb{font-size:0!important}
+/* Jennie's finding on the b250 / b255 pictures: in its "on" state the Details button was a solid steel circle with its steel icon lost
+   in it. On = a light steel fill, a steel border and a steel icon, like a pressed tool button */
+html body.sc #gsbar #scstrip #scctx:not(#scnone) .scp > .scdetb.on,html body.sc #gsbar #scstrip #scctx:not(#scnone) .scmore2m > .scdetb.on{background:#e9eff5!important;border-color:var(--sc-steel)!important;color:var(--sc-steel)!important}
