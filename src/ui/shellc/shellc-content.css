@@ -426,18 +426,18 @@ html body.sc:not(.sc-dgdark) #svg :is(text,tspan,textPath)[fill="#5aa9ff" i]{fil
 html body.sc:not(.sc-dgdark) #svg :is(text,tspan,textPath)[fill="#b4e04a" i]{fill:#5b7a12}
 html body.sc:not(.sc-dgdark) #svg :is(text,tspan,textPath)[fill="#35d6c8" i]{fill:#0f7f76}
 html body.sc:not(.sc-dgdark) #svg :is(text,tspan,textPath):is([style*="fill: rgb(201, 209, 217)" i],[style*="fill:rgb(201, 209, 217)" i]){fill:#222e39!important}
-html body.sc:not(.sc-dgdark) #svg text.bd{stroke:#4d5b6a}
+html body.sc:not(.sc-dgdark) #svg text.bd{stroke:#f7f8f8}
 html body.sc:not(.sc-dgdark) #svg text.bd{fill:#11703f}
 html body.sc:not(.sc-dgdark) #svg :is(text,tspan,textPath):is([style*="fill: rgb(77, 163, 255)" i],[style*="fill:rgb(77, 163, 255)" i]){fill:#2b6ca5!important}
 html body.sc:not(.sc-dgdark) #svg :not(text,tspan,textPath)[fill="#1a2229" i]{fill:hsl(208 22% 93%)}
 html body.sc:not(.sc-dgdark) #svg :not(text,tspan,textPath)[fill="#b48cff" i]{fill:#7656b8}
 html body.sc:not(.sc-dgdark) #svg :is(text,tspan,textPath):is([style*="fill: rgb(216, 196, 255)" i],[style*="fill:rgb(216, 196, 255)" i]){fill:#7656b8!important}
 html body.sc:not(.sc-dgdark) #svg text.bd.inp{fill:#0d6f93}
-html body.sc:not(.sc-dgdark) #svg text.bd.inp{stroke:#4d5b6a}
+html body.sc:not(.sc-dgdark) #svg text.bd.inp{stroke:#f7f8f8}
 html body.sc:not(.sc-dgdark) #svg :not(text,tspan,textPath)[fill="rgb(222,226,229)" i]{fill:#4d5b6a}
 html body.sc:not(.sc-dgdark) #svg :not(text,tspan,textPath)[stroke="#ffb24a" i]{stroke:#966816}
 html body.sc:not(.sc-dgdark) #svg :is(text,tspan,textPath)[fill="#ffb24a" i]{fill:#966816}
-html body.sc:not(.sc-dgdark) #svg :is(text,tspan,textPath)[stroke="#000" i]{stroke:#4d5b6a}
+html body.sc:not(.sc-dgdark) #svg :is(text,tspan,textPath)[stroke="#000" i]{stroke:#f7f8f8}
 html body.sc:not(.sc-dgdark) #svg :not(text,tspan,textPath)[fill="#ff3b3b" i]{fill:#ce3a34}
 html body.sc:not(.sc-dgdark) #svg :not(text,tspan,textPath)[fill="#35e08a" i]{fill:#1f7a5a}
 html body.sc:not(.sc-dgdark) #svg :not(text,tspan,textPath)[stroke="#35e08a" i]{stroke:#1f7a5a}
@@ -451,7 +451,7 @@ html body.sc:not(.sc-dgdark) #svg :not(text,tspan,textPath)[fill="#ff4d4d" i]{fi
 html body.sc:not(.sc-dgdark) #svg :not(text,tspan,textPath)[fill="#2b5f46" i]{fill:hsl(151 38% 93%)}
 html body.sc:not(.sc-dgdark) #svg :not(text,tspan,textPath)[fill="#4fd18b" i]{fill:#1f7a5a}
 html body.sc:not(.sc-dgdark) #svg :is(text,tspan,textPath)[fill="#e6edf3" i]{fill:#2b6ca5}
-html body.sc:not(.sc-dgdark) #svg text.plink{stroke:#4d5b6a}
+html body.sc:not(.sc-dgdark) #svg text.plink{stroke:#f7f8f8}
 html body.sc:not(.sc-dgdark) #svg :not(text,tspan,textPath)[fill="#cfd8dc" i]{fill:#4d5b6a}
 html body.sc:not(.sc-dgdark) #svg :not(text,tspan,textPath)[stroke="#cfd8dc" i]{stroke:#4d5b6a}
 html body.sc:not(.sc-dgdark) #svg :is(text,tspan,textPath):is([style*="fill: rgb(255, 77, 77)" i],[style*="fill:rgb(255, 77, 77)" i]){fill:#ce3a34!important}
