@@ -124,9 +124,9 @@ body.sc .scaskc h3{margin:0 0 8px;font:600 16px/1.35 var(--sc-ui);color:var(--sc
 body.sc .scaskc p{margin:0 0 16px;font:400 14px/1.5 var(--sc-ui);color:var(--sc-ink2)}
 body.sc .scaskb{display:flex;justify-content:flex-end;gap:8px}
 body.sc .scaskb button{min-width:96px;height:36px;padding:0 16px;border-radius:6px;font:600 14px var(--sc-ui);cursor:pointer}
-body.sc .scaskb .no{border:1px solid var(--sc-line2);background:var(--sc-white);color:var(--sc-ink)}
-body.sc .scaskb .go{border:1px solid var(--sc-steel);background:var(--sc-steel);color:#fff}
-body.sc .scaskb .go.danger{border-color:var(--sc-run);background:var(--sc-run)}
+body.sc .scaskb .scno{border:1px solid var(--sc-line2);background:var(--sc-white);color:var(--sc-ink)}
+body.sc .scaskb .scok{border:1px solid var(--sc-steel)!important;background:var(--sc-steel)!important;color:#fff!important}
+body.sc .scaskb .scok.danger{border-color:var(--sc-run)!important;background:var(--sc-run)!important}
 body.sc .scaskb button:hover{filter:brightness(.95)}
 body.sc .scaskb button:focus-visible{outline:2px solid var(--sc-steel);outline-offset:2px}
 /* ---------- beta.243: the PLANT chip menu (app.js #plpop) was the last dark box (live dark scan 1366x768) ---------- */
@@ -139,3 +139,6 @@ body.sc #plpop .plseg button.on{background:var(--sc-steel)!important;border-colo
 body.sc #plpop input{border-color:var(--sc-line2);background:var(--sc-paper);color:var(--sc-ink)}
 body.sc #plpop .plgo{background:var(--sc-steel);color:#fff}
 body.sc #plpop .plnote{color:var(--sc-amber)}
+/* beta.245: the note on a window narrower than 900 px (shellc.js, before the layout is built; Mina beta.244) */
+#scnarrow{position:fixed;left:50%;top:40%;transform:translateX(-50%);z-index:10040;max-width:calc(100vw - 32px);box-sizing:border-box;padding:16px 20px;border:1px solid #ccd1d6;border-radius:8px;background:#fff;color:#222e39;font:400 14px/1.5 "IBM Plex Sans",system-ui,"Segoe UI",sans-serif;box-shadow:0 12px 32px rgba(34,46,57,.18);text-align:center}
+#scnarrow b{display:block;margin-bottom:4px;font-weight:600;font-size:16px}

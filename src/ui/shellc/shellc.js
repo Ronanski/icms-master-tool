@@ -309,8 +309,22 @@
   /* the old shell builds #crband after load (cr.js, only on a window 900 px wide or more). Live check beta.241: after 30 s the wait
      stopped, so a slow or narrow first load showed the old dark app for good; now it waits until the band is there (every 0.5 s, then 2 s) */
   let n = 0;
+  /* Mina beta.244: on a narrow window the page stayed empty grey with no hint; a note says to widen it, gone once the layout is built */
+  let note = null;
   const wait = () => {
-    if (build()) return;
+    if (build()) {
+      if (note) note.remove();
+      return;
+    }
+    const narrow = innerWidth < 900;
+    if (narrow && !note && document.body) {
+      note = E('div');
+      note.id = 'scnarrow';
+      note.setAttribute('role', 'status');
+      note.append(E('b', '', 'Make the window wider'), E('span', '', 'The app needs a window at least 900 px wide (PC or tablet in landscape).'));
+      document.body.append(note);
+    }
+    if (note) note.hidden = !narrow;
     setTimeout(wait, ++n > 60 ? 2000 : 500);
   };
   wait();
