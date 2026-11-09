@@ -1,0 +1,82 @@
+/* ===== RE-SHELL LAYOUT C, slice 2: the Details column (shellc-details.js; user approval 2026-11-09 "Gawin na", artifact
+   DMAqPXBECUGeEShYRB2QX8). 320 px at the right, under the bars, tabs Why / Inspector / Faceplate / Training / Alarms (Engineer) or
+   Training / Alarms (Operator). Nothing floats over the drawing any more. PC (1280 px and up): the page gives the column its width;
+   tablet: the column comes over the page from the right and is closed at start. Type 12 / 13 / 14 px, spacing 4 / 8 / 12 / 16. ===== */
+body.sc{--scdw:320px}
+body:not(.scdet) #scdet{display:none!important}
+#scdet{position:fixed;right:0;top:var(--topH,108px);bottom:var(--footH,24px);width:var(--scdw);z-index:96;display:flex;flex-direction:column;box-sizing:border-box;background:var(--sc-white);border-left:1px solid var(--sc-line2);font:400 13px/1.4 var(--sc-ui);color:var(--sc-ink)}
+body.scdover #scdet{box-shadow:-8px 0 24px rgba(34,46,57,.18)}
+#scdet .scdh{flex:none;display:flex;align-items:stretch;height:40px;border-bottom:1px solid var(--sc-line);background:var(--sc-paper)}
+#scdet .scdtl{flex:1 1 auto;display:flex;min-width:0;overflow:hidden}
+html body.sc #scdet .scdtl button{flex:1 1 auto;min-width:0;height:100%!important;min-height:0!important;padding:0 6px!important;border:0!important;border-bottom:2px solid transparent!important;border-radius:0!important;background:transparent!important;color:var(--sc-ink2)!important;font:600 12px var(--sc-ui)!important;white-space:nowrap;box-shadow:none!important;cursor:pointer}
+html body.sc #scdet .scdtl button[hidden]{display:none!important}
+html body.sc #scdet .scdtl button:hover:not(:disabled){color:var(--sc-ink)!important;background:var(--sc-band)!important}
+html body.sc #scdet .scdtl button.on{color:var(--sc-steel)!important;border-bottom-color:var(--sc-steel)!important}
+html body.sc #scdet .scdtl button:disabled{opacity:.45;cursor:not-allowed}
+html body.sc #scdet .scdx{flex:none;width:40px;height:100%!important;min-height:0!important;padding:0!important;border:0!important;border-left:1px solid var(--sc-line)!important;border-radius:0!important;background:transparent!important;color:var(--sc-ink2)!important;font:600 14px var(--sc-ui)!important;box-shadow:none!important;cursor:pointer}
+html body.sc #scdet .scdx:hover{background:var(--sc-band)!important;color:var(--sc-ink)!important}
+#scdet :focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:-2px}
+#scdet .scdb{flex:1 1 auto;min-height:0;overflow:auto;padding:12px 16px}
+#scdet .scdsec{display:none}
+body.scdt-why #scdet .scdwhy,body.scdt-train #scdet .scdtrain,body.scdt-alm #scdet .scdalm,body.scdt-pan #scdet .scdins{display:grid;gap:8px}
+#scdet h4{margin:4px 0 0;font:600 12px var(--sc-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--sc-ink2)}
+#scdet p{margin:0}
+#scdet .scdnone,#scdet .scdnone p{color:var(--sc-ink2)}
+#scdet .scdnone[hidden]{display:none}
+html body.sc #scdet .scdlink{justify-self:start;min-height:32px!important;height:auto!important;padding:0 4px!important;border:0!important;background:transparent!important;color:var(--sc-steel)!important;font:500 13px var(--sc-ui)!important;text-decoration:underline;text-underline-offset:2px;box-shadow:none!important;cursor:pointer;text-align:left;white-space:normal}
+#scdet .scdev{font-size:13px;color:var(--sc-ink);overflow-wrap:anywhere}
+#scdet .scdal{display:grid}
+#scdet .scdar{display:grid;grid-template-columns:64px minmax(0,1fr);grid-template-areas:"t n" "t s";gap:0 8px;padding:8px 0;border-bottom:1px solid var(--sc-line)}
+#scdet .scdar .scdt{grid-area:t;font:400 12px var(--sc-num);color:var(--sc-ink2)}
+#scdet .scdar .scdn{grid-area:n;overflow-wrap:anywhere}
+#scdet .scdar .scds{grid-area:s;font-size:12px;color:var(--sc-ink2)}
+#scdet .scdar.new .scdn{font-weight:600}
+#scdet .scdar.new .scds{color:#5c3f0b}
+#scdet .scdar.trip .scdn,#scdet .scdar.trip .scds{color:var(--sc-run)}
+
+/* ---- the Why box (shellc-eng.js) inside the Why section: no longer a box over the sheet ---- */
+html body.sc.scdet #scdet #scewhy{position:static!important;left:auto!important;right:auto!important;bottom:auto!important;max-height:none!important;overflow:visible;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
+body.scdet:not(.sceng) #scdet .scdwhy{display:none!important}
+/* the sheet no longer ends above the Why box, the zoom bar no longer stands on it */
+html body.sc.scdet.sceng.scet-logic #mid{margin-bottom:0!important}
+html body.sc.scdet.sceng.scet-logic #zbar{bottom:calc(var(--footH,24px) + 12px)!important}
+
+/* ---- the training step card (shellc-ins.js) inside the Training section ---- */
+body.sc.scdet{--sccardh:0px!important}
+html body.sc #scdet #sccard:not(#scnone){position:static!important;left:auto!important;right:auto!important;bottom:auto!important;width:auto!important;display:grid!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
+html body.sc #scdet #sccard:not(#scnone)[hidden]{display:none!important}
+html body.sc #scdet #sccard:not(#scnone) .sccbar{position:static!important;height:4px;border-radius:2px}
+html body.sc #scdet #sccard:not(#scnone) .sccbs{margin-left:0;flex-wrap:wrap}
+
+/* ---- Engineer: the sheet's side panel (Inspector #anp, Faceplate #opp, DITL panel #dp) fills the body of the column ---- */
+html body.sc.scdet.sceng:is(.scdt-insp,.scdt-fp) :is(#anp,#opp,#dp){position:fixed!important;top:var(--scdbt)!important;right:0!important;bottom:var(--footH,24px)!important;left:auto!important;width:var(--scdw)!important;max-width:none!important;height:auto!important;max-height:none!important;z-index:97!important;box-sizing:border-box;border:0!important;border-left:1px solid var(--sc-line2)!important;box-shadow:none!important}
+html body.sc.scdet.sceng:not(.scdt-pan) :is(#anp,#opp,#dp){display:none!important}
+/* their own tabs, Hide ✕ and Auto-hide are the tabs and the ✕ of the column now; the vertical Panel tab and the Inspector / Panel
+   buttons of the sheet bar too (one control per task: the Details button and its tabs) */
+/* hidden but still in the layout: shellc-eng.js force() and hmi.js press these tabs by their place on screen */
+html body.sc.scdet.sceng :is(#anp,#opp) .hmitabs{position:absolute!important;top:0!important;left:0!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0);opacity:0;pointer-events:none}
+html body.sc.scdet :is(#anp,#opp,#dp) button[title^="Hide panel"],html body.sc.scdet [data-scdh]{display:none!important}
+html body.sc.scdet :is(#anptab,#dptab){display:none!important}
+html body.sc.scdet.sceng #gsbar > .tbar button:is([aria-label="Inspector"],[title^="Show / hide the right panel"]){display:none!important}
+/* the sheet gives the column its width; the plant pane keeps 42 % of the rest (not the panel's own width) */
+html body.sc.scdet.sceng:not(.scdover) #mid{margin-right:var(--scdw)!important}
+body.sc.scdet.sceng:not(.scdover):not(.scenopl){--scepw:calc((100vw - var(--railW,0px) - var(--scetw,0px) - var(--scdw)) * .42)}
+/* the right-hand pane of an Engineer tool (Library, Curves, Loop check, Recent, Sheet tools) ends at the column */
+html body.sc.scdet.sceng:not(.scdover) :is(#libws,#fxws,#scepane){right:var(--scdw)!important}
+html body.sc.scdet.sceng:not(.scdover) > #lcdock{right:var(--scdw)!important}
+
+/* ---- Operator: the page and the overview give the column its width ---- */
+html body.sc.scdet:not(.sceng):not(.scdover) #plantws{right:var(--scdw)!important}
+html body.sc.scdet:not(.sceng):not(.scdover) #scov{right:var(--scdw)!important}
+
+/* ---- the Details button of the context bar: its icon (the name stays for screen readers and in the tooltip) ---- */
+html body.sc #gsbar #scstrip #scctx .scp > .scdetb{order:8!important;width:32px;min-width:32px;padding:0!important;justify-content:center;font-size:0!important;margin-left:8px}
+html body.sc #scctx .scp > .scdetb[hidden]{display:none!important}
+#scctx .scdetb::before{content:"";width:16px;height:16px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5'%3E%3Crect x='1.75' y='2.75' width='12.5' height='10.5' rx='1.5'/%3E%3Cpath d='M10 3v10'/%3E%3C/svg%3E") center/16px no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5'%3E%3Crect x='1.75' y='2.75' width='12.5' height='10.5' rx='1.5'/%3E%3Cpath d='M10 3v10'/%3E%3C/svg%3E") center/16px no-repeat}
+html body.sc #gsbar #scstrip #scctx .scp > .scdetb.on{background:var(--sc-steel)!important;border-color:var(--sc-steel)!important;color:var(--sc-white)!important}
+#scctx .scp > .scsrp{order:9!important;margin-left:0!important}
+#scctx .scp > .scgearb{order:10!important}
+/* the button added room: the pills and the two switches take 8 / 10 px padding (32 px high, text 13 px kept) */
+html body.sc.scbars #gsbar #scstrip #scctx .scp > .pill:not(.scsrp):not(.scgearb):not(.scdetb){padding:0 8px!important}
+html body.sc.scbars #gsbar #scstrip #scctx .seg button{padding:0 10px!important}
+@media (max-width:1279px),(pointer:coarse){html body.sc #gsbar #scstrip #scctx .scp > .scdetb{width:40px;min-width:40px}}

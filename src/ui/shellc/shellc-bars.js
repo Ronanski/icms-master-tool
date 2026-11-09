@@ -26,7 +26,10 @@
   let ctx = null,
     slot = null,
     more = null,
-    moreM = null;
+    moreM = null,
+    main = [],
+    open = () => {},
+    full = 0;
   const set = (el, k, v) => {
     if (el.style.getPropertyValue(k) !== v) el.style.setProperty(k, v);
   };
@@ -70,10 +73,14 @@
     moreM.setAttribute('role', 'menu');
     for (const b of rest) {
       b.setAttribute('role', 'menuitem');
-      b.addEventListener('click', () => open(false));
       moreM.append(b);
     }
-    const open = on => {
+    main = bs.filter(b => !rest.includes(b));
+    /* a choice in the menu closes it (the tabs that move into it on a narrow bar too, body.scsq2) */
+    moreM.addEventListener('click', e => {
+      if (e.target.closest('button')) open(false);
+    });
+    open = on => {
       more.classList.toggle('open', on);
       mb.setAttribute('aria-expanded', String(on));
     };
@@ -89,6 +96,31 @@
     });
     more.append(mb, moreM);
     nav.append(more);
+  }
+
+  /* Engineer: the tabs at their width; then 8 px less padding each (scsq); then, when even that does not fit (a tablet, a long
+     status), every tab goes into the menu, whose button names the tool that is open (scsq2). Back again when they fit */
+  function engFit(W) {
+    const n = $('scetools');
+    if (!n || !more) return;
+    const sq2 = B.classList.contains('scsq2'),
+      cnt = main.length + 1;
+    if (!sq2) full = [...main, more].reduce((a, e) => a + e.offsetWidth + 4, 0) + (B.classList.contains('scsq') ? 8 * cnt : 0);
+    if (!full) return;
+    /* the level that fits with 2 px to spare (the measure is the same at every level, so it does not swing) */
+    const tight = full - 8 * cnt,
+      nl = full + 2 <= W ? 0 : tight + 2 <= W ? 1 : 2;
+    B.classList.toggle('scsq', nl >= 1);
+    B.classList.toggle('scsq2', nl === 2);
+    if (nl === 2 && main[0].parentElement !== moreM) {
+      moreM.prepend(...main);
+      for (const b of main) b.setAttribute('role', 'menuitem');
+    } else if (nl < 2 && main[0].parentElement === moreM) {
+      for (const b of main) {
+        n.insertBefore(b, more);
+        b.removeAttribute('role');
+      }
+    }
   }
 
   /* where each moved control sits: the free part of the context bar (slot), the sheet tool bar and the plant pane header */
@@ -118,21 +150,16 @@
     set(B, '--sccrw', (c && c.offsetWidth ? c.offsetWidth + 8 : 0) + 'px');
     /* no room (a long trip or alarm text in the status): the page tools go back to their own row on the page, the Engineer tabs take
        less padding (body.scsq); back again when they fit (the measure is the same in both forms) */
-    const need = (() => {
-      if (B.classList.contains('sceng')) {
-        const n = $('scetools');
-        /* measured at the padding of now: with scsq on, each tab is 8 px narrower than without it */
-        const t = n ? [...n.querySelectorAll(':scope > button, :scope > .scmore')] : [];
-        return t.reduce((a, e) => a + e.offsetWidth + 4, 0) + (B.classList.contains('scsq') ? 8 * t.length : 0);
-      }
+    if (B.classList.contains('sceng')) engFit(r.width);
+    else {
+      B.classList.remove('scsq2');
       const pb = document.querySelector('#plantws .plbar');
-      if (!pb || B.dataset.tab !== 'operate' || B.classList.contains('scov')) return 0;
-      const k = [...pb.children].filter(e => e.offsetWidth && !e.classList.contains('scpev') && !e.classList.contains('scecr'));
-      return (c && c.offsetWidth ? c.offsetWidth + 8 : 0) + k.reduce((a, e) => a + e.offsetWidth + 4, 0);
-    })();
-    const sq = B.classList.contains('scsq');
-    if (!sq && need > r.width) B.classList.add('scsq');
-    else if (sq && need + 2 <= r.width) B.classList.remove('scsq');
+      const k = pb && B.dataset.tab === 'operate' && !B.classList.contains('scov') ? [...pb.children].filter(e => e.offsetWidth && !e.classList.contains('scpev') && !e.classList.contains('scecr')) : [];
+      const need = k.length ? (c && c.offsetWidth ? c.offsetWidth + 8 : 0) + k.reduce((a, e) => a + e.offsetWidth + 4, 0) : 0;
+      const sq = B.classList.contains('scsq');
+      if (!sq && need > r.width) B.classList.add('scsq');
+      else if (sq && need + 2 <= r.width) B.classList.remove('scsq');
+    }
     /* the page name can be cut with … (shellc-bars.css): its full name in the tooltip */
     const nm = c && c.querySelector('b') ? c.querySelector('b').textContent.trim() : '',
       ti = 'Back to the overview of the unit' + (nm ? '. This page: ' + nm : '');
