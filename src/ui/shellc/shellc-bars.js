@@ -312,11 +312,11 @@
     set(B, '--sccrw', (c && c.offsetWidth ? c.offsetWidth + 8 : 0) + 'px');
     /* Mina, live test of 274: at 1366 the sheet tool bar needed 1472 px: the tools turn into their icons when their names do not fit the
        room of the bar (the plant pane changes that room), and back when they fit again */
-    const tb = document.querySelector('#gsbar > .tbar');
-    if (tb && tb.offsetWidth && B.classList.contains('sceng')) {
-      const pad = parseFloat(getComputedStyle(tb).paddingLeft) || 0,
-        room = tb.clientWidth - pad,
-        need = tb.scrollWidth - pad;
+    const tbr = document.querySelector('#gsbar > .tbar');
+    if (tbr && tbr.offsetWidth && B.classList.contains('sceng')) {
+      const pad = parseFloat(getComputedStyle(tbr).paddingLeft) || 0,
+        room = tbr.clientWidth - pad,
+        need = tbr.scrollWidth - pad;
       if (!B.classList.contains('sctbic')) {
         if (need > room + 1) {
           tbNeed = need;
