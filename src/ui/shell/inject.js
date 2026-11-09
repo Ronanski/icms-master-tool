@@ -59,6 +59,7 @@ const block =
   fs.readFileSync(__dirname + '/../shellc/shellc-eng.css', 'utf8') + /* step 4: Engineer mode */
   fs.readFileSync(__dirname + '/../shellc/shellc-bars.css', 'utf8') + /* the two bars (user 2026-11-09 "Gawin na") */
   fs.readFileSync(__dirname + '/../shellc/shellc-details.css', 'utf8') + /* the Details column */
+  fs.readFileSync(__dirname + '/../shellc/shellc-zoom.css', 'utf8') + /* one control per task, readable page size */
   fs.readFileSync(__dirname + '/../shellc/shellc-content.css', 'utf8') + /* content look on the shell tokens (colour, font, line width only; user 2026-11-09) */
   '</style><script id="shelljs">' +
   fs.readFileSync(__dirname + '/ditl.js', 'utf8') +
@@ -138,6 +139,7 @@ const block =
   '\n' + fs.readFileSync(__dirname + '/../shellc/shellc-eng.js', 'utf8') + /* step 4: Engineer mode */
   '\n' + fs.readFileSync(__dirname + '/../shellc/shellc-bars.js', 'utf8') + /* the two bars (user 2026-11-09 "Gawin na") */
   '\n' + fs.readFileSync(__dirname + '/../shellc/shellc-details.js', 'utf8') + /* the Details column */
+  '\n' + fs.readFileSync(__dirname + '/../shellc/shellc-zoom.js', 'utf8') + /* readable page size and the locator */
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');

@@ -1,0 +1,22 @@
+/* ===== RE-SHELL LAYOUT C, slice 3: one control per task, and the readable size of a plant page (shellc-zoom.js; user approval
+   2026-11-09 "Gawin na", artifact DMAqPXBECUGeEShYRB2QX8). ===== */
+
+/* ---- duplicates: Run / Pause and the speed are the Run pill and its ×1 in the context bar; the same buttons in the page bar of the
+   Plant view and in the sheet header gave the same order twice (audit: "Pause / 1x" = "Running ×1"). They stay in the page (the pill
+   and shellc.js press them), out of sight. Reset and the step back / forward of a paused simulation stay ---- */
+html body.sc.scbars .g-run :is(.tb-run,select[title="Simulation speed"]){display:none!important}
+/* the sheet list switch of the Logic page has no sheet list in the Operator mode (it stood at the left edge of the page bar) */
+html body.sc.scbars[data-tab="operate"] #sidetg{display:none!important}
+
+/* ---- the locator of a plant page (Operator) ---- */
+body:not(.sczon) #sczoom{display:none!important}
+#sczoom{position:fixed;z-index:46;display:flex;flex-direction:column;align-items:flex-end;gap:8px;font-family:var(--sc-ui)}
+#sczoom .sczmap{display:none;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:6px;box-shadow:0 4px 12px rgba(34,46,57,.14);cursor:pointer;touch-action:none}
+#sczoom.map .sczmap{display:block}
+#sczoom .sczpg{fill:var(--sc-paper);stroke:var(--sc-line2);stroke-width:1;vector-effect:non-scaling-stroke}
+#sczoom .sczvr{fill:rgba(43,108,165,.12);stroke:var(--sc-steel);stroke-width:2;vector-effect:non-scaling-stroke}
+html body.sc #sczoom .sczrb{min-height:32px!important;height:auto!important;padding:0 12px!important;border:1px solid var(--sc-line2)!important;border-radius:16px!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 13px var(--sc-ui)!important;box-shadow:0 2px 8px rgba(34,46,57,.12)!important;cursor:pointer}
+html body.sc #sczoom .sczrb:hover{border-color:var(--sc-steel)!important}
+html body.sc #sczoom .sczrb[hidden]{display:none!important}
+#sczoom :focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}
+@media (max-width:1279px),(pointer:coarse){html body.sc #sczoom .sczrb{min-height:40px!important}}
