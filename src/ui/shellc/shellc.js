@@ -278,6 +278,11 @@
               e = e.nextElementSibling;
             }
           }
+          /* user 2026-11-09: the old header (values) and the alarm line at the top of the page repeat the strip and its alarm pill: hidden too (frame, not drawing) */
+          for (const r of ps.querySelectorAll('rect[height="34"][y="0"]:not([data-schd])')) {
+            if (+r.getAttribute('width') < 900 || r.getAttribute('x') !== '0') continue;
+            for (let e = r; e && !(e.tagName === 'rect' && e.getAttribute('height') === '32'); e = e.nextElementSibling) e.setAttribute('data-schd', '');
+          }
         };
         hide();
         new MutationObserver(hide).observe(ps, { childList: true, subtree: true });
