@@ -108,7 +108,6 @@ html body.sc.scbars #gsbar #scstrip #scctx .scmore2.open .scmore2b{border-color:
 /* in the menu every item is a full-width row with its name (the icons of the bar get their words back) */
 html body.sc #gsbar #scstrip #scctx .scmore2m > *{order:0!important;width:auto!important;min-width:0!important;height:32px!important;min-height:0!important;margin:0!important;padding:0 10px!important;justify-content:flex-start!important;gap:8px;border-radius:6px!important;font-size:12px!important}
 html body.sc #gsbar #scstrip #scctx .scmore2m > .scsrp > span{position:static!important;width:auto;height:auto;overflow:visible;clip:auto}
-html body.sc #gsbar #scstrip #scctx .scmore2m > .scgearb::after{content:"Settings";font:600 12px var(--sc-ui);margin-left:8px}
 html body.sc #gsbar #scstrip #scctx .scmore2m > .scgearb{display:flex!important;align-items:center;justify-content:flex-start!important}
 html body.sc #gsbar #scstrip #scctx .scmore2m > .scgearb svg{width:16px!important;height:16px!important;flex:none}
 /* touch screen: the targets of the density (36 px) for the two More buttons and the menu rows */
@@ -128,3 +127,11 @@ html body.sc.scbars.scov:not(.sceng) #plantws .plbar{display:none!important}
 /* Mina b254 at 1024: in the More menu Details, Search and Settings stayed 28 x 28 icon boxes with their names spilling beside them (the
    density's icon-button size has the same weight as the menu rule): in the menu they are full-width rows */
 html body.sc.scbars #gsbar #scstrip #scctx:not(#scnone) .scmore2m > :is(.scsrp,.scgearb,.scdetb){width:auto!important;min-width:0!important;padding:0 10px!important;justify-content:flex-start!important;gap:8px}
+/* Mina b259: the Settings row of the More menu showed the gear only (its name was CSS generated text): a real "Settings" label now,
+   shown only in the menu (shellc-bars.js) */
+.scmlbl{display:none}
+html body.sc #gsbar #scstrip #scctx .scmore2m > .scgearb .scmlbl{display:inline;font:600 12px var(--sc-ui)}
+/* Mina b259 (1024 Engineer): the DITL sheet row (#dmeta: the sheet name, "SIMULATION - RUNNING") ran the whole width and its left part was
+   under the plant pane ("…ION - RUNNING"): it starts where the sheet starts, and it ends where the Details column starts (on a tablet too, where the column lies over the sheet) */
+html body.sc.scbars.sceng #dmeta{margin-left:var(--scex)!important;box-sizing:border-box}
+html body.sc.scbars.sceng.scdet #dmeta{margin-right:var(--scdw)!important}
