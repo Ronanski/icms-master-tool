@@ -85,6 +85,7 @@
       arm(b, t, () => {
         if (window.AN && AN.run && !AN.view && AN.pauseOn) AN.pauseOn();
         press(id);
+        con.hidden = true;
       }, { q: 'Load the ' + t + ' start state?', t: 'The running plant is replaced by the ' + t + ' starting state. What is not kept in a save point is lost.', ok: 'Load ' + t });
       r.append(b);
     }
@@ -99,6 +100,7 @@
       const b = btn(t, o.title);
       arm(b, t, () => {
         o.click();
+        con.hidden = true; /* Mina, live test of 269: the console stayed over the plant after the start */
         /* a Practise button that asks "Press again" itself gets its second press here (the trainer already pressed twice) */
         setTimeout(() => /^Press again/.test(o.textContent) && o.click(), 60);
       }, { q: 'Start the practice: ' + t + '?', t: (o.title ? o.title + ' ' : '') + 'The running plant is replaced.', ok: 'Start practice' });

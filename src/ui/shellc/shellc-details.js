@@ -111,7 +111,16 @@
     btn.type = 'button';
     btn.title = 'Show or hide the Details column: Why, Inspector, Faceplate, Training, Alarms';
     btn.setAttribute('aria-controls', 'scdet');
-    btn.onclick = () => setOpen(!B.classList.contains('scdet'));
+    /* Mina, live test of 269: with the Training panel open this press did nothing (the panel has the right side). The panel folds to its
+       step card, which is shown in the Training section of the column */
+    btn.onclick = () => {
+      if (dockOpen()) {
+        ls('ls-gdock-min', 'true');
+        call(() => LS_DOCK.layout());
+        return setOpen(true);
+      }
+      setOpen(!B.classList.contains('scdet'));
+    };
     scp.append(btn);
     /* Force a signal of the Why box needs the Inspector of the sheet: the column shows it first (shellc-eng.js force() then finds the
        panel open and presses its Inspector tab) */
@@ -162,12 +171,15 @@
     }
   }
 
+  function dockOpen() {
+    const dock = $('gdock');
+    return !!(dock && vis(dock) && !document.documentElement.classList.contains('gd-min') && call(() => LS_GUIDE.on, false));
+  }
   function paint() {
     if (!col) return;
     const ok = B.classList.contains('sc') && (B.dataset.tab === 'operate' || eng());
     /* the full Training panel (dock.js #gdock) is open: it has the right side; the column comes back when it is folded */
-    const dock = $('gdock'),
-      dockOn = !!(dock && vis(dock) && !document.documentElement.classList.contains('gd-min') && call(() => LS_GUIDE.on, false));
+    const dockOn = dockOpen();
     const on = ok && !dockOn && (open == null ? wide() : open);
     B.classList.toggle('scdet', on);
     /* Giselle beta.266 (Jennie, Mina's live check of 263: at 1024 the column lay over the overview cards, the plant drawing and the

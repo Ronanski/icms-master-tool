@@ -124,7 +124,7 @@
     rb.type = 'button';
     rb.title = 'Zoom in until the drawing text is readable (about 12 px), from the top left of the page; Fit shows the whole page again';
     rb.onclick = () => toReadable();
-    box.append(map, rb);
+    box.append(E('span', 'sczcap', 'Position on the page'), map, rb);
     document.body.append(box);
     let down = false;
     const go = e => {

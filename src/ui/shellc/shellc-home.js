@@ -116,7 +116,9 @@
     return out;
   }
   function allAlarms() {
-    return [...call(() => lsAlarms.list().filter(a => !a.rtn && !a.sd), []), ...unitTrips()];
+    /* Mina, live test of 269: the unit trips stayed on top of newer alarms: every list is in time order (the readers reverse it, newest first) */
+    const sec = a => String(a.t || '').split(':').reduce((n, x) => n * 60 + (+x || 0), 0);
+    return [...call(() => lsAlarms.list().filter(a => !a.rtn && !a.sd), []), ...unitTrips()].sort((a, b) => sec(a) - sec(b));
   }
   const ackOne = a => (a.unit ? (UACK[a.k] = 1) : call(() => lsAlarms.ack(a.k)));
   const ackAllU = () => {

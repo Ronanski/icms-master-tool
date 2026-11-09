@@ -295,8 +295,12 @@
     set(B, '--scsy', Math.round(r.top) + 'px');
     set(B, '--scsw', Math.max(0, Math.round(r.width)) + 'px');
     set(B, '--scsh', Math.round(r.height) + 'px');
-    const tb = document.querySelector('#gsbar > .tbar');
-    if (tb) {
+    /* Mina, live test of 269 (Engineer with the Training panel open): the Training panel hides this tool bar, so its place measured 0 and
+       the plant pane header went above the window. Without the bar the header stays in its own row at the top of the plant pane */
+    const tb = document.querySelector('#gsbar > .tbar'),
+      tbOn = !!(tb && tb.getClientRects().length && tb.offsetHeight);
+    B.classList.toggle('sctbno', !tbOn);
+    if (tbOn) {
       const t = tb.getBoundingClientRect();
       set(B, '--sctby', Math.round(t.top - o.y) + 'px');
       set(B, '--sctbh', Math.round(t.height) + 'px');
