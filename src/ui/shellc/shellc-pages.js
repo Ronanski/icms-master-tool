@@ -326,7 +326,7 @@
     for (const x of tsb) {
       const o = $(x.id);
       x.b.disabled = !o || o.disabled;
-      x.b.title = o ? o.title : 'Not in this build';
+      x.b.title = o ? o.title : 'Not available';
     }
   }
 

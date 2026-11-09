@@ -3764,6 +3764,11 @@
     menu,
     follow: followNow,
     quit,
+    /* the next open of the Logic page is not the sheet of the step (a search result) */
+    noFollow: () => {
+      els.lvBusy = 1;
+      setTimeout(() => (els.lvBusy = 0), 400);
+    },
     start,
     resume,
     open,

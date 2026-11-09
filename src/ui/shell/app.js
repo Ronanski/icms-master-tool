@@ -1112,7 +1112,6 @@
       const fitW = [...gZoom.children].filter(x => x.querySelector && x.querySelector('#bfit, button'));
       const zbar = E('div', { id: 'zbar' }, [sheetBtn(-1, 'Previous sheet'), sheetBtn(1, 'Next sheet'), E('i', { cls: 'zsep' }), zo, zPct, zi, E('i', { cls: 'zsep' })]);
       fitW.forEach(w => zbar.append(w));
-      [fit, dfit].forEach(b => b && b.addEventListener('click', () => setTimeout(() => (zRef = null), 60)));
       document.body.append(zbar);
       zIn.remove();
       zOut.remove();
@@ -1122,10 +1121,7 @@
         rL = E('canvas', { id: 'rulerl' }),
         rC = E('div', { id: 'rulerc' });
       document.body.append(rT, rL, rC);
-      let zRef = null,
-        zRefs = {},
-        zSheet = '',
-        last = '',
+      let last = '',
         ink = null;
       const nice = v => {
         const p = Math.pow(10, Math.floor(Math.log10(v))),
@@ -1194,13 +1190,7 @@
           name = (isAn() ? 'a' : 'd') + (crumb.textContent || ''),
           theme = document.documentElement.dataset.theme + (document.documentElement.dataset.dg || '');
         if (vb.length !== 4 || !(vb[2] > 0) || !r.width) return;
-        if (name !== zSheet) {
-          zSheet = name;
-          /* Mina, live test of 276: the zoom label went back to 100 % while the view was kept: each sheet keeps its own 100 % */
-          zRef = zRefs[name] || null;
-        }
-        if (!zRef) zRef = zRefs[name] = vb[2];
-        const key = [r.left, r.top, r.width, r.height, vb.join(','), theme].join('|');
+        const key = [name, r.left, r.top, r.width, r.height, vb.join(','), theme].join('|');
         if (key === last) return;
         last = key;
         if (!ink || ink.k !== theme) {
@@ -1217,7 +1207,9 @@
         rC.style.cssText = `left:${r.left}px;top:${r.top}px`;
         drawRuler(rT, r.width - 18, true, x0 + 18 / s, 1 / s, false);
         drawRuler(rL, r.height - 18, false, y0 + 18 / s, 1 / s, isAn());
-        zPct.textContent = Math.round((zRef / vb[2]) * 100) + '%';
+        /* Mina, live test of 276 and 277: the same view had a different label each time: 100 % is the whole sheet in this pane, worked out from the view itself */
+        const e_ = window.LOVIEW && LOVIEW.ext();
+        zPct.textContent = (e_ && e_[2] > e_[0] && e_[3] > e_[1] ? Math.round((s / Math.min(r.width / (e_[2] - e_[0]), r.height / (e_[3] - e_[1]))) * 100) : 100) + '%';
         /* centred on the part of the drawing that is not under an overlay panel (tablet) */
         let right = r.right;
         [$('anp'), $('opp')].forEach(pn => {
