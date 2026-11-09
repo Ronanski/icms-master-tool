@@ -291,3 +291,5 @@ body.sc #zbar .zsep{background:var(--sc-line);margin:0 4px}
 html[data-theme] body.sc #lcdock,html body.sc #lcdock{--lc-pass:#b3261e;--lc-fail:#1e7d3a;--lc-wait:#9a6a00;--lc-acc:#1f5fa8;--lc-chip:#e4e9ef}
 /* live check beta.233: the footer hint wrapped to two cramped lines in the Engineer view; one line, the full text in its tooltip */
 body.sc #sfoot :is(#st,.sinfo){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;align-self:center}
+/* the old page-button row of the HMI frame (marked by shellc.js; navigation, not drawing) */
+body.sc #plsvg [data-scnav]{display:none}
