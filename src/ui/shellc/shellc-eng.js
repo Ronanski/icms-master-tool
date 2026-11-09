@@ -440,6 +440,8 @@
       on = want0;
       B.classList.toggle('sceng', on);
       if (on) {
+        /* every way into the Engineer mode leaves the overview layer (Mina beta.264: it covered the whole page) */
+        call(() => window.lsShellC && lsShellC.hideOv && lsShellC.hideOv());
         rawCall('lsPlant', true);
         if (tool === 'lib') rawCall('lsLibrary', true);
         if (tool === 'fx') call(() => lsFx());
