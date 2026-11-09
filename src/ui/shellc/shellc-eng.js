@@ -480,9 +480,9 @@
     const dpw = Math.round(dw) + 'px';
     if (B.style.getPropertyValue('--scedw') !== dpw) B.style.setProperty('--scedw', dpw);
     /* live check beta.241: the plant page stayed small in a pane that changed width; it fits again (its own Fit button) */
-    const pw = $('plantws') ? $('plantws').offsetWidth : 0;
-    if (pw && pw !== tick.pw) {
-      tick.pw = pw;
+    const plw = $('plantws') ? $('plantws').offsetWidth : 0;
+    if (plw && plw !== tick.plw) {
+      tick.plw = plw;
       clearTimeout(tick.ft);
       tick.ft = setTimeout(() => call(() => [...document.querySelectorAll('#plantws .plbar button')].find(b => b.textContent.trim() === 'Fit').click()), 250);
     }

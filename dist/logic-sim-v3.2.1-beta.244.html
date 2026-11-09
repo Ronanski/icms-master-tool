@@ -36421,7 +36421,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.1-beta.244';
-      c3.textContent += ' · build 27adbb2'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 0b3031b'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -110536,7 +110536,7 @@ window.LS_GUIDE = (function () {
         'Engineering = white symbols, only wires, values and valves coloured'
       );
     const ver = (document.title.match(/v\d[\w.-]*/) || [''])[0];
-    row('Version', E('span', 'scsver', ver + ' · build 27adbb2'));
+    row('Version', E('span', 'scsver', ver + ' · build 0b3031b'));
   }
   function openSet(near) {
     if (!set) {
@@ -111156,9 +111156,9 @@ window.LS_GUIDE = (function () {
     const dpw = Math.round(dw) + 'px';
     if (B.style.getPropertyValue('--scedw') !== dpw) B.style.setProperty('--scedw', dpw);
     /* live check beta.241: the plant page stayed small in a pane that changed width; it fits again (its own Fit button) */
-    const pw = $('plantws') ? $('plantws').offsetWidth : 0;
-    if (pw && pw !== tick.pw) {
-      tick.pw = pw;
+    const plw = $('plantws') ? $('plantws').offsetWidth : 0;
+    if (plw && plw !== tick.plw) {
+      tick.plw = plw;
       clearTimeout(tick.ft);
       tick.ft = setTimeout(() => call(() => [...document.querySelectorAll('#plantws .plbar button')].find(b => b.textContent.trim() === 'Fit').click()), 250);
     }
