@@ -128,6 +128,7 @@
      is the page's (at 1366 with the dock the 11 values got 82 px each and their names were cut) */
   const pageW = () => Math.min(innerWidth, B.clientWidth || innerWidth);
   const tabW = () => pageW() < 1280 || (matchMedia('(pointer:coarse)').matches && pageW() < 1366);
+  let tbNeed = 0;
   let vMore = null,
     vPop = null,
     cMore = null,
@@ -309,6 +310,20 @@
     /* the breadcrumb (shellc-home.js) is the first thing of the slot: the page tools start right of it */
     const c = document.querySelector('.sccrumb');
     set(B, '--sccrw', (c && c.offsetWidth ? c.offsetWidth + 8 : 0) + 'px');
+    /* Mina, live test of 274: at 1366 the sheet tool bar needed 1472 px: the tools turn into their icons when their names do not fit the
+       room of the bar (the plant pane changes that room), and back when they fit again */
+    const tbr = document.querySelector('#gsbar > .tbar');
+    if (tbr && tbr.offsetWidth && B.classList.contains('sceng')) {
+      const pad = parseFloat(getComputedStyle(tbr).paddingLeft) || 0,
+        room = tbr.clientWidth - pad,
+        need = tbr.scrollWidth - pad;
+      if (!B.classList.contains('sctbic')) {
+        if (need > room + 1) {
+          tbNeed = need;
+          B.classList.add('sctbic');
+        }
+      } else if (room >= tbNeed) B.classList.remove('sctbic');
+    }
     /* no room (a long trip or alarm text in the status): the page tools go back to their own row on the page, the Engineer tabs take
        less padding (body.scsq); back again when they fit (the measure is the same in both forms) */
     if (B.classList.contains('sceng')) engFit(r.width);

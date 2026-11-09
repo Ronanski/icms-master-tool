@@ -43,6 +43,8 @@ function setCat(c) {
     const f = $('sidefl');
     if (f && AN._ph !== undefined) f.placeholder = AN._ph;
   }
+  /* Mina, live test of 274: back on ABC from DITL / TCS another sheet opened: the sheet open now is the one to come back to */
+  if (c !== 'an' && AN.cat === 'an' && AN.sheets && AN.sheets[AN.i]) AN._cur = AN.sheets[AN.i].name;
   AN.cat = c;
   try {
     localStorage.setItem('ditl.cat', c);
@@ -75,6 +77,8 @@ function setCat(c) {
         AN.i = i;
         AN.key = null;
         AN.lkey = null;
+        /* Mina, live test of 273 and 274: the view kept from before was off the drawing in this pane (blank until Fit): the sheet comes back fitted */
+        if (AN.av && AN.sheets[i]) delete AN.av[AN.sheets[i].name];
         render();
         coldShow();
         /* retest #57: a plant not started does not run by itself (the operator picks the starting state first) */
@@ -873,6 +877,7 @@ function go(i) {
     msg('Second pane closed: the same sheet cannot be open twice');
   }
   AN.i = i;
+  AN._cur = AN.sheets[i].name;
   AN.sel = null;
   AN.key = null;
   try {
