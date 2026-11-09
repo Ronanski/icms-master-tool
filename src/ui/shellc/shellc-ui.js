@@ -163,13 +163,13 @@
     let x = DX[id];
     if (!x) {
       x = DX[id] = btn('scbx', 'Dismiss', 'Hide this message (it comes back with a new error)', () => {
-        d.dataset.scgone = d.textContent.length;
+        d.dataset.scgone = d.textContent;
         d.classList.add('scgone');
         x.hidden = true;
       });
       document.body.append(x);
       new MutationObserver(() => {
-        if (d.classList.contains('scgone') && d.textContent.length > +d.dataset.scgone) d.classList.remove('scgone');
+        if (d.classList.contains('scgone') && d.textContent !== d.dataset.scgone) d.classList.remove('scgone');
       }).observe(d, { childList: true, characterData: true, subtree: true });
     }
     const on = !d.classList.contains('scgone') && d.getBoundingClientRect().height > 0;
@@ -198,6 +198,7 @@
     tickToast();
     dismissable('errbn');
     dismissable('engerr');
+    dismissable('anerr');
   }
 
   /* ---------- (c) Settings: one panel for the gear of the strip and the Settings link of the start screen ---------- */

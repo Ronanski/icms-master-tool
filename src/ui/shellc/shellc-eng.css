@@ -33,7 +33,7 @@ body.sceng #scetools{position:fixed;left:var(--railW,0px);top:var(--topH,0px);bo
 
 /* ---- the plant page (left) and the logic sheet (right) ---- */
 html body.sc.sceng #plantws{display:grid!important;left:calc(var(--railW,0px) + var(--scetw))!important;right:auto!important;width:var(--scepw)!important;border-right:1px solid var(--sc-line2)}
-body.sceng.scenopl #plantws{display:none!important}
+html body.sc.sceng.scenopl #plantws{display:none!important}
 html body.sc.sceng #mid{margin-left:calc(var(--scetw) + var(--scepw))!important}
 /* the sheet list of the Logic page: the sheet picker of the band chooses the sheet, the drawing gets the width (as in the split view) */
 body.sceng #side{display:none!important}
