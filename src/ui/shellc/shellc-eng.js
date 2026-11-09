@@ -160,11 +160,9 @@
   function build() {
     if (els) return;
     els = {};
-    /* the bar under the strip: where you are, and the two switches of the Engineer (mockup: LOGIC View | Run, PLANT MODEL On | Off) */
-    const bar = E('div');
-    bar.id = 'scebar';
-    bar.setAttribute('role', 'region');
-    bar.setAttribute('aria-label', 'Engineer view');
+    /* where you are: Plant › page, at the left end of the plant page's own bar (Jennie's live check of beta 233: the second row under the
+       strip repeated VIEW | RUN of the strip and took 28 px of the logic; the sheet name is in the Engineer tool bar, the plant model
+       OFF | Unit in the PLANT chip menu of the strip) */
     const cr = E('nav', 'scecr');
     cr.setAttribute('aria-label', 'Where you are');
     els.cPlant = Bt('scelk', 'Plant', 'The overview of the unit (Operator)', () => call(() => lsShellC.showOv()));
@@ -172,42 +170,8 @@
       const pk = picker();
       if (pk && window.lsShellC && lsShellC.openPage) lsShellC.openPage(pk.value);
     });
-    els.cHere = E('span', 'scehere', '');
-    cr.append(els.cPlant, E('span', 'scesep', '›'), els.cPage, E('span', 'scesep', '›'), els.cHere);
-    const seg = (lab, opts, tip) => {
-      const g = E('span', 'sceseg');
-      g.setAttribute('role', 'group');
-      g.setAttribute('aria-label', tip);
-      const bs = opts.map(([t, ti, f]) => Bt('', t, ti, f));
-      g.append(...bs);
-      return [E('span', 'scelab', lab), g, bs];
-    };
-    const band = t => [...document.querySelectorAll('#crband .seg button')].find(b => b.textContent.trim() === t);
-    const [l1, g1, vr] = seg(
-      'Logic',
-      [
-        ['View', 'View: look and trace; nothing runs, the inputs are locked', () => call(() => band('VIEW').click())],
-        ['Run', 'Run: the logic runs; switch and force the inputs', () => call(() => band('RUN').click())]
-      ],
-      'Logic view or run'
-    );
-    const pm = v => () => call(() => window.AN && !!AN.plantOn !== v && $('pmbtn').click());
-    const [l2, g2, pmb] = seg(
-      'Plant model',
-      [
-        [
-          'On',
-          'On: the boiler and turbine model with the steam table; the measured values follow the valves',
-          pm(true)
-        ],
-        ['Off', 'Off: you type the plant values; only the drawn logic runs', pm(false)]
-      ],
-      'Plant model on or off'
-    );
-    els.vr = vr;
-    els.pmb = pmb;
-    bar.append(cr, E('span', 'scesp'), l1, g1, l2, g2);
-    els.bar = bar;
+    cr.append(els.cPlant, E('span', 'scesep', '›'), els.cPage);
+    els.cr = cr;
 
     /* the tool rail */
     const nav = E('nav');
@@ -248,8 +212,6 @@
     els.pane = pane;
 
     document.body.append(nav, why, pane);
-    const gs = $('gsbar');
-    if (gs) gs.append(bar);
   }
 
   /* ---------- the tools ---------- */
@@ -502,24 +464,13 @@
     if (pw && pw.style.display !== 'grid' && !B.classList.contains('pvout')) rawCall('lsPlant', true);
     B.classList.toggle('scenopl', B.classList.contains('pvout'));
     follow();
-    /* the bar: where you are and the two switches */
+    /* where you are (Plant › page), kept at the start of the plant page bar */
     const pk = picker(),
       pn = pk && pk.selectedOptions[0] ? pk.selectedOptions[0].textContent.trim() : '';
     if (els.cPage.textContent !== pn) els.cPage.textContent = pn;
     els.cPage.hidden = !pn;
-    const c = curSheet();
-    const here =
-      tool === 'logic' ? (c ? c.name + (c.title ? ' · ' + c.title : '') : 'Logic') : TOOLS.find(x => x[0] === tool)[1];
-    if (els.cHere.textContent !== here) els.cHere.textContent = here;
-    const bv = [...document.querySelectorAll('#crband .seg button')];
-    const vOn = bv.find(b => b.textContent.trim() === 'VIEW'),
-      rOn = bv.find(b => b.textContent.trim() === 'RUN');
-    if (vOn && !vOn.parentElement.classList.contains('sce-hide')) vOn.parentElement.classList.add('sce-hide');
-    els.vr[0].setAttribute('aria-pressed', String(!!(vOn && vOn.classList.contains('on'))));
-    els.vr[1].setAttribute('aria-pressed', String(!!(rOn && rOn.classList.contains('on'))));
-    const pmOn = !!call(() => AN.plantOn, false);
-    els.pmb[0].setAttribute('aria-pressed', String(pmOn));
-    els.pmb[1].setAttribute('aria-pressed', String(!pmOn));
+    const pb = document.querySelector('#plantws .plbar');
+    if (pb && els.cr.parentElement !== pb) pb.prepend(els.cr);
     if (tool === 'logic') paintWhy();
     /* the Why card stays left of the panel of the sheet (Inspector / Faceplate) when it is open */
     const dw = Math.max(...['anp', 'opp', 'dp'].map(id => ($(id) && $(id).offsetParent ? $(id).offsetWidth : 0))),
