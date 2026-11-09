@@ -57,7 +57,11 @@
     const go = E('button', 'scok', 'Yes');
     no.type = go.type = 'button';
     row.append(no, go);
-    card.append(q, t, row);
+    const inp = E('input', 'scaski');
+    inp.type = 'text';
+    inp.setAttribute('aria-labelledby', 'scaskq');
+    inp.hidden = true;
+    card.append(q, t, inp, row);
     box.append(card);
     document.body.append(box);
     const done = ok => {
@@ -70,19 +74,24 @@
     no.onclick = () => done(false);
     go.onclick = () => done(true);
     box.addEventListener('mousedown', e => e.target === box && done(false));
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') (e.preventDefault(), done(true));
+    });
     /* Mina beta.244: Esc never reached the dialog (a page handler stops it first); the dialog listens first, on the window, while open */
     addEventListener('keydown', e => {
       if (box.hidden) return;
       if (e.key === 'Escape') (e.preventDefault(), e.stopImmediatePropagation(), done(false));
       if (e.key === 'Tab') {
         e.preventDefault();
-        (document.activeElement === no ? go : no).focus();
+        const L = (inp.hidden ? [] : [inp]).concat(no, go);
+        L[(L.indexOf(document.activeElement) + (e.shiftKey ? L.length - 1 : 1)) % L.length].focus();
       }
     }, true);
     box._q = q;
     box._t = t;
     box._go = go;
     box._no = no;
+    box._in = inp;
   }
   /* ask({q, t, ok, danger}) resolves true on the verb button, false on Cancel / Esc / a click outside */
   function ask(o) {
@@ -94,11 +103,16 @@
     box._t.hidden = !o.t;
     box._go.textContent = o.ok || 'Yes';
     box._go.classList.toggle('danger', !!o.danger);
+    box._in.hidden = o.input == null;
+    box._in.value = o.input || '';
     box.hidden = false;
-    box._no.focus();
+    if (o.input == null) box._no.focus();
+    else (box._in.focus(), box._in.select());
     return new Promise(r => (pend = r));
   }
   window.lsAsk = ask;
+  /* Mina, live test of 278: prompt() is blocked in some browsers and app views: the question with a text box, in the page; the text, or null on Cancel */
+  window.lsAskText = (q, def, ok) => ask({ q, input: def || '', ok: ok || 'OK' }).then(y => (y ? box._in.value : null));
 
   /* ---------- the app's own buttons that replace or change the running plant ---------- */
   const tx = el => (el.textContent || '').trim();

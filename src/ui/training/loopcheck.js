@@ -895,8 +895,9 @@
         s = E('button', '', 'Skip (note why)');
       o.type = s.type = 'button';
       o.onclick = () => openFp(c);
-      s.onclick = () => {
-        const w = prompt('Why is ' + c.tag + ' skipped?', '');
+      s.onclick = async () => {
+        const q = 'Why is ' + c.tag + ' skipped?',
+          w = window.lsAskText ? await lsAskText(q, '', 'Skip') : prompt(q, '');
         if (w == null) return;
         res[c.id] = { r: 'skip', at: new Date().toISOString(), why: w.trim() || 'skipped', c: [] };
         save();

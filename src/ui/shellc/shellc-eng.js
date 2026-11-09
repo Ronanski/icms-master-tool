@@ -293,6 +293,10 @@
     const btnT = re =>
       [...document.querySelectorAll('#gsbar button, #toolsws button')].find(b => re.test(b.textContent.trim()));
     const isAn = call(() => AN.cat === 'an', false);
+    const shut = id => {
+      const d = $(id);
+      if (d) (d.style.display = 'none'), (d.hidden = true);
+    };
     const lg = () => {
       setTool('logic');
       setTimeout(
@@ -315,10 +319,21 @@
         isAn ? '' : 'Open an analog sheet first'
       ),
       /* the import / export panel of the tables (tables-health.js lnOpen; the LN tables button itself opens the Curves page) */
-      item('Linear curve tables', 'add, replace or download the tables of the curves', () => call(() => AN.lnOpen())),
-      item('Drawing health', 'sheets, blocks, inputs and pin problems of the drawings', () =>
-        call(() => btnT(/^Health/).click())
-      ),
+      /* Mina, live test of 278: these two opened behind this pane, one over the other: the pane closes and one dialog shows */
+      item('Linear curve tables', 'add, replace or download the tables of the curves', () => {
+        setTool('logic');
+        call(() => {
+          shut('anhp');
+          AN.lnOpen();
+        });
+      }),
+      item('Drawing health', 'sheets, blocks, inputs and pin problems of the drawings', () => {
+        setTool('logic');
+        call(() => {
+          shut('anln');
+          if ($('anhp').style.display !== 'block') btnT(/^Health/).click();
+        });
+      }),
       /* the gain / integral / derivative rows of a controller show in the panel only while the test panel (Tools · UAT) is open
          (plant-window.js); that panel is in the test build only */
       $('uatb')

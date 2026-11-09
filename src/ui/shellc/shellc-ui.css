@@ -43,8 +43,8 @@ body.sc #updask button:first-child{background:var(--sc-steel)!important;border-c
 body.sc.scrun #updask{display:none!important}
 body.sc :is(#errbn,#engerr){top:var(--top)!important;z-index:var(--z-float,95)!important;background:var(--sc-run)!important;color:var(--sc-white)!important;padding:8px 112px 8px 16px!important;font:400 14px/1.4 var(--sc-ui)!important;max-height:40vh;overflow:auto}
 body.sc > .scbx{position:fixed;right:16px;z-index:calc(var(--z-float,95) + 1);min-height:32px;padding:0 16px;border:1px solid var(--sc-white);border-radius:4px;background:var(--sc-white);color:var(--sc-run);font:600 14px var(--sc-ui);cursor:pointer}
-body.sc > .scbx[hidden]{display:none}
-body.sc :is(#errbn,#engerr).scgone{display:none!important}
+html body.sc > button.scbx[hidden]{display:none!important}
+html body.sc :is(#errbn,#engerr,#anerr).scgone{display:none!important}
 body.sc #updtoast{background:var(--sc-white)!important;color:var(--sc-ink)!important;border-color:var(--sc-steel)!important;font:400 14px var(--sc-ui)!important}
 
 /* ---------- (c) Settings (M32: text 12 px and up, spacing 4 / 8 / 12 / 16) ---------- */
@@ -120,6 +120,8 @@ body.sc :is(#dmode.run,#anmode.scrunl){background:#f8e3e2!important;border-color
 body.sc .scask{position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(34,46,57,.32)}
 body.sc .scask[hidden]{display:none}
 body.sc .scaskc{width:min(420px,100%);box-sizing:border-box;padding:20px 20px 16px;border:1px solid var(--sc-line);border-radius:8px;background:var(--sc-white);color:var(--sc-ink);box-shadow:0 12px 32px rgba(34,46,57,.22);font-family:var(--sc-ui)}
+html body.sc .scaskc input.scaski{display:block;width:100%;box-sizing:border-box;height:36px;margin:0 0 16px;padding:0 8px;border:1px solid var(--sc-line);border-radius:4px;background:var(--sc-white);color:var(--sc-ink);font:400 14px var(--sc-ui)}
+html body.sc .scaskc input.scaski[hidden]{display:none!important}
 body.sc .scaskc h3{margin:0 0 8px;font:600 16px/1.35 var(--sc-ui);color:var(--sc-ink)}
 body.sc .scaskc p{margin:0 0 16px;font:400 14px/1.5 var(--sc-ui);color:var(--sc-ink2)}
 body.sc .scaskb{display:flex;justify-content:flex-end;gap:8px}
