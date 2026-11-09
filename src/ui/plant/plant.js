@@ -1010,10 +1010,12 @@
       /* #117 (user 2026-10-29): a screen with fitAll (030 SEAWATER) opens whole, nothing out of view */
       /* live test 2026-10-30 #1 (030 cut on both sides beside the Training dock): the flag is on the screen (cur.g), cur is its list entry;
          cur.fitAll was never set, so 030 was fitted to the height like the others. Whole page, centred in the area */
-      all = !!(cur && (cur.fitAll || (cur.g && cur.g.fitAll))),
+      all0 = !!(cur && (cur.fitAll || (cur.g && cur.g.fitAll))),
       /* Mina beta.175: a tall page (hmi-mock.js def.tall, page 13 TURBINE START) fits its WIDTH from the top: the text readable beside
          the Training dock, the lower part by a drag */
-      fw = !all && !!(cur && (cur.fitW || (cur.g && cur.g.fitW))),
+      fw = !all0 && !!(cur && (cur.fitW || (cur.g && cur.g.fitW))),
+      /* Mina, live test of 279: in layout C Fit is the whole page (shellc-zoom.js); Readable size zooms in */
+      all = all0 || (!fw && document.body.classList.contains('sc')),
       s = fw ? sw : all ? Math.max(sh, sw) : tall ? sh : sh <= sw ? Math.max(sh, sw * 0.7) : sh;
     vb = [box0[0] + (fw || (tall && !all) ? 0 : (w - r.width * s) / 2), box0[1] - (all ? Math.max(0, (r.height * s - h) / 2) : 0), r.width * s, r.height * s];
     svg.setAttribute('viewBox', vb.join(' '));

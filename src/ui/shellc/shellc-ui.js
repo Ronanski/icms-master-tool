@@ -162,14 +162,20 @@
     if (!d) return;
     let x = DX[id];
     if (!x) {
+      const seen = new Set();
       x = DX[id] = btn('scbx', 'Dismiss', 'Hide this message (it comes back with a new error)', () => {
-        d.dataset.scgone = d.textContent;
+        /* Mina, live test of 279: the same error brought the banner back with all its old lines: the lines read are kept out, a new line shows alone */
+        d.textContent.split('\n').forEach(l => l && seen.add(l));
         d.classList.add('scgone');
+        d.textContent = '';
         x.hidden = true;
       });
       document.body.append(x);
       new MutationObserver(() => {
-        if (d.classList.contains('scgone') && d.textContent !== d.dataset.scgone) d.classList.remove('scgone');
+        if (!d.classList.contains('scgone') || !d.textContent) return;
+        const n = d.textContent.split('\n').filter(l => l && !seen.has(l));
+        d.textContent = n.join('\n');
+        if (n.length) d.classList.remove('scgone');
       }).observe(d, { childList: true, characterData: true, subtree: true });
     }
     const on = !d.classList.contains('scgone') && d.getBoundingClientRect().height > 0;
