@@ -113,3 +113,15 @@ body.sc .fpo-box .fpo-il li.bad i{background:var(--sc-stop)}
   body.sc #plantws .plbar button,#sctsp .sctsx,#sctsp .sctsb button,body.sc.scfull[data-tab="operate"] .scfsout:not([hidden]),body.sc .sccrumb{min-height:44px!important}
   body.sc #plantws .plbar .plstep{min-width:44px!important;width:44px!important}
 }
+/* live check beta.233: the old controls of the page bar (TCS / Field, the run group of the dock, Fit, Full screen, the arrows) as the
+   shell pills; the "LIVE · n / m linked · no model" chip is an engineer detail, not in the Operator view */
+body.sc #plantws .plbar .crop{display:flex;align-items:center;gap:8px;padding-right:8px!important;margin-right:4px!important;border-right:1px solid var(--sc-line)!important}
+html body.sc #plantws .plbar > button,html body.sc #plantws .plbar > select,html body.sc #plantws .plbar .plnav > button,html body.sc #plantws .plbar .crop .g-op button:not(.ddm *),html body.sc #plantws .plbar .crop .g-op select{box-sizing:border-box;height:auto!important;min-height:32px!important;padding:0 12px!important;border:1px solid var(--sc-line2)!important;border-radius:16px!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:600 13px var(--sc-ui)!important;letter-spacing:0!important;text-decoration:none!important;box-shadow:none!important;cursor:pointer}
+html body.sc #plantws .plbar > button:hover,html body.sc #plantws .plbar > select:hover,html body.sc #plantws .plbar .plnav > button:hover,html body.sc #plantws .plbar .crop .g-op button:not(.ddm *):hover,html body.sc #plantws .plbar .crop .g-op select:hover{border-color:var(--sc-steel)!important}
+html body.sc #plantws .plbar .plstep{width:32px!important;min-width:32px!important;padding:0!important;justify-content:center}
+html body.sc #plantws .plbar .scfs{color:var(--sc-steel)!important}
+body.sc #plantws #pllive{display:none!important}
+@media (max-width:1279px),(pointer:coarse){
+  html body.sc #plantws .plbar > button,html body.sc #plantws .plbar > select,html body.sc #plantws .plbar .plnav > button,html body.sc #plantws .plbar .crop .g-op button:not(.ddm *),html body.sc #plantws .plbar .crop .g-op select{min-height:40px!important;border-radius:20px!important}
+  html body.sc #plantws .plbar .plstep{width:40px!important;min-width:40px!important}
+}
