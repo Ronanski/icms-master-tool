@@ -58,6 +58,17 @@
     render();
   };
   view.onclick = () => {
+    /* Mina, live test of 270: RUN then VIEW on a DITL page showed AIR PREHEATER TRIP. View went through the old Simulate switch, which
+       puts motors, valves, latches and timers back to the start (the same fault as RUN before 3.2.0, see above). With the one world
+       VIEW only stops showing the simulation: the logic keeps its state */
+    if (window.WORLD && WORLD.on) {
+      SIM = false;
+      sel = null;
+      DPAUSE = false;
+      upd();
+      render();
+      return;
+    }
     if (SIM) mode().click();
     DPAUSE = false;
     upd();

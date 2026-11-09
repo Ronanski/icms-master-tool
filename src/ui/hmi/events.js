@@ -357,6 +357,14 @@
       }
     const first = !!almScan.first;
     almScan.first = false;
+    /* Mina, live test of 270: alarms standing at a load read 0:00 while the clock read 10:37: the first scan came before the clock of the
+       start state. They take the clock of the state when it arrives (a Cold start really begins at 0:00) */
+    if (t >= 1 && A.startState !== 'plantCold')
+      for (const e of AT.values())
+        if (e.t0) {
+          e.t = tfmt(t);
+          e.t0 = false;
+        }
     let nNew = 0;
     for (const [k, x] of now) {
       const e = AT.get(k);
@@ -381,7 +389,7 @@
         /* live test #11 (94 at the start, 96 in the header later, "standing since the plant was loaded"): an alarm suppressed after the
            load (its group still stopped) is marked late and logged, so the count and the text say where it came from */
         const late = sd && !first && !(e && e.sd && !e.rtn && !e.late) ? true : !!(e && e.late && sd);
-        AT.set(k, { ...x, nm: words(x.nm), t: tfmt(t), ack: sd || stand, rtn: false, sd, late });
+        AT.set(k, { ...x, nm: words(x.nm), t: tfmt(t), ack: sd || stand, rtn: false, sd, late, t0: first && t < 1 });
         if (first) nNew++;
         else if (stand) continue;
         else if (!sd) add({ rt: { t } }, { name: x.sh }, x.kind, x.nm + ' ' + x.lv);

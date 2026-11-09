@@ -90,7 +90,15 @@
     sec.train = E('section', 'scdsec scdtrain');
     sec.alm = E('section', 'scdsec scdalm');
     sec.ins = E('section', 'scdsec scdins');
-    body.append(sec.why, sec.ins, sec.train, sec.alm);
+    /* Mina, live test of 270: Why, Inspector and Faceplate were empty on the Library, Curves, Loop check, Recent and Sheet tools tabs */
+    sec.off = E('section', 'scdsec scdoffs');
+    {
+      const b = E('button', 'scdlink', 'Back to the logic sheet');
+      b.type = 'button';
+      b.onclick = () => call(() => lsShellC.engTool('logic'));
+      sec.off.append(E('p', 'scdnone', 'This section reads the logic sheet.'), b);
+    }
+    body.append(sec.why, sec.ins, sec.train, sec.alm, sec.off);
     col.append(hd, body);
     document.body.append(col);
     /* the training section: the step card (moved in), or what to do when there is none */
@@ -199,7 +207,9 @@
     tb.fp.disabled = eng() && !an;
     tb.fp.title = an || !eng() ? TABS.fp[1] : 'Faceplates are on the analog sheets: open an ABC sheet';
     for (const t of Object.keys(TABS)) B.classList.toggle('scdt-' + t, on && t === k);
-    B.classList.toggle('scdt-pan', on && (k === 'insp' || (k === 'fp' && an)));
+    const off = on && eng() && !B.classList.contains('scet-logic') && ['why', 'insp', 'fp'].includes(k);
+    B.classList.toggle('scdoff', off);
+    B.classList.toggle('scdt-pan', on && !off && (k === 'insp' || (k === 'fp' && an)));
   }
 
   function tick() {

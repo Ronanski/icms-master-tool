@@ -305,4 +305,7 @@ body.sc :is(#scins,#scal) .scx[data-g],body.sc .scsx[data-g],body.sc .scdx[data-
 /* the old Home page never shows in layout C: it flashed for about 3 s while a start state loaded (Mina, 269) */
 body.sc #homews{visibility:hidden!important}
 /* the status bar beside the Training panel: its texts stay on one line (they wrapped into 2-letter rows) */
-body.sc #sfoot > :not(#stchip){white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis}
+body.sc #sfoot:not(#scnone) > :not(#stchip){white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;min-width:0}
+body.sc #sfoot:not(#scnone) :is(#st,.shint,.smsg).sf2{white-space:nowrap!important;line-height:var(--foot)!important;font-size:12px!important}
+body.sc #sfoot:not(#scnone) :is(.sinfo,.ssel){flex:0 1 auto!important}
+body.sc #sfoot{overflow:hidden;max-width:100vw}
