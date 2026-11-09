@@ -228,12 +228,26 @@
     }
   }
 
+  /* layout C never shows the old Home page of the app (Jennie, 259): if the app opens it (a path of the old frame), the Operator
+     overview takes its place; the start screen (shellc-home.js) is the one place to choose a start state */
+  function noHome() {
+    if (B.dataset.tab === 'home' && !$('scstart') && window.lsShellC && lsShellC.showOv) lsShellC.showOv();
+  }
+  /* the Why? card of a search result (#infocard, info.js) stood over the left part of the search box: it opens under the box */
+  function searchCard() {
+    const sb = document.querySelector('#gsbar .gs-search'),
+      r = B.classList.contains('scsearch') && sb && sb.getClientRects().length ? sb.getBoundingClientRect() : null;
+    set(B, '--scsrchb', r && r.height ? Math.round(r.bottom) + 'px' : '');
+  }
+
   /* where each moved control sits: the free part of the context bar (slot), the sheet tool bar and the plant pane header */
   function tick() {
     if (!ctx && !build()) return;
     tabs();
     tablet();
     fieldCover();
+    noHome();
+    searchCard();
     if (more) {
       const sel = moreM.querySelector('.on');
       more.classList.toggle('on', !!sel);

@@ -461,7 +461,13 @@
     };
     const skip = E('button', 'scskip', 'Open without a start state');
     skip.type = 'button';
-    skip.onclick = close;
+    /* Jennie's finding on 259: "Open without a start state" left the old Home page of the app (What do you want …, Starting state, Sheets
+       you opened) under layout C. With no start state the Operator overview opens (an empty plant: the values read —); the start screen
+       stays the one place to choose a start state */
+    skip.onclick = () => {
+      close();
+      showOv();
+    };
     /* Mina beta.209: "Old layout" moved here from the strip (there it reloaded a running plant); no plant runs yet on this screen */
     const old = E('button', 'scskip', 'Old layout');
     old.type = 'button';

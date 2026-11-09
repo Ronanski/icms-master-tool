@@ -135,3 +135,5 @@ html body.sc #gsbar #scstrip #scctx .scmore2m > .scgearb .scmlbl{display:inline;
    under the plant pane ("…ION - RUNNING"): it starts where the sheet starts, and it ends where the Details column starts (on a tablet too, where the column lies over the sheet) */
 html body.sc.scbars.sceng #dmeta{margin-left:var(--scex)!important;box-sizing:border-box}
 html body.sc.scbars.sceng.scdet #dmeta{margin-right:var(--scdw)!important}
+/* the Why? card of a search result opens under the search box, never over it (Jennie's finding on 259; --scsrchb from shellc-bars.js) */
+html body.sc.scsearch #infocard{top:calc(var(--scsrchb,var(--topH,88px)) + 8px)!important;max-height:calc(100vh - var(--scsrchb,var(--topH,88px)) - var(--footH,24px) - 16px)!important}
