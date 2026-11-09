@@ -253,7 +253,12 @@
       more.classList.toggle('on', !!sel);
       more.querySelector('.scmoreb').textContent = (sel ? sel.textContent.trim() : 'More') + ' ▾';
     }
-    const r = slot.getBoundingClientRect(),
+    /* Jennie, live check 264 (Engineer while a training runs, 1366): the plant pane header stood at y -16 over the value bar, also after the
+       dock was minimized. With the Training dock the body has a transform, so a position: fixed box is placed from the body, not from the
+       screen, and a page scrolled by 16 px counted twice. The places below are measured from where a fixed box at 0, 0 really stands */
+    const o = origin(),
+      r0 = slot.getBoundingClientRect(),
+      r = { left: r0.left - o.x, top: r0.top - o.y, width: r0.width, height: r0.height },
       s = B.style;
     set(B, '--scsx', Math.round(r.left) + 'px');
     set(B, '--scsy', Math.round(r.top) + 'px');
@@ -262,7 +267,7 @@
     const tb = document.querySelector('#gsbar > .tbar');
     if (tb) {
       const t = tb.getBoundingClientRect();
-      set(B, '--sctby', Math.round(t.top) + 'px');
+      set(B, '--sctby', Math.round(t.top - o.y) + 'px');
       set(B, '--sctbh', Math.round(t.height) + 'px');
     }
     void s;
@@ -285,6 +290,18 @@
     const nm = c && c.querySelector('b') ? c.querySelector('b').textContent.trim() : '',
       ti = 'Back to the overview of the unit' + (nm ? '. This page: ' + nm : '');
     if (c && c.title !== ti) c.title = ti;
+  }
+  /* where a position: fixed box with left 0, top 0 stands on the screen (0, 0 unless an ancestor has a transform and the page scrolled) */
+  let probe = null;
+  function origin() {
+    if (!probe || !probe.isConnected) {
+      probe = E('div');
+      probe.setAttribute('aria-hidden', 'true');
+      probe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none';
+      B.append(probe);
+    }
+    const p = probe.getBoundingClientRect();
+    return { x: p.left, y: p.top };
   }
   const iv = setInterval(() => {
     if (!B.classList.contains('sc')) return;
