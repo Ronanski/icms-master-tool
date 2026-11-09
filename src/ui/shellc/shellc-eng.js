@@ -464,7 +464,8 @@
     if (tool === 'loop' && call(() => $('lcdock').hidden, false)) setTool('logic');
     const pw = $('plantws');
     if (pw && pw.style.display !== 'grid' && !B.classList.contains('pvout')) rawCall('lsPlant', true);
-    B.classList.toggle('scenopl', B.classList.contains('pvout'));
+    /* Mina, live test of 276: at 1024 a Training Show left about 160 px for the sheet: below 1280 px the sheet of the step has the place of the plant page */
+    B.classList.toggle('scenopl', B.classList.contains('pvout') || (document.documentElement.classList.contains('gd-lv') && innerWidth < 1280));
     follow();
     /* where you are (Plant › page), kept at the start of the plant page bar */
     const pk = picker(),

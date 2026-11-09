@@ -78,6 +78,7 @@ function setCat(c) {
         AN.key = null;
         AN.lkey = null;
         render();
+        AN.szHold = Date.now() + 1500;
         coldShow();
         /* retest #57: a plant not started does not run by itself (the operator picks the starting state first) */
         if (runWas && AN.runOn && (AN.startState || !AN.plantOn)) AN.runOn();

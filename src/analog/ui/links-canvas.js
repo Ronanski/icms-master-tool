@@ -88,6 +88,16 @@ AN.showTag = (tag, sheetName) => {
     paint();
     AN.panelUpd && AN.panelUpd(true);
   } catch (e) {}
+  /* Mina, live test of 276: the selection can open the Inspector and the pane is still settling: the block is centred on the size of now */
+  {
+    const r2 = $('svg').getBoundingClientRect();
+    if (v && r2.width) {
+      v[3] = (v[2] * r2.height) / r2.width;
+      AN.sz = { w: r2.width, h: r2.height };
+      AN.szHold = Date.now() + 1500;
+      centerOn(hit.cx, hit.cy);
+    }
+  }
   flash(hit.cx, hit.cy, 6);
   return nm;
 };
