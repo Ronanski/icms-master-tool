@@ -123,3 +123,5 @@ html body.sc #scepane .sceit:not(#scnone){justify-content:stretch!important;grid
 html body.sc.sceng #plantws .plbar .scecr .scesep ~ .scelk:not([hidden]){display:block!important;min-width:0;flex:1 1 0;text-align:left}
 /* Mina, live test of 276: the arrows of the plant page moved with the length of its name */
 html body.sc.sceng #plantws .plbar .scecr{flex:none;width:min(50%,400px);max-width:50%}
+/* Mina, live test of 279: the Why is it strip lay over the last rows of Drawing health */
+html body.sc.sceng :is(#anhp,#anln,#anau){z-index:calc(var(--z-float,95) + 1)!important}
