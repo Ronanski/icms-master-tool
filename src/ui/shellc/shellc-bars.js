@@ -205,11 +205,32 @@
     if (!on && cMenu.children.length) for (const x of [...cMenu.children]) scp.insertBefore(x, cMore);
   }
 
+  /* Mina b254 (search result "Show" did not open the DITL sheet): while the Training is on a field step, dock.js covers the sheet area
+     with "Step N is a field step … Pick a sheet in the list" (body.lsfield) and takes the cover away only on a click in the old sheet
+     list (#side, #shsel, #tabs), which layout C does not show. A sheet the operator opens in layout C (search Open, Show of a card,
+     ABC | DITL | TCS) takes the cover away the same way: the open sheet differs from the one under the cover */
+  let fieldBase = null;
+  function fieldCover() {
+    if (!B.classList.contains('lsfield')) return void (fieldBase = null);
+    let k = '';
+    try {
+      k = AN.cat + ':' + (AN.cat === 'an' ? AN.i : S.cur);
+    } catch (e) {
+      return;
+    }
+    if (fieldBase == null) fieldBase = k;
+    else if (k !== fieldBase) {
+      B.classList.remove('lsfield');
+      fieldBase = null;
+    }
+  }
+
   /* where each moved control sits: the free part of the context bar (slot), the sheet tool bar and the plant pane header */
   function tick() {
     if (!ctx && !build()) return;
     tabs();
     tablet();
+    fieldCover();
     if (more) {
       const sel = moreM.querySelector('.on');
       more.classList.toggle('on', !!sel);

@@ -199,18 +199,25 @@
     },
     true
   );
+  /* a drag of the page (a real move with the button held), not a click on a valve or pump (Mina b254: a click did not zoom, but the
+     next refit of the page went to Fit) */
   addEventListener(
-    'pointerdown',
+    'pointermove',
     e => {
-      if (!mine(e) && e.target.closest && e.target.closest('#plsvg')) auto = false;
+      if (!mine(e) && e.buttons && e.target.closest && e.target.closest('#plsvg')) auto = false;
     },
     true
   );
   addEventListener(
     'click',
     e => {
-      const b = !mine(e) && e.target.closest && e.target.closest('#plantws .plbar button, #sczoom .sczrb');
-      if (b) auto = false;
+      if (mine(e) || !e.target.closest) return;
+      /* Fit = the operator wants the whole page; "Readable size" = keep the readable size through the next refits (Mina b254: closing
+         or opening the Details column refitted the page to Fit after a press of Readable size) */
+      if (e.target.closest('#sczoom .sczrb')) {
+        auto = true;
+        tries = 0;
+      } else if (e.target.closest('#plantws .plbar button')) auto = false;
     },
     true
   );
