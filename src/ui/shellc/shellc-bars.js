@@ -123,10 +123,93 @@
     }
   }
 
+  /* ---------- slice 4, tablet (under 1280 px, or a touch screen under 1366): 8 values + More, the rare buttons in More ▾ ---------- */
+  const tabW = () => innerWidth < 1280 || (matchMedia('(pointer:coarse)').matches && innerWidth < 1366);
+  let vMore = null,
+    vPop = null,
+    cMore = null,
+    cMenu = null;
+  function menuOf(wrap, btn, pop) {
+    const open = on => {
+      wrap.classList.toggle('open', on);
+      btn.classList.toggle('on', on);
+      btn.setAttribute('aria-expanded', String(on));
+      if (pop) pop.hidden = !on;
+    };
+    btn.onclick = () => open(!btn.classList.contains('on'));
+    document.addEventListener('click', e => {
+      if (!wrap.contains(e.target) && !(pop && pop.contains(e.target))) open(false);
+    });
+    addEventListener('keydown', e => {
+      if (e.key === 'Escape' && btn.classList.contains('on')) {
+        open(false);
+        btn.focus();
+      }
+    });
+    return open;
+  }
+  function tablet() {
+    const st = $('scstrip'),
+      scv = st && st.querySelector('.scv'),
+      scp = ctx && ctx.querySelector('.scp');
+    if (!scv || !scp) return;
+    if (!vMore) {
+      vMore = E('button', 'sckmore', 'More ▾');
+      vMore.type = 'button';
+      vMore.title = 'The other plant values: furnace pressure, total coal flow, total air flow';
+      vMore.setAttribute('aria-haspopup', 'true');
+      vMore.setAttribute('aria-expanded', 'false');
+      vPop = E('div');
+      vPop.id = 'scvm';
+      vPop.hidden = true;
+      vPop.setAttribute('role', 'group');
+      vPop.setAttribute('aria-label', 'More plant values');
+      document.body.append(vPop);
+      menuOf(vMore, vMore, vPop);
+      vMore.addEventListener('click', () => {
+        if (vPop.hidden) return;
+        const r = vMore.getBoundingClientRect();
+        vPop.style.top = Math.round(r.bottom + 4) + 'px';
+        vPop.style.right = Math.round(innerWidth - r.right) + 'px';
+      });
+      cMore = E('div', 'scmore2');
+      const b = E('button', 'scmore2b', 'More ▾');
+      b.type = 'button';
+      b.title = 'Instructor console, Search, Details, Settings';
+      b.setAttribute('aria-haspopup', 'true');
+      b.setAttribute('aria-expanded', 'false');
+      cMenu = E('div', 'scmore2m');
+      cMenu.setAttribute('role', 'menu');
+      cMore.append(b, cMenu);
+      const close = menuOf(cMore, b, null);
+      cMenu.addEventListener('click', e => {
+        if (e.target.closest('button')) setTimeout(() => close(false), 0);
+      });
+    }
+    const on = tabW();
+    B.classList.toggle('sctab', on);
+    if (vMore.parentElement !== scv) scv.append(vMore);
+    if (cMore.parentElement !== scp) scp.append(cMore);
+    /* the values: the last 3 cells in the More popover on a tablet, back in the bar on a PC (shellc.js keeps writing their numbers) */
+    if (on && scv.querySelectorAll(':scope > .sck').length > 8) for (const c of [...scv.querySelectorAll(':scope > .sck')].slice(8)) vPop.append(c);
+    if (!on && vPop.children.length) {
+      for (const c of [...vPop.children]) scv.insertBefore(c, vMore);
+      vPop.hidden = true;
+    }
+    /* the rare buttons: Instructor, Search, Details, Settings (View | RUN must already be in the bar: shellc-ui.js puts it before Settings) */
+    const q = sel => scp.querySelector(':scope > ' + sel) || cMenu.querySelector(':scope > ' + sel),
+      rare = [q('.pill.ins'), q('.scdetb'), q('.scsrp'), q('.scgearb')].filter(Boolean);
+    const vr = [...scp.querySelectorAll(':scope > .seg')].some(s => /VIEW/.test(s.textContent));
+    /* in this order in the menu; moved only when the order is not right yet (a move takes the focus away) */
+    if (on && vr && rare.some((x, i) => cMenu.children[i] !== x)) for (const x of rare) cMenu.append(x);
+    if (!on && cMenu.children.length) for (const x of [...cMenu.children]) scp.insertBefore(x, cMore);
+  }
+
   /* where each moved control sits: the free part of the context bar (slot), the sheet tool bar and the plant pane header */
   function tick() {
     if (!ctx && !build()) return;
     tabs();
+    tablet();
     if (more) {
       const sel = moreM.querySelector('.on');
       more.classList.toggle('on', !!sel);
