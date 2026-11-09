@@ -1,6 +1,6 @@
 # HANDOFF — iisang file ng estado (para sa kahit sinong Claude o account)
 
-Huling update: **2026-11-07 PHT** (LEADER, user "approved ko lahat" sa cleanup): nilinis ang lumang docs at branches; ang mga bagong plant document ay PC-only na (`.gitignore`). Isang rules file na lang ang binabasa ng hook: `docs/handoff/COMMANDMENTS.md`.
+Huling update: **2026-11-10 PHT** (JENNIE, handover sa ibang account: `docs/handoff/HANDOVER_2026-11-10.md`).
 
 Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md` at git log.
 
@@ -12,22 +12,20 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 5. Tunay na estado: `git log --oneline -10 origin/main`, `src/version.txt`, bukas na PR. Kapag iba ang repo sa file na ito, ang repo ang tama; ayusin ang file na ito.
 6. Bagong session o account / local Claude Code sa PC: `docs/handoff/LOCAL_TAKEOVER.md` (setup at prompt).
 
-## 2. Kasalukuyang estado (2026-11-08 PHT)
-- **Stable:** v3.2.0 (2026-11-03, GO STABLE ng user). Stable 3.2.1 = GO STABLE lang.
-- **Beta sa `main`:** 3.2.1-beta.264 (2026-11-09; 246 ~ 248 = re-shell C redesign slices 1 ~ 3: two bars, Details column, readable page size; 249 = compact density (Jennie); 250 = slice 4, tablet; 251 = slice 5, halo of the DITL page links; 252 = Details button icon; 253 = readable size after a refit; 254 = shell C default (Jennie); 255 = Engineer plant page fills its pane; 256 = icon buttons, message in the status line; 257 = values line up (Jennie); 258 = readable holds, More menu rows, field-step cover; 261 = Settings label in the More menu, DITL sheet row beside the plant pane; 262 = proportional shell (Jennie); 263 = start screen grows (Jennie); 264 = no old Home in layout C, Why? card under the search box). Ang listahan bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md`.
-- **Ngayong araw (beta.109 ~ 164):** normal shutdown at bottle-up sa Training; turbine trip at hot restart practice (purge by-pass M.3339); Warm / Hot restart sa PLANT chip; page 13 turbine protection band, start-up mode, MSV / RSV, 52G1 / 52L1 (DITL-03E station wiring); page 17 generator model (data sheet GAE-2013-0136 + snapshot 37) at generator temperatures (snapshot 35); bearings at vibration mula sa snapshot 35; vacuum pagkahinto ng CEP = air in-leakage (ED 066); SAVE / LOAD ng buong planta; trend recorder + CSV; x10 sa Training hold; d1 lahat ng 107 signal may source (Lisa); faults (Lisa, e5, bahagi 1).
-- **Testing (user 2026-11-08):** GitHub "Simulation tests" (`.github/workflows/sim-tests.yml`, report lang, hindi humaharang): engine alone, ABC T1 ~ S6, DITL 150 MW, 52G1 (`gcb.js`), load ramp gaya ng operator (`load_ramp.js`), 40 min hold (`hold150.js`). Checks: lahat ng script ng html ay pinaparse na (dati 4 lang sa 17). Paghahambing sa plant trends: PC lang, `team-files/tools/trend-compare/compare.cjs`.
-- **Rule ng version:** sa push, version ng `main` + 1 (iwas banggaan ng sabay na PR).
+## 2. Kasalukuyang estado (2026-11-10 PHT)
+- **BUOD NG HANDOVER (basahin muna):** `docs/handoff/HANDOVER_2026-11-10.md` — lahat mula 2026-11-07, gawain ng bawat team member, at ang hindi pa tapos (re-shell at plant plan).
+- **Stable:** v3.2.0 (2026-11-03). Kondisyonal na GO STABLE ng user (2026-11-09): Stable 3.2.1 kapag tapos ang re-shell at pasado ang buong live test ni Mina.
+- **Beta sa `main`:** 3.2.1-beta.268 (re-shell layout C ang default; `?shell=old` = lumang layout). Ang listahan bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md`.
+- **Testing:** GitHub "Simulation tests" (`.github/workflows/sim-tests.yml`, report lang) + shell smoke test `tests/regress/shellc.js`; final proof = live test ni Mina sa Beta site.
+- **Rule ng version:** sa push, version ng `main` + 1.
 
-## 3. Team (2026-11-08)
-- **JENNIE** (lead at coder), **MINA** (live tester lang: screen, buttons, Training flow), **LISA** (fixer, `lisa-worktree`). Job cards: `team-files/tools/live-activity/jobs/`; test list: `team-files/MINA_NEXT.md`.
+## 3. Team (2026-11-09)
+- **JENNIE** (lead), **MINA** (live tester lang), **LISA** at **GISELLE** (fixers), **YUNA** (design). Claims: `team-files/CLAIMS.md`; tracker: https://claude.ai/artifact/9GBKXEkbqh8hrKu5vfDzMN
 
-## 4. Bukas na findings (2026-11-08)
-- **HIGH:** MFT sa steady 150 MW sa mataas na bilis (x60 sa mabagal na PC): hanggang 3 s ang hakbang, umuuga ang PA flow at furnace pressure. Ayos na handa: hakbang ≤ 1 s (sched.js, eng-host.js), hinihintay ang GitHub hold test sa 0.5 / 1 / 3 s.
-- Hotwell −300 sa feedwater surge (CEP stop): naghihintay ng recorder CSV na may water columns (beta.161).
-- RHT 512.7 sa 90 MW (planta 521); MST overshoot sa pag-akyat: retest sa load ramp.
-- Single Line Diagram: wala sa PC (transformer, 52L1 side ng generator).
-- Detalye at ebidensya: `team-files/findings-2026-11-08-mina.md`.
+## 4. Bukas na findings (2026-11-10)
+- Re-shell: 267 FAIL (`.plbar` y -16 sa Engineer habang may Training; sanhi at ayos nasa handover 4A.1); 264 FAIL (Engineer mula sa start screen, natatakpan ng overview); 268 hindi pa nasusubok; unit-flow overview hindi tapos (branch `claude/reshell-flow`, hindi naka-commit); buong live test ng shell C.
+- Plant: MST overshoot sa load up; hotwell -300 sa feedwater surge; RHT 512.7 sa 90 MW; Instructor turbine trip sa t = 0 (engine, naka-hold); Single Line Diagram wala sa PC.
+- Detalye: `docs/handoff/HANDOVER_2026-11-10.md` seksyon 4; ebidensya `team-files/findings-2026-11-09-reshell.md` (PC lang).
 
 ## 5. Kulang pa
 - History ng public repo: nilinis 2026-11-07 (bagong commit IDs). Ang lumang PR refs (`refs/pull/*`) ay hawak pa ng GitHub at may plant documents pa; GitHub Support lang ang makakapag-alis. Lumang Windows / apk links ay hindi apektado; ang lokal na lumang history ay nasa `refs/backup/2026-11-07/*`.
