@@ -80,3 +80,5 @@ html body.sc #gsbar #scstrip #scctx .scp > .scdetb.on{background:var(--sc-steel)
 html body.sc.scbars #gsbar #scstrip #scctx .scp > .pill:not(.scsrp):not(.scgearb):not(.scdetb){padding:0 8px!important}
 html body.sc.scbars #gsbar #scstrip #scctx .seg button{padding:0 10px!important}
 @media (max-width:1279px),(pointer:coarse){html body.sc #gsbar #scstrip #scctx .scp > .scdetb{width:40px;min-width:40px}}
+/* the button stays an icon under the compact density (shellc-dense.css gives every button of the bar 12 px text with the same weight) */
+html body.sc #gsbar #scstrip #scctx:not(#scnone) .scp > .scdetb{font-size:0!important}
