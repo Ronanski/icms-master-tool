@@ -24,12 +24,12 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 
 ## 4. Bukas na findings (2026-11-10)
 - Re-shell: 270 (mga natuklasan ni Mina sa 269, kasama ang plant header sa Engineer) naghihintay ng retest ni Mina; pagkatapos, buong live test ng shell C (handover 4A.5), saka Stable 3.2.1.
-- Plant: MST overshoot sa load up; hotwell -300 sa feedwater surge; RHT 512.7 sa 90 MW; Instructor turbine trip sa t = 0 (engine, naka-hold); Single Line Diagram wala sa PC.
+- Plant: MST overshoot sa load up; RHT 512.7 sa 90 MW; hotwell -300 (ang pump stop sa -300 mm ay tama, ABC-031 M.3211 / DITL-61A; hindi na umulit sa recorder runs ng beta.170 ~ 189, min -64 mm); Instructor turbine trip sa t = 0 at MV-MU1001 hotwell path: inayos sa branch `claude/plant-turbine`, hindi pa nasusubok ni Mina; Single Line Diagram nasa PC (`document-references/onedrive-2026-11-07/Single Line Diagram/`, K1AU3E1-0003 at -0005): tugma ang generator; ang TR-1A1 ay nasa pagitan ng 52G1 at main transformer, kaya tama na may kuryente pa ang 6.6 kV pagbukas ng 52G1. Wala sa model: main transformer at 230 kV side, 52L1 open / house operation (I.0937 laging 0); plan step 5, faults.
 - Detalye: `docs/handoff/HANDOVER_2026-11-10.md` seksyon 4; ebidensya `team-files/findings-2026-11-09-reshell.md` (PC lang).
 
 ## 5. Kulang pa
 - History ng public repo: nilinis 2026-11-07 (bagong commit IDs). Ang lumang PR refs (`refs/pull/*`) ay hawak pa ng GitHub at may plant documents pa; GitHub Support lang ang makakapag-alis. Lumang Windows / apk links ay hindi apektado; ang lokal na lumang history ay nasa `refs/backup/2026-11-07/*`.
-- Ikabit sa model ang drum 32 t (DATA_ANSWERS item 7); ikumpara sa app ang BFP motor, generator at compressor data (`document-references/INDEX.md`).
+- Ikabit sa model ang drum 32 t (DATA_ANSWERS item 7). Generator (GAE-2013-0136: 176.5 MVA, 13.8 kV, Xd 1.99), IA compressor (190 kW, 286 A) at BFP motor (3A057H186-71069: 3550 kW, 355 A sa 100 %, app 289.4 A sa 2946 kW) ay tugma sa app, 2026-11-09. Wala sa model: start current ng BFP (soft starter, LRC ≤ 2300 A; walang source ang tagal).
 - Live loop check at function test ng natitirang equipment (`docs/versions/v3.2.1/MOTOR_LOOP_CHECK.md` pagkatapos ng CW; lahat ng MOV / control valve at analog instrument gamit ang split view); page 07 test; debris filters, hypochlorite, manual valves.
 - Gaps: ID fan cold start; Sampling page blanks; per-signal ABC / DITL tracing; AI range / alarm / IO checks; DITL 9 sa 31 hindi pa na-verify.
 - Plant model: LP heater isolation / bypass; transmitter root valves; APH sootblower; ESP.
