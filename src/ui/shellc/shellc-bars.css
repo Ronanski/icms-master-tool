@@ -1,0 +1,91 @@
+/* ===== RE-SHELL LAYOUT C, the two bars, slice 1: the header (shellc-bars.js; user approval 2026-11-09 "Gawin na", artifact
+   DMAqPXBECUGeEShYRB2QX8). Values bar 60 px + context bar 48 px = 108 px (was 156 px Operator, 188 px Engineer). Only body.sc.scbars.
+   Sizes in px on the 4 / 8 grid; text 12 px or more (MEASURE_STANDARD S1 / S2); targets 32 px on PC (S3). ===== */
+
+/* the bar takes no stacking layer of its own: the page bar of the Plant view (inside #plantws, z 45) can stand in the context bar.
+   The menus of the bar (speed, PLANT, Settings) keep their own z-index (120 and up), over every page */
+body.sc.scbars #gsbar{z-index:auto!important}
+body.sc.scbars #gsbar > #crband{padding-top:0!important;padding-bottom:0!important;align-items:stretch!important}
+body.sc.scbars #gsbar #scstrip{flex-direction:column!important;flex-wrap:nowrap!important;align-items:stretch!important;align-content:stretch!important;row-gap:0!important;gap:0!important;height:auto!important}
+
+/* ---- the values bar: 11 values, one row, 60 px ---- */
+body.sc.scbars #gsbar #scstrip .scv{flex:none!important;height:60px;flex-wrap:nowrap!important;align-items:stretch;overflow:hidden}
+body.sc.scbars #gsbar #scstrip .sck{flex:1 1 0!important;min-width:0!important;max-width:none!important;padding:4px 12px!important;align-content:center}
+
+/* ---- the context bar: 48 px, the whole width ---- */
+#scctx{display:flex;align-items:center;gap:8px;height:48px;margin:0 -8px;padding:0 8px;box-sizing:border-box;background:var(--sc-paper);border-top:1px solid var(--sc-line);font-family:var(--sc-ui);color:var(--sc-ink)}
+#scctx > .seg{flex:none}
+#scctx > .scslot{flex:1 1 auto;min-width:0;align-self:stretch}
+body.sc.scbars #gsbar #scstrip #scctx > .scp{flex:none!important;flex-wrap:nowrap!important;margin-left:0!important;gap:6px!important;row-gap:0}
+body.sc.scbars #gsbar #scstrip #scctx .scp > .pill{padding:0 10px!important}
+/* the order of the right side: status (trip, alarms, Run with its speed, Instructor), then VIEW | RUN and PLANT, then Search and Settings */
+#scctx .scp > .pill:not(.run):not(.ins):not(.scsrp):not(.scgearb){order:1}
+#scctx .scp > .pill.alm{order:2}
+#scctx .scp > .pill.run{order:3}
+#scctx .scp > .spd{order:4}
+#scctx .scp > .pill.ins{order:5}
+#scctx .scp > .seg{order:6;margin-left:8px}
+#scctx .scp > #plchip{order:7}
+#scctx .scp > .scsrp{order:8;margin-left:8px}
+#scctx .scp > .scgearb{order:9}
+/* Run and its speed are one control (audit: "Paused · ×1 ▾") */
+body.sc.scbars #gsbar #scstrip #scctx .pill.run{border-radius:16px 0 0 16px!important}
+body.sc.scbars #gsbar #scstrip #scctx .spd{margin-left:-9px}
+body.sc.scbars #gsbar #scstrip #scctx .spd > .pill{border-radius:0 16px 16px 0!important;padding:0 10px!important;font-family:var(--sc-num)!important}
+/* Search: the magnifier only; its name stays for screen readers and in the tooltip (Ctrl K and / still open it) */
+#scctx .scsrp{width:32px;padding:0!important;justify-content:center}
+#scctx .scsrp > :is(span,kbd){position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#scctx .scsrp::before{content:"";width:16px;height:16px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6'%3E%3Ccircle cx='6.8' cy='6.8' r='4.6'/%3E%3Cpath d='M10.3 10.3 14 14'/%3E%3C/svg%3E") center/16px no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6'%3E%3Ccircle cx='6.8' cy='6.8' r='4.6'/%3E%3Cpath d='M10.3 10.3 14 14'/%3E%3C/svg%3E") center/16px no-repeat}
+#scctx .scgearb{width:32px;padding:0!important}
+
+/* ---- Operator: the Plant view's page bar stands in the free part of the context bar (left = the breadcrumb, then TCS / Field,
+   Fit, Full screen, ‹ ›). The last-event line leaves the bar (the Events tab of the alarm list has every event) ---- */
+body.sc.scbars:not(.sceng):not(.scfull):not(.scsq)[data-tab="operate"] #plantws .plbar{position:fixed!important;left:var(--scsx)!important;top:var(--scsy)!important;width:var(--scsw)!important;height:var(--scsh)!important;min-height:0!important;box-sizing:border-box;padding:0 0 0 var(--sccrw,0px)!important;margin:0!important;flex-wrap:nowrap!important;overflow:hidden;background:transparent!important;border:0!important;z-index:1}
+body.sc.scbars:not(.sceng):not(.scsq)[data-tab="operate"] #plantws .plbar .scpev{display:none!important}
+body.sc.scbars:not(.sceng):not(.scsq)[data-tab="operate"] #plantws .plbar{gap:4px!important}
+body.sc.scbars #plantws .plbar .crop:empty{display:none!important}
+body.sc.scbars:not(.sceng):not(.scov):not(.scsq)[data-tab="operate"] .sccrumb{top:calc(var(--scsy) + (var(--scsh) - 32px) / 2)!important;left:var(--scsx)!important;box-shadow:none!important}
+body.sc.scbars:not(.sceng)[data-tab="operate"] #plantws .plbar .crop{padding-right:8px!important;margin-right:0!important}
+
+/* ---- Engineer: the tools are tabs in the context bar; the rail is gone (its width 0 for every pane rule of shellc-eng.css) ---- */
+body.sc.scbars.sceng{--scetw:0px}
+html body.sc.scbars.sceng #scetools{position:fixed!important;left:var(--scsx)!important;top:var(--scsy)!important;width:var(--scsw)!important;height:var(--scsh)!important;bottom:auto!important;flex-direction:row!important;align-items:stretch!important;gap:4px!important;padding:0!important;background:transparent!important;border:0!important;overflow:visible!important;z-index:var(--z-menu,120)!important}
+body.sc.scbars.sceng #scetools .scetl{display:none}
+html body.sc.scbars.sceng #scetools button{display:inline-flex!important;align-items:center;width:auto!important;min-height:0!important;height:100%!important;padding:0 12px!important;border:0!important;border-bottom:2px solid transparent!important;border-radius:0!important;background:transparent!important;color:var(--sc-ink2)!important;font:600 13px var(--sc-ui)!important;white-space:nowrap!important}
+html body.sc.scbars.sceng #scetools button:hover{color:var(--sc-ink)!important;background:var(--sc-band)!important}
+html body.sc.scbars.sceng #scetools button.on,html body.sc.scbars.sceng #scetools .scmore.on > .scmoreb{color:var(--sc-steel)!important;border-bottom-color:var(--sc-steel)!important;background:transparent!important}
+#scetools .scmore{position:relative;display:flex}
+html body.sc.scbars.sceng #scetools .scmorem{position:absolute;left:0;top:calc(100% + 4px);display:none;flex-direction:column;min-width:192px;padding:4px;background:var(--sc-white);border:1px solid var(--sc-line2);border-radius:6px;box-shadow:0 8px 24px rgba(34,46,57,.18)}
+#scetools .scmore.open .scmorem{display:flex!important}
+html body.sc.scbars.sceng #scetools .scmorem button{height:auto!important;min-height:32px!important;padding:4px 12px!important;border:0!important;border-radius:4px!important;justify-content:flex-start;color:var(--sc-ink)!important}
+html body.sc.scbars.sceng #scetools .scmorem button.on{background:var(--sc-steel)!important;color:var(--sc-white)!important}
+
+/* the sheet tool bar is the header of the sheet pane (40 px); the plant pane bar is the header of the plant pane, on the same row.
+   I/O list and F(X) are the Library and Curves tabs of the context bar (one control per task) */
+body.sc.scbars.sceng{--tool:40px}
+body.sc.scbars.sceng #gsbar > .tbar{padding-left:calc(var(--scex) + 8px)!important;background:var(--sc-paper)!important;border-bottom:1px solid var(--sc-line)!important;box-sizing:border-box}
+body.sc.scbars.sceng #gsbar > .tbar .g-ref{display:none!important}
+body.sc.scbars.sceng #gsbar > .tbar .crwhere{min-width:0;flex:0 1 auto!important}
+body.sc.scbars.sceng #gsbar > .tbar .crwhere .crumb{min-width:0;overflow:hidden}
+body.sc.scbars.sceng #gsbar > .tbar #anmeta{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html body.sc.scbars.sceng #plantws .plbar{position:fixed!important;left:0!important;top:var(--sctby)!important;width:var(--scex)!important;height:var(--sctbh)!important;min-height:0!important;box-sizing:border-box;padding:0 8px 0 16px!important;margin:0!important;z-index:1;background:var(--sc-paper)!important;border-bottom:1px solid var(--sc-line)!important;border-right:1px solid var(--sc-line2)!important}
+/* the sheet pane header keeps the names of its buttons on a PC (the app turns them into icons when its tool bar is under 64 rem; the
+   header starts at the sheet pane, so the names still fit: ABC | DITL | TCS, the sheet, Values … Legend = about 840 px of 905) */
+@media (min-width:1280px){
+  html body.sc.scbars.sceng #gsbar .tbar [data-ic][data-ic]{font-size:13px!important;gap:6px!important;min-width:0!important;padding:0 10px!important}
+  html body.sc.scbars.sceng #gsbar .tbar [data-ic]::before{width:16px!important;height:16px!important}
+}
+/* a long page name ("Coal, limestone and sand") pushed ‹ › out of the bar: the name is cut with … (its full name is in the tooltip
+   of the breadcrumb, shellc-bars.js) and Full screen is its icon (the name stays for screen readers and in the tooltip) */
+body.sc.scbars .sccrumb b{display:inline-block;max-width:104px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+html body.sc.scbars:not(.sceng) #plantws .plbar .scfs{width:32px;min-width:32px;padding:0!important;font-size:0!important;justify-content:center;display:inline-flex!important;align-items:center;border:1px solid var(--sc-line2)!important;border-radius:16px!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;text-decoration:none!important}
+html body.sc.scbars:not(.sceng) #plantws .plbar .scfs::before{content:"";width:16px;height:16px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6'%3E%3Cpath d='M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4'/%3E%3C/svg%3E") center/16px no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6'%3E%3Cpath d='M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4'/%3E%3C/svg%3E") center/16px no-repeat}
+/* the status grows ("Turbine trip · MFT", "24 alarms · 18 new") and the page tools no longer fit beside it: they go back to their own
+   row on top of the page (body.scsq, shellc-bars.js), never cut. The Engineer tabs take less padding first */
+html body.sc.scbars.sceng.scsq #scetools button{padding:0 8px!important}
+/* tablet width (under 1280 px): 11 values in one row cut their labels; until the tablet slice (8 values + More) the values keep their
+   two rows of before (labels never cut) */
+@media (max-width:1279px){
+  body.sc.scbars #gsbar #scstrip .scv{height:auto;flex-wrap:wrap!important;overflow:visible}
+  body.sc.scbars #gsbar #scstrip .sck{flex:1 1 15%!important;min-width:120px!important}
+}
