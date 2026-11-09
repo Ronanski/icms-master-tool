@@ -465,7 +465,11 @@
   /* DITL and TCS share the DITL viewer; each tab comes back to its own last sheet */
   function setSub(c) {
     const d = c === 'an' ? 'an' : 'dig';
-    if (window.AN && AN.setCat && AN.cat !== d) AN.setCat(d);
+    /* Mina, live test of 273: back on ABC from DITL / TCS the drawing was out of view at 1024 and 1366 until Fit */
+    if (window.AN && AN.setCat && AN.cat !== d) {
+      AN.setCat(d);
+      if (d === 'an') setTimeout(() => AN.fitView && AN.fitView(), 200);
+    }
     if (d === 'dig' && window.LS_TCSV) LS_TCSV.tab(c);
   }
   /* wraps an element so that it shows only on the ABC page (an-only) or only on the DITL page (dit-only); the element's own

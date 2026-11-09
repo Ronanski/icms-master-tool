@@ -155,8 +155,13 @@ html body.sc #gsbar #plchip:focus-visible{outline:2px solid var(--sc-steel)!impo
 html body.sc #plpop button:is(:hover,:focus,:active){background:var(--sc-band)!important;color:var(--sc-ink)!important}
 html body.sc #plpop button.on{background:var(--sc-steel)!important;color:var(--sc-white)!important}
 /* Mina, live test of 272: ABC, RUN, 1024 px, Details closed: the bar was too full and ABC | DITL | TCS slid under Reset and the step
-   buttons. The place of the switch keeps its width (the sheet name inside it shortens); below 1280 px Inspector and Wire values are their icons (the names stay in the tooltips) */
+   buttons. The place of the switch keeps its width (the sheet name inside it shortens); below 1280 px the tools are their icons (Mina, 273: Legend was past the screen; the names stay in the tooltips) */
 html body.sc.scbars.sceng #gsbar > .tbar .crwhere{min-width:176px!important}
 @media (max-width:1279px){
-  html body.sc.scbars.sceng:not(.scdet) #gsbar .tbar [data-ic][data-ic]:is([aria-label="Inspector"],[title^="Show / hide the right panel"],[title^="Show the number on analog wires"]){font-size:0!important;gap:0!important;min-width:32px!important;padding:0!important}
+  html body.sc.scbars.sceng:not(.scdet) #gsbar .tbar:not(#scnone) [data-ic][data-ic]{font-size:0!important;gap:0!important;min-width:32px!important;padding:0!important}
 }
+/* Mina, live test of 272 and 273: page names were a mix ("SOOTBLOWERS", "Ash and precipitator"), and small letters broke the short names
+   (ESP, CCS, ID fan): all capitals on the breadcrumb, as the page titles */
+html body.sc.scbars .sccrumb b,html body.sc.sceng #plantws .plbar .scecr .scesep ~ .scelk{text-transform:uppercase}
+/* Mina, live test of 273: with the Training panel the More of the values stood alone on a row: the cells are a little narrower */
+html.gd-side body.sc.scbars.scvwrap #gsbar #scstrip .scv:not(#scnone) > .sck{flex:1 1 96px!important;min-width:96px!important}

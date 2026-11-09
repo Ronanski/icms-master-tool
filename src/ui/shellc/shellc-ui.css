@@ -144,3 +144,5 @@ body.sc #plpop .plnote{color:var(--sc-amber)}
 #scnarrow b{display:block;margin-bottom:4px;font-weight:600;font-size:16px}
 /* Mina, live test of 272: the update banner began at "· installed": its first words (the new version) were not shown */
 html body.sc #updask:not(#scnone) span > b{display:inline!important;visibility:visible!important;opacity:1!important;width:auto!important;height:auto!important;font-size:inherit!important;color:var(--sc-ink)!important}
+/* Mina, live test of 273: Update now was behind the start screen and could not be pressed */
+html body.sc:has(#scstart) #updask:not(#scnone){position:fixed!important;top:0!important;left:0;right:0;width:auto!important;margin:0!important;z-index:100001!important}

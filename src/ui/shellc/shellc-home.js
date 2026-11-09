@@ -435,9 +435,7 @@
     const pk = document.querySelector('#plantws .plpick'),
       T = pk && TILES.find(x => x.pg === pk.value),
       nm = T ? T.t : pk && pk.selectedOptions[0] ? pk.selectedOptions[0].textContent : '';
-    /* Mina, live test of 272: page names were a mix of "SOOTBLOWERS" and "Ash and precipitator": all in sentence case */
-    const nmS = /[a-z]/.test(nm) ? nm : nm.toLowerCase().replace(/[a-z]/, c => c.toUpperCase());
-    if (crumb.lastChild.textContent !== nmS) crumb.lastChild.textContent = nmS;
+    if (crumb.lastChild.textContent !== nm) crumb.lastChild.textContent = nm;
   }
 
   /* ---------- alarm list with the Events tab ---------- */
