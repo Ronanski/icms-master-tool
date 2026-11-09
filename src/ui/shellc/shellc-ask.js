@@ -31,8 +31,9 @@
     const t = E('p', '', '');
     t.id = 'scaskt';
     const row = E('div', 'scaskb');
-    const no = E('button', 'no', 'Cancel');
-    const go = E('button', 'go', 'Yes');
+    const no = E('button', 'scno', 'Cancel');
+    /* not class go: the old app paints button.go blue through an id selector (app.css body.app2 :is(... button.go ...)), Mina beta.244 */
+    const go = E('button', 'scok', 'Yes');
     no.type = go.type = 'button';
     row.append(no, go);
     card.append(q, t, row);
@@ -48,13 +49,15 @@
     no.onclick = () => done(false);
     go.onclick = () => done(true);
     box.addEventListener('mousedown', e => e.target === box && done(false));
-    box.addEventListener('keydown', e => {
-      if (e.key === 'Escape') (e.preventDefault(), e.stopPropagation(), done(false));
+    /* Mina beta.244: Esc never reached the dialog (a page handler stops it first); the dialog listens first, on the window, while open */
+    addEventListener('keydown', e => {
+      if (box.hidden) return;
+      if (e.key === 'Escape') (e.preventDefault(), e.stopImmediatePropagation(), done(false));
       if (e.key === 'Tab') {
         e.preventDefault();
         (document.activeElement === no ? go : no).focus();
       }
-    });
+    }, true);
     box._q = q;
     box._t = t;
     box._go = go;
@@ -106,6 +109,9 @@
     /* the DITL tool bar Reset (ditl.js) and the F(X) table resets (fx.js) */
     if (t === 'Reset' && /^Start again/.test(el.title || ''))
       return { q: 'Reset this logic sheet?', t: 'All inputs go OFF; timers, latches, valves and motors go back to the start.', ok: 'Reset', danger: true };
+    /* the ABC / plant page Reset (analog/ui/main.js), Mina beta.244 */
+    if (t === 'Reset' && /^Reset this sheet to the start/.test(el.title || ''))
+      return { q: 'Reset this sheet?', t: 'Forced signals, switches and sliders are cleared. PID tuning and parameters are kept.', ok: 'Reset', danger: true };
     if (t === 'Reset all edits') return { q: 'Reset all edits?', t: 'Every changed F(X) table goes back to the drawing values.', ok: 'Reset all', danger: true };
     if (t === 'Reset this table') return { q: 'Reset this table?', t: 'This F(X) table goes back to the drawing values.', ok: 'Reset table', danger: true };
     return null;
