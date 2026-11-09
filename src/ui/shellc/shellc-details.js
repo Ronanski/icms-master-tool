@@ -167,7 +167,7 @@
     const ok = B.classList.contains('sc') && (B.dataset.tab === 'operate' || eng());
     /* the full Training panel (dock.js #gdock) is open: it has the right side; the column comes back when it is folded */
     const dock = $('gdock'),
-      dockOn = !!(dock && dock.offsetParent && !document.documentElement.classList.contains('gd-min') && call(() => LS_GUIDE.on, false));
+      dockOn = !!(dock && vis(dock) && !document.documentElement.classList.contains('gd-min') && call(() => LS_GUIDE.on, false));
     const on = ok && !dockOn && (open == null ? wide() : open);
     B.classList.toggle('scdet', on);
     B.classList.toggle('scdover', on && !wide());
@@ -200,17 +200,23 @@
       gOn = call(() => LS_GUIDE.on, false);
     if (card && card.parentElement !== sec.train) sec.train.append(card);
     sec.trainNo.hidden = !!(card && !card.hidden);
-    const tn = gOn ? 'The Training panel is open on the right.' : 'No training is running. The Instructor console starts one (start state, practice sections).';
+    /* a training that runs with no step card (the panel is not open yet, e.g. after a reload): one press opens its panel (the
+       "Open ▲" of the step card, shellc-ins.js setMin(false)) */
+    const tn = gOn ? 'A training is running.' : 'No training is running. The Instructor console starts one (start state, practice sections).';
     if (sec.trainNo.dataset.t !== tn) {
       sec.trainNo.dataset.t = tn;
       sec.trainNo.textContent = '';
       sec.trainNo.append(E('p', '', tn));
-      if (!gOn) {
-        const b = E('button', 'scdlink', 'Open the Instructor console');
-        b.type = 'button';
-        b.onclick = () => call(() => lsShellC.openCon());
-        sec.trainNo.append(b);
-      }
+      const b = E('button', 'scdlink', gOn ? 'Open the Training panel' : 'Open the Instructor console');
+      b.type = 'button';
+      b.onclick = gOn
+        ? () => {
+            ls('ls-gdock-min', 'false');
+            call(() => LS_DOCK.layout());
+            call(() => LS_DOCK.fill(true));
+          }
+        : () => call(() => lsShellC.openCon());
+      sec.trainNo.append(b);
     }
     /* the alarms: the same rows as the alarm pill (shellc-home.js lsShellC.alarms), newest first */
     const AL = call(() => lsShellC.alarms(), []) || [];
