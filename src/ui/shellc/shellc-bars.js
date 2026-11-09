@@ -124,7 +124,10 @@
   }
 
   /* ---------- slice 4, tablet (under 1280 px, or a touch screen under 1366): 8 values + More, the rare buttons in More ▾ ---------- */
-  const tabW = () => innerWidth < 1280 || (matchMedia('(pointer:coarse)').matches && innerWidth < 1366);
+  /* Mina b265: with the Training dock open the page is narrower than the window (the dock takes the right part): the width that counts
+     is the page's (at 1366 with the dock the 11 values got 82 px each and their names were cut) */
+  const pageW = () => Math.min(innerWidth, B.clientWidth || innerWidth);
+  const tabW = () => pageW() < 1280 || (matchMedia('(pointer:coarse)').matches && pageW() < 1366);
   let vMore = null,
     vPop = null,
     cMore = null,
@@ -140,12 +143,17 @@
     document.addEventListener('click', e => {
       if (!wrap.contains(e.target) && !(pop && pop.contains(e.target))) open(false);
     });
-    addEventListener('keydown', e => {
-      if (e.key === 'Escape' && btn.classList.contains('on')) {
-        open(false);
-        btn.focus();
-      }
-    });
+    /* capture: a panel under it (the Training dock, the Details column) does not take the Escape first (Mina b265: the value list stayed) */
+    addEventListener(
+      'keydown',
+      e => {
+        if (e.key === 'Escape' && btn.classList.contains('on')) {
+          open(false);
+          btn.focus();
+        }
+      },
+      true
+    );
     return open;
   }
   function tablet() {
@@ -168,9 +176,15 @@
       menuOf(vMore, vMore, vPop);
       vMore.addEventListener('click', () => {
         if (vPop.hidden) return;
-        const r = vMore.getBoundingClientRect();
-        vPop.style.top = Math.round(r.bottom + 4) + 'px';
-        vPop.style.right = Math.round(innerWidth - r.right) + 'px';
+        /* Mina b265 (1024, dock open): the list opened at x -88. It is placed from where a fixed box really stands (the dock gives the
+           body a transform) and kept inside the page */
+        const r = vMore.getBoundingClientRect(),
+          o = origin(),
+          w = vPop.offsetWidth || 224,
+          pw = pageW();
+        vPop.style.right = 'auto';
+        vPop.style.top = Math.round(r.bottom + 4 - o.y) + 'px';
+        vPop.style.left = Math.round(Math.max(8, Math.min(pw - w - 8, r.right - o.x - w))) + 'px';
       });
       cMore = E('div', 'scmore2');
       const b = E('button', 'scmore2b', 'More ▾');
@@ -256,6 +270,23 @@
     /* Jennie, live check 264 (Engineer while a training runs, 1366): the plant pane header stood at y -16 over the value bar, also after the
        dock was minimized. With the Training dock the body has a transform, so a position: fixed box is placed from the body, not from the
        screen, and a page scrolled by 16 px counted twice. The places below are measured from where a fixed box at 0, 0 really stands */
+    /* Mina b265 (Engineer while a training runs): the whole page stood 16 px up (the value bar labels cut, the plant pane header at
+       y -16): the document had been scrolled, which this layout never does (every pane is fixed). The page goes back to the top */
+    for (const el of [document.scrollingElement, document.documentElement, B]) if (el && el.scrollTop) el.scrollTop = 0;
+    /* Mina b265: a value cell narrower than its two-line name (a narrow page with the dock) cut the name and drew the value over it:
+       then the cells take two rows of the values bar instead (shellc-bars.css body.scvwrap) */
+    {
+      const sv = document.querySelector('#scstrip .scv'),
+        cs = sv ? [...sv.querySelectorAll(':scope > .sck')].filter(c => c.offsetWidth) : [],
+        free = sv ? sv.clientWidth - (vMore && vMore.offsetWidth ? vMore.offsetWidth + 12 : 0) : 0,
+        want = cs.length && free / cs.length < 104;
+      if (B.classList.contains('scvwrap') !== !!want) B.classList.toggle('scvwrap', !!want);
+      /* the context bar: its buttons that do not fit take a second row instead of running under the dock */
+      const narrow = !!ctx && ctx.scrollWidth > ctx.clientWidth + 1;
+      if (narrow && !B.classList.contains('scctxwrap')) B.classList.add('scctxwrap');
+      else if (!narrow && B.classList.contains('scctxwrap') && ctx.clientWidth > (ctx._w || 0) + 40) B.classList.remove('scctxwrap');
+      if (narrow) ctx._w = ctx.clientWidth;
+    }
     const o = origin(),
       r0 = slot.getBoundingClientRect(),
       r = { left: r0.left - o.x, top: r0.top - o.y, width: r0.width, height: r0.height },
