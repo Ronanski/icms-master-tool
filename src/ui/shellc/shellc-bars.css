@@ -165,3 +165,5 @@ html body.sc .scbc ~ b,html body.sc.scbars .sccrumb b,html body.sc.sceng #plantw
 html.gd-side body.sc.scbars.scvwrap #gsbar #scstrip .scv:not(#scnone) > .sck{flex:1 1 96px!important;min-width:96px!important}
 /* Mina, live test of 274: the page name was cut at 1920 with room to spare */
 @media (min-width:1280px){html body.sc.scbars .sccrumb b{min-width:184px;max-width:184px}}
+/* Mina, live test of 275: the longest page name needs 318 px; the width stays fixed so the arrows do not move from page to page */
+@media (min-width:1600px){html body.sc.scbars .sccrumb b{min-width:320px;max-width:320px}}

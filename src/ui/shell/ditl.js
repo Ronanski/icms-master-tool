@@ -398,6 +398,8 @@
   if (window.ResizeObserver && $('svg')) {
     let sz = null;
     new ResizeObserver(() => {
+      /* Mina, live test of 275: the ABC and the DITL share #svg: with an ABC sheet open a change of the pane put the view of the DITL sheet on it (blank drawing) */
+      if (document.body.classList.contains('an')) return;
       const svg = $('svg'),
         r = svg.getBoundingClientRect(),
         v = VB[S.cur];
