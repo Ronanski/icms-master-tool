@@ -31,7 +31,8 @@
   };
   const bname = b => (b.k + ' ' + (b.txt || []).filter(Boolean).join(' ')).trim();
   function occurrences(q) {
-    const out = [];
+    const out = [],
+      byBlk = [];
     for (const sh of AN.sheets || []) {
       if (/ABC-000/.test(sh.name)) continue;
       let S;
@@ -45,8 +46,17 @@
         const nm = (AN.nm(S, n) || '').trim();
         if (nm && norm(nm) === q) out.push({ sh, S, n, nm });
       }
+      /* Mina, live test of 270: HIC-BM said "No card": a station is named on its block, not on a net. The block's output is its card */
+      const base = q.replace(/.(MAN|LOC|REM)$/, '');
+      for (const b of S.blk || [])
+        if ((b.txt || []).some(x => norm(x) === base))
+          for (let n = 0; n < S.nets.length; n++)
+            if ((S.drv[n] || []).some(x => x.id === b.id)) {
+              byBlk.push({ sh, S, n, nm: base });
+              break;
+            }
     }
-    return out;
+    return out.length ? out : byBlk;
   }
   function source(o) {
     const { S, n } = o,

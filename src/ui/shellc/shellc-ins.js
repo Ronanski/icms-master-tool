@@ -74,6 +74,7 @@
     hd.append(E('b', '', 'Instructor console'));
     const x = btn('✕', 'Close (Esc)', () => (con.hidden = true), 'scx');
     x.setAttribute('aria-label', 'Close');
+    x._gt = '✕'; /* its text mark only: the app's icon pass (app.js) drew a second one beside it (Mina, 270) */
     hd.append(x);
     con.append(hd);
     const body = E('div', 'scibody');

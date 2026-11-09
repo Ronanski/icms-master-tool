@@ -198,6 +198,8 @@
   }
   function showOv() {
     if (!ov) return;
+    /* Mina, live test of 270: Operator with Loop check open left the Engineer tabs and the panel over the overview */
+    call(() => lsShellC.engTool && lsShellC.engTool('logic'));
     if (window.lsSetTab && document.body.dataset.tab !== 'operate') lsSetTab('operate');
     document.body.classList.add('scov');
   }

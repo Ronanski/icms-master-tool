@@ -79,7 +79,8 @@
         t = e.target;
       /* the Show of a Why? card goes to the sheet: the search is finished (it stayed open over the sheet) */
       const shw = t.closest && t.closest('#infocard button');
-      if (shw && shw.textContent.trim() === 'Show') return closeSearch();
+      /* closed after the click: closing at the press moved the card up and the press missed the button (Mina, 270: two presses needed) */
+      if (shw && shw.textContent.trim() === 'Show') return void addEventListener('pointerup', () => setTimeout(closeSearch, 60), { once: true });
       if ((s && s.contains(t)) || (f && f.contains(t)) || (t.closest && t.closest('.scsrp,#infocard'))) return;
       closeSearch();
     },
