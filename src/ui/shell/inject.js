@@ -121,6 +121,7 @@ const block =
   fs.readFileSync(__dirname + '/../ladder/ladder.js', 'utf8') +
   '\n' +
   /* 3.2.1 re-shell layout C, step 1: the new status strip, only with ?shell=c */
+  fs.readFileSync(__dirname + '/../shellc/shellc-ask.js', 'utf8') + '\n' + /* one confirmation dialog (user 2026-11-09) */
   fs.readFileSync(__dirname + '/../shellc/shellc.js', 'utf8') +
   '\n' +
   /* step 2: start screen, overview, alarm list with Events */

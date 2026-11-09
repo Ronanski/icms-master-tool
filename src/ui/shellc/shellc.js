@@ -306,9 +306,12 @@
     S.bOp.classList.toggle('on', tab === 'operate');
     S.bEn.classList.toggle('on', tab === 'logic');
   }
-  /* the old shell builds #crband after load; wait for it (30 s at most) */
+  /* the old shell builds #crband after load (cr.js, only on a window 900 px wide or more). Live check beta.241: after 30 s the wait
+     stopped, so a slow or narrow first load showed the old dark app for good; now it waits until the band is there (every 0.5 s, then 2 s) */
   let n = 0;
-  const iv = setInterval(() => {
-    if (build() || ++n > 60) clearInterval(iv);
-  }, 500);
+  const wait = () => {
+    if (build()) return;
+    setTimeout(wait, ++n > 60 ? 2000 : 500);
+  };
+  wait();
 })();

@@ -334,7 +334,7 @@
   let k = 0;
   const iv = setInterval(() => {
     if (!document.body.classList.contains('sc')) {
-      if (++k > 150) clearInterval(iv);
+      ++k; /* no time limit (live check beta.241) */
       return;
     }
     if (!bar) buildBar();
