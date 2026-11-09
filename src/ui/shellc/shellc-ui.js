@@ -318,6 +318,28 @@
     }
   }
 
+  /* live check beta.240: the overview map of the sheet stays hidden until the Map button of the zoom bar shows it */
+  function mapBtn() {
+    const z = $('zbar');
+    if (!z || z.querySelector('.scmapb')) return;
+    const b = btn('scmapb', 'Map', 'Show or hide the small overview map of the sheet (it shows when the sheet is zoomed in)', () => {
+      const on = !B().classList.contains('scmap');
+      B().classList.toggle('scmap', on);
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      dispatchEvent(new Event('resize'));
+    });
+    b.setAttribute('aria-pressed', 'false');
+    z.append(b);
+  }
+  /* the ABC mode label sets its colours inline (paint.js); the C colours come from shellc-ui.css (!important), RUN red by a class */
+  function modeLbl() {
+    const m = $('anmode');
+    if (!m) return;
+    const run = /RUNNING/.test(m.textContent);
+    if (m.classList.contains('scrunl') !== run) m.classList.toggle('scrunl', run);
+  }
+
   /* ---------- start ---------- */
   let k = 0,
     found = false,
@@ -332,7 +354,7 @@
     if (found && strip) {
       clearInterval(iv);
       /* a result list left on screen with the search closed (another view took the focus) goes too */
-      const t = () => (tickBanners(), pillRow(), layout(), !B().classList.contains('scsearch') && document.activeElement !== $('ansb') && hideList());
+      const t = () => (tickBanners(), pillRow(), layout(), mapBtn(), modeLbl(), !B().classList.contains('scsearch') && document.activeElement !== $('ansb') && hideList());
       setInterval(t, 1000);
       new MutationObserver(tickToast).observe(document.body, { attributes: true, attributeFilter: ['class'] });
       addEventListener('resize', layout);
