@@ -80,6 +80,20 @@
   /* Escape closes the whole search wherever the focus is (capture: the search box stops the key for the rest of the page) */
   addEventListener('keydown', e => e.key === 'Escape' && B().classList.contains('scsearch') && closeSearch(), true);
   /* every result: Open (the row itself) and Why? (the info card of the tag, look only, as a search opens it) */
+  /* a sheet name that some DITL row names (a contents page, a page link): its card is not empty (info.js ditlPlaces reads the same cells) */
+  const NAMED = new Map();
+  function named(nm) {
+    const k = String(nm).trim().toUpperCase();
+    if (!NAMED.has(k))
+      NAMED.set(
+        k,
+        call(
+          () => S.sheets.some(s => Object.values(s.cells || {}).some(a => a.some(t => String(t.t || '').trim().toUpperCase() === k))),
+          false
+        )
+      );
+    return NAMED.get(k);
+  }
   function decorate() {
     const f = $('anfind');
     if (!f) return;
@@ -91,12 +105,18 @@
       const op = btn('scso', 'Open', b.title || 'Open', () => b.click());
       row.append(op);
       const sn = b.querySelector('.sn'),
-        tag = sn ? sn.textContent.split('  ·  ')[0].trim() : '';
-      /* a sheet row (its name is the sheet) has no tag: no Why? */
-      if (tag && !/^(ABC|DITL)-/i.test(tag)) {
+        /* a page-link row "( FROM ABC-010 )" names a sheet too */
+        tag0 = (sn ? sn.textContent.split('  ·  ')[0].trim() : '').replace(/^\(\s*(?:FROM|TO)\s+(.+?)\s*\)$/i, '$1'),
+        /* Giselle beta.260 (Jennie, from Mina's live test of 254): a sheet row is named with its page number, "(41)DITL-23A", and its
+           Why? asked for a card of that text and said "No card". A sheet row now asks for the card of the bare name (DITL-23A: the
+           DITL rows that name that sheet, as the card of a typed DITL-23A), and it has no Why? when no DITL row names it */
+        sheet = /^(\(\w+\))?\s*(ABC|DITL)-/i.test(tag0),
+        tag = sheet ? tag0.replace(/^\(\w+\)\s*/, '').replace(/\s*#\w+$/, '') : tag0;
+      if (tag && (!sheet || named(tag))) {
         const w = btn('scsw', 'Why?', 'The card of ' + tag + ': where it comes from and where it goes', () => {
           const ok = call(() => window.lsInfo && lsInfo(tag, { look: true }), false);
           if (!ok) ((w.textContent = 'No card'), (w.disabled = true));
+          /* the result list lay over the card it opened (beta.260): the card shows alone; the box keeps the text for the next look */ else hideList();
         });
         row.append(w);
       }
