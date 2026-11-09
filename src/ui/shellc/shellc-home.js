@@ -468,7 +468,7 @@
     old.title = 'The old layout of the app (the new one comes back with the link ?shell=c)';
     old.onclick = () => {
       try {
-        localStorage.removeItem('ls-shell');
+        localStorage.setItem('ls-shell', 'old');
       } catch (e) {}
       location.search = location.search.replace(/([?&])shell=c&?/, '$1').replace(/[?&]$/, '');
     };
