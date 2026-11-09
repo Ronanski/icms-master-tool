@@ -614,6 +614,8 @@
                 if (LV()) LV().reset();
                 /* 3.2.0-beta.21: the simulation runs at once (before: the page stayed in VIEW, the operator had to find RUN) */
                 if (AN.runOn) AN.runOn();
+                /* Mina, live test of 272: with no Training on, this practice loaded Cold and ran but the panel read "No training is running" */
+                if (window.LS_DOCK && LS_DOCK.resume) LS_DOCK.resume();
                 goPlant();
               });
             }))

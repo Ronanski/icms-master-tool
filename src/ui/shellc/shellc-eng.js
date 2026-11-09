@@ -468,7 +468,8 @@
     follow();
     /* where you are (Plant › page), kept at the start of the plant page bar */
     const pk = picker(),
-      pn = pk && pk.selectedOptions[0] ? pk.selectedOptions[0].textContent.trim() : '';
+      pn0 = pk && pk.selectedOptions[0] ? pk.selectedOptions[0].textContent.trim() : '',
+      pn = /[a-z]/.test(pn0) ? pn0 : pn0.toLowerCase().replace(/[a-z]/, c => c.toUpperCase());
     if (els.cPage.textContent !== pn) els.cPage.textContent = pn;
     els.cPage.hidden = !pn;
     const pb = document.querySelector('#plantws .plbar');

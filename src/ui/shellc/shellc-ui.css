@@ -142,3 +142,5 @@ body.sc #plpop .plnote{color:var(--sc-amber)}
 /* beta.245: the note on a window narrower than 900 px (shellc.js, before the layout is built; Mina beta.244) */
 #scnarrow{position:fixed;left:50%;top:40%;transform:translateX(-50%);z-index:10040;max-width:calc(100vw - 32px);box-sizing:border-box;padding:16px 20px;border:1px solid #ccd1d6;border-radius:8px;background:#fff;color:#222e39;font:400 14px/1.5 "IBM Plex Sans",system-ui,"Segoe UI",sans-serif;box-shadow:0 12px 32px rgba(34,46,57,.18);text-align:center}
 #scnarrow b{display:block;margin-bottom:4px;font-weight:600;font-size:16px}
+/* Mina, live test of 272: the update banner began at "· installed": its first words (the new version) were not shown */
+html body.sc #updask:not(#scnone) span > b{display:inline!important;visibility:visible!important;opacity:1!important;width:auto!important;height:auto!important;font-size:inherit!important;color:var(--sc-ink)!important}

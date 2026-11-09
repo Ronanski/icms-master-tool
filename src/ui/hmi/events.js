@@ -415,7 +415,8 @@
     for (const [k, e] of AT)
       if (!now.has(k) && !e.rtn) {
         /* sweep 2: a suppressed alarm (sd) that clears writes no line: it was never announced (its first line, if any, is LATEK) */
-        if (!(e.sd && e.kind === 'ALM')) add({ rt: { t } }, { name: e.sh }, 'RTN', e.nm + ' ' + (e.kind === 'TRIP' ? 'TRIP reset' : 'back to normal'));
+        /* Mina, live test of 272: a "back to normal - 0:00" line while a plant loads: nothing returns before the plant has a clock */
+        if (t >= 1 && !(e.sd && e.kind === 'ALM')) add({ rt: { t } }, { name: e.sh }, 'RTN', e.nm + ' ' + (e.kind === 'TRIP' ? 'TRIP reset' : 'back to normal'));
         if (e.ack) AT.delete(k);
         else e.rtn = true;
       }
