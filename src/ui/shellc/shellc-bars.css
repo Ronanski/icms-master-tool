@@ -30,7 +30,7 @@ body.sc.scbars #gsbar #scstrip #scctx .scp > .pill{padding:0 10px!important}
 #scctx .scp > .scgearb{order:9}
 /* Run and its speed are one control (audit: "Paused · ×1 ▾") */
 body.sc.scbars #gsbar #scstrip #scctx .pill.run{border-radius:16px 0 0 16px!important}
-body.sc.scbars #gsbar #scstrip #scctx .spd{margin-left:-9px}
+body.sc.scbars #gsbar #scstrip #scctx .spd{margin-left:-7px}
 body.sc.scbars #gsbar #scstrip #scctx .spd > .pill{border-radius:0 16px 16px 0!important;padding:0 10px!important;font-family:var(--sc-num)!important}
 /* Search: the magnifier only; its name stays for screen readers and in the tooltip (Ctrl K and / still open it) */
 #scctx .scsrp{width:32px;padding:0!important;justify-content:center}
@@ -125,3 +125,6 @@ html body.sc #scctx :is(.scsrp,.scdetb)::before{flex:none!important;width:16px!i
 html body.sc #scctx .scgearb svg{flex:none!important;width:16px!important;height:16px!important}
 /* the overview is not a plant page: the page tools of the page behind it (Fit, ‹ ›, Full screen, TCS / Field) are not in its bar */
 html body.sc.scbars.scov:not(.sceng) #plantws .plbar{display:none!important}
+/* Mina b254 at 1024: in the More menu Details, Search and Settings stayed 28 x 28 icon boxes with their names spilling beside them (the
+   density's icon-button size has the same weight as the menu rule): in the menu they are full-width rows */
+html body.sc.scbars #gsbar #scstrip #scctx:not(#scnone) .scmore2m > :is(.scsrp,.scgearb,.scdetb){width:auto!important;min-width:0!important;padding:0 10px!important;justify-content:flex-start!important;gap:8px}

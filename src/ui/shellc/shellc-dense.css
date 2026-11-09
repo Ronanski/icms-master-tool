@@ -6,8 +6,11 @@
 
 /* --- values bar: 60 -> 48 px; the name may take two short lines, the values line up at the bottom (never cut) --- */
 html body.sc.scbars #gsbar #scstrip .scv{height:48px!important}
-html body.sc #gsbar #scstrip .sck{padding:4px 10px!important;gap:1px;line-height:1.1;justify-content:flex-end!important}
-html body.sc #gsbar #scstrip .sck i{font:500 11px/1.1 var(--sc-ui)!important;white-space:normal!important}
+html body.sc #gsbar #scstrip .sck{padding:3px 10px!important;gap:1px;line-height:1.1;justify-content:flex-end!important}
+/* Mina b250 / b254: the values did not line up (1-line names: value at y 22, 2-line names: y 27) and the 2-line names were cut 3 px at
+   the bottom. The name has a fixed box of two 12 px lines (24 px) for every value, the value always sits under it (Yuna, beta.257) */
+html body.sc #gsbar #scstrip .sck{grid-template-rows:24px auto!important;align-content:start!important}
+html body.sc #gsbar #scstrip .sck i{font:500 11px/12px var(--sc-ui)!important;white-space:normal!important;height:24px;align-self:start}
 html body.sc #gsbar #scstrip .sck b{font:600 14px/1.2 var(--sc-num)!important}
 html body.sc #gsbar #scstrip .sck small{font:400 11px/1.2 var(--sc-ui)!important}
 
