@@ -1123,6 +1123,7 @@
         rC = E('div', { id: 'rulerc' });
       document.body.append(rT, rL, rC);
       let zRef = null,
+        zRefs = {},
         zSheet = '',
         last = '',
         ink = null;
@@ -1195,9 +1196,10 @@
         if (vb.length !== 4 || !(vb[2] > 0) || !r.width) return;
         if (name !== zSheet) {
           zSheet = name;
-          zRef = null;
+          /* Mina, live test of 276: the zoom label went back to 100 % while the view was kept: each sheet keeps its own 100 % */
+          zRef = zRefs[name] || null;
         }
-        if (!zRef) zRef = vb[2];
+        if (!zRef) zRef = zRefs[name] = vb[2];
         const key = [r.left, r.top, r.width, r.height, vb.join(','), theme].join('|');
         if (key === last) return;
         last = key;

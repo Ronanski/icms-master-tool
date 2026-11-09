@@ -317,9 +317,13 @@ addEventListener('resize', () => {
     v = sh && AN.av[sh.name],
     r = $('svg').getBoundingClientRect();
   if (!v || !r.width || !r.height) return;
-  if (AN.sz && AN.sz.w && Math.abs(AN.sz.w - r.width) > 1)
+  /* Mina, live test of 276: right after a page switch or a Show the pane is still settling and AN.sz is the size of another layout: the view keeps its width and its centre */
+  const hold = Date.now() < (AN.szHold || 0);
+  if (!hold && AN.sz && AN.sz.w && Math.abs(AN.sz.w - r.width) > 1)
     v[2] *= r.width / AN.sz.w; /* panel opens / closes: keep the zoom, do not rescale the drawing */
-  v[3] = (v[2] * r.height) / r.width;
+  const h_ = (v[2] * r.height) / r.width;
+  if (hold) v[1] += (v[3] - h_) / 2;
+  v[3] = h_;
   AN.sz = { w: r.width, h: r.height };
   $('svg').setAttribute('viewBox', v.join(' '));
 });

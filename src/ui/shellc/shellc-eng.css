@@ -120,4 +120,6 @@ html body.sc #scepane .sceit:not(#scnone) :is(b,small){display:block;min-width:0
 /* Mina, live test of 272: the titles of the Sheet tools cards did not start at one left edge */
 html body.sc #scepane .sceit:not(#scnone){justify-content:stretch!important;grid-template-columns:minmax(0,1fr)!important}
 /* Mina, live test of 275: a long page name was cut on its left side beside the DITL panel */
-html body.sc.sceng #plantws .plbar .scecr .scesep ~ .scelk{display:block!important;min-width:0;flex:0 1 auto;text-align:left}
+html body.sc.sceng #plantws .plbar .scecr .scesep ~ .scelk:not([hidden]){display:block!important;min-width:0;flex:1 1 0;text-align:left}
+/* Mina, live test of 276: the arrows of the plant page moved with the length of its name */
+html body.sc.sceng #plantws .plbar .scecr{flex:none;width:min(50%,400px);max-width:50%}
