@@ -246,6 +246,17 @@
       const rows = [...st.children].map(c => c.getBoundingClientRect()).filter(r => r.height > 0),
         b = Math.ceil(Math.max(band.getBoundingClientRect().bottom, ...rows.map(r => r.bottom + 4))) + 'px';
       if (document.documentElement.style.getPropertyValue('--scb') !== b) document.documentElement.style.setProperty('--scb', b);
+      /* live check beta.233: a faceplate placed beside the clicked equipment ran 23 px under the footer (its last buttons hidden);
+         it moves up inside the page area, same faceplate, same size */
+      for (const id of ['fpop', 'fpop2']) {
+        const fp = document.getElementById(id),
+          box = fp && fp.offsetParent;
+        if (!fp || !box || !fp.offsetHeight) continue;
+        const over = fp.offsetTop + fp.offsetHeight - (box.clientHeight - 6);
+        if (over > 0) fp.style.top = Math.max(6, fp.offsetTop - over) + 'px';
+      }
+      /* the footer hint is one line now (shellc.css): its full text in the tooltip */
+      for (const el of document.querySelectorAll('#sfoot #st, #sfoot .sinfo')) if (el.title !== el.textContent) el.title = el.textContent;
     } catch (e) {}
     const on = !!(window.AN && AN.run && !AN.view);
     S.runB.classList.toggle('on', on);

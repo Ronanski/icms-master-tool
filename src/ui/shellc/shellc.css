@@ -276,3 +276,18 @@ html body.sc,html[data-theme=dark] body.sc{
 body.sc:has(#scstart) #lsask{display:none!important}
 /* the app's short names are set on html from the dark values: they are set again here so the frame reads the shell colours */
 html body.sc,html[data-theme] body.sc{--bg:var(--c-bg);--panel:var(--c-pane);--line:var(--c-line);--tx:var(--c-tx);--dim:var(--c-dim);--panel2:var(--c-ribbon);--in:var(--c-well);--bd:var(--c-line2);--hv:var(--c-ctlh);--hv2:var(--c-ctlh);--rowl:var(--c-ribbon);--sel2:var(--c-acc);--sbg:var(--c-strip);--acc:var(--c-run);--c-bg2:var(--c-well);--c-fp:var(--c-plate);--c-hi:var(--c-tx);--c-hovbd:var(--c-lineh);--c-pop:var(--c-pane);--c-row:var(--c-line)}
+/* live check beta.233 (Jennie): the old question showed for 6 ~ 10 s while the app boots under the cover, before the start screen is built */
+body.sc:has(#scboot) #lsask{display:none!important}
+/* live check beta.233: the zoom bar of the logic sheet was the old dark floating pill; it takes the shell colours (same buttons, same place) */
+body.sc #zbar{background:var(--sc-white);border:1px solid var(--sc-line);box-shadow:0 4px 12px rgba(34,46,57,.14);padding:4px;gap:4px;border-radius:8px}
+body.sc #zbar button{height:32px;min-width:32px;padding:0 8px;color:var(--sc-ink)!important;font-size:13px!important;border-radius:6px!important}
+body.sc #zbar button:hover{background:var(--sc-band)!important}
+body.sc #zbar :is(#bfit,.only > button){background:var(--sc-paper)!important;font-size:13px!important}
+body.sc #zbar .zpct{color:var(--sc-ink2);font-size:13px;min-width:48px}
+body.sc #zbar .zsep{background:var(--sc-line);margin:0 4px}
+@media (max-width:1279px),(pointer:coarse){body.sc #zbar button{height:40px;min-width:40px}}
+/* live check beta.233: the Loop check panel kept its dark chips (progress, counts, check rows) on the dark theme; the light values of
+   loopcheck.css line 4 (PASS red, FAIL green, as the app rule) */
+html[data-theme] body.sc #lcdock,html body.sc #lcdock{--lc-pass:#b3261e;--lc-fail:#1e7d3a;--lc-wait:#9a6a00;--lc-acc:#1f5fa8;--lc-chip:#e4e9ef}
+/* live check beta.233: the footer hint wrapped to two cramped lines in the Engineer view; one line, the full text in its tooltip */
+body.sc #sfoot :is(#st,.sinfo){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;align-self:center}
