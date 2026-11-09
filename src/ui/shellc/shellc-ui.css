@@ -107,3 +107,12 @@ html.gd-side body.sc #scov .scgrid{grid-template-columns:repeat(3,minmax(0,1fr))
 .sctoast[hidden],body:not(.sc) .sctoast{display:none}
 body.sc.hasmsg #sfoot .smsg{display:none!important}
 body.sc.hasmsg #sfoot #st{display:block!important}
+/* live check beta.240 (Engineer, logic side by side, DITL-56): the overview map of the sheet (#lomap, view.js) covered the drawing. In
+   the C layout it is hidden until the Map button of the zoom bar shows it (shellc-ui.js), in the shell colours */
+body.sc:not(.scmap) #lomap{display:none!important}
+body.sc #lomap{background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:8px!important;box-shadow:0 8px 24px rgba(34,46,57,.18)!important}
+body.sc #lomap .lomap-win{border-color:var(--sc-steel)!important;background:rgba(43,108,165,.12)!important}
+body.sc #zbar .scmapb.on{background:var(--sc-steel)!important;border-color:var(--sc-steel)!important;color:var(--sc-white)!important}
+/* the mode label of the sheet (VIEW / TRACE - NO SIMULATION, SIMULATION - RUNNING / PAUSED): shell colours, RUN red (COMMANDMENT 5) */
+body.sc :is(#dmode,#anmode){padding:4px 8px!important;border:1px solid var(--sc-line2)!important;border-radius:4px!important;background:var(--sc-band)!important;color:var(--sc-ink2)!important;font:600 12px var(--sc-ui)!important}
+body.sc :is(#dmode.run,#anmode.scrunl){background:#f8e3e2!important;border-color:var(--sc-run)!important;color:var(--sc-run)!important}
