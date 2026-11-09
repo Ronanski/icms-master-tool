@@ -215,9 +215,13 @@
       b.type = 'button';
       b.onclick = gOn
         ? () => {
-            ls('ls-gdock-min', 'false');
-            call(() => LS_DOCK.layout());
-            call(() => LS_DOCK.fill(true));
+            /* Mina item 7: after the 150 MW load change practice the panel stayed in its practice / menu state and layout() + fill()
+               did nothing; the dock's own open() leaves that state and shows the panel (dock.js LS_DOCK.open) */
+            if (!call(() => (LS_DOCK.open(), true), false)) {
+              ls('ls-gdock-min', 'false');
+              call(() => LS_DOCK.layout());
+              call(() => LS_DOCK.fill(true));
+            }
           }
         : () => call(() => lsShellC.openCon());
       sec.trainNo.append(b);
