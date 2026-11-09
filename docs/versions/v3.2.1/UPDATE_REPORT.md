@@ -1,4 +1,13 @@
-# UPDATE REPORT — v3.2.1 (Beta)
+# UPDATE REPORT — v3.2.1
+
+## 3.2.1 Stable (2026-11-10, GO STABLE ng user)
+- **Utos ng user:** kondisyonal na GO STABLE (2026-11-09: kapag tapos ang re-shell at pasado ang buong live test ni Mina) at "Go stable" (2026-11-10, 6:55 AM PHT).
+- **Laman:** 3.2.1-beta.281 (PR #455, main 6cc3df6), walang ibang binago; `src/version.txt` = 3.2.1, `dist/logic-sim-v3.2.1.html` (`--check` SAME).
+- **Live:** final pass ni Mina sa beta.281 (build 94e98cb, Worker ON, 1024 / 1366 / 1920): walang bukas na fault.
+- **Mabigat na test (PC, sa build 3.2.1):** tests.js 11/11; switches 438 case 0 mali; blocks_io 51 sheet / 12021 check 0 mali, plant off at on (naisulat ang resulta bago huminto ang script sa pag-save ng json sa /tmp, na wala sa Windows); ui-audit 27 screen, 0 page error, 28 note na lahat ay ang sadyang nakatagong label ng Search.
+- **Generic tester:** walang magamit na resulta. Parehong bilang ng mali bawat controller sa v3.2.0 at v3.2.1 (8 controller, ABC-003B, ABC-010, ABC-020; itinigil ang buong run doon): hindi umaabot sa controller ang operator value ng tester. Hindi regression; aayusin ang tester. Live na nasubok ang faceplate.
+- **Hindi nasubok:** tingnan ang `Release-Report-v3.2.1.pdf`, seksyon Not tested live.
+
 
 ## 3.2.1-beta.174 — Practice: PA fan trip at 150 MW (e5 recovery, 2026-11-08, LISA)
 
