@@ -119,3 +119,9 @@ html body.sc #gsbar #scstrip #scctx .scmore2m > .scgearb svg{width:16px!importan
 /* the icon buttons of the page bar (‹ › of the page, Full screen) keep their text out of sight: the compact density (shellc-dense.css)
    gives every page bar button 12 px text, which printed "◀" and "Full screen" over their icons */
 html body.sc.scbars #plantws:not(#scnone) .plbar button:is(.scfs,.plstep){font-size:0!important}
+/* the icons of Search, Details and Settings were squeezed by the button's flex box to 6, 1 and 6 px wide (the buttons showed as empty
+   circles; Jennie's finding on b250 / b255): the icon keeps its 16 px */
+html body.sc #scctx :is(.scsrp,.scdetb)::before{flex:none!important;width:16px!important;height:16px!important}
+html body.sc #scctx .scgearb svg{flex:none!important;width:16px!important;height:16px!important}
+/* the overview is not a plant page: the page tools of the page behind it (Fit, ‹ ›, Full screen, TCS / Field) are not in its bar */
+html body.sc.scbars.scov:not(.sceng) #plantws .plbar{display:none!important}

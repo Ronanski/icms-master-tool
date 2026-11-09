@@ -289,7 +289,7 @@
         new MutationObserver(hide).observe(ps, { childList: true, subtree: true });
       }
       /* the footer hint is one line now (shellc.css): its full text in the tooltip */
-      for (const el of document.querySelectorAll('#sfoot #st, #sfoot .sinfo')) if (el.title !== el.textContent) el.title = el.textContent;
+      for (const el of document.querySelectorAll('#sfoot #st, #sfoot .sinfo, #sfoot .smsg')) if (el.title !== el.textContent) el.title = el.textContent;
     } catch (e) {}
     /* Mina beta.236: the pill said Paused while the plant ran on a DITL page; the same test as the plant clock (world.js 1438) */
     let on = false;
