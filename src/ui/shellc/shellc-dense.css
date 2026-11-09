@@ -6,8 +6,10 @@
 
 /* --- values bar: 60 -> 48 px; the name may take two short lines, the values line up at the bottom (never cut) --- */
 html body.sc.scbars #gsbar #scstrip .scv{height:48px!important}
-html body.sc #gsbar #scstrip .sck{padding:4px 10px!important;gap:1px;line-height:1.1;justify-content:flex-end!important}
-html body.sc #gsbar #scstrip .sck i{font:500 11px/1.1 var(--sc-ui)!important;white-space:normal!important}
+/* Mina beta.254: values sat at y 22 under a one-line name and at y 27 under a two-line name, two-line names cut 3 px. The cell is a grid:
+   a fixed 25 px name row (two lines of 12 px, the name at its bottom), then the value row, so every value sits on one line */
+html body.sc #gsbar #scstrip .sck{padding:2px 10px 3px!important;line-height:1.1;align-content:end!important;grid-template-rows:25px auto!important;row-gap:1px!important}
+html body.sc #gsbar #scstrip .sck i{font:500 11px/12px var(--sc-ui)!important;white-space:normal!important;align-self:end!important;overflow:visible!important}
 html body.sc #gsbar #scstrip .sck b{font:600 14px/1.2 var(--sc-num)!important}
 html body.sc #gsbar #scstrip .sck small{font:400 11px/1.2 var(--sc-ui)!important}
 
