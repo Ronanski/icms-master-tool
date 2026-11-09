@@ -23,8 +23,14 @@
   };
   const $ = id => document.getElementById(id);
   /* a press that cannot be undone asks for a second press within 5 s (the same rule as the Training dock, Yuna's design review 2026-11-08) */
-  function arm(b, label, fn) {
+  /* user 2026-11-09: a real confirmation dialog (shellc-ask.js) says what happens; the second press stays only if the dialog is missing */
+  function arm(b, label, fn, o) {
     b.onclick = () => {
+      if (window.lsAsk) {
+        o = o || {};
+        lsAsk({ q: o.q || label + '?', t: o.t || b.title, ok: o.ok || label, danger: !!o.danger }).then(ok => ok && fn());
+        return;
+      }
       if (!b.dataset.arm) {
         b.dataset.arm = '1';
         b.textContent = 'Press again: ' + label;
@@ -79,7 +85,7 @@
       arm(b, t, () => {
         if (window.AN && AN.run && !AN.view && AN.pauseOn) AN.pauseOn();
         press(id);
-      });
+      }, { q: 'Load the ' + t + ' start state?', t: 'The running plant is replaced by the ' + t + ' starting state. What is not kept in a save point is lost.', ok: 'Load ' + t });
       r.append(b);
     }
     body.append(r);
@@ -95,7 +101,7 @@
         o.click();
         /* a Practise button that asks "Press again" itself gets its second press here (the trainer already pressed twice) */
         setTimeout(() => /^Press again/.test(o.textContent) && o.click(), 60);
-      });
+      }, { q: 'Start the practice: ' + t + '?', t: (o.title ? o.title + ' ' : '') + 'The running plant is replaced.', ok: 'Start practice' });
       r.append(b);
     }
     body.append(r);
@@ -126,9 +132,9 @@
         for (const e of L.slice().reverse()) {
           const rr = E('div', 'scsvr');
           const ld = btn('Load', 'Puts the whole plant back as it was saved, then pauses');
-          arm(ld, 'Load', () => ((con.hidden = true), call(() => lsSaves.load(e))));
+          arm(ld, 'Load', () => ((con.hidden = true), call(() => lsSaves.load(e))), { q: 'Load the save point “' + e.name + '”?', t: 'The whole plant goes back to how it was saved, then pauses. The running plant is replaced.', ok: 'Load' });
           const dl = btn('Delete', 'Removes this save point from this browser; it cannot be undone');
-          arm(dl, 'Delete', () => Promise.resolve(call(() => lsSaves.del(e))).then(fill));
+          arm(dl, 'Delete', () => Promise.resolve(call(() => lsSaves.del(e))).then(fill), { q: 'Delete the save point “' + e.name + '”?', t: 'It is removed from this browser. This cannot be undone.', ok: 'Delete', danger: true });
           rr.append(E('span', '', e.name), ld, dl);
           svl.append(rr);
         }
@@ -155,21 +161,21 @@
     if (!FL.length) r.append(E('p', 'scnone', 'Load a start state first.'));
     for (const f of FL) {
       const id = 'flt-' + f.id.replace(/\W/g, '-'),
-        b = btn(f.t, f.on ? 'On: press to clear it' : 'Press twice to put the fault on', null, f.on ? 'flt on' : 'flt');
+        b = btn(f.t, f.on ? 'On: press to clear it' : 'Puts the fault on (asks first)', null, f.on ? 'flt on' : 'flt');
       if (f.on) b.onclick = () => (press(id), setTimeout(fill, 100));
-      else arm(b, f.t, () => (press(id), setTimeout(fill, 100)));
+      else arm(b, f.t, () => (press(id), setTimeout(fill, 100)), { q: 'Put this fault on: ' + f.t + '?', t: 'The fault acts on the running plant until you clear it.', ok: 'Put fault on', danger: true });
       r.append(b);
     }
     if (FL.length) r.append(btn('Clear all faults', 'Every fault that is on is cleared', () => (press('flt-clear'), setTimeout(fill, 100))));
     body.append(r);
     /* trips */
-    body.append(head('Trips · press twice'));
+    body.append(head('Trips'));
     r = row();
     const tt = btn('Turbine trip', 'TURBINE TRIP (TA-1), the same command as the Training dock');
     arm(tt, 'Turbine trip', () => {
       const t = call(() => AN.turbine('trip'), '');
       call(() => lsEventAdd('TCS', 'TCS', 'Instructor: TURBINE TRIP (TA-1)' + (t ? ': ' + t : '')));
-    });
+    }, { q: 'Trip the turbine?', t: 'TURBINE TRIP (TA-1): the turbine trips now and the plant reacts to it.', ok: 'Trip turbine', danger: true });
     tt.classList.add('trip');
     const mft = btn('Boiler trip (MFT): Purge and trip page', 'The master fuel trip push button is the operator’s control: it is on the Purge and trip page', () => {
       con.hidden = true;
@@ -245,7 +251,7 @@
   const iv = setInterval(() => {
     const strip = document.getElementById('scstrip');
     if (!strip || !window.LS_LIVE) {
-      if (++n > 80) clearInterval(iv);
+      ++n; /* no time limit: the strip can come later (live check beta.241) */
       return;
     }
     clearInterval(iv);

@@ -479,6 +479,13 @@
     /* user 2026-11-09 'ampanget': with the sheet panel open the plant page gives up width, so the sheet is not squeezed between them */
     const dpw = Math.round(dw) + 'px';
     if (B.style.getPropertyValue('--scedw') !== dpw) B.style.setProperty('--scedw', dpw);
+    /* live check beta.241: the plant page stayed small in a pane that changed width; it fits again (its own Fit button) */
+    const pw = $('plantws') ? $('plantws').offsetWidth : 0;
+    if (pw && pw !== tick.pw) {
+      tick.pw = pw;
+      clearTimeout(tick.ft);
+      tick.ft = setTimeout(() => call(() => [...document.querySelectorAll('#plantws .plbar button')].find(b => b.textContent.trim() === 'Fit').click()), 250);
+    }
     /* shell audit M36 (Yuna 2026-11-09, MEASURE_STANDARD S7 "no box over another"): the zoom bar of the sheet goes 8 px above the Why box;
        the Why box itself sits above the footer and the training card bar (CSS --scewhyb, M30) */
     const sh = Math.round(els.why.offsetHeight || 0) + 'px';
