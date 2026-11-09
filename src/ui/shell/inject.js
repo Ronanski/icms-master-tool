@@ -61,6 +61,7 @@ const block =
   fs.readFileSync(__dirname + '/../shellc/shellc-details.css', 'utf8') + /* the Details column */
   fs.readFileSync(__dirname + '/../shellc/shellc-zoom.css', 'utf8') + /* one control per task, readable page size */
   fs.readFileSync(__dirname + '/../shellc/shellc-content.css', 'utf8') + /* content look on the shell tokens (colour, font, line width only; user 2026-11-09) */
+  fs.readFileSync(__dirname + '/../shellc/shellc-dense.css', 'utf8') + /* one compact density, loaded last (user 2026-11-09 'Nalalakihan ako s mga cards at fonts') */
   '</style><script id="shelljs">' +
   fs.readFileSync(__dirname + '/ditl.js', 'utf8') +
   '\n' +
