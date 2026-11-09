@@ -496,7 +496,7 @@
   let n = 0;
   const iv = setInterval(() => {
     if (!document.getElementById('scstrip') || !window.LS_LIVE) {
-      if (++n > 80) clearInterval(iv);
+      if (++n > 240) clearInterval(iv);
       return;
     }
     clearInterval(iv);
