@@ -199,6 +199,9 @@
     /* the rare buttons: Instructor, Search, Details, Settings (View | RUN must already be in the bar: shellc-ui.js puts it before Settings) */
     const q = sel => scp.querySelector(':scope > ' + sel) || cMenu.querySelector(':scope > ' + sel),
       rare = [q('.pill.ins'), q('.scdetb'), q('.scsrp'), q('.scgearb')].filter(Boolean);
+    /* the gear has no name of its own (an icon): a "Settings" label, shown only in the menu (shellc-bars.css .scmlbl) */
+    const gear = q('.scgearb');
+    if (gear && !gear.querySelector('.scmlbl')) gear.append(E('span', 'scmlbl', 'Settings'));
     const vr = [...scp.querySelectorAll(':scope > .seg')].some(s => /VIEW/.test(s.textContent));
     /* in this order in the menu; moved only when the order is not right yet (a move takes the focus away) */
     if (on && vr && rare.some((x, i) => cMenu.children[i] !== x)) for (const x of rare) cMenu.append(x);
