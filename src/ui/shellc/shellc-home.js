@@ -25,17 +25,33 @@
   const gv = k => call(() => (typeof k === 'function' ? +k() : +LS_LIVE.getV(k)), NaN);
   const fmt = (x, d) => (isFinite(x) ? x.toFixed(d).replace(/^-(0(?:\.0*)?)$/, '$1') : '—');
   const U = () => (window.AN && AN.unit) || {};
-  /* the 9 systems of the unit: the page each opens (the Plant view pages of hmi-mock-*.js) and its values (the Training reader) */
+  /* the 9 systems of the unit: the page each opens (the Plant view pages of hmi-mock-*.js) and its values (the Training reader).
+     UNIT FLOW overview (user 2026-11-09 "bahala ka, basta ireshell niyo"; Jennie's sketch, artifact 4ihKkopvcTx4Z6s5vJ1cSc): each system
+     is a block at its place in the flow of the unit (c = column, r = row of the flow grid). g = the pages of its group: their tripped
+     machines and active alarms turn the block red. The grouping of the other pages (by their titles) is a layout choice of the shell */
   const TILES = [
-    { t: 'Coal, limestone and sand', pg: 'MK12', v: [['Total coal flow', 'coal', 't/h', 1]] },
-    { t: 'Boiler and drum', pg: 'MK07', v: [['Bed temperature', 'Tb', '°C', 0], ['Drum level', 'lvl', 'mm', 0], ['Drum pressure', 'Pd', 'kg/cm²', 1]] },
-    { t: 'Steam and turbine', pg: 'MK13', v: [['Main steam temperature', 'MST', '°C', 0], ['Main steam pressure', 'MSP', 'kg/cm²', 1], ['Turbine speed', 'rpm', 'rpm', 0]] },
-    { t: 'Generator', pg: 'MK17', v: [['Load', 'MW', 'MW', 1]] },
-    { t: 'Air and flue gas', pg: 'MK09', v: [['Total air flow', 'AIR', 't/h', 1], ['Furnace pressure', 'FP', 'mmH₂O', 0], ['Flue gas oxygen', 'O2', '%', 1]] },
-    { t: 'Feedwater', pg: 'MK06', v: [['Feedwater flow', 'FW', 't/h', 1], ['Main steam flow', 'MSF', 't/h', 1]] },
-    { t: 'Condenser and condensate', pg: 'MK05', v: [['Condenser pressure, absolute', () => U().cdP, 'kg/cm²', 3], ['Hotwell level', () => U().cdHw, 'mm', 0]] },
-    { t: 'Cooling and seawater', pg: 'CWN', v: [] },
-    { t: 'Ash and precipitator', pg: 'MK14', v: [] }
+    { k: 'coal', t: 'Coal, limestone and sand', pg: 'MK12', c: 1, r: 1, g: ['MK12'], v: [['Total coal flow', 'coal', 't/h', 1]] },
+    { k: 'air', t: 'Air and flue gas', pg: 'MK09', c: 1, r: 2, g: ['MK09', 'AFG', 'APH'], v: [['Total air flow', 'AIR', 't/h', 1], ['Furnace pressure', 'FP', 'mmH₂O', 0], ['Flue gas oxygen', 'O2', '%', 1]] },
+    { k: 'ash', t: 'Ash and precipitator', pg: 'MK14', c: 1, r: 3, g: ['MK14'], v: [] },
+    { k: 'boil', t: 'Boiler and drum', pg: 'MK07', c: 2, r: '1 / span 2', g: ['MK07', 'MK10', 'MK11', 'MK15', 'BIAS'], v: [['Bed temperature', 'Tb', '°C', 0], ['Drum level', 'lvl', 'mm', 0], ['Drum pressure', 'Pd', 'kg/cm²', 1]] },
+    { k: 'fw', t: 'Feedwater', pg: 'MK06', c: 2, r: 3, g: ['MK06', 'MK16'], v: [['Feedwater flow', 'FW', 't/h', 1], ['Main steam flow', 'MSF', 't/h', 1]] },
+    { k: 'tb', t: 'Steam and turbine', pg: 'MK13', c: 3, r: '1 / span 2', g: ['MK13', 'MK08', 'MK04', 'TO', 'MK18'], v: [['Main steam temperature', 'MST', '°C', 0], ['Main steam pressure', 'MSP', 'kg/cm²', 1], ['Turbine speed', 'rpm', 'rpm', 0]] },
+    { k: 'cd', t: 'Condenser and condensate', pg: 'MK05', c: 3, r: 3, g: ['MK05'], v: [['Condenser pressure, absolute', () => U().cdP, 'kg/cm²', 3], ['Hotwell level', () => U().cdHw, 'mm', 0]] },
+    { k: 'gen', t: 'Generator', pg: 'MK17', c: 4, r: '1 / span 2', g: ['MK17'], v: [['Load', 'MW', 'MW', 1]] },
+    { k: 'cw', t: 'Cooling and seawater', pg: 'CWN', c: 4, r: 3, g: ['CWN', 'SW', 'CW', 'MK02', 'MU'], v: [] }
+  ];
+  /* the lines of the flow: from, to, the side of the "from" block it leaves (r right, l left, b bottom, t top), its name */
+  const LINKS = [
+    ['coal', 'boil', 'r', 'fuel'],
+    ['air', 'boil', 'r', 'air'],
+    ['air', 'ash', 'b', 'flue gas'],
+    ['boil', 'tb', 'r', 'steam'],
+    ['tb', 'gen', 'r', 'shaft'],
+    ['gen', 'grid', 'r', 'power'],
+    ['tb', 'cd', 'b', 'exhaust'],
+    ['cd', 'fw', 'l', 'condensate'],
+    ['fw', 'boil', 't', 'feedwater'],
+    ['cw', 'cd', 'l', 'cooling']
   ];
   /* the machines of a page (its mach list): RUN / STOP / TRIP as the page shows them (hmi-mock.js mst) */
   function machines(pg) {
@@ -113,8 +129,9 @@
   let ov = null,
     crumb = null,
     tiles = [],
-    almTile = null;
-  const HIST = TILES.map(() => []);
+    almTile = null,
+    lines = null;
+  const NS = 'http://www.w3.org/2000/svg';
   function buildOv() {
     ov = E('div');
     ov.id = 'scov';
@@ -122,42 +139,53 @@
     ov.setAttribute('aria-label', 'Overview of the unit');
     const bar = E('div', 'scbar');
     bar.append(E('span', 'scbc', 'Plant'), E('span', 'scsep', '›'), E('b', '', 'Overview'));
-    const grid = E('div', 'scgrid');
-    tiles = TILES.map((T, i) => {
-      const b = E('button', 'sctile');
+    const grid = E('div', 'scflow');
+    grid.setAttribute('aria-label', 'The unit as one flow: fuel and air to the boiler, steam to the turbine, power to the grid, the water back to the boiler');
+    lines = document.createElementNS(NS, 'svg');
+    lines.setAttribute('class', 'scflines');
+    lines.setAttribute('aria-hidden', 'true');
+    const defs = document.createElementNS(NS, 'defs'),
+      mk = document.createElementNS(NS, 'marker'),
+      ap = document.createElementNS(NS, 'path');
+    for (const [k, v] of [['id', 'scfarrow'], ['viewBox', '0 0 10 10'], ['refX', '9'], ['refY', '5'], ['markerWidth', '6'], ['markerHeight', '6'], ['orient', 'auto']]) mk.setAttribute(k, v);
+    ap.setAttribute('d', 'M0 0 L10 5 L0 10 z');
+    mk.append(ap);
+    defs.append(mk);
+    lines.append(defs);
+    grid.append(lines);
+    tiles = TILES.map(T => {
+      const b = E('button', 'scfb');
       b.type = 'button';
+      b.dataset.k = T.k;
       b.title = 'Open the ' + T.t + ' page';
+      b.style.gridColumn = String(T.c);
+      b.style.gridRow = String(T.r);
       const h = E('h3', '', T.t),
-        kv = E('div', 'sckv'),
+        kv = E('div', 'scfkv'),
         vs = T.v.map(([n, , u]) => {
           const v = E('b', '', '—');
           kv.append(E('span', '', n), v);
           v.dataset.u = u;
           return v;
         });
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('viewBox', '0 0 180 40');
-      svg.setAttribute('preserveAspectRatio', 'none');
-      svg.setAttribute('class', 'scspark');
-      svg.setAttribute('aria-hidden', 'true');
-      const pl = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-      svg.append(pl);
       const lamp = E('div', 'sclamp');
-      /* Mina step 2 note 11c: the scale of the trend line (its top and bottom value), so a small change does not look like a big step */
-      const sc = E('div', 'scscale');
-      sc.setAttribute('aria-hidden', 'true');
-      b.append(h, kv, svg, sc, lamp);
-      if (!T.v.length) (svg.style.display = 'none'), (sc.style.display = 'none');
+      b.append(h);
+      if (T.v.length) b.append(kv);
+      b.append(lamp);
       b.onclick = () => openPage(T.pg);
       grid.append(b);
-      return { b, vs, pl, lamp, sc };
+      return { b, vs, lamp };
     });
-    almTile = E('button', 'sctile scalm');
+    const end = E('div', 'scfend', 'To the grid');
+    end.dataset.k = 'grid';
+    end.style.gridColumn = '5';
+    end.style.gridRow = '1 / span 2';
+    grid.append(end);
+    almTile = E('button', 'sctile scalm scfalm');
     almTile.type = 'button';
     almTile.title = 'Open the alarm list';
     almTile.onclick = () => openAl('alarms');
-    grid.append(almTile);
-    ov.append(bar, grid);
+    ov.append(bar, grid, almTile);
     document.body.append(ov);
     crumb = E('button', 'sccrumb');
     crumb.type = 'button';
@@ -175,6 +203,163 @@
     document.body.classList.remove('scov');
   }
   window.lsShellC = Object.assign(window.lsShellC || {}, { showOv, hideOv, openPage });
+  /* the page of the sheet of an alarm point (cached; the same rule as the Engineer mode, shellc-eng.js pageOf): a digital sheet = the
+     page whose machine is drawn on it; an analog sheet = the page with the most of its tags */
+  const PGS = {};
+  const base = n => String(n || '').replace(/^\(\w+\)/, '').trim();
+  const nz = x =>
+    String(x || '')
+      .toUpperCase()
+      .split('.')[0]
+      .replace(/[^A-Z0-9]/g, '');
+  /* the tags each page shows (its transmitter values data-v and its controllers ctl / io) */
+  let PTAGS = null;
+  function pageTags() {
+    if (PTAGS) return PTAGS;
+    const defs = call(() => LS_MOCK.defs, []) || [];
+    if (!defs.length) return [];
+    PTAGS = defs.map(d => {
+      const T = new Set();
+      for (const m of String(d.art || '').matchAll(/data-v="([^"|]+)"/g)) T.add(nz(m[1]));
+      for (const k in d.mach || {}) {
+        const m = d.mach[k];
+        if (m.ctl) T.add(nz(m.ctl));
+        if (m.io) T.add(nz(m.io));
+      }
+      return { id: d.id, T };
+    });
+    return PTAGS;
+  }
+  /* the page of an alarm: the page that shows its tag (the first word of its name, PIST10013 ...), else the page of its sheet */
+  const TGP = {};
+  function pageOfAlarm(a) {
+    const tg = nz(String(a.nm || '').split(/\s/)[0]);
+    if (tg.length >= 5) {
+      if (!(tg in TGP) && pageTags().length) {
+        const hit = pageTags().filter(p => p.T.has(tg)).map(p => p.id);
+        /* a tag drawn on a page of the block's own group first (the first hit of the page list otherwise) */
+        TGP[tg] = hit.find(id => TILES.some(T => T.pg === id)) || hit[0] || null;
+      }
+      if (TGP[tg]) return TGP[tg];
+    }
+    return pageOfSheet(a.sh);
+  }
+  /* the words of an analog sheet title and the block they belong to (first match wins; a layout choice of the shell, by the titles) */
+  const TITLEKEY = [
+    [/ASH|PRECIPITATOR/, 'MK14'],
+    [/CONDENS|HOTWELL|LPH|GLAND/, 'MK05'],
+    [/FEED ?WATER|DEAERATOR|HPH|ECONOMI/, 'MK06'],
+    [/COOLING|SEA ?WATER|CIRCULATING|MAKE-?UP/, 'CWN'],
+    [/GENERATOR|EXCIT/, 'MK17'],
+    [/TURBINE|BYPASS|EXTRACTION|REHEAT/, 'MK13'],
+    [/COAL|LIMESTONE|SAND|FEEDER|MILL/, 'MK12'],
+    [/AIR|FAN|FURNACE PRESSURE|FLUE|OXYGEN|O2/, 'MK09'],
+    [/DRUM|BOILER|BED|BURNER|COMBUST|FUEL|STEAM|SPRAY|SUPERHEAT/, 'MK07']
+  ];
+  function pageOfSheet(sh) {
+    const b = base(sh);
+    if (!b) return null;
+    if (b in PGS) return PGS[b];
+    const defs = call(() => LS_MOCK.defs, []) || [];
+    let pg = null;
+    for (const d of defs) {
+      for (const id in d.mach || {}) {
+        const m = d.mach[id],
+          L = [m.d, m.mov, m.sti && m.sti[0], m.sto && m.sto[0], m.ad && !/@/.test(m.ad) ? call(() => LS_DOCK.dName(LS_DOCK.dOf(m.ad)), null) : null];
+        if (L.some(x => x && base(x) === b)) {
+          pg = d.id;
+          break;
+        }
+      }
+      if (pg) break;
+    }
+    if (!pg && /^ABC/.test(b)) {
+      const sht = call(() => AN.sheets.find(x => base(x.name) === b), null),
+        S0 = sht && sht.S;
+      /* the title of the sheet names its system (ABC-052 "LP TURBINE BYPASS STEAM CONTROL", ABC-038 "NO.2 LPH LEVEL CONTROL") */
+      const ttl = String((sht && sht.title) || '').toUpperCase(),
+        bt = ttl && TITLEKEY.find(([re]) => re.test(ttl));
+      if (bt) {
+        PGS[b] = bt[1];
+        return bt[1];
+      }
+      if (!S0 || !S0.nets) return null; /* not read yet: ask again at the next tick */
+      const tags = new Set();
+      for (let n = 0; n < S0.nets.length; n++) {
+        const t = nz(call(() => AN.nm(S0, n), ''));
+        if (t.length >= 5) tags.add(t);
+      }
+      let bn = 0;
+      for (const p of pageTags()) {
+        let n = 0;
+        for (const t of p.T) if (tags.has(t)) n++;
+        if (n > bn) ((bn = n), (pg = p.id));
+      }
+    }
+    PGS[b] = pg;
+    return pg;
+  }
+  /* the lines between the blocks, from their places on screen: flat, one width, an arrow at the end, no motion */
+  let lineKey = '';
+  function drawLines() {
+    if (!lines || !document.body.classList.contains('scov')) return;
+    const box = lines.parentElement.getBoundingClientRect(),
+      R = {};
+    if (!box.width) return;
+    for (const el of lines.parentElement.querySelectorAll('[data-k]')) {
+      const r = el.getBoundingClientRect();
+      R[el.dataset.k] = { l: r.left - box.left, t: r.top - box.top, r: r.right - box.left, b: r.bottom - box.top };
+    }
+    const key = Math.round(box.width) + 'x' + Math.round(box.height) + JSON.stringify(R);
+    if (key === lineKey) return;
+    lineKey = key;
+    lines.setAttribute('width', Math.round(box.width));
+    lines.setAttribute('height', Math.round(box.height));
+    lines.setAttribute('viewBox', '0 0 ' + Math.round(box.width) + ' ' + Math.round(box.height));
+    for (const p of lines.querySelectorAll('.scfl, text')) p.remove();
+    const mid = (a, b) => (a + b) / 2,
+      /* the shared span of two blocks (the line runs straight through it) */
+      over = (a0, a1, b0, b1) => mid(Math.max(a0, b0), Math.min(a1, b1));
+    for (const [f, to, side, name] of LINKS) {
+      const a = R[f],
+        b = R[to];
+      if (!a || !b) continue;
+      let d, lx, ly, anc;
+      if (side === 'r' || side === 'l') {
+        const y = Math.round(over(a.t, a.b, b.t, b.b)),
+          x0 = side === 'r' ? a.r : a.l,
+          x1 = side === 'r' ? b.l : b.r;
+        d = 'M' + x0 + ' ' + y + ' H' + x1;
+        lx = mid(x0, x1);
+        ly = y - 5;
+        anc = 'middle';
+      } else {
+        const x = Math.round(over(a.l, a.r, b.l, b.r)),
+          y0 = side === 'b' ? a.b : a.t,
+          y1 = side === 'b' ? b.t : b.b;
+        d = 'M' + x + ' ' + y0 + ' V' + y1;
+        lx = x + 6;
+        ly = mid(y0, y1) + 4;
+        anc = 'start';
+      }
+      const p = document.createElementNS(NS, 'path');
+      p.setAttribute('class', 'scfl');
+      p.setAttribute('d', d);
+      p.setAttribute('marker-end', 'url(#scfarrow)');
+      lines.append(p);
+      if (name) {
+        const t = document.createElementNS(NS, 'text');
+        t.setAttribute('x', Math.round(lx));
+        t.setAttribute('y', Math.round(ly));
+        t.setAttribute('text-anchor', anc);
+        t.textContent = name;
+        lines.append(t);
+        /* a name wider than the gap between two blocks is left out (the arrow says the direction, the block names say the rest) */
+        if (anc === 'middle' && call(() => t.getComputedTextLength(), 0) > (side === 'r' ? b.l - a.r : a.l - b.r) - 8) t.remove();
+      }
+    }
+  }
+  addEventListener('resize', () => ((lineKey = ''), drawLines()));
   /* a start state or save point loaded (and not run yet): the lamps wait for the first scan */
   let stale = false,
     lastSS = null;
@@ -184,6 +369,14 @@
     if (ss !== lastSS) (lastSS = ss), (stale = true);
     if (window.AN && AN.run && !AN.view) stale = false;
     const n0 = none();
+    /* the active alarms (not back to normal, not suppressed: the same rows as the alarm list) by the page of their sheet; the unit trips
+       go to the boiler (MFT) and to the turbine (turbine trip) */
+    const byPg = {};
+    if (!n0)
+      for (const a of allAlarms()) {
+        const p = a.unit ? (a.k === 'U|MFT' ? 'MK07' : 'MK13') : pageOfAlarm(a);
+        if (p) (byPg[p] = byPg[p] || []).push(a);
+      }
     TILES.forEach((T, i) => {
       const t = tiles[i];
       T.v.forEach(([, k, u, d], j) => {
@@ -191,37 +384,35 @@
           s = fmt(x, d) + (isFinite(x) ? ' ' + u : '');
         if (t.vs[j].textContent !== s) t.vs[j].textContent = s;
       });
-      const m = n0 ? null : machines(T.pg);
-      t.lamp.textContent = '';
-      /* Mina beta.210: after a start state loaded while paused the machine states of the drawings are not scanned yet (they came right
-         after RUN): grey until the plant has run */
-      if (stale && m && m.n) {
-        t.lamp.append(E('span', 'dot none'), E('span', '', 'press Run to read the machines'));
+      const m = n0 ? null : machines(T.pg),
+        al = n0 ? [] : [].concat(...T.g.map(p => byPg[p] || [])),
+        trips = n0 ? 0 : T.g.reduce((a, p) => a + ((p === T.pg ? m : machines(p)) || { trip: 0 }).trip, 0),
+        hot = trips > 0 || al.length > 0;
+      /* Jennie's rule 2: red (border and this one line) only with a tripped machine or an active alarm of the group */
+      t.b.classList.toggle('hot', hot);
+      let line = null,
+        tip = 'Open the ' + T.t + ' page';
+      if (hot) {
+        const last = al[al.length - 1],
+          txt = trips ? trips + (trips > 1 ? ' tripped' : ' tripped') + (al.length ? ' · ' + al.length + (al.length > 1 ? ' alarms' : ' alarm') : '') : al.length > 1 ? al.length + ' alarms · ' + (last.nm || '') : ((last.nm || '') + ' ' + (last.lv || '')).trim() || '1 alarm';
+        line = [E('span', 'scfwarn', txt)];
+        tip += '. ' + (trips ? trips + ' tripped. ' : '') + al.map(a => ((a.nm || '') + ' ' + (a.lv || '')).trim()).join('; ');
+      } else if (stale && m && m.n) {
+        /* Mina beta.210: after a start state loaded while paused the machine states of the drawings are not scanned yet */
+        line = [E('span', 'dot none'), E('span', '', 'press Run to read the machines')];
       } else if (m && m.n) {
-        const dot = E('span', 'dot ' + (m.trip ? 'trip' : m.run ? 'run' : 'stop'));
-        t.lamp.append(dot, E('span', '', m.trip ? m.trip + ' tripped · ' + m.run + ' running' : m.run ? m.run + ' running' : 'all stopped'));
+        /* the dot: RUN = red, STOP = green (COMMANDMENT 5); the block stays neutral */
+        line = [E('span', 'dot ' + (m.run ? 'run' : 'stop')), E('span', '', m.run ? m.run + ' running' : 'all stopped')];
       }
-      /* the trend line of the first value: last 30 min, one point each 10 s of the clock */
-      /* Mina step 2 note 11c: (a) the line starts at the first real sample, at its place in the 30 min (the newest at the right end),
-         never from 0; (b) the scale spans at least 2 % of the value (87.4 -> 88.6 t/h is a small change, it looks small) */
-      const pts = HIST[i];
-      if (pts.length > 1) {
-        let lo = Math.min(...pts),
-          hi = Math.max(...pts);
-        const mid = (hi + lo) / 2,
-          half = Math.max((hi - lo) / 2, Math.abs(mid) * 0.01, 0.5 * Math.pow(10, -T.v[0][3]));
-        lo = mid - half;
-        hi = mid + half;
-        const n = pts.length;
-        t.pl.setAttribute('points', pts.map((y, k) => (180 - ((n - 1 - k) * 180) / 179).toFixed(1) + ',' + (36 - ((y - lo) / (hi - lo)) * 32).toFixed(1)).join(' '));
-        const d = T.v[0][3],
-          u = T.v[0][2];
-        t.sc.textContent = 'scale ' + fmt(lo, d) + ' – ' + fmt(hi, d) + ' ' + u;
-      } else {
-        t.pl.removeAttribute('points');
-        t.sc.textContent = '';
+      const sig = hot + '|' + (line ? line.map(x => x.className + x.textContent).join('|') : '');
+      if (t.lamp.dataset.sig !== sig) {
+        t.lamp.dataset.sig = sig;
+        t.lamp.textContent = '';
+        if (line) t.lamp.append(...line);
       }
+      if (t.b.title !== tip) t.b.title = tip;
     });
+    drawLines();
     /* the alarm tile: the newest six */
     const AL = allAlarms().slice(-6).reverse();
     almTile.textContent = '';
@@ -239,18 +430,6 @@
       nm = T ? T.t : pk && pk.selectedOptions[0] ? pk.selectedOptions[0].textContent : '';
     if (crumb.lastChild.textContent !== nm) crumb.lastChild.textContent = nm;
   }
-  setInterval(() => {
-    if (none()) return;
-    TILES.forEach((T, i) => {
-      if (!T.v.length) return;
-      const x = gv(T.v[0][1]);
-      if (!isFinite(x)) return;
-      /* (a) the reader gives 0 before the plant values arrive: a first 0 followed by a real value is not a sample */
-      if (HIST[i].length && HIST[i].length <= 2 && x !== 0 && HIST[i].every(y => y === 0)) HIST[i].length = 0;
-      HIST[i].push(x);
-      if (HIST[i].length > 180) HIST[i].shift();
-    });
-  }, 10000);
 
   /* ---------- alarm list with the Events tab ---------- */
   let al = null,
