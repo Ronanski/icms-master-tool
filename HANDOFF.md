@@ -29,7 +29,7 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 
 ## 5. Kulang pa
 - History ng public repo: nilinis 2026-11-07 (bagong commit IDs). Ang lumang PR refs (`refs/pull/*`) ay hawak pa ng GitHub at may plant documents pa; GitHub Support lang ang makakapag-alis. Lumang Windows / apk links ay hindi apektado; ang lokal na lumang history ay nasa `refs/backup/2026-11-07/*`.
-- Ikabit sa model ang drum 32 t (DATA_ANSWERS item 7); ikumpara sa app ang BFP motor, generator at compressor data (`document-references/INDEX.md`).
+- Ikabit sa model ang drum 32 t (DATA_ANSWERS item 7). Generator (GAE-2013-0136: 176.5 MVA, 13.8 kV, Xd 1.99), IA compressor (190 kW, 286 A) at BFP motor (3A057H186-71069: 3550 kW, 355 A sa 100 %, app 289.4 A sa 2946 kW) ay tugma sa app, 2026-11-09. Wala sa model: start current ng BFP (soft starter, LRC ≤ 2300 A; walang source ang tagal).
 - Live loop check at function test ng natitirang equipment (`docs/versions/v3.2.1/MOTOR_LOOP_CHECK.md` pagkatapos ng CW; lahat ng MOV / control valve at analog instrument gamit ang split view); page 07 test; debris filters, hypochlorite, manual valves.
 - Gaps: ID fan cold start; Sampling page blanks; per-signal ABC / DITL tracing; AI range / alarm / IO checks; DITL 9 sa 31 hindi pa na-verify.
 - Plant model: LP heater isolation / bypass; transmitter root valves; APH sootblower; ESP.
