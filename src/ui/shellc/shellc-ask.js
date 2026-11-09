@@ -13,6 +13,17 @@
     else if (q === 'c' || localStorage.getItem('ls-shell') !== 'old') localStorage.setItem('ls-shell', 'c');
   } catch (e) {}
 })();
+/* Proportional shell (user 2026-11-09 "Bakit dependent sa resolution? ... Scalable? Proportional?"): --scs = the screen against a
+   1366 px wide laptop (height against 640 px, a laptop browser window; the smaller ratio wins), kept between 0.9 and 1.5. shellc-dense.css multiplies its sizes by it, so
+   the bars, buttons and text look the same on a tablet, a laptop, a large monitor or a TV. The drawings already scale with Fit. */
+(function () {
+  const set = () => {
+    const s = Math.min(1.5, Math.max(0.9, Math.min(innerWidth / 1366, innerHeight / 640)));
+    document.documentElement.style.setProperty('--scs', s.toFixed(3));
+  };
+  set();
+  addEventListener('resize', set);
+})();
 (function () {
   let want = false;
   try {
