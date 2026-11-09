@@ -421,6 +421,11 @@ function tcsTripScan(U, dt) {
     ib.first = '';
   }
   ib.t0 += dt;
+  /* a press in the first 2 s (tcsTripPress): the push button starts now, when the edge of TA-1 is read */
+  if (ib.pend && ib.t0 >= 2) {
+    ib.pb[ib.pend] = 1.5;
+    ib.pend = '';
+  }
   if (!tcsMft()) ib.mft0 = true;
   const a = !!(ib.v['TA-1'] && ib.v['TA-1'][TA1_RESET] > 0.5);
   tcsIbdStep(U, c, dt);
@@ -466,12 +471,18 @@ function tcsTripHold(U, dt) {
 /* the action runs on the mirror page too; only the engine writes the trip state: a write here would mark the whole slot as the page's own,
    the page would skip the engine's answer and keep the old first out (Mina item 14 / 16: TRIPPED after a good reset) */
 const tcsMirror = () => !!(window.ENG && ENG.mode === 'mirror');
+/* the push button lasts 1.5 s and tcsTripScan reads no trip in the first 2 s of a run: a press in those 2 s used to be lost
+   (Instructor Turbine trip at t = 0 after the 150 MW load, Giselle 2026-11-09). It now waits for the end of the 2 s */
+function tcsTripPress(ib, k) {
+  if (ib.t0 < 2) ib.pend = k;
+  else ib.pb[k] = 1.5;
+}
 function tcsTripManual(U) {
   if (tcsMirror()) return '';
   const c = tcsOilState(U),
     ib = tcsIb(c);
   if (c.trip) return 'The turbine is already tripped: ' + c.trip;
-  ib.pb.trip = 1.5;
+  tcsTripPress(ib, 'trip');
   return '';
 }
 /* the ATS SHUT-DOWN (step 8, 775 page 29): the TURBINE SHUTDOWN COMMAND input of TA-9 (row 18), held as a push button */
@@ -480,7 +491,7 @@ function tcsTripShutdown(U) {
   const c = tcsOilState(U),
     ib = tcsIb(c);
   if (c.trip) return 'The turbine is already tripped: ' + c.trip;
-  ib.pb.sd = 1.5;
+  tcsTripPress(ib, 'sd');
   return '';
 }
 /* TA-1 TURBINE RESET P.B.: the gates decide; a held TA-9 keeps the A gate at 0 */

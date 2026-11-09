@@ -1352,7 +1352,7 @@ function anSwValve(tag, pct) {
      header       PT-MU0709 = 0.1 kg/cm2 per m (water, sg 1.0, p6) x (tank level + z + pump head at the flow of each running pump);
                   z = 11.3 m CALIBRATED on the HMI snapshot 28.png (2 MWP running at their recirculation flow, levels 13.8 / 13.7 m,
                   PIMU0709 9.0 kg/cm2): 90 - 13.8 - 64.9 m (the heights of the tanks and of the transmitter are not in the repository);
-     flow         FT-MU1001 = the hotwell make-up of the cycle model (plant.js 1.8 T/H per % of LCV-MU1110) + the expansion tank filling;
+     flow         FT-MU1001 = the hotwell make-up of the cycle model (plant.js 0.58 T/H per % of LCV-MU1110 + MV-MU1001) + the expansion tank filling;
                   each running MWP also returns its recirculation 10 m3/h (p6 MIN.FLOW) to the tank;
      strainer DP  0.03 kg/cm2 while its pump runs (28.png DPIMU0709A / B / C 0.029 / 0.042 / 0.001; no strainer curve: NO-SOURCE shape);
      demi tanks   the snapshot level, constant (the water treatment refills them; not modelled); LS-MU0708-A / B (alarm list 0.2 m,
@@ -1365,6 +1365,7 @@ const AN_MU = {
   mwp: ['DITL-112', 'DITL-112 #B', 'DITL-112 #C'],
   xv: 'DITL-78@3',
   mv: 'DITL-60',
+  qMv: 70 /* T/H, MV-MU1001 fully open: MB-016 item 20 */,
   lv: [13.8, 13.7],
   cQ: [0, 30, 60, 80.4, 90, 105, 120, 135, 150],
   cH: [65.0, 64.7, 63.2, 60.3, 58.8, 55.5, 52.1, 47.5, 43.5],
@@ -1428,8 +1429,13 @@ function anMakeupStep(U, dt) {
     dis = [0, 1, 2].map(i => op('V-MU' + String(7 + 2 * i).padStart(4, '0'))),
     rec = [0, 1, 2].map(i => op('V-MU00' + (13 + 2 * i))),
     feed = U.muSpd.map((s, i) => (s > 0 && wet[i] && dis[i] ? s : 0)),
-    ss = feed.reduce((a, b) => a + b, 0),
-    hw = typeof AN_CYC !== 'undefined' ? Math.max(0, 1.8 * (AN_CYC.u.hw || 0)) : 0,
+    ss = feed.reduce((a, b) => a + b, 0);
+  /* MV-MU1001 (DITL-60, operator only) on the 8 inch line MU-1-024, parallel to LCV-MU1110 on the 3 inch line MU-1-025 (PD-016 zone A-7):
+     70 T/H fully open = MB-016 item 20, the design flow of the line before the two branches (the only figure for it; the branch itself has
+     no flow on the drawings); the flow follows the travel (NO-SOURCE: the shape of the MOV) */
+  U.muMvQ = ss > 0 && U.muMv > 0 ? (K.qMv * Math.min(100, U.muMv)) / 100 : 0;
+  /* the hotwell make-up is the one flow of the cycle model (FT-MU1001 used 1.8 T/H per % here while the hotwell got 0.58) */
+  const hw = typeof AN_CYC !== 'undefined' && AN_CYC.flows ? Math.max(0, AN_CYC.flows('net').mu) : 0,
     qOut = ss > 0 ? hw + (fill ? K.etQ : 0) : 0,
     lv = Math.max(K.lv[0], K.lv[1]);
   /* the feeding pumps share the flow by speed (identical pumps in parallel), each with its recirculation */
