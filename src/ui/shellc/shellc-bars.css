@@ -137,3 +137,18 @@ html body.sc.scbars.sceng #dmeta{margin-left:var(--scex)!important;box-sizing:bo
 html body.sc.scbars.sceng.scdet #dmeta{margin-right:var(--scdw)!important}
 /* the Why? card of a search result opens under the search box, never over it (Jennie's finding on 259; --scsrchb from shellc-bars.js) */
 html body.sc.scsearch #infocard{top:calc(var(--scsrchb,var(--topH,88px)) + 8px)!important;max-height:calc(100vh - var(--scsrchb,var(--topH,88px)) - var(--footH,24px) - 16px)!important}
+/* Jennie, live check 264 (1366, Training dock open): the 11 values got 82 px each and "Reheat steam temperature" was cut, its value drawn
+   over the name. In a narrow bar the cell keeps 4 px at each side, so a long name takes its two lines inside the cell (nothing cut,
+   nothing over the value); a single long word breaks instead of running out of the cell */
+@container crband (max-width:1100px){
+  html body.sc #gsbar #scstrip .sck{padding-left:4px!important;padding-right:4px!important}
+  html body.sc #gsbar #scstrip .sck i{overflow-wrap:anywhere!important;hyphens:auto}
+}
+/* Jennie, live check 264: the PLANT chip (and its row in the More menu) turned black under the mouse after a click (the app's button
+   colours for hover, focus and pressed): the shell colours in every state; its menu rows likewise */
+html body.sc #gsbar #plchip,html body.sc #gsbar #plchip:is(:hover,:focus,:active,.on,.open,[aria-expanded="true"]){background:var(--sc-white)!important;color:var(--sc-ink)!important;border:1px solid var(--sc-line2)!important;box-shadow:none!important}
+html body.sc #gsbar #plchip:is(:hover,.on,.open,[aria-expanded="true"]){border-color:var(--sc-steel)!important}
+html body.sc #gsbar #plchip :is(em,b,span,i){color:inherit!important}
+html body.sc #gsbar #plchip:focus-visible{outline:2px solid var(--sc-steel)!important;outline-offset:2px}
+html body.sc #plpop button:is(:hover,:focus,:active){background:var(--sc-band)!important;color:var(--sc-ink)!important}
+html body.sc #plpop button.on{background:var(--sc-steel)!important;color:var(--sc-white)!important}
