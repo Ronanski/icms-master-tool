@@ -886,6 +886,12 @@
         try {
           hold = !!c.ok();
         } catch (e) {}
+      /* Mina beta.13 retest #a (step 141: the feedwater FICFW1007 in MANUAL while the steam fell, x10 took the drum to +244 mm): a step
+         whose loop the operator holds in MANUAL (manX) does not speed up by itself; the operator cannot follow a manual loop at x10 */
+      if (hold && st.manX)
+        try {
+          if (st.manX.some(t => LV().modeOf(LV().fp(LV().ctlTag(t) || t)) === 'MAN')) hold = false;
+        } catch (e) {}
       if (hold && !HX.on) {
         const v = +((window.AN && AN.spd) || 1);
         if (v < 10) {
@@ -2223,17 +2229,23 @@
         if (((/\bTRIP\b/i.test(a.l) && !/^(FAULT|FIELD)\b|RESET|ACK/i.test(a.l)) || /^FAULT:/.test(a.l)) && !bt.dataset.arm) {
           bt._armK = [...bt.childNodes];
           bt.dataset.arm = '1';
-          bt.replaceChildren('Press again: ' + a.l, ...bt._armK.slice(1));
+          /* Mina beta.13 retest #c: the longer "Press again: TURBINE TRIP (TA-1)" made the button wider and taller, the panel moved and
+             the second mouse press fell beside it. The armed button keeps its size and place */
+          const rc = bt.getBoundingClientRect();
+          bt.style.width = rc.width + 'px';
+          bt.style.height = rc.height + 'px';
+          bt.style.overflow = 'hidden';
+          bt.replaceChildren('Press again to confirm', ...bt._armK.slice(1));
           bt._armT = setTimeout(() => {
             delete bt.dataset.arm;
-            bt.replaceChildren(...bt._armK);
+            bt.replaceChildren(...bt._armK), (bt.style.width = bt.style.height = bt.style.overflow = '');
           }, 5000);
           return;
         }
         if (bt.dataset.arm) {
           clearTimeout(bt._armT);
           delete bt.dataset.arm;
-          bt.replaceChildren(...bt._armK);
+          bt.replaceChildren(...bt._armK), (bt.style.width = bt.style.height = bt.style.overflow = '');
         }
         /* retest #65 (R8: SWP-A started with 0 / 15 BAGO I-START items ticked); live test 2026-10-30 #20 (H5 / H7: the debris filter AUTO
            START with its line-up 0 / 1): every DCS command of the step (START, AUTO START, OPEN, AUTO) waits for the SOP items before it
@@ -3036,7 +3048,9 @@
         fb = rw && rw.querySelector('.gd-fix'),
         r0 = m.miss[0],
         rt = rw ? String((rw.querySelector('.gd-it') || {}).firstChild ? rw.querySelector('.gd-it').firstChild.textContent : '') : '',
-        rr = rw ? ((rw.querySelector('.gd-it small') || {}).textContent || '').replace(/^.*?(row [\d, ]+)$/, '$1') : '';
+        rr = rw ? ((rw.querySelector('.gd-it small') || {}).textContent || '').replace(/^.*?(row [\d, ]+)$/, '$1') : '',
+        /* a push button of the step (dg, not a motor START) still to press */
+        pdg = (s.a || []).find(x => x.dg && !x.stop && typeof x.f === 'function' && !call(() => x.hide && x.hide(), false) && !call(() => x.on && x.on(), true));
       ctx = 'Permissive' + (selA ? ' · ' + mName(selA) : '');
       say = rw ? rt : (svcN(r0.svc) || r0.svc) + (r0.want ? '' : ' = OFF');
       adr = m.sheet + ' ' + (rw ? rr : 'row ' + r0.no);
@@ -3045,6 +3059,21 @@
         who = 'FIELD OPERATOR';
         bl = 'Done in field';
         fn = () => fb.click();
+      } else if (pdg && isRun()) {
+        /* Mina beta.13 retest #b (step 143: the feeder A start permissive "discharge valve opened" had its ✕ and the card said "not a
+           field contact"): the push button of the step that gives the missing row (DITL-20 OPEN P.B. of the coal feeder discharge valve)
+           is pressed from here; the row ticks when the valve reports OPENED */
+        const pl = String(pdg.l).replace(/\s*\(DITL[^)]*\)$/, '');
+        who = 'CONTROL ROOM';
+        say += ': ' + pl;
+        adr = pdg.dg[0] + ' row ' + (pdg.dg[1] + 1);
+        bl = pl;
+        fn = () => {
+          const r = call(() => pdg.f(), '');
+          if (r && window.msg) msg(r);
+          else opLog(pdg.l, pbOf(pdg, 1));
+          setTimeout(() => fill(), 300);
+        };
       } else if (!isRun()) {
         who = 'CONTROL ROOM';
         say += ': ▶ RUN so the logic reads it';
