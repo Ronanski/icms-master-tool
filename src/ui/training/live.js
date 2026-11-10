@@ -778,10 +778,10 @@ window.LS_LIVE = (function () {
   let byAt = 0;
   const byNow = () => {
     const on = !!(DK() && dIn('DITL-02', 24));
-    if (on) byAt = Date.now();
+    if (on) byAt = +U().t || 0; /* Mina beta.23 B23-2: simulation seconds (Date.now counted real seconds at x10 / x60) */
     return on;
   };
-  const BYP700 = DC('furnace lower layer > 700 C (purge by-pass, DITL-02 row 25 M.3339), now or in the last 2 min', () => byNow() || Date.now() - byAt < 120000, () => 'M.3339 = ' + (byNow() ? 1 : 0) + (byAt && !byNow() ? ' (was 1 ' + Math.round((Date.now() - byAt) / 1000) + ' s ago)' : ''));
+  const BYP700 = DC('furnace lower layer > 700 C (purge by-pass, DITL-02 row 25 M.3339), now or in the last 2 min', () => byNow() || (byAt > 0 && (d => d >= 0 && d < 120)((+U().t || 0) - byAt)), () => 'M.3339 = ' + (byNow() ? 1 : 0) + (byAt && !byNow() ? ' (was 1 ' + Math.round((+U().t || 0) - byAt) + ' s ago, plant time)' : ''));
   /* 3.2.3-beta.12 (Mina beta.9 ~ 11, B6-7): after the trip from 150 MW the hotwell fell to -293 / -300 mm in 6 min and CEP A stopped on
      hotwell low-low (ABC-031 M.3211, DITL-61A row 13). Water balance (b3210 runs): the blow-off PCV-MS1001 opens to the air on the trip
      (ABC-013 back-up command), the feedwater runs about 1 min behind the steam (drum +350 mm) and the deaerator level loop keeps the
