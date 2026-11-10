@@ -953,7 +953,15 @@ function tcsOil(U, dt) {
   lag('loCa', c.cop[0] && suc ? K.cop : 0);
   lag('loCb', c.cop[1] && suc ? K.cop : 0);
   U.loCtl = Math.max(0, ctl() - (ctl() > 1 ? K.filt : 0));
-  const rst = U.tc ? c.rst : !!(U.tb && U.tb.st !== 'off');
+  /* Mina B6-2, 3.2.3-beta.6: after a good TURBINE RESET of TA-1 the trip oil stayed dumped (it followed only the ATS reset or a running
+     turbine), so TA-9 TURBINE TRIP OIL PRESS. VERY LOW tripped the coasting turbine again a minute later. The reset of the trip block
+     (IBD TA-1 net TA1_RESET, latched) puts the control oil on the trip oil header, as the reset of the real emergency trip device does */
+  let ta1 = false;
+  try {
+    const ib = tcsIb(c);
+    ta1 = !!(ib.v['TA-1'] && ib.v['TA-1'][TA1_RESET] > 0.5);
+  } catch (e) {}
+  const rst = (U.tc ? c.rst : !!(U.tb && U.tb.st !== 'off')) || ta1;
   lag('loTrip', rst ? U.loCtl : 0);
   lag('loVac', c.vex ? K.vac : 0);
   lag('loPur', typeof AN_SRC !== 'undefined' && AN_SRC.field && AN_SRC.field.pur ? K.pur : 0);

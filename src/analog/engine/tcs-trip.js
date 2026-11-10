@@ -387,8 +387,10 @@ function tcsIbdStep(U, c, dt) {
      The engine writes it now, at the end of the 1.5 s push button, from its own values: the TA-9 trip inputs at 1, else the MFT of DITL-03A
      (TA-9 BOILER MFT 1 / 2 into the TURBINE TRIP COMMAND of TA-1) */
   if (ib.pb.rst > 0 && ib.pb.rst - dt <= 0 && c.trip && window.lsEventAdd && !(window.ENG && ENG.mode === 'mirror')) {
-    const h = (tcsTripState(U).held || []).filter(Boolean);
-    if (!h.length && tcsMft()) h.push('BOILER MFT (DITL-03A MFT active: reset the MFT first)');
+    /* Mina B6-1, beta.6: BOILER MFT 1 and 2 both lit read 'BOILER MFT, BOILER MFT' (the numbers are taken off the names): one name each,
+       and the MFT gets its hint whether TA-9 shows it or not */
+    const h = [...new Set((tcsTripState(U).held || []).filter(Boolean))].filter(x => x !== 'BOILER MFT');
+    if (tcsMft() || (tcsTripState(U).held || []).includes('BOILER MFT')) h.unshift('BOILER MFT (DITL-03A MFT active: reset the MFT first)');
     lsEventAdd('TCS TA-1', 'TCS', 'TURBINE RESET refused: the trip is still held by ' + (h.length ? h.join(', ') : 'the TURBINE TRIP COMMAND of IBD TA-9'));
   }
   ib.pb.rst = Math.max(0, (ib.pb.rst || 0) - dt);
