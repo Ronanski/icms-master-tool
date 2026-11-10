@@ -803,18 +803,27 @@ function baPub(U) {
   U.baLv = B.lv;
 }
 /* the boiler-side systems, once per step of the unit model (after the air compressors: the atomizing air is plant air) */
-/* SOx at the stack. Raw SO2 of the coal, S 1.49 % (Tab 3), about 1890 ppm in the MCR gas. Limestone CaCO3 93.66 % (Tab 3) gives Ca/S.
-   The bed holds lime, so the capture follows Ca/S with a lag: tau 2 h NO-SOURCE. Fit to the snapshot: 41 ppm at limestone 11 % of 14 T/H
-   (Ca/S 0.346): capture = exp(-11 x Ca/S). soxF is the factor on the anchor of source.js R.AICFG10571 */
-const AN_SOX = { z0: 0.346, k: 11, tau: 7200, max: 1890 / 41 };
+/* SOx at the stack (3.2.3 b5, user 2026-11-11 "bawal ang ASSUMED": every number from a document or a CALC from documented inputs).
+   Raw SO2 (CALC): performance coal, FHI P2S7 Tab 2 page 2-7-TAB_2-1 (C 42.97, H 2.75, O 11.42, N 0.59, S 1.49, ash 6.82, water 33.96 %),
+   excess air 20 % (Tab 3 page 2-7-TAB_3-1): per kg of coal O2 needed 0.03949 kmol, air 1.2 / 0.21 x that, wet flue gas 0.2551 kmol
+   (CO2 0.03581, H2O 0.03249, SO2 0.000465, N2 0.1787, O2 0.00791), so SO2 = 0.000465 / 0.2551 = 1822 ppm wet, no limestone. At the MCR
+   fuel 89,000 kg/h (Tab 3) that is 509,000 Nm3/h of wet gas (no air heater leakage counted). For reference only: the ESP design rate
+   with margin is 602,000 Nm3/h (Equipment List K1AU3-L1-0-002 RA, PDF p 8, ESP Z-1010), not the gas of the MCR.
+   Ca/S (CALC): limestone CaCO3 93.66 % (Tab 3 page 2 "Performance Limestone"), FHI P2S7 Tab 4 Fig. 13 design sorbent flow 12 T/H at
+   100 % MCR with coal 89 T/H (40 % 5 / 38.5, 50 % 6 / 47, 70 % 8 / 64, 85 % 9.6 / 77: about the same ratio at every load):
+   (12 x 0.9366 / 100.09) / (89 x 0.0149 / 32.06) = 2.71.
+   Capture: SO2 = raw x exp(-k x Ca/S), the form of the model before; k from the design point: at Ca/S 2.71 the stack reads the set point
+   of the SOx control, 200 ppm (HMI snapshot 19.PNG ABC-005 AICFG10571 SV 200): k = ln(1822 / 200) / 2.715 = 0.814 (CALC). The bed lime
+   starts at the design Ca/S (z0). Was k 11 and z0 0.346, a fit to the snapshot 41 ppm with limestone STOP (not a document).
+   NO-SOURCE: the lag of the lime in the bed, tau 2 h; the scale on coal flow min(1.1, coal / coal at start), kept from before. */
+const AN_SOX = { raw: 1822, k: 0.814, z0: 2.71, tau: 7200 };
 function anSoxStep(U, dt) {
   const K = AN_SOX;
   if (!isFinite(U.soxZ)) U.soxZ = K.z0;
   const c = U.Fc || 0;
-  if (c > 1) U.soxZ += ((((U.lmQ || 0) * 0.9366) / 100 / ((c * 0.0149) / 32) - U.soxZ) * Math.min(dt, K.tau)) / K.tau;
-  U.soxF = Math.min(K.max, Math.exp(-K.k * (U.soxZ - K.z0)));
-  /* written here: the loop model limited the factor (Mina item 8, flat at 96 ppm) */
-  if (U.soxAI && U.soxAI.length) anUnitWrite(U.soxAI, 41 * U.soxF * Math.min(1.1, c / Math.max(1, U.F0)));
+  if (c > 1) U.soxZ += ((((U.lmQ || 0) * 0.9366) / 100.09 / ((c * 0.0149) / 32.06) - U.soxZ) * Math.min(dt, K.tau)) / K.tau;
+  U.soxF = Math.exp(-K.k * Math.max(0, U.soxZ));
+  if (U.soxAI && U.soxAI.length) anUnitWrite(U.soxAI, K.raw * U.soxF * Math.min(1.1, c / Math.max(1, U.F0)));
 }
 function anBoilerStep(U, dt) {
   anDieselOilStep(U, dt);
