@@ -1868,6 +1868,10 @@
     els.ttl.textContent = s ? s.t : 'The plant is at 150 MW';
     els.stP.disabled = i <= 0;
     stepNx();
+    /* Mina beta.13 ~ 16 (presses lost: the TRIP confirm, the FW ▼ clicks of step 141, the < / > late): a RUN / PAUSE state that is back
+       within one check (the Worker mirror between two scans) does not draw the step again; a real RUN / PAUSE change does, 1 s later */
+    if (!force && i === lastCur && R !== els.wasR && !((els.rN = (els.rN || 0) + 1) >= 2)) return live();
+    els.rN = 0;
     if (!force && i === lastCur && R === els.wasR) return live();
     els.wasR = R;
     const first = i !== lastCur;
