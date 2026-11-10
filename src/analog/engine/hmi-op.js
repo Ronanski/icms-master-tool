@@ -1146,6 +1146,14 @@ function* anPlantColdG() {
     if (typeof MST !== 'undefined' && typeof S !== 'undefined') {
       const s = S.sheets.find(x => /\)DITL-56$/.test(x.name));
       if (s) MST[s.name] = [{ pos: 100, run: 0, lr: 1, tq: 0 }];
+      /* 3.2.3-beta.36 (Jennie: condensate 0 T/H to the deaerator with the level valve 100 % and the CEP running): the No.1 LPH water
+         side is lined up on a cold plant too. PD-016 (Condensate, rev D): inlet MV-CD1001 (DITL-69) and outlet MV-CD1002 (DITL-70)
+         normal open, bypass MV-CD1003 (DITL-71) normal close; PR-OPE-5002 entry checklist: system valve line-ups signed off before
+         start-up. Before, the cold DITL had no position for them (0 % = shut) and the condensate had no path (unit.js anLphStep) */
+      for (const n of ['DITL-69', 'DITL-70']) {
+        const h = S.sheets.find(x => new RegExp('\\)' + n + '$').test(x.name));
+        if (h) MST[h.name] = [{ pos: 100, run: 0, lr: 1, tq: 0 }];
+      }
     }
   } catch (e) {}
   AN.steady = false;
