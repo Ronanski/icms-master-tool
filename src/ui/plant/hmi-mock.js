@@ -268,7 +268,7 @@
               if (!s || !s.first) return;
               const h = (s.held || []).filter(Boolean);
               const t = 'TURBINE RESET refused: the trip is still held by ' + (h.length ? h.join(', ') : 'a trip input of the TCS (IBD TA-9)');
-              call(() => window.lsEventAdd && lsEventAdd('TCS', 'TCS', t));
+              /* the event line is the engine's (tcs-trip.js, end of the push button): here only the message */
               call(() => typeof msg === 'function' && msg(t));
             }, 2500);
         });
@@ -492,9 +492,25 @@
             return;
           }
           if (!on) e._fo = null;
-          else if (!e._fo) {
+          else if (!e._fo || e._fo === '-----') {
             const [a, b] = rg.split('-').map(Number);
+            e._fo = null;
             for (let r = a; r <= b && !e._fo; r++) if (call(() => DUI.rowVal(s, r), null) === 1) e._fo = String(call(() => DUI.rowInfo(s, r).svc, '') || '');
+            /* Mina N2, 3.2.3-beta.4: a trip input that is a pulse (DITL-03H TURBINE TRIP, 2 s) is back at 0 when the page is opened, so every
+               input of DITL-03A read N and the box said first out: -----. The DCS keeps the first out in its memories: DITL-05 / 06 BOILER
+               TRIP SIGNAL (1) / (2), output rows '... FIRST OUT' (CRT / ANN), latched until RESET FIRST OUT (DITL-02 out 58) */
+            if (!e._fo)
+              for (const nm of ['DITL-05', 'DITL-06']) {
+                const f = call(() => D().dOf(nm), null);
+                if (!f || e._fo) continue;
+                for (const o of call(() => DUI.outs(f), []) || []) {
+                  const t = String(o.name || '').split(' · ')[1] || '';
+                  if (/FIRST OUT/.test(t) && call(() => DUI.outVal(f, o.row), null) === 1) {
+                    e._fo = t.replace(/\s*\/?\s*FIRST OUT\s*$/, '').replace(/\s*\/\s*/g, ' ').trim();
+                    break;
+                  }
+                }
+              }
             if (!e._fo) e._fo = '-----';
           }
           e.textContent = on ? 'MFT ACTIVE · first out: ' + e._fo : 'NO MFT';

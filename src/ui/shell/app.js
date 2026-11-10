@@ -2024,7 +2024,16 @@
               txt,
               on: guard(() =>
                 withAN(() => {
+                  /* Mina N5, 3.2.3-beta.4: the press from this menu wrote no Operator line (page 13 does), (a refused reset: the engine writes its line, tcs-trip.js) */
+                  const nm = cmd === 'tripreset' ? 'TURBINE RESET' : 'TURBINE TRIP',
+                    log = t => {
+                      try {
+                        window.lsEventAdd && lsEventAdd('TCS', 'TCS', t);
+                      } catch (e) {}
+                    };
+                  log('Operator: ' + nm + ' (PLANT menu)');
                   const r = AN.turbine(cmd);
+                  if (r) log(nm + ': ' + r);
                   say(r ? 'TCS: ' + r : 'TCS: ' + txt + ' pressed');
                   /* the engine answers with its next scans */
                   setTimeout(() => !pop.hidden && render(), 2500);
