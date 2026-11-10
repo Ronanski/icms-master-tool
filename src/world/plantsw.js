@@ -140,9 +140,12 @@
     ['I.016A', 'tank', /AIR TANK PRESSURE LOW/],
     ['I.0170', 'run', /ROTOFEEDER RUNNING/],
     ['I.0173', 'fan', /RUNNING/]
-  ].forEach(([a, k, re]) => L.push([a, lmSw(k), 0.5, 'hi', 0, 0, re, LMS]));
+  ].forEach(([a, k, re]) => L.push([a, lmSw(k), 0.5, 'hi', 0, 0, re, LMS, k === 'run' ? 1 : 0]));
   /* 3.2.1 d1 (LISA): DITL-01 row 14 MIR-M1311 LIMESTONE FEEDER ROTARY VALVE RUNNING is I.0170 (I/O list "#1 Limestone feeder running"), the same contact as ROTOFEEDER RUNNING above */
-  L.push(['MIR-M1311', lmSw('run'), 0.5, 'hi', 0, 0, null, /\)DITL-01$/]);
+  /* Mina beta.18 B18-1 / B16-3: after the 150 MW load the row stood "running" for good (DITL150 field state s.sig = 1, "L-1311 ROTO
+     FEEDER running", ORed with this switch): a STOP of the Rotofeed never reached DITL-01 and the purge permissive M.050E stayed 0. The
+     feeder running contact is owned by the plant model (index 8 = 1): its field bit is cleared once the model gives a value */
+  L.push(['MIR-M1311', lmSw('run'), 0.5, 'hi', 0, 0, null, /\)DITL-01$/, 1]);
   /* 3.2.1 d1 (LISA): DITL-56 row 7 TURBINE SPEED UNDER 2400 RPM I.0406 (location TCS); no ABC sheet carries I.0406.
      c2 gap 5 (310SC90-773 rev 2 DI 29 TCS-DI1029, IBD TA-15): the TCS sends it from the TA-15 comparator of the median speed (net 15, ON below
      2400, OFF at 2450 rpm, drawn at 525,476). Before the TCS state exists: the model speed below 2400 */
@@ -472,6 +475,7 @@
         DB = db != null ? db : DB0,
         x = val(src, m);
       if (!isFinite(x)) continue;
+      if (m.d[8] && m.s.sig && m.s.sig[m.row + ':S']) delete m.s.sig[m.row + ':S'];
       /* the state of the switch: tripped (level low / pressure high) with its dead band */
       /* 'ge': a switch that makes at its set point (rising), a pressure that is held AT the set point (the BFWP lube oil header) */
       const tr = dir === 'ge' ? x >= sp : m.on == null ? (dir === 'lo' ? x < sp : x > sp) : m.on ? (dir === 'lo' ? x < sp + DB : x > sp - DB) : dir === 'lo' ? x < sp : x > sp;
