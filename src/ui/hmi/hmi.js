@@ -811,6 +811,19 @@
           const st = S.rt.st[b.id];
           if (st) st.val = Math.max(lo, Math.min(hi, v));
           last = [Math.max(lo, Math.min(hi, v)), Date.now()];
+          /* Mina beta.5 (HIC-MWRL stuck at 3 MW/min, Engineer > ABC-001B, Worker ON): this faceplate wrote the value on the page copy only;
+             the engine in the Worker never got it, and its own read-back put 3.0 again. The value goes to the engine through AN.stVal (the
+             call the Training dock uses: it also keeps the operator value of a station whose AUTO leg is its own output, plant.js s.op) */
+          try {
+            AN.stVal && AN.stVal(sh.name, b.id, Math.max(lo, Math.min(hi, v)));
+          } catch (e) {}
+          /* one Operator line when the presses stop (a held ▲ ramps: no line per step) */
+          clearTimeout(b._opT);
+          b._opT = setTimeout(() => {
+            try {
+              window.lsEventAdd && lsEventAdd(sh.name, 'DCS', 'Operator: ' + tag + ' MV ' + sfmt(last ? last[0] : v) + (u ? ' ' + u : ''));
+            } catch (e) {}
+          }, 1500);
           /* 2.2.0-beta.2: a station in AUTO follows its set input (leg A of its SV switch); when that input is the operator's own
              set (an input of the sheet, e.g. ABC-001A HIC-ULD: TARGET MW, COS SI0243 "TARGET MW SETUP FROM CCS CRT"), the
              faceplate writes it. Before: the value was overwritten by the target at the next step, so ▼ did nothing in AUTO */
