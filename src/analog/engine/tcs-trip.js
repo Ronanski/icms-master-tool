@@ -103,7 +103,11 @@ const TCS_IBD_PV = [
   [/^52L OPEN/, U => (U.el && U.el.l52 === false ? 1 : 0)],
   [/^52G OPEN$/, U => (U.tb && (U.tb.st === 'sync' || U.tb.st === 'load') ? 0 : 1)],
   [/^TURBINE TRIP$/, (U, c) => (c.trip ? 1 : 0)],
-  [/^MSV([AB]) FULL OPEN/, (U, c) => (tcsVp(U, c) >= 1 ? 1 : 0)],
+  /* 3.2.3 c2 (SAKURA): the parentheses were not escaped, so this matched no input; MSV(B) FULL OPEN of TA-41 and MSV(A) / (B) FULL OPEN
+     of TA-42 (page 51 / 52) had no source (their off-page links to TA-31 / TA-32 are not read) */
+  [/^MSV\([AB]\) FULL OPEN/, (U, c) => (tcsVp(U, c) >= 1 ? 1 : 0)],
+  /* TC-35 (LP EXHAUST HOOD WATER SPRAY VALVE, page 77) GEN. LOAD <15%: 15 % of the 150 MW rating */
+  [/^GEN\. LOAD <15%/, U => ((+U.MW || 0) < 22.5 ? 1 : 0)],
   /* 3.2.1 c2 (LISA, 310SC90-773 rev 2 DIGITAL OUTPUT 31 ~ 35, DCS -> TCS): the heater / deaerator levels VERY HIGH close the extraction
      non-return valves (TC-36 / 41 / 42 / 44 / 45). The DCS sends them from DITL-115 TURBINE SYSTEM INTERFACE SIGNALS (location TCS), outputs
      NO.1 LPH / NO.1 HPH / DEAERATOR STORAGE TANK / NO.3 LPH / NO.2 LPH LEVEL H.H. (M.0183 / 0193 / 0161 / 0233 / 0213 of ABC-037 / 035 / 031 /
@@ -138,6 +142,24 @@ const TCS_IBD_NET = {
     28: U => (U.tc ? U.tc.Thp : NaN)
   },
   'TE-8': { 0: () => tcsDitlOut('DITL-115', /^TURBINE GLAND STEAM LINE DRAIN VALVE AUTO/) },
+  /* 3.2.3 c2: TA-42 net 27 (page 52) is GENERATOR LOAD (the name is garbled in the reader), off-page link 10 from TA-41, where it is the
+     GENERATOR LOAD >= 75 MW comparator, net 23 (the reader lists TA-41 link 10 to TA-31 ~ 34 only) */
+  /* TA-10 (page 30) net 11: the reader took the label "LOW ALARM 0.14 kg/cm2 abs" as the input of that comparator; on the drawing it reads
+     the median of PT-STn110-1 / 2 / 3 (the MID, net 10). The model has one condenser pressure (U.cdP), the same value as the three */
+  'TA-10': { 11: U => U.cdP },
+  /* TA-11 (page 31) net 3: the MAIN STEAM TEMP. LOW comparator (ON <= 290 C, OFF >= 295 C), before 20 % load, to ANN 2 only (not the trip:
+     the VERY LOW trip is the 2/3 of the variable comparators, TCS_IBD_SP). The reader took its label as the input; on the drawing it reads the
+     MID of TE-MSn902-1 / 2 / 3, one value in the model */
+  'TA-11': { 3: U => tcsSteam(U).mst },
+  /* TC-20 (page 74) net 43 AUX. STEAM HEADER PRESS. (LOWER), compared ON >= 7 kg/cm2 G on the sheet = c.Pa of the ATS model (PIAS1004, tcs.js) */
+  'TC-20': { 43: U => (U.tc ? U.tc.Pa : NaN) },
+  /* TC-17 VENTILATOR VALVE (page 71) net 5 HP TURBINE HEAT SOAK EXECUTE = the heat soak phases of the ATS model (soak1800 / soak3600,
+     ASSUMED: the IBD gives no other source of this signal) */
+  'TC-17': { 5: U => (U.tc && /^soak/.test(U.tc.ph || '') ? 1 : 0) },
+  /* TC-18 BLOWDOWN VALVE (page 72) net 0 INTERCEPT VALVE OPEN DEMAND >0.1%: the ICV position of the model stands for its demand (ASSUMED,
+     the model has no separate demand) */
+  'TC-18': { 0: U => (U.tb && U.tb.icv > 0.001 ? 1 : 0) },
+  'TA-42': { 27: (U, c) => (c.ib && c.ib.v['TA-41'] ? c.ib.v['TA-41'][23] || 0 : 0) },
   /* c2 batch 3 (3.2.3): the inputs of the IBD that the model already has a value for. A contact of the TSI with its set point written on the
      sheet is 1 at that set point. TA-18 (IBD page 37): SHAFT VIBRATION HIGH ON >= 0.125 mm; TA-17 (page 36): VERY HIGH ON >= 0.200 mm, X = -1,
      Y = -2; VE-ST1001 No.1 / VE-ST1002 No.2 turbine, VE-GE1001 No.3 / VE-GE1002 No.4 generator = loVx1..4 / loVy1..4 of tcsOil (snapshot
