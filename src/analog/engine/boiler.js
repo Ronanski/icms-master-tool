@@ -37,7 +37,18 @@ const AN_DO = {
   Prv: 16.5 /* kg/cm2, pump relief = 15 x 1.1 (ALLWEILER 8.2, MB-022 15 kg/cm2) */,
   Ka: 12.8 /* PCV-DO0002, valve sheet CV p218 */,
   Kf: 13.1 /* FCV-DO1012, valve sheet CV p228 */,
-  Kr: 12.5 / (0.857 * Math.sqrt(11.0)) /* PCV-DO1009, 6.PNG */,
+  /* 3.2.3: the split at 6.PNG from the two valve sheets (K1AU3-E2-0-123 p218 PCV-DO0002 Cv 17.4 full open = 12.8, p228 FCV-DO1012
+     Cv 17.1 = 13.1; 12.5 T/H at 3.7 kg/cm2 = Cv 8.49): PCV-DO0002 24.2 % at 12.8 kg/cm2 passes 11.1 T/H, so 13.9 T/H goes to the
+     unit 1 ring (MB-022 12.5 / 12.5 is the design split). FCV-DO1012 100 % alone passes 13.9 T/H with 1.1 kg/cm2; 6.PNG reads
+     12.8 -> 11.0 = 1.8: the line from the header to the ring (pipe, fittings, flow element) in series takes the rest
+     (CALIBRATED on 6.PNG; the pipe itself is NO-SOURCE). The return PCV-DO1009 passes the same 13.9 T/H at 85.7 % and 11.0. */
+  q6: 25 - 12.8 * 0.242 * Math.sqrt(12.8),
+  get Kl() {
+    return 1 / Math.sqrt(1.8 / this.q6 ** 2 - 1 / 13.1 ** 2);
+  },
+  get Kr() {
+    return this.q6 / (0.857 * Math.sqrt(11.0)) /* PCV-DO1009, 6.PNG */;
+  },
   g: 0.6144 * 0.980665 /* T/H per kg/cm2 at the gun: 614.4 kg/h per bar (M&S 1612 13-4-71) */,
   Kb:
     3.072 /
@@ -89,7 +100,8 @@ function doBurnerQ(P2, x) {
 function doSolve(Qc, xa, xf, xr, xb) {
   const K = AN_DO,
     sq = x => Math.sqrt(Math.max(0, x)),
-    ring = P2 => K.Kr * xr * sq(P2) + xb.reduce((s, x) => s + doBurnerQ(P2, x), 0);
+    ring = P2 => K.Kr * xr * sq(P2) + xb.reduce((s, x) => s + doBurnerQ(P2, x), 0),
+    kf = xf > 0 ? 1 / Math.sqrt(1 / (K.Kf * xf) ** 2 + 1 / K.Kl ** 2) : 0 /* FCV-DO1012 and the line, in series */;
   /* for a header P1: the ring pressure where the flow through FCV-DO1012 = return + burners */
   const p2Of = P1 => {
     if (!(xf > 0) || !(P1 > 0)) return 0;
@@ -97,14 +109,14 @@ function doSolve(Qc, xa, xf, xr, xb) {
       b = P1;
     for (let i = 0; i < 30; i++) {
       const m = (a + b) / 2;
-      if (K.Kf * xf * sq(P1 - m) > ring(m)) a = m;
+      if (kf * sq(P1 - m) > ring(m)) a = m;
       else b = m;
     }
     return (a + b) / 2;
   };
   const out = P1 => {
     const P2 = p2Of(P1);
-    return { P2, qa: K.Ka * xa * sq(P1), qf: K.Kf * xf * sq(P1 - P2) };
+    return { P2, qa: K.Ka * xa * sq(P1), qf: kf * sq(P1 - P2) };
   };
   if (!(Qc > 0)) return { P1: 0, P2: 0, qa: 0, qf: 0, qrv: 0 };
   let r = out(K.Prv);
