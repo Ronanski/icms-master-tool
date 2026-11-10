@@ -1,6 +1,6 @@
 # HANDOFF — iisang file ng estado (para sa kahit sinong Claude o account)
 
-Huling update: **2026-11-11 7:35 AM PHT** (JENNIE: beta.62 closing time ng motor valves mula sa Limitorque sheets, drain at warm-up gate sa alarm limits, walang ASSUMED).
+Huling update: **2026-11-11 7:45 AM PHT** (SAKURA: beta.63 gumagana na ang EMERGENCY STOP button ng ash cooler sa RUN; ash test ALL PASS).
 
 Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md` at git log.
 
@@ -15,7 +15,7 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 ## 2. Kasalukuyang estado (2026-11-10 PHT)
 - **BUOD NG HANDOVER (basahin muna):** `docs/handoff/HANDOVER_2026-11-10.md` — lahat mula 2026-11-07, gawain ng bawat team member, at ang hindi pa tapos (re-shell at plant plan).
 - **Stable:** v3.2.2 (2026-11-10, user "Ok go sa 1"; = 3.2.1 + Worker bilang default ng Stable site). Ang 3.2.1 (GO STABLE ng user) = 3.2.1-beta.281, re-shell layout C. GitHub Release: apk, Windows exe, html, report pdf. Hindi nasubok: tingnan ang `docs/versions/v3.2.1/Release-Report-v3.2.1.pdf`.
-- **Beta sa `main`:** 3.2.3-beta.62 (beta.62: closing time ng bawat motor valve mula sa Limitorque Confirmation Sheets, K1AU3-E2-0-122 PDF p51 ~ 71, dati 10 s lahat; drain buttons at step 57 gate sa drum level alarm limits +127 / -100 mm; tinanggal ang blow-off 60 % / 300 s gate na walang source). Bukas na listahan ng NO-SOURCE: team-files/ASSUMED_sources_2026-11-11.md.
+- **Beta sa `main`:** 3.2.3-beta.63 (beta.63 ash cooler E-stop: sa RUN laging 1 ang plant switch ng DITL-21A row 18 NOT EMERGENCY STOP (I.0256 / 0536 / 0646 / 0686) at may dead band 10 ng level switches, kaya walang epekto ang EMERGENCY STOP ng faceplate; ngayon sumusunod ang contact sa field (pindot = 0, RELEASE = 1), dead band 0; sa Cold released = 1 pa rin (beta.264). Ash test: EMERGENCY STOP muna tapos RELEASE, ALL PASS. beta.62: closing time ng bawat motor valve mula sa Limitorque Confirmation Sheets, K1AU3-E2-0-122 PDF p51 ~ 71, dati 10 s lahat; drain buttons at step 57 gate sa drum level alarm limits +127 / -100 mm; tinanggal ang blow-off 60 % / 300 s gate na walang source). Bukas na listahan ng NO-SOURCE: team-files/ASSUMED_sources_2026-11-11.md.
 - **Testing:** GitHub "Simulation tests" (`.github/workflows/sim-tests.yml`, report lang) + shell smoke test `tests/regress/shellc.js`; final proof = live test ni Mina sa Beta site.
 - **Rule ng version:** sa push, version ng `main` + 1.
 
