@@ -315,12 +315,14 @@
       S = call(() => AN.tcs(), null),
       rpm = isFinite(+tb.rpm) ? Math.round(+tb.rpm) : null,
       gcb = tb.st === 'sync' || tb.st === 'load',
-      aim = isFinite(+tb.aim) ? +tb.aim : null;
+      aim = isFinite(+tb.aim) ? +tb.aim : null,
+      /* Mina, beta.2 check: at 150 MW in DCS control mode the header said Target — : the turbine follows the DCS then (unit.js anUnitStep0) */
+      dcs = call(() => U.dcs < 0 || +(U.S && U.S.rt && U.S.rt.v[U.dcs]) > 0.5, false) && gcb;
     tsv.replaceChildren(
       kv('Speed', rpm == null ? '—' : rpm + ' rpm'),
       kv('Generator breaker', tb.st ? (gcb ? 'closed' : 'open') : '—'),
-      kv('Target', aim == null ? '—' : (Math.round(aim * 10) / 10) + ' MW'),
-      E('span', 'sctsn', 'at 7.5 MW/min'),
+      kv('Target', dcs ? 'DCS unit load demand' : aim == null ? '—' : (Math.round(aim * 10) / 10) + ' MW'),
+      E('span', 'sctsn', dcs ? '' : 'at 7.5 MW/min'),
       kv('Hold', S ? (S.hold ? 'on' : 'off') : '—')
     );
     for (const x of tsb) {
