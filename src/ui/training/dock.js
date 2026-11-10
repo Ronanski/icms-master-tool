@@ -889,6 +889,17 @@
       /* Mina beta.13 retest #a (step 141: the feedwater FICFW1007 in MANUAL while the steam fell, x10 took the drum to +244 mm): a step
          whose loops the operator holds by hand (nox) does not speed up by itself; the operator cannot follow a manual loop at x10 */
       if (hold && st.nox) hold = false; /* beta.14 B14-2: a step that the operator holds by hand (nox) never speeds up by itself */
+      /* beta.20 (Mina beta.19 B19-3: drum +306 mm at x10 while the feedwater stayed at 224 T/H in MANUAL and the steam fell to 0): a nox
+         step starts at x1 once (the drum and hotwell move in seconds after the trip); the operator can raise the speed again by hand */
+      if (st && st.nox && HX.nx !== g.cur) {
+        HX.nx = g.cur;
+        const v = +((window.AN && AN.spd) || 1);
+        if (v > 1) {
+          setSpeed(1);
+          if (HX.on) (HX.on = false), (HX.prev = 1);
+          if (window.lsEventAdd) lsEventAdd('DCS', 'DCS', 'Training: speed x1 at step ' + (g.cur + 1) + ' (loops held by hand)');
+        }
+      } else if (!(st && st.nox)) HX.nx = -1;
       if (hold && !HX.on) {
         const v = +((window.AN && AN.spd) || 1);
         if (v < 10) {
