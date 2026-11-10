@@ -883,6 +883,7 @@ window.LS_LIVE = (function () {
     } catch (e) {}
   };
   let LAT = rd();
+  const SOPLOG = new Map(); /* Mina N3: the AUTO step lines logged (key -> real time ms), per starting state */
   const since = {};
   const simT = () => +U().t || 0;
   /* R9 #71: the simulation runs on a DITL sheet too (the Training dock follows the step to DITL-29A ...): the AUTO items ticked only
@@ -998,6 +999,13 @@ window.LS_LIVE = (function () {
         ch.push(key);
         /* live test #55: the AUTO tick is an event too (the step, what the logic shows) */
         try {
+          /* Mina N3, 3.2.3-beta.4: after a state load the same AUTO step was logged up to 8 times (22.8 x8, 26.16 x6): the ticks are made again
+             while the loaded state settles. One line per step for each starting state loaded (AN.loadN) in 2 min of real time */
+          const lk = ((window.AN && AN.loadN) || 0) + ':' + key;
+          /* a step done again later (a practice repeated) is logged again: only the repeats of the same 2 min are dropped */
+          if (Date.now() - (SOPLOG.get(lk) || -1e9) < 120000) return;
+          SOPLOG.set(lk, Date.now());
+          if (SOPLOG.size > 2000) SOPLOG.clear();
           if (window.lsEventAdd) lsEventAdd('PR-OPE-5002', 'SOP', '✓ ' + (si + 1) + '.' + (i + 1) + ' ' + String(st.t).slice(0, 60) + ' (AUTO: ' + String(q.c.now ? q.c.now() : '').slice(0, 80) + ')');
         } catch (e) {}
       })
