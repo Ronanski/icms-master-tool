@@ -130,6 +130,11 @@ const html =
     /* SOP 20: PCV-DO0002, PCV-DO1009 M 100 %, FCV-DO1012 100 %, then START pump A */
     H.man('ABC-028', 'PICDO0005', 100);
     H.man('ABC-029', 'PICDO1008', 100);
+    { /* 3.2.3: the Cold has FCV-DO1012 at 0 (closed); SOP 20 opens it: HICDO1012 is a MAN station (no faceplate controller), as guide.js A.man */
+      const T = AN.sheets.find(x => x.name === 'ABC-029').S, b = T.blk.find(z => z.k === 'MAN' && (z.tag === 'HICDO1012' || (z.txt || []).includes('HICDO1012')));
+      if (AN.latchMode) AN.latchMode('HICDO1012', 'MAN');
+      AN.stVal('ABC-029', b.id, 100, (b.i || []).filter((n, i, L) => n >= 0 && L.indexOf(n) === i && T.ext.includes(n) && !(T.xlk && T.xlk[n]) && (AN.nm(T, n) || '').trim() === 'HICDO1012.MV'));
+    }
     set('DITL-31', 21, true); /* row 22 DOP A REMOTE MODE SELECTED (local panel) */
     await run(2);
     set('DITL-31', 3, true); /* row 4 DOP A START P.B. (CRT) */
