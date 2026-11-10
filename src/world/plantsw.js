@@ -6,8 +6,9 @@
    user sets the row by hand as before.
    Set points (alarm list): drum level LSL -100, LSH +127, LSHH +254, LSLL -178, LSLL-NC -254 mm; furnace PSHHH +381, PSHH +267,
    PSLL -267 mmH2O (the -NC contact is 1 while NOT in that state); deaerator LSLL-CD1104-4 177 mm from the bottom = -2147 mm of the
-   transmitter (normal level 2324 mm = 0); hotwell LSLL-CD1110 450 mm from the bottom = -150 mm (normal 600 mm = 0, ASSUMED: the
-   normal hotwell level is not in the alarm list). Dead band: 10 mm / 10 mmH2O (ASSUMED, a typical switch). */
+   transmitter (normal level 2324 mm = 0); hotwell LSLL-CD1110 450 mm from the bottom = -150 mm (normal 600 mm = 0: the CL line 600 mm
+   from the hotwell bottom, condenser outline K1AU3-D1-0-039 R1 p 4, drawing K2MC3A-100; LLL 300, HHL 900). Dead band: 10 mm / 10 mmH2O
+   (NO-SOURCE: no switch data sheet in the docs searched). */
 (function (W) {
   /* [row tag at the start of the row text, sheet, value: label of the ABC net or AI address, set point, 'lo' | 'hi', NC] */
   const L = [];

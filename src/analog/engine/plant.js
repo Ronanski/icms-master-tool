@@ -325,7 +325,7 @@ function anCompNet(S, ai) {
    (condensate 380 T/H whatever the recirculation did, the deaerator falling while condensate went in, a jump at AUTO).
    The condensate pump (CEP) sends Fda to the deaerator and Frec back to the hotwell; the flow transmitter reads Fda + Frec.
    Anchored at the 150 MW snapshot (hmi-op.js, 28.png / 03.png): deaerator valve 17.5 % = condensate 380 T/H (21.7 T/H per %,
-   ASSUMED linear up to the CEP capacity 520 T/H), make-up 14 % = the 25 T/H that leaves the drum (1.8 T/H per %), the deaerator
+   linear up to the CEP capacity 520 T/H, NO-SOURCE above the valve sheet point, see 3.2.3-beta.25 below), make-up 14 % = the 25 T/H that leaves the drum (1.8 T/H per %), the deaerator
    also gets 25 % of the main steam on load (extractions and heater drains: 380 + 118.5 = feedwater 499 T/H). Recirculation
    2.5 T/H per % (SOP: 60 % open about 150 T/H minimum flow). Level rates: AN_CYC.kgmm below. The recirculation goes back to the condenser, so the hotwell loses only the deaerator flow; the deaerator
    loses the feedwater of the drum balance (AN_CYC.ffw) */
@@ -336,7 +336,7 @@ const AN_CYC_TAG = { LICCD1104: 'da', LICCD1110A: 'hw', FICCD1120: 'cf' };
    feedwater and the deaerator rose to +544 mm; at 10.5 % 230 T/H drained the hotwell): the low end of the valve from its sheet
    (control valve sheet p74, LCV-CD1104: 36,000 kg/h at 6 % travel, team-files plant-study 12-assumptions), the 150 MW point from the
    snapshot (17.5 % = 380 T/H, hmi-op.js 28.png / 03.png), straight lines between; above 17.5 % the slope of before (21.7 T/H per %).
-   Was 21.7 T/H per % from 0 (ASSUMED linear). The sheet's 362 T/H at 68 % and the snapshot cannot both hold: still open */
+   Was 21.7 T/H per % from 0 (linear, no source). The sheet's 362 T/H at 68 % and the snapshot cannot both hold: still open */
 function anDaQ(u) {
   u = Math.max(0, +u || 0);
   return u <= 6 ? 6 * u : u <= 17.5 ? 36 + ((380 - 36) / 11.5) * (u - 6) : 380 + 21.7 * (u - 17.5);

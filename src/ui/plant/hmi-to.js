@@ -6,7 +6,7 @@
                          shaft, the bearings No.1 (+ thrust) ~ No.4 cut open with the oil film, the turning gear, the generator (core,
                          winding, rotor) and the exciter; the bearing oil header and the drains; per bearing the metal temperature and
                          the shaft vibration X / Y (TCS I/O list HMI_AI: 1TEST1009 / 1010, 1TEGE1001 / 1002, 1VEST10011 ~ 22,
-                         1VEGE10011 ~ 22; plant model ASSUMED, tcs.js tcsOil);
+                         1VEGE10011 ~ 22; plant model, tcs.js tcsOil: oil on 36.PNG and the SOP, bearing metal / vibration on the 035 SHAFT MONITOR snapshot);
    2 LUBE OIL            main oil tank T-1920 (LSH / LSL), MOP P-1922A / B and EOP P-1923 (vertical, submerged), lube oil coolers
                          H-1921A / B (cooling water TCV-CW1201 of TICLO1002, ABC-053: TE-LO1002-1 / -2), the oil filter (DPISL01932),
                          the bearing oil header (PSLO1004, PILO10031 ~ 33), the drain return, vapour extractor F-1937 (PGLO1920),
@@ -237,7 +237,7 @@
       `<g class="hs-hit" data-tab="1">${T(180, 500, '◀ BEARING OIL HEADER (from LUBE OIL, tab 2)', 'hs-sub')}</g>` +
         `<g class="hs-hit" data-tab="1">${T(180, 562, '◀ DRAIN → MAIN OIL TANK (LUBE OIL, tab 2)', 'hs-sub')}</g>`
     );
-    /* per bearing: metal temperature and shaft vibration X / Y (TCS I/O list HMI_AI; ASSUMED plant model) */
+    /* per bearing: metal temperature and shaft vibration X / Y (TCS I/O list HMI_AI; plant model on the 035 SHAFT MONITOR snapshot, tcs.js) */
     const BRG = [
       [1, 'No.1 TURBINE', 'TEST1009', 'VEST10011', 'VEST10012'],
       [2, 'No.2 TURBINE', 'TEST1010', 'VEST10021', 'VEST10022'],
@@ -261,7 +261,7 @@
         H.lamp(394, 704, 'PSL', 'PSLO1004 bearing oil') +
         H.vbox(640, 690, 'TIGE1007 No.3 out', '°C', 'loTb3', 84) +
         H.vbox(820, 690, 'TIGE1008 No.4 out', '°C', 'loTb4', 84) +
-        T(1270, 714, 'metal / vib: ASSUMED model', 'hs-sub', 'text-anchor="end" style="font-size:12px"')
+        T(1270, 714, 'metal / vib: model on snapshot 035', 'hs-sub', 'text-anchor="end" style="font-size:12px"')
     );
     b.txt(
       H.legend(20, 752, [
@@ -827,7 +827,7 @@
             e => (e.stopPropagation(), info(id === 'TCV' ? 'TICLO1002' : id === 'CLA' ? 'TE-LO1002-1' : 'TE-LO1002-2'))
           );
       });
-    /* the values of the plant model (tcs.js TCS_OIL, the bearing metal / vibration ASSUMED) */
+    /* the values of the plant model (tcs.js TCS_OIL, the bearing metal / vibration on the 035 SHAFT MONITOR snapshot) */
     const UNIT = [
       'loPa',
       'loPb',
@@ -865,18 +865,18 @@
       loVac: 'PGLO1920 local gauge (SOP)',
       loPur: 'local gauge of the purifier (SOP)',
       rpm: 'turbine speed (TCS)',
-      m1: '1TEST1009 No.1 turbine journal bearing metal temp. (ASSUMED model)',
-      m2: '1TEST1010 No.2 turbine journal bearing metal temp. (ASSUMED model)',
-      m3: '1TEGE1001 No.3 bearing metal temp. (ASSUMED model)',
-      m4: '1TEGE1002 No.4 bearing metal temp. (ASSUMED model)',
-      vx1: '1VEST10011 No.1 turbine shaft vibration X (ASSUMED model)',
-      vy1: '1VEST10012 No.1 turbine shaft vibration Y (ASSUMED model)',
-      vx2: '1VEST10021 No.2 turbine shaft vibration X (ASSUMED model)',
-      vy2: '1VEST10022 No.2 turbine shaft vibration Y (ASSUMED model)',
-      vx3: '1VEGE10011 No.3 generator shaft vibration X (ASSUMED model)',
-      vy3: '1VEGE10012 No.3 generator shaft vibration Y (ASSUMED model)',
-      vx4: '1VEGE10021 No.4 generator shaft vibration X (ASSUMED model)',
-      vy4: '1VEGE10022 No.4 generator shaft vibration Y (ASSUMED model)'
+      m1: '1TEST1009 No.1 turbine journal bearing metal temp. (model, snapshot 035)',
+      m2: '1TEST1010 No.2 turbine journal bearing metal temp. (model, snapshot 035)',
+      m3: '1TEGE1001 No.3 bearing metal temp. (model, snapshot 035)',
+      m4: '1TEGE1002 No.4 bearing metal temp. (model, snapshot 035)',
+      vx1: '1VEST10011 No.1 turbine shaft vibration X (model, snapshot 035)',
+      vy1: '1VEST10012 No.1 turbine shaft vibration Y (model, snapshot 035)',
+      vx2: '1VEST10021 No.2 turbine shaft vibration X (model, snapshot 035)',
+      vy2: '1VEST10022 No.2 turbine shaft vibration Y (model, snapshot 035)',
+      vx3: '1VEGE10011 No.3 generator shaft vibration X (model, snapshot 035)',
+      vy3: '1VEGE10012 No.3 generator shaft vibration Y (model, snapshot 035)',
+      vx4: '1VEGE10021 No.4 generator shaft vibration X (model, snapshot 035)',
+      vy4: '1VEGE10022 No.4 generator shaft vibration Y (model, snapshot 035)'
     };
     /* decimals: the low pressures 2, the control / trip oil and the temperatures 1, vacuum and speed 0, vibration 3 */
     const dpOf = k =>
