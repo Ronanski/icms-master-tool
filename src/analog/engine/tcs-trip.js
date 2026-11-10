@@ -122,16 +122,76 @@ const TCS_IBD_PV = [
 const TCS_IBD_NET = {
   'TE-1': {
     40: () => tcsDitlOut('DITL-115', /^TURBINE WARMING VALVE INLET DRAIN MOTOR VALVE OP/),
-    44: () => tcsDitlOut('DITL-115', /^TURBINE WARMING VALVE INLET DRAIN MOTOR VALVE CL/)
+    44: () => tcsDitlOut('DITL-115', /^TURBINE WARMING VALVE INLET DRAIN MOTOR VALVE CL/),
+    /* c2 batch 3: TE-ST1001-1 HP TURBINE FIRST STAGE INNER WALL METAL TEMP. (page 90) = c.Thp of the ATS model (tcs.js) */
+    12: U => (U.tc ? U.tc.Thp : NaN)
   },
   'TE-3': { 1: () => tcsDitlOut('DITL-115', /^TURBINE WARMING VALVE INLET DRAIN MOTOR VALVE AU/) },
   'TE-6': {
     7: () => tcsDitlOut('DITL-115', /^TURBINE GLAND STEAM LINE DRAIN VALVE OPEN/),
     26: () => tcsDitlOut('DITL-115', /^TURBINE GLAND STEAM LINE DRAIN VALVE OPEN/),
-    19: () => tcsDitlOut('DITL-115', /^TURBINE GLAND STEAM LINE DRAIN VALVE CLOSE/)
+    19: () => tcsDitlOut('DITL-115', /^TURBINE GLAND STEAM LINE DRAIN VALVE CLOSE/),
+    /* c2 batch 3 (page 94): TE-ST1004-1 / 2 REHEAT BOWL INNER WALL = c.Trh, TE-ST1001-1 HP TURBINE FIRST STAGE = c.Thp (tcs.js) */
+    27: U => (U.tc ? U.tc.Trh : NaN),
+    28: U => (U.tc ? U.tc.Thp : NaN)
   },
-  'TE-8': { 0: () => tcsDitlOut('DITL-115', /^TURBINE GLAND STEAM LINE DRAIN VALVE AUTO/) }
+  'TE-8': { 0: () => tcsDitlOut('DITL-115', /^TURBINE GLAND STEAM LINE DRAIN VALVE AUTO/) },
+  /* c2 batch 3 (3.2.3): the inputs of the IBD that the model already has a value for. A contact of the TSI with its set point written on the
+     sheet is 1 at that set point. TA-18 (IBD page 37): SHAFT VIBRATION HIGH ON >= 0.125 mm; TA-17 (page 36): VERY HIGH ON >= 0.200 mm, X = -1,
+     Y = -2; VE-ST1001 No.1 / VE-ST1002 No.2 turbine, VE-GE1001 No.3 / VE-GE1002 No.4 generator = loVx1..4 / loVy1..4 of tcsOil (snapshot
+     035 SHAFT MONITOR). TA-17 nets 21 / 22 / 23: the second input of the A gate of No.2 / 3 / 4, drawn with no source: the note of page 36
+     says it is "similar to No.1", that is ANY OTHER SHAFT VIBRATION HIGH (the OR of the HIGH of the other shafts) */
+  'TA-18': Object.fromEntries([0, 1, 2, 3, 4, 5, 6, 7].map(k => [k, U => tcsVib(U, k) >= 0.125])),
+  'TA-17': {
+    ...Object.fromEntries(
+      [
+        [0, 0],
+        [1, 1],
+        [3, 2],
+        [4, 3],
+        [6, 4],
+        [7, 5],
+        [9, 6],
+        [10, 7]
+      ].map(([n, k]) => [n, U => tcsVib(U, k) >= 0.2])
+    ),
+    21: U => tcsVibHighBut(U, 1),
+    22: U => tcsVibHighBut(U, 2),
+    23: U => tcsVibHighBut(U, 3)
+  },
+  /* TD-2 (page 85): bearing metal temperatures, HIGH ON >= 115 C journal / ON >= 85 C thrust. TE-ST1009 / 1010 No.1 / 2 journal, TE-GE1001 /
+     1002 No.3 / 4 = loM1..4; TE-ST1011-1 / -2 thrust front = loThF, TE-ST1012-1 / -2 thrust rear = loThR (tcsOil, snapshot 035) */
+  'TD-2': {
+    0: U => U.loM1,
+    24: U => U.loM2,
+    7: U => U.loM3,
+    9: U => U.loM4,
+    11: U => U.loThF,
+    18: U => U.loThF,
+    20: U => U.loThR,
+    22: U => U.loThR
+  },
+  /* TA-20 (page 39): TE-ST1003-1 / 2 / 3 HP TURBINE EXHAUST STEAM TEMP. The model has one value there: the cold reheat temperature TT-TS1011
+     (unit.js anUnitStepX X.T.cr, the HP exhaust mixed with the HP bypass outlet). The windage heating of the HP blades at low flow is not
+     modelled */
+  'TA-20': { 4: U => tcsHpx(U), 5: U => tcsHpx(U), 6: U => tcsHpx(U) },
+  /* TD-1 (page 84): TE-LO1002-1 / -2 LUBE OIL COOLER OUTLET OIL TEMP., MAX = the cooler outlet of tcsOil (U.loTout, TICLO1002) */
+  'TD-1': { 8: U => U.loTout },
+  /* TD-4 (page 87): ZE-ST1001 TURBINE SHELL EXPANSION (HP side) = c.sexp of the ATS model (NORMAL ON >= 3 mm, ATS criteria 2.1) */
+  'TD-4': { 5: U => (U.tc ? U.tc.sexp : NaN) },
+  /* GD-5 (page 99): TE-GE1006-1 ~ 6 GEN. STATOR COIL TEMP. (HIGH ON >= 123 C), TE-GE1004-1 ~ 4 GEN. COOLING GAS AIR (ON >= 50 C), TE-GE1005
+     AC EXCITER OUTLET AIR (ON >= 95 C) = the generator temperatures of unit.js anGenTemp (U.genT ts / ta / ex, snapshot 035 SHAFT MONITOR) */
+  'GD-5': {
+    ...Object.fromEntries([0, 2, 4, 6, 8, 10].map((n, i) => [n, U => (U.genT ? U.genT.ts[i] : NaN)])),
+    ...Object.fromEntries([12, 14, 16, 18].map((n, i) => [n, U => (U.genT ? U.genT.ta[i] : NaN)])),
+    20: U => (U.genT ? U.genT.ex : NaN)
+  }
 };
+/* the shaft vibration of contact k of TA-18 (0 / 1 No.1 X / Y, 2 / 3 No.2, 4 / 5 No.3, 6 / 7 No.4), mm */
+const tcsVib = (U, k) => +U['loV' + (k % 2 ? 'y' : 'x') + ((k >> 1) + 1)] || 0;
+/* ANY OTHER SHAFT VIBRATION HIGH: a HIGH (TA-18, >= 0.125 mm) of a shaft other than shaft s (0 = No.1 ... 3 = No.4) */
+const tcsVibHighBut = (U, s) => [0, 1, 2, 3, 4, 5, 6, 7].some(k => k >> 1 !== s && tcsVib(U, k) >= 0.125);
+const tcsHpx = U => (U.xt && U.xt.T && isFinite(U.xt.T.cr) ? U.xt.T.cr : NaN);
 /* c2: the value of a DITL input row (by the tag in its TAG column), of a DITL output (by its RS text) and of an ABC net (by its name), as the
    DCS has them now; 0 / NaN when absent */
 const TCS_DCS = { row: {}, abc: {}, out: {} };
@@ -219,7 +279,21 @@ const TCS_IBD_PUMP = {
   'TB-22': { k: 'cop', i: 1, auto: 0, run: 11, fb: 23 }
 };
 /* TB-22: the A gate after the 15 s timer has no word the reader finds; the sheet is the same as TB-21 */
-const TCS_IBD_PATCH = { 'TB-22': [['A', [14, 18], 15, 0, 0, 0]] };
+/* TD-2 (page 85): each A gate to the ATS (criteria 1.30 / 1.31) takes the four HIGH comparators through a NOT circle; the reader found one NOT
+   per gate (nets 1 -> 2, 12 -> 13) and took the other three pins for inputs with stray words (nets 3, 4, 5 and 14, 15, 16). The missing NOT
+   circles are added here, where the reader saw those words, and the stray inputs are taken off (TCS_IBD_DROP) */
+const TCS_IBD_PATCH = {
+  'TB-22': [['A', [14, 18], 15, 0, 0, 0]],
+  'TD-2': [
+    ['NOT', [25], 3, 0, 555, 216, 0, 0],
+    ['NOT', [8], 4, 0, 555, 249, 0, 0],
+    ['NOT', [10], 5, 0, 555, 227, 0, 0],
+    ['NOT', [19], 14, 0, 555, 486, 0, 0],
+    ['NOT', [21], 15, 0, 555, 520, 0, 0],
+    ['NOT', [23], 16, 0, 555, 498, 0, 0]
+  ]
+};
+const TCS_IBD_DROP = { 'TD-2': [3, 4, 5, 14, 15, 16] };
 const TCS_IBD = {
   by: {},
   bind: null
@@ -245,6 +319,7 @@ function tcsIbdBind() {
   const L = [];
   for (const s of TCS_IBD_SHEETS) TCS_IBD.by[s.id] = s;
   for (const id in TCS_IBD_PATCH) if (TCS_IBD.by[id]) TCS_IBD.by[id].g.push(...TCS_IBD_PATCH[id]);
+  for (const id in TCS_IBD_DROP) if (TCS_IBD.by[id]) TCS_IBD.by[id].i = TCS_IBD.by[id].i.filter(i => !TCS_IBD_DROP[id].includes(i[0]));
   for (const s of TCS_IBD_SHEETS) {
     const r = { s, link: [], pv: [], mft: [] },
       driven = new Set(s.g.map(g => g[2]));
