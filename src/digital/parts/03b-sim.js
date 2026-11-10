@@ -666,7 +666,23 @@ function mvTr(s, j) {
   if (b && /^PA1043-[A-D]2$/.test(b.tag)) return 1;
   /* the oil valves must show closed inside TR894, the 1 s the air stays on after their command drops, else DITL-14 gives M.0141 at each OFF: under 1 s, not in the documents */
   if (b && /^DO1043-[A-D]1$/.test(b.tag)) return 0.5;
+  const ct = b && b.tag && mvCloseTime(b.tag);
+  if (ct) return ct;
   return b && b.sv ? 3 : 10;
+}
+/* 3.2.3: closing time of the motor operated valves from the Limitorque "Confirmation Sheet For Valve Actuator" pages 1/21 ~ 21/21
+   (K1AU3-E2-0-122 RA Drawing of Motor Valve, PDF pages 51 ~ 71, NIPPON GEAR, 2014-07-29: "closing time approx. N sec"). Unit 1 and 2
+   tags (1xxx / 2xxx) share one sheet. Before: 10 s for every motor valve (NO-SOURCE). The other motor valves keep 10 s (no sheet). */
+const MV_CLOSE_S = [
+  [/MS[12]391$/, 60], [/MS[12]392$/, 6], [/HR[12]391$/, 5], [/TS[12]001$/, 31], [/TS[12]002$/, 41], [/TS[12]003$/, 54],
+  [/TS[12]004$/, 75], [/TS[12]005$/, 88], [/TS[12]3(89|9[0-9])$/, 10], [/AS[12]391$/, 23], [/AS[12]39[23]$/, 10], [/AV[12]391$/, 10],
+  [/SB[12]001$/, 18], [/CD[12]00[12]$/, 51], [/CD[12]003$/, 27], [/CD[12]00[78]$/, 24], [/MU[12]001$/, 41], [/FW[12]00[12]$/, 48],
+  [/FW[12]39[12]$/, 7], [/BD[12]001$/, 8], [/BD[12]002$/, 11], [/BR[12]391$/, 5]
+];
+function mvCloseTime(tag) {
+  const t = String(tag).replace(/^MV-?/i, '').replace(/[-\s].*$/, '');
+  for (const [re, s] of MV_CLOSE_S) if (re.test(t)) return s;
+  return 0;
 }
 function mvForced(s) {
   const F = new Map(),
