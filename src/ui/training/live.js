@@ -359,7 +359,10 @@ window.LS_LIVE = (function () {
       if (m === REC.last) return;
       /* Mina, load run of 3.2.2: the first row had empty hotwell / condensate columns (taken before the first step of the plant after a
          state load). The first row waits for the condenser (a few seconds at most, then it goes in anyway) */
-      if (!REC.rows.length && !isFinite(u.cdHw) && (REC.wait = (REC.wait || 0) + 1) < 6) return;
+      /* Mina, beta.2 check: still empty with the plant paused at t = 0 after the load (the condenser had not stepped yet): the first row
+         also waits for the first step of the plant (t > 0) */
+      if (!REC.rows.length && !(+u.t > 0)) return;
+      if (!REC.rows.length && !(isFinite(u.cdHw) && isFinite(u.cdQt)) && (REC.wait = (REC.wait || 0) + 1) < 6) return;
       REC.wait = 0;
       REC.last = m;
       REC.rows.push(recRow());
