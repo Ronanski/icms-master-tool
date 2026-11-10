@@ -347,6 +347,14 @@ window.LS_LIVE = (function () {
     w('DA', g('LICCD1104', pvOf));
     w('DAMV', g('LICCD1104', mvOf));
     w('MUMV', g('LICCD1110A', mvOf));
+    /* 3.2.3-beta.5 (Mina load run L1, RHT 560 C on load up): the steam temperature loops, to compare with plant scenario 1 (load up
+       7.6 ~ 8.6 h: MST 551, RHT 552, 2nd spray MV in steps of 5): ABC-012 outer TICMS1004 and spray 2 TICBR1150, ABC-011 spray 1
+       TICBR1130, ABC-019 RH spray TICHR1002, ABC-020 RH / SH flue gas damper TICHR1002A (controller MV, %) */
+    w('MSOMV', g('TICMS1004', mvOf));
+    w('SP1MV', g('TICBR1130', mvOf));
+    w('SP2MV', g('TICBR1150', mvOf));
+    w('RHSMV', g('TICHR1002', mvOf));
+    w('RHDMV', g('TICHR1002A', mvOf));
     return r;
   };
   setInterval(() => {
@@ -370,7 +378,7 @@ window.LS_LIVE = (function () {
     } catch (e) {}
   }, 1000);
   const recCsv = () => {
-    const X = ['RHT', 'HW', 'CDQ', 'DA', 'DAMV', 'MUMV'],
+    const X = ['RHT', 'HW', 'CDQ', 'DA', 'DAMV', 'MUMV', 'MSOMV', 'SP1MV', 'SP2MV', 'RHSMV', 'RHDMV'],
       H = ['t_min'].concat(REC_K, X);
     /* Mina, load run of 3.2.2: t_min 42 came twice. A row is taken once per whole minute (Math.floor), so the column counts the same
        way: Math.round put 41.5 min and 42.0 min both at 42 */
