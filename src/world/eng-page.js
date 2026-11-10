@@ -13,7 +13,8 @@
       if (ls === '1' || ls === '0') return ls === '1';
       /* user 2026-11-03 ("Ediba my worker na!!!!"): the Worker is the default on the Beta web site (/beta/ over https); the page
          engine (plain) stays as the automatic fallback when the worker fails. The apk / exe copy and file:// stay plain (GO STABLE) */
-      return location.protocol === 'https:' && /\/beta\/(index\.html)?$/.test(location.pathname);
+      /* Mina, Stable 3.2.1 check 2026-11-10: every full live test ran with the Worker, so the Stable page takes it too (github.io only: the apk and the exe stay plain until tested on a device) */
+      return location.protocol === 'https:' && (/\/beta\/(index\.html)?$/.test(location.pathname) || /\.github\.io$/.test(location.hostname));
     } catch (e) {
       return false;
     }
