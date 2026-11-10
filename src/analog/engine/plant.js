@@ -356,7 +356,8 @@ function anCycFlows(t) {
     ext = s.ext || 0;
   /* 3.2.1 (IRENE): no make-up water pump feeding the header (unit.js AN_MU muFeed) = no make-up to the hotwell */
   const muOff = typeof AN_UNIT !== 'undefined' && AN_UNIT.on && AN_UNIT.muFeed === 0;
-  return { fda, frec, hwIn: ms * (1 - 0.25 * ext), daIn: 0.25 * ext * ms, mu: muOff ? 0 : 0.58 /* LCV-MU1110, valve sheet p90 */ * (AN_CYC.u.hw || 0) };
+  const muMv = typeof AN_UNIT !== 'undefined' && AN_UNIT.on ? AN_UNIT.muMvQ || 0 : 0; /* MV-MU1001, parallel to LCV-MU1110 (PD-016 A-7; unit.js AN_MU) */
+  return { fda, frec, hwIn: ms * (1 - 0.25 * ext), daIn: 0.25 * ext * ms, mu: muOff ? 0 : 0.58 /* LCV-MU1110, valve sheet p90 */ * (AN_CYC.u.hw || 0) + muMv };
 }
 AN_CYC.flows = anCycFlows;
 /* one water inventory: kg of water per mm of level of each vessel, so the three levels add up to one balance.
