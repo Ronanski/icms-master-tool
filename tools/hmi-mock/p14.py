@@ -40,6 +40,8 @@ p.inner(1402, 664, 'PV ' + C('SICL1060A', 'pv') + ' / SV ' + C('SICL1060A', 'sv'
 p.inner(1402, 790, 'Bag filter fan F-1091 ' + RUN(13))
 p.mach('DP', hits=[(1396, 540, 200, 70)])
 p.mach('SA', hits=[(1396, 640, 200, 44)])
+# tracker e1: the ESP start note = the FIELD pop-out of the precipitator (EP PLC panel)
+p.mach('ESP', hits=[(1396, 68, 200, 80)])
 bad = p.check()
 assert not bad, bad
 p.write('p14-head.js', 'hmi-mock-ea.js')

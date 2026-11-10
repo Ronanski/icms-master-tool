@@ -30,7 +30,35 @@
       PHR391: { n: 'PICHR1391', t: 'MV-HR1391', ctl: 'PICHR1391', io: 'PICHR1391' },
       D80: { n: 'XV-HR1021', t: 'Hot reheat drain pot DP-HR01', mov: 'DITL-80', tg: 'XV-HR1021' },
       PHR3: { n: 'PICHR1003', t: 'LP bypass PCV-HR1010', ctl: 'PICHR1003', io: 'PICHR1003' },
-      THR12: { n: 'TICHR1012', t: 'LP bypass spray TCV-CD1115', ctl: 'TICHR1012', io: 'TICHR1012' }
+      THR12: { n: 'TICHR1012', t: 'LP bypass spray TCV-CD1115', ctl: 'TICHR1012', io: 'TICHR1012' },
+      /* tracker e1 (user 2026-11-10: a cold start without Training): the lower ring header drains V-BD1005 ~ V-BD1021 (flow diagram
+         K1AU3-PD-019 Rev D, manual valves to the blowdown tank T-1051; plant model AN.field('lhd', %), plant.js), opened by the field
+         operator to a part of the stroke as the Training step (10 / 25 / 50 %); PR-OPE-5002: the drum level below 10 kg/cm2 */
+      LHD: {
+        n: 'V-BD1005 ~ V-BD1021',
+        t: 'Lower ring header drains (manual)',
+        fset: () => {
+          const st = () => (window.AN && AN.fieldState ? !!AN.fieldState().lhd : null),
+            pc = () => (st() ? window.LS_LHD_PCT || null : 0),
+            set = x => ((window.LS_LHD_PCT = x), AN.field('lhd', x));
+          return {
+            n: 'V-BD1005 ~ V-BD1021',
+            t: 'Lower ring header drains',
+            d: 'field (PD-019)',
+            lamps: ['OPEN', 'CLOSED'],
+            st,
+            val: () => (st() ? (pc() ? pc() + ' % OPEN' : 'OPEN') : 'CLOSED'),
+            why: 'Manual valves from the furnace lower ring header to the blowdown tank T-1051 (flow diagram PD-019). The field operator opens them to lower an overfilled drum.',
+            use: 'PR-OPE-5002: below 10 kg/cm2 control the drum level with the lower header drain; above 10 kg/cm2 use the mass and continuous blowdown (MV-BD1001 / MV-BD1002).',
+            acts: [
+              ['CLOSE', () => set(0), () => st() === false, 'FIELD: close the lower ring header drains?', 'stop'],
+              ['10 %', () => set(10), () => pc() === 10],
+              ['25 %', () => set(25), () => pc() === 25],
+              ['50 %', () => set(50), () => pc() === 50]
+            ]
+          };
+        }
+      }
     },
     unit: {
       RPM: 'rpm',

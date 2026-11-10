@@ -20,7 +20,10 @@
       BCC: { n: 'ASH COOLER C', t: 'L-1060C', ad: 'DITL-21A #C', d: 'DITL-21A #C' },
       BCD: { n: 'ASH COOLER D', t: 'L-1060D', ad: 'DITL-21A #D', d: 'DITL-21A #D' },
       DP: { n: 'DPICFG108', t: 'Furnace differential pressure', ctl: 'DPICFG108', io: 'DPICFG108' },
-      SA: { n: 'SICL1060A', t: 'Screw speed', ctl: 'SICL1060A', io: 'SICL1060A' }
+      SA: { n: 'SICL1060A', t: 'Screw speed', ctl: 'SICL1060A', io: 'SICL1060A' },
+      /* tracker e1 (user 2026-11-10: a cold start without Training): the precipitator runs from the EP PLC panel (PR-OPE-5002 1.1, no DCS
+         station): field equipment of the plant model AN.field('esp') (dust and opacity follow it), as the Training ESP step */
+      ESP: { n: 'ESP', t: 'Electrostatic precipitator', d: 'EP PLC panel', fld: 'esp', fieldOp: true, why: 'Field equipment: the precipitator (transformer-rectifiers U-1201 ~ U-1205, purge air heater H-1201 and fan F-1201) is started at the EP PLC panel. No DCS command; dust and opacity follow it.' }
     },
     unit: {}
   });
