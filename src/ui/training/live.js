@@ -408,7 +408,10 @@ window.LS_LIVE = (function () {
     now: () => L.map(c => c.now()).join(' · '),
     want: L.map(c => c.want).join(' and '),
     parts: L,
-    go: L[0].go
+    go: L[0].go,
+    /* 3.2.3 (automatic run, sections 17 ~ 40): a HOLD inside ALL was lost (only the step's own condition is timed: guide.js / this
+       file read c.hold), so "blow-off <= 60 % for 300 s" passed at once. The longest HOLD of the parts times the whole condition */
+    hold: Math.max(0, ...L.map(c => +c.hold || 0)) || undefined
   });
   /* 3.2.3-beta.20 (Mina beta.19 B19-1): any one of the conditions (a step that is done at once when the plant is already past it) */
   const ANY = (...L) => ({
