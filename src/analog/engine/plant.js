@@ -813,13 +813,56 @@ function anProcStep(S, dt) {
                as the refractory lined lower furnace, 7.748 m from the grate (FHI manual 2-4-9), the documented part of that height
                (the drum stands higher, so the real column and the flow are larger);
            rho 1000 kg/m3 (water).
-         Used only below 10 kg/cm2 (the SOP; FHI 2-8-TAB_6-10: never while steaming). MBD / CBD above 10 kg/cm2: not in this step */
+         Used only below 10 kg/cm2 (the SOP; FHI 2-8-TAB_6-10: never while steaming). MBD above 10 kg/cm2: below */
       let lhdQ = 0;
+      /* 3.2.3: the drum pressure of the drains is the plant (unit model U.Pd, kg/cm2 G) while the unit model runs. Before: only the AI0128
+         of ABC-001C, which is not on that sheet (pr.integ.pd = -1), so the drains always saw 0 kg/cm2 (the lower header drain also
+         above 10 kg/cm2) */
+      const drumP = (() => {
+        if (typeof AN_UNIT !== 'undefined' && AN_UNIT.on && isFinite(AN_UNIT.Pd)) return Math.max(0, +AN_UNIT.Pd);
+        const ps0 = S1 && pr.integ.pd >= 0 ? S1.rt.st[pr.integ.pd] : null;
+        return ps0 && isFinite(ps0.val) ? Math.max(0, +ps0.val) : 0;
+      })();
       if (typeof AN_SRC !== 'undefined' && AN_SRC.field && AN_SRC.field.lhd && AN_SRC.lhdPct > 0 && q.y > lo) {
-        const ps0 = S1 && pr.integ.pd >= 0 ? S1.rt.st[pr.integ.pd] : null,
-          Pd = ps0 && isFinite(ps0.val) ? Math.max(0, +ps0.val) : 0;
-        if (Pd < 10) lhdQ = 0.61 * 0.00912 * (AN_SRC.lhdPct / 100) * Math.sqrt(2 * (Pd * 98066.5 + 1000 * 9.80665 * 7.748) * 1000) * 3.6; /* kg/s -> T/H */
+        const Pd = drumP;
+        if (Pd < 10)
+          lhdQ =
+            0.61 *
+            0.00912 *
+            (AN_SRC.lhdPct / 100) *
+            Math.sqrt(2 * (Pd * 98066.5 + 1000 * 9.80665 * 7.748) * 1000) *
+            3.6; /* kg/s -> T/H */
       }
+      /* 3.2.3 MASS BLOWDOWN (PR-OPE-5002 5698: "at steam drum pressure of above 10 Kg/cm2 use the MBD and CBD to control the level"; FHI
+         SECT_8 TAB_9: "if the water level is abnormally high, reduce the level by opening the intermittent blowdown valves"). Flow
+         diagram K1AU3-PD-019 (A1-0-001 RA p15): the drum line BD-1-001-LE1W-2.5" goes through V-BD1002 to the mass blowdown MOV
+         MV-BD1001 (DITL-38, its position) and BD-1-002-DC1W-8" MASS BLOWDOWN LINE to the blowdown tank T-1051. Saturated water
+         flashing in the 2.5" line is choked: flow = A x G x opening, A = 2.5" pipe, schedule not printed, ASSUMED Sch 80 (ID 59.0 mm,
+         0.002734 m2); G = the critical mass flux of saturated water, homogeneous equilibrium model (Moody chart, read off: 3,900 kg/m2 s
+         at 13.8 bar, 8,300 at 34.5, 14,650 at 69, 23,900 at 138; ASSUMED, no plant figure). About 80 T/H full open at 35 kg/cm2.
+         The continuous blowdown MV-BD1002 (6" BD-1-003) is open at 150 MW and inside the water loss of the snapshot (integLoss):
+         not added here */
+      let mbdQ = 0;
+      if (typeof anDitlPos === 'function' && q.y > lo) {
+        const pos = anDitlPos('DITL-38', 0),
+          Pb = drumP * 0.980665 + 1.013; /* bar abs */
+        if (pos > 0 && Pb > 1.1) {
+          const G = [
+              [1.013, 0],
+              [13.8, 3900],
+              [34.5, 8300],
+              [69, 14650],
+              [138, 23900]
+            ],
+            k = G.findIndex(g => g[0] >= Pb),
+            i = k < 1 ? (k === 0 ? 1 : G.length - 1) : k,
+            [a, b] = [G[i - 1], G[i]],
+            g = a[1] + ((b[1] - a[1]) * (Math.min(Pb, 138) - a[0])) / (b[0] - a[0]);
+          mbdQ = (0.002734 * Math.max(0, g) * Math.min(100, pos) * 3.6) / 100; /* kg/s -> T/H */
+        }
+      }
+      lhdQ += mbdQ;
+      AN_CYC.mbd = mbdQ;
       /* a feedwater heater with its tubes and its bypass shut stops the feedwater (unit.js anHtrPath) */
       if (typeof AN_UNIT !== 'undefined' && AN_UNIT.on && isFinite(AN_UNIT.fwPath)) ffw *= AN_UNIT.fwPath;
       q.y = Math.max(lo, Math.min(lo + span, q.y + dt * AN_CYC.rate('dr') * (ffw - fst - (pr.integLoss || 0) - lhdQ)));
