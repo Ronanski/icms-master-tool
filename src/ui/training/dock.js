@@ -887,11 +887,8 @@
           hold = !!c.ok();
         } catch (e) {}
       /* Mina beta.13 retest #a (step 141: the feedwater FICFW1007 in MANUAL while the steam fell, x10 took the drum to +244 mm): a step
-         whose loop the operator holds in MANUAL (manX) does not speed up by itself; the operator cannot follow a manual loop at x10 */
-      if (hold && st.manX)
-        try {
-          if (st.manX.some(t => LV().modeOf(LV().fp(LV().ctlTag(t) || t)) === 'MAN')) hold = false;
-        } catch (e) {}
+         whose loops the operator holds by hand (nox) does not speed up by itself; the operator cannot follow a manual loop at x10 */
+      if (hold && st.nox) hold = false; /* beta.14 B14-2: a step that the operator holds by hand (nox) never speeds up by itself */
       if (hold && !HX.on) {
         const v = +((window.AN && AN.spd) || 1);
         if (v < 10) {
