@@ -373,11 +373,9 @@
           E('button', {
             cls: 'b',
             txt: String(x),
-            on: () => {
-              mvIn.value = x;
-              setMV(S, c, x);
-              opEv('MV', x);
-            }
+            /* 3.2.3-beta.11 (Mina beta.10: the 0 / 50 / 100 of Engineering had no effect, only the MV pop-up worked): the same write as
+               the pop-up (popSet: clamp, the value kept 3 s against the patch of the engine, one Operator line) */
+            on: () => popSet('MV', x)
           })
         ),
         mvRow = E('div', { cls: 'row' }, [E('span', { txt: 'MV (MAN)' })].concat(mvB)),
