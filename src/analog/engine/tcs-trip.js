@@ -147,6 +147,10 @@ const TCS_IBD_NET = {
   /* TA-10 (page 30) net 11: the reader took the label "LOW ALARM 0.14 kg/cm2 abs" as the input of that comparator; on the drawing it reads
      the median of PT-STn110-1 / 2 / 3 (the MID, net 10). The model has one condenser pressure (U.cdP), the same value as the three */
   'TA-10': { 11: U => U.cdP },
+  /* TA-11 (page 31) net 3: the MAIN STEAM TEMP. LOW comparator (ON <= 290 C, OFF >= 295 C), before 20 % load, to ANN 2 only (not the trip:
+     the VERY LOW trip is the 2/3 of the variable comparators, TCS_IBD_SP). The reader took its label as the input; on the drawing it reads the
+     MID of TE-MSn902-1 / 2 / 3, one value in the model */
+  'TA-11': { 3: U => tcsSteam(U).mst },
   /* TC-20 (page 74) net 43 AUX. STEAM HEADER PRESS. (LOWER), compared ON >= 7 kg/cm2 G on the sheet = c.Pa of the ATS model (PIAS1004, tcs.js) */
   'TC-20': { 43: U => (U.tc ? U.tc.Pa : NaN) },
   /* TC-17 VENTILATOR VALVE (page 71) net 5 HP TURBINE HEAT SOAK EXECUTE = the heat soak phases of the ATS model (soak1800 / soak3600,

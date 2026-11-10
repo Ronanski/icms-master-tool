@@ -4,7 +4,7 @@
 binding of `tcsIbdBind()` (`src/analog/engine/tcs-trip.js`). An input has a source when a gate of its own sheet drives it, an off-page link
 from another sheet gives it, a plant model value is bound to it (`TCS_IBD_PV` by name, `TCS_IBD_NET` by net), or it is the BOILER MFT.
 
-Count: 797 inputs, 374 with no source (was 383). Every one of the 374 is in one of the three kinds of CLAUDE.md rule 5:
+Count: 797 inputs, 373 with no source (was 383). Every one of the 373 is in one of the three kinds of CLAUDE.md rule 5:
 (a) bug, fixed; (b) correct, with the reason; (c) the drawing or the reader cannot give it, with the exact part named.
 
 ## Fixed in this version (a)
@@ -19,11 +19,13 @@ Count: 797 inputs, 374 with no source (was 383). Every one of the 374 is in one 
 - TC-20 net 43 AUX. STEAM HEADER PRESS. (LOWER): the aux steam header of the ATS model (c.Pa, PIAS1004).
 - TC-17 net 5 HP TURBINE HEAT SOAK EXECUTE: ATS phase soak1800 / soak3600 (ASSUMED, no other source on the IBD).
 - TC-18 net 0 INTERCEPT VALVE OPEN DEMAND >0.1%: ICV position of the model > 0.1 % (ASSUMED, the model has no separate demand).
+- TA-11 net 3: the MAIN STEAM TEMP. LOW comparator (ON <= 290 C, OFF >= 295 C, page 31) had its label as input; now the main steam
+  temperature of the model (the MID of TE-MSn902-1 / 2 / 3). Checked on the IBD page 31: this comparator, armed before 20 % load and with no
+  turbine trip, goes to ANN 2 MAIN STEAM TEMP. LOW only, not to the trip. The VERY LOW trip (2/3, variable set point 395.3 ~ 432.0 C over
+  the first stage pressure, ANN 1 and SH-TA-9) was already live through TCS_IBD_SP.
 
 ## Open findings for a next PR
 
-- TA-11 net 3 MAIN STEAM TEMP. LOW TRIP (290 C): see the row below. Binding it changes a trip path; it needs a full Cold > 150 MW run.
-- TA-21 HP INLET / EXHAUST DIFF. PRESS. VERY HIGH TRIP: the differential blocks and set points are not read.
 - TC-7 net 27 CV CHEST WARMING COMPLETE and TE-1 net 0 HP TURBINE WARMING START COMMAND FROM ATS: the ATS model has these phases; to be
   tied to the IBD group control in the next batch.
 
@@ -71,16 +73,15 @@ Other inputs, one by one.
 - TE-7 (page 95) net 22: TURBINE GLAND SEAL GROUP STOP COMMAND = (b) GLAND SEAL GROUP STOP COMMAND: as TE-6 net 22
 - GD-5 (page 99) net 22: TEMP. LSH-GEn001 GEN. WATER & OIL LEAKAGE = (b) LSH-GEn001 generator water & oil leakage: 0 = no leak
 
-## RDR (10)
+## RDR (9)
 
 Garbled or empty names, or off-page links the reader did not resolve. (c) the exact part is named in each row.
 
-- TA-11 (page 31) net 3: LOW 21? ???r& = (c) FINDING, not fixed here: the reader took the label "LOW TRIP 290 C" as the input of the CMP at (541, 703) of page 31; on the drawing that comparator reads the median of TE-MSn902-1 / 2 / 3 (MID, net 29). Bound, it arms the MAIN STEAM TEMP. LOW TRIP before 20 % load (A gate net 0) and can trip a cold start at reset: it needs a full Cold > 150 MW run first, own PR
 - TA-12 (page 32) net 12: HIGH 21? +0.6mm = (c) the label "HIGH ALARM +0.6 mm" read as the input of the CMP at (647, 339) page 32; on the drawing it reads the MID net 11. The model has no thrust position (0 mm), so no change
-- TA-21 (page 39) net 11: + ? - = (c) the four "+ / -" inputs of page 39 are the differential (first stage minus exhaust) blocks the reader did not read; the CMP set points are not read either (null). HP INLET / EXHAUST DIFF. PRESS. VERY HIGH TRIP has no live path in the app
-- TA-21 (page 39) net 12: + ? - = (c) as net 11
-- TA-21 (page 39) net 17: + ? - = (c) as net 11
-- TA-21 (page 39) net 22: + ? - = (c) as net 11
+- TA-21 (page 39) net 11: + ? - = (b) the four '+ / -' inputs of page 39 are the differential blocks (first stage minus exhaust) that the reader did not read; the comparators they feed already run as functions (TCS_IBD_SP, TCS_DP_HIGH / ANN = first stage press. minus HP exhaust press. against the curve), so the HP INLET / EXHAUST DIFF. PRESS. VERY HIGH TRIP is live. These inputs are not used
+- TA-21 (page 39) net 12: + ? - = (b) as net 11
+- TA-21 (page 39) net 17: + ? - = (b) as net 11
+- TA-21 (page 39) net 22: + ? - = (b) as net 11
 - TE-6 (page 94) net 8: > 2))?????r& (PERMISSIVE) TCS = (c) garbled name; the net is the gland steam exhauster permissive, off-page OUTPUT 2 to TC-28 (the reader lists it as an input)
 - TE-6 (page 94) net 44: TURBINE GLAND SEAL START GC RELATED AUX IN AUTO [link not resolved] = (c) off-page link 1 from TE-8 not resolved (TE-8 has no matching outgoing link 1)
 - TE-7 (page 95) net 24: (no name) = (c) empty name, input of the A gate (465, 377) page 95
