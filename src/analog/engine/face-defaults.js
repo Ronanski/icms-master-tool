@@ -2030,7 +2030,7 @@ const AN_DEF = {
         DH: 0,
         PHONDT: 0,
         PLONDT: 0,
-        desc: 'COND. DUMPING TO RAW PIT / COND. MAKE-UP WATER / DEAERATOR LEVEL CONTROL'
+        desc: 'DEAERATOR STORAGE TANK WATER LEVEL CONTROL' /* 3.2.3-beta.13 (Mina): was the ABC-031 sheet title; the loop text of ABC-031 */
       },
       {
         stn: 102,
