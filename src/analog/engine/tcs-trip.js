@@ -153,11 +153,10 @@ const TCS_IBD_NET = {
   'TA-11': { 3: U => tcsSteam(U).mst },
   /* TC-20 (page 74) net 43 AUX. STEAM HEADER PRESS. (LOWER), compared ON >= 7 kg/cm2 G on the sheet = c.Pa of the ATS model (PIAS1004, tcs.js) */
   'TC-20': { 43: U => (U.tc ? U.tc.Pa : NaN) },
-  /* TC-17 VENTILATOR VALVE (page 71) net 5 HP TURBINE HEAT SOAK EXECUTE = the heat soak phases of the ATS model (soak1800 / soak3600,
-     ASSUMED: the IBD gives no other source of this signal) */
-  'TC-17': { 5: U => (U.tc && /^soak/.test(U.tc.ph || '') ? 1 : 0) },
-  /* TC-18 BLOWDOWN VALVE (page 72) net 0 INTERCEPT VALVE OPEN DEMAND >0.1%: the ICV position of the model stands for its demand (ASSUMED,
-     the model has no separate demand) */
+  /* TC-18 BLOWDOWN VALVE (page 72) net 0 INTERCEPT VALVE OPEN DEMAND >0.1%: the ICV position demand SV-STn905-A2 / B2 (TCS I/O list
+     XSMM_IO_List_R1, IO LIST R.1 rows 140 / 316, IBD TA-37 / TA-38). The model has one ICV value, U.tb.icv, that is its demand and its
+     position (ZT-STn905 above). TC-17 net 5 HP TURBINE HEAT SOAK EXECUTE stays unbound: its source is the TCS soft logic TCE163 (I/O list
+     HMI_DI HEAT SOAK SET / RESET), not in the repository (docs/tcs/IBD_UNBOUND.md) */
   'TC-18': { 0: U => (U.tb && U.tb.icv > 0.001 ? 1 : 0) },
   'TA-42': { 27: (U, c) => (c.ib && c.ib.v['TA-41'] ? c.ib.v['TA-41'][23] || 0 : 0) },
   /* c2 batch 3 (3.2.3): the inputs of the IBD that the model already has a value for. A contact of the TSI with its set point written on the

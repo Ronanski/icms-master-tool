@@ -4,7 +4,7 @@
 binding of `tcsIbdBind()` (`src/analog/engine/tcs-trip.js`). An input has a source when a gate of its own sheet drives it, an off-page link
 from another sheet gives it, a plant model value is bound to it (`TCS_IBD_PV` by name, `TCS_IBD_NET` by net), or it is the BOILER MFT.
 
-Count: 797 inputs, 373 with no source (was 383). Every one of the 373 is in one of the three kinds of CLAUDE.md rule 5:
+Count: 797 inputs, 374 with no source (was 383). Every one of the 374 is in one of the three kinds of CLAUDE.md rule 5:
 (a) bug, fixed; (b) correct, with the reason; (c) the drawing or the reader cannot give it, with the exact part named.
 
 ## Fixed in this version (a)
@@ -17,8 +17,12 @@ Count: 797 inputs, 373 with no source (was 383). Every one of the 373 is in one 
   of the model (the MID of PT-STn110-1 / 2 / 3, all three = U.cdP). Goes to TC-20 link 6.
 - TC-35 net 7 GEN. LOAD <15%: model load < 22.5 MW (15 % of 150 MW).
 - TC-20 net 43 AUX. STEAM HEADER PRESS. (LOWER): the aux steam header of the ATS model (c.Pa, PIAS1004).
-- TC-17 net 5 HP TURBINE HEAT SOAK EXECUTE: ATS phase soak1800 / soak3600 (ASSUMED, no other source on the IBD).
-- TC-18 net 0 INTERCEPT VALVE OPEN DEMAND >0.1%: ICV position of the model > 0.1 % (ASSUMED, the model has no separate demand).
+- TC-18 net 0 INTERCEPT VALVE OPEN DEMAND >0.1%: the ICV position demand SV-STn905-A2 / B2 (TCS I/O list XSMM_IO_List_R1, IO LIST R.1
+  rows 140 / 316, IBD TA-37 / 38) > 0.1 %; the model has one ICV value (U.tb.icv), its demand and its position.
+- 3.2.3-beta.57 (user 2026-11-11: no ASSUMED): TC-17 net 5 HP TURBINE HEAT SOAK EXECUTE is unbound again. Searched: IBD page 71, ATS
+  310SC90-775 pages 20 / 22 (heat soak timers, no signal name), TCS I/O list HMI_DI (TCE163 HEAT SOAK SET / RESET / CRT OPE PERM, HMI_AI
+  TCA586 HEAT SOAK REMAINING TIME): the signal comes from the TCS soft logic TCE163, in "TCA / TCE SOFT LOGIC DIAGRAM OF TCS.pdf" on
+  the user's PC only. (c) until that drawing is in the repository.
 - TA-11 net 3: the MAIN STEAM TEMP. LOW comparator (ON <= 290 C, OFF >= 295 C, page 31) had its label as input; now the main steam
   temperature of the model (the MID of TE-MSn902-1 / 2 / 3). Checked on the IBD page 31: this comparator, armed before 20 % load and with no
   turbine trip, goes to ANN 2 MAIN STEAM TEMP. LOW only, not to the trip. The VERY LOW trip (2/3, variable set point 395.3 ~ 432.0 C over
@@ -29,7 +33,7 @@ Count: 797 inputs, 373 with no source (was 383). Every one of the 373 is in one 
 - TC-7 net 27 CV CHEST WARMING COMPLETE and TE-1 net 0 HP TURBINE WARMING START COMMAND FROM ATS: the ATS model has these phases; to be
   tied to the IBD group control in the next batch.
 
-## OTH (39)
+## OTH (40)
 
 Other inputs, one by one.
 
@@ -43,6 +47,7 @@ Other inputs, one by one.
 - TC-5 (page 66) net 15: ZT-STn008 CV(B) BELOW SEAT SECONDARY = (c) ZT-STn008 drain valve position: the label is cut by the reader (page 66)
 - TC-7 (page 67) net 27: CV CHEST WARMING COMPLETE = (c) CV CHEST WARMING COMPLETE: the ATS model has phase chest -> reset (tcs.js), the sheet source is not read; next batch
 - TC-12 (page 69) net 11: ICV TO CV TRANSFER START = (c) the reader lists net 11 as an off-page OUTPUT to TC-13 (link 3); the input side is not read
+- TC-17 (page 71) net 5: HP TURBINE HEAT SOAK EXECUTE = (c) source TCE163 soft logic, PC-only (see above)
 - TC-17 (page 71) net 6: TURBINE FLOW DEMAND = (c) TURBINE FLOW DEMAND enters an OR as a contact with no set point on the sheet (page 71)
 - TC-19 (page 73) net 3: DE-ENERGIZE = (c) output label (solenoid) read as input
 - TC-19 (page 73) net 5: SOLENOID VALVE ENERGIZE = (c) output label (solenoid) read as input
