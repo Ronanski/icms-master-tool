@@ -332,6 +332,15 @@ function anCompNet(S, ai) {
 const AN_CYC = { u: {}, ffw: 0 };
 if (typeof window !== 'undefined') window.AN_CYC = AN_CYC; /* read by the world (plantsw.js BFWP suction pressure) */
 const AN_CYC_TAG = { LICCD1104: 'da', LICCD1110A: 'hw', FICCD1120: 'cf' };
+/* 3.2.3-beta.25 (Mina beta.24 B24-1, beta.19 B19-2, beta.20 B20-2: after the trip LCV-CD1104 at 3.7 % passed 80 T/H against 25 T/H of
+   feedwater and the deaerator rose to +544 mm; at 10.5 % 230 T/H drained the hotwell): the low end of the valve from its sheet
+   (control valve sheet p74, LCV-CD1104: 36,000 kg/h at 6 % travel, team-files plant-study 12-assumptions), the 150 MW point from the
+   snapshot (17.5 % = 380 T/H, hmi-op.js 28.png / 03.png), straight lines between; above 17.5 % the slope of before (21.7 T/H per %).
+   Was 21.7 T/H per % from 0 (ASSUMED linear). The sheet's 362 T/H at 68 % and the snapshot cannot both hold: still open */
+function anDaQ(u) {
+  u = Math.max(0, +u || 0);
+  return u <= 6 ? 6 * u : u <= 17.5 ? 36 + ((380 - 36) / 11.5) * (u - 6) : 380 + 21.7 * (u - 17.5);
+}
 function anCycFlows(t) {
   const s = (typeof srcState === 'function' && srcState(t)) || { cep: 0, ms: 0, ext: 0 },
     c = x => Math.max(0, Math.min(1, x)),
@@ -339,7 +348,7 @@ function anCycFlows(t) {
     cep = (AN.steady && typeof srcBit === 'function' ? srcBit(['M.3350', 'M.3351']) : s.cep) ? 1 : 0,
     /* a feedwater heater with its tubes and its bypass shut stops the condensate (unit.js anHtrPath) */
     cdp = typeof AN_UNIT !== 'undefined' && AN_UNIT.on && isFinite(AN_UNIT.cdPath) ? AN_UNIT.cdPath : 1,
-    fda = cep * cdp * Math.min(520, 21.7 * Math.max(0, AN_CYC.u.da || 0)),
+    fda = cep * cdp * Math.min(520, anDaQ(AN_CYC.u.da || 0)),
     frec = cep * 2.23 /* FCV-CD1120, valve sheet p96, 223 T/H */ * 100 * c((AN_CYC.u.cf || 0) / 100),
     /* the steam of the turbine and of the HP bypass (MB-011 item 8, MB-012 items 6, 10: bypass -> cold reheat -> reheater -> LP
        bypass -> condenser) both come back as water; only vented steam leaves the cycle */
