@@ -271,7 +271,10 @@ function tcsCrit(U) {
     1.12: f('1.12', 'LP TURBINE EXHAUST HOOD STEAM TEMP. NOT HIGH (≤ 80 C)', tcsBand(c, '1.12', c.Tx, 80, 77), c.Tx),
     1.14: f('1.14', 'CONTROL OIL PRESS. NOT LOW', tcsBand(c, '1.14', U.loCtl, 133, 138), U.loCtl),
     1.15: f('1.15', 'BEARING OIL PRESS. NOT LOW', tcsBand(c, '1.15', U.loBrg, 1.05, 1.33), U.loBrg),
-    1.16: f('1.16', 'BEARING OIL TEMP. OK', c.brgOk !== undefined ? c.brgOk : c.lop),
+    /* c3 (3.2.3): IBD TD-1 (page 84) is the logic of 1.16: lube oil cooler outlet (MAX of TE-LO1002-1 / -2) 27 ~ 40 C on the turning gear,
+       27 ~ 50 C while rolling, 40 ~ 50 C at rated speed (after 60 s), net 14 (PR-OPE-5002: bearing oil at least 40 C before synchronizing).
+       Before the IBD has run once: the old reading (oil in service) */
+    1.16: f('1.16', 'BEARING OIL TEMP. OK', c.ib && c.ib.v['TD-1'] ? c.ib.v['TD-1'][14] > 0.5 : c.brgOk !== undefined ? c.brgOk : c.lop, U.loTout),
     1.17: f('1.17', 'MAIN OIL TANK LEVEL OK', true),
     1.18: f('1.18', 'MAIN OIL TANK VAPOUR EXTRACTOR RUNNING', c.vex),
     1.19: f(
