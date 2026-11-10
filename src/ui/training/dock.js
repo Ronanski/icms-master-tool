@@ -2248,7 +2248,8 @@
           bt.style.width = rc.width + 'px';
           bt.style.height = rc.height + 'px';
           bt.style.overflow = 'hidden';
-          bt.replaceChildren('Press again to confirm', ...bt._armK.slice(1));
+          bt.replaceChildren('Press again', ...bt._armK.slice(1)); /* Mina beta.24 B24-6: 'Press again to confirm' was cut on the narrow FAULT buttons */
+          bt.title = 'Press again within 5 s to confirm';
           bt._armT = setTimeout(() => {
             delete bt.dataset.arm;
             bt.replaceChildren(...bt._armK), (bt.style.width = bt.style.height = bt.style.overflow = '');
