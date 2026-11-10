@@ -867,6 +867,10 @@ function anTurbine(cmd, arg) {
   /* Mina 2026-11-09 (re-shell step 3): ROLL was accepted while the turbine was tripped and said "rolling" while the speed fell. A trip is
      latched in the TCS (IBD TA-1: the trip stays until TURBINE RESET P.B. and the gates allow it): ROLL, SYNC and LOAD UP are refused
      until the turbine is reset */
+  /* Mina, load run of 3.2.2: a TCS target was taken and did nothing while the DCS control mode is ON (the TCS follows the turbine master,
+     anUnitStep0: the same test as there) */
+  if (cmd === 'loadup' && (U.dcs < 0 || +(U.S && U.S.rt && U.S.rt.v[U.dcs]) > 0.5))
+    return 'DCS control mode is ON: the turbine follows the unit load demand of the DCS. Change the load with Unit load demand (HIC-ULD, ABC-001A)';
   if (cmd === 'roll' || cmd === 'sync' || cmd === 'loadup') {
     let tr = '';
     try {
