@@ -1,5 +1,5 @@
-/* 3.2.1 plan c4: the generator side of the ATS steps 4 and 5: field switch 41 and AVR (G-4), automatic synchronizing and the close order of 52G (G-1B). The 230 kV side is
-   not modelled: 52L stays closed. No relay is modelled either, so no protection operates by itself; a protection held on TA-9 trips the turbine through the IBD logic. Times
+/* 3.2.1 plan c4: the generator side of the ATS steps 4 and 5: field switch 41 and AVR (G-4), automatic synchronizing and the close order of 52G (G-1B). The 230 kV side
+   is in elec.js (plan c4): 52L1 is closed unless the instructor opens it (house load); 52G1 closes only with 52L1 closed. No relay is modelled either, so no protection operates by itself; a protection held on TA-9 trips the turbine through the IBD logic. Times
    with no number in the drawings are marked model time. */
 const TCS_GEN = { volt: 30 /* s, model time: voltage build-up after 41 */, asd: 60 /* s, model time: ASD matches speed and voltage */, x3: 3 /* G-1B */, to: 300 /* G-1B 5 min */ };
 function tcsGen(U) {
@@ -37,7 +37,7 @@ function tcsGenStep(U, dt) {
   }
   g.on25 = y1 && g.ty >= TCS_GEN.asd;
   /* 52G_CLOSE_ORDER = 52G_REMOTE AND 52G_AUTO AND 25_ON AND protection not operated AND 41 and 52L closed */
-  g.close = g.on25 && can;
+  g.close = g.on25 && can && !(U.el && U.el.l52 === false);
 }
 /* a turbine trip: 52G is open, so ST TRIP opens 41 and the AVR (G-4) */
 function tcsGenTrip(U) {
