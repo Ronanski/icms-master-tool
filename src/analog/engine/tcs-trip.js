@@ -423,6 +423,8 @@ function tcsTripScan(U, dt) {
   ib.t0 += dt;
   if (!tcsMft()) ib.mft0 = true;
   const a = !!(ib.v['TA-1'] && ib.v['TA-1'][TA1_RESET] > 0.5);
+  /* a push button held now (Turbine trip, ATS shut-down): plant plan 4B, the Instructor trip at t = 0 after a 150 MW load fell inside the 2 s below */
+  const pb = ib.pb.trip > 0 || ib.pb.sd > 0;
   tcsIbdStep(U, c, dt);
   const b = ib.v['TA-1'][TA1_RESET] > 0.5;
   if (b) {
@@ -434,10 +436,15 @@ function tcsTripScan(U, dt) {
       if (l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n)) l.S.rt.ext[l.n] = 0;
     }
   }
-  /* the first 2 s of a run: the values settle from the starting state */
-  if (ib.t0 < 2) return;
-  if (a && !b && !c.trip && (tb.st !== 'off' || tb.rpm > 4)) {
-    ib.first = tcsTripFirst(c);
+  /* the first 2 s of a run: the values settle from the starting state; an operator push button in them is kept for the end of the 2 s */
+  if (ib.t0 < 2) {
+    if (pb) ib.pm = ib.pb.trip > 0 ? 'MANUAL TRIP' : ib.pm || 'pb';
+    return;
+  }
+  const pm = ib.pm;
+  ib.pm = '';
+  if (((a && !b) || (pm && !b)) && !c.trip && (tb.st !== 'off' || tb.rpm > 4)) {
+    ib.first = pm === 'MANUAL TRIP' ? pm : tcsTripFirst(c);
     ib.at = +U.t || 0;
     c.trip = ib.first;
     tcsTripLog(ib.first);
