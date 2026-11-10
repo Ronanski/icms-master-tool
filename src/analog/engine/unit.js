@@ -82,6 +82,14 @@ const AN_UNIT = {
   MWperm: 45,
   MWinit: 4.5 /* PR-OPE-5002: initial load 4.5 MW */,
   rateUp: 7.5 /* MW/min = 5 % / min (PR-OPE-5002 LOAD UP), AI0421 max load-up rate 0 ~ 5 %/min */,
+  /* 3.2.3 (b4, MST 547 on the load up): the heat of the SH / RH banks follows the load with the lag of the CFB loop (bed, refractory,
+     circulating solids): the load share of the spray curve (Fig 10) and of the natural temperature (natSH / natRH) is lagged by tauQ.
+     Not in the FHI documents (plant study 03: "loop kinetics not in docs"): fitted to the plant DCS trend of 2026-11-08 (scenario 1,
+     150 -> 105 -> 90 -> 150 MW at about 1 MW/min). Lag 0: MST 543 C at 109 MW on the way up (plant 531), 531 C at 105 MW on the way
+     down (plant 537); 900 s: 529 / 537. Error over 14 plant points 8.2 C (lag 0), 5.4 (600 s), 4.4 (900 s), 4.0 (1200 s), 4.8 (1800 s);
+     1200 s held 533 C for 30 min at 90 MW where the plant fell to 528 in 20 min. Start-up and shutdown (U.cold, turbine not yet in
+     NORMAL OPERATION) use the load as it is */
+  tauQ: 900,
   tauT: 362 /* metal over steam: SH steel 232 t (B-0-001) x 0.5 kJ/kg K = 116 MJ/K, over 128 kg/s x 2.5 kJ/kg K = 0.32 MW/K */,
   /* 3.2.0-beta.39 (roadmap 2): share of the low-load / start-up fall of the SH temperature (dn) at the spray 1 outlet, the SH no.2 pickup and the
      finishing SH pickup (ASSUMED: superheat of each stage at the anchor, 61 / 68 / 80 C of the 209 C over saturation) */
@@ -3221,16 +3229,21 @@ function anUnitStep0(dt) {
       1,
       mso / U.mcr
     ) /* 2.2.0-beta.12: the load of the boiler is all the steam it makes, bypass included */,
-    cv = U.sprayCurve;
+    cv = U.sprayCurve,
+    suMode = U.cold || (U.tc && U.tc.step < 7);
+  /* the lag is the heat of a burning loop: after a loss of the fire (steam made under frDb of the steam leaving: MFT, fuel cut) the
+     superheat goes with the firing ratio below, the load share is taken as it is */
+  U.xq = suMode || U.xq == null || !(U.tauQ > 0) || U.Qs < U.frDb * mso ? xl : U.xq + ((xl - U.xq) * dt) / U.tauQ;
+  const xs = U.xq;
   let gx = 1;
-  if (xl <= cv[0][0]) gx = 0;
+  if (xs <= cv[0][0]) gx = 0;
   else
     for (let i = 1; i < cv.length; i++)
-      if (xl <= cv[i][0]) {
-        gx = cv[i - 1][1] + ((cv[i][1] - cv[i - 1][1]) * (xl - cv[i - 1][0])) / (cv[i][0] - cv[i - 1][0]);
+      if (xs <= cv[i][0]) {
+        gx = cv[i - 1][1] + ((cv[i][1] - cv[i - 1][1]) * (xs - cv[i - 1][0])) / (cv[i][0] - cv[i - 1][0]);
         break;
       }
-  const below = Math.max(0, cv[0][0] - xl),
+  const below = Math.max(0, cv[0][0] - xs),
     /* 2.2.0-beta.12 (M3): firing ratio = steam made / steam leaving (1 in steady state; 0 after an MFT while the stored steam still flows):
        the superheat goes with the firing, the temperature falls to the saturation temperature of the drum pressure (3.2.0-beta.15: the
        IF97 steam table of steam.js) */
@@ -3271,8 +3284,8 @@ function anUnitStep0(dt) {
     if (e.s > 0) {
       const N = e.r ? U.natSH : U.natRH;
       let T = N[N.length - 1][1];
-      if (xl < N[0][0]) T = N[0][1] - e.s * (N[0][0] - xl);
-      else for (let i = 1; i < N.length; i++) if (xl <= N[i][0]) { T = N[i - 1][1] + ((N[i][1] - N[i - 1][1]) * (xl - N[i - 1][0])) / (N[i][0] - N[i - 1][0]); break; }
+      if (xs < N[0][0]) T = N[0][1] - e.s * (N[0][0] - xs);
+      else for (let i = 1; i < N.length; i++) if (xs <= N[i][0]) { T = N[i - 1][1] + ((N[i][1] - N[i - 1][1]) * (xs - N[i - 1][0])) / (N[i][0] - N[i - 1][0]); break; }
       dn = Math.max(0, 541 - T);
     }
     if ((U.cold || (U.tc && U.tc.step < 7)) && e.s > 0) {
