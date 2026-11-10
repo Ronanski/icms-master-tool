@@ -1808,7 +1808,14 @@
       msg(r ? 'TCS: ' + r : 'TCS: criterion ' + x + ' changed. Bypassed: ' + (AN.tcs().byp.join(', ') || 'none'));
     });
     btn('tcstarget', 'TARGET MW…', 'TCS panel: a target MW of your own (reached at 7.5 MW/min) while the DCS control mode is OFF. Once I.0082 = 1 (boiler master and PIC-COBM in AUTO above 230 T/H) the TCS follows the turbine master EIC-TM of the DCS instead.', async () => {
-      const x = window.lsAskText ? await lsAskText('TCS target MW (4.5 ~ 150):', '50') : prompt('TCS target MW (4.5 ~ 150):', '50');
+      /* Mina, load run of 3.2.2: the question opened at 50, not at the target now (the TCS target, else the MW) */
+      let d0 = '50';
+      try {
+        const U = window.AN_UNIT,
+          t = U && U.tb && isFinite(U.tb.aim) ? U.tb.aim : U && isFinite(U.MW) ? U.MW : NaN;
+        if (isFinite(t)) d0 = String(Math.round(t * 10) / 10);
+      } catch (e) {}
+      const x = window.lsAskText ? await lsAskText('TCS target MW (4.5 ~ 150):', d0) : prompt('TCS target MW (4.5 ~ 150):', d0);
       if (x == null) return;
       /* Mina, live test of 280: a word or a number out of the range went on and the message named it: the question is checked here */
       const mw = x.trim() ? +x : NaN;

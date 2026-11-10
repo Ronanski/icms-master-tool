@@ -357,6 +357,10 @@ window.LS_LIVE = (function () {
       const m = Math.floor((+u.t || 0) / 60);
       if (m < REC.last) (REC.rows = []), (REC.last = -1); /* time went back: a save point or a Reset */
       if (m === REC.last) return;
+      /* Mina, load run of 3.2.2: the first row had empty hotwell / condensate columns (taken before the first step of the plant after a
+         state load). The first row waits for the condenser (a few seconds at most, then it goes in anyway) */
+      if (!REC.rows.length && !isFinite(u.cdHw) && (REC.wait = (REC.wait || 0) + 1) < 6) return;
+      REC.wait = 0;
       REC.last = m;
       REC.rows.push(recRow());
       if (REC.rows.length > 6000) REC.rows.shift();
@@ -365,7 +369,9 @@ window.LS_LIVE = (function () {
   const recCsv = () => {
     const X = ['RHT', 'HW', 'CDQ', 'DA', 'DAMV', 'MUMV'],
       H = ['t_min'].concat(REC_K, X);
-    return [H.join(',')].concat(REC.rows.map(r => [Math.round(r.t / 60)].concat(REC_K.map(k => r[k]), X.map(k => r[k])).join(','))).join('\r\n');
+    /* Mina, load run of 3.2.2: t_min 42 came twice. A row is taken once per whole minute (Math.floor), so the column counts the same
+       way: Math.round put 41.5 min and 42.0 min both at 42 */
+    return [H.join(',')].concat(REC.rows.map(r => [Math.floor(r.t / 60)].concat(REC_K.map(k => r[k]), X.map(k => r[k])).join(','))).join('\r\n');
   };
   const VAL = (k, lo, hi) => ({
     sig: [k],
@@ -1066,7 +1072,9 @@ window.LS_LIVE = (function () {
   const B = { BIT, ANYBIT, NOBIT, MODE, MV, SV, PV, VAL, ALL, HOLD, OUT, RUN, SWP2, BURN, BURN4, NOFEED, PURGE_AIR, MFT, X1, X2, X3, X4, X5, X6, X7, X8, X9, X10 };
   /* recNow: a row at once (tests/regress/load_ramp.js steps the plant faster than the 1 s timer) */
   const recNow = () => {
-    REC.last = Math.floor((+U().t || 0) / 60);
+    const m = Math.floor((+U().t || 0) / 60);
+    if (m === REC.last && REC.rows.length) REC.rows.pop(); /* one row per minute: the newer one stays */
+    REC.last = m;
     REC.rows.push(recRow());
   };
   return { rec: () => REC.rows, recCsv, recNow, recClear: () => ((REC.rows = []), (REC.last = -1)), kind, state, rows, scan, reset, load, why, audit, fp, ctlTag, has, val, sheetOf, live, done: () => LAT, base: BASE_N, practice: BASE_N + 2, B, H, modeOf, mvOf, pvOf, svOf, getV, NAMES, f1 };

@@ -15,7 +15,7 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 ## 2. Kasalukuyang estado (2026-11-10 PHT)
 - **BUOD NG HANDOVER (basahin muna):** `docs/handoff/HANDOVER_2026-11-10.md` — lahat mula 2026-11-07, gawain ng bawat team member, at ang hindi pa tapos (re-shell at plant plan).
 - **Stable:** v3.2.2 (2026-11-10, user "Ok go sa 1"; = 3.2.1 + Worker bilang default ng Stable site). Ang 3.2.1 (GO STABLE ng user) = 3.2.1-beta.281, re-shell layout C. GitHub Release: apk, Windows exe, html, report pdf. Hindi nasubok: tingnan ang `docs/versions/v3.2.1/Release-Report-v3.2.1.pdf`.
-- **Beta sa `main`:** 3.2.3-beta.1 (plant plan 4B: Turbine trip agad pagkatapos ng 150 MW load). Susunod: main + 1. Ang listahan bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md` (re-shell layout C ang default; `?shell=old` = lumang layout).
+- **Beta sa `main`:** 3.2.3-beta.2 (plant plan 4B: Target MW na mensahe kapag DCS mode, default ng tanong, trend recorder CSV; beta.1 Turbine trip agad pagkatapos ng 150 MW load). Susunod: main + 1. Ang listahan bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md` (re-shell layout C ang default; `?shell=old` = lumang layout).
 - **Testing:** GitHub "Simulation tests" (`.github/workflows/sim-tests.yml`, report lang) + shell smoke test `tests/regress/shellc.js`; final proof = live test ni Mina sa Beta site.
 - **Rule ng version:** sa push, version ng `main` + 1.
 
