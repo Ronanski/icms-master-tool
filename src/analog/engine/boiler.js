@@ -471,8 +471,11 @@ function anAphStep(U, dt) {
      vessels      lock vessel 0.7 m3, dispensing vessel 1.4 m3 (O&M L5-3 section 1), bulk density 1280 kg/m3 (for volume) ->
                   896 / 1792 kg. LSH-LM1812 (I.0168) covered at 90 % of the lock vessel, LSL-LM1815 (I.0169 = 1 uncovered: DITL-LS20
                   OUT3 = enabled AND I.0169) at 30 % of the dispensing vessel: NO-SOURCE (the probe heights are not in the O&M).
-                  Silo to lock vessel by gravity in 20 s, lock to dispensing vessel in 20 s: NO-SOURCE (O&M 2.8: the short fill
-                  timer 30 s and the dome valve open timer 30 s are the backups, so the transfer is shorter).
+                  3.2.3-beta.58 (user: no ASSUMED): silo to lock vessel 30 s = the SHORT FILL TIMER (O&M L5-3 2.3.2 / 2.3.3 / 2.8, PLC
+                  limestone_logic.xls sheet 40 "30s"; the filling ends at the timer or at LSH-LM1812 covered, whichever first), lock to
+                  dispensing vessel 30 s = the DISPENSING VESSEL DOME VALVE OPEN TIMER (O&M 2.3.4 / 2.3.6 / 2.8, xls sheet 60 "30s"); was
+                  20 / 20 NO-SOURCE. Conflict noted: the VENT TIMER is 3 s in the O&M 2.8 and 6 s in the as-built PLC (xls sheet 30); the
+                  DITL-LS logic of the app keeps the PLC 6 s.
      feeder       L-1311 Rotofeed (O.024C start -> I.0170 MIR-M1311 running): volumetric, 0 ~ 14 T/H (O&M section 1 maximum
                   14,000 kg/h; DITL-LS240 OUT3 "ACTURE ROTOFEEDER SPEED 0~14T/H") = the SOx control output (ABC-005 AICFG10571,
                   the speed of INV-M1311) while the dispensing vessel has material.
@@ -486,8 +489,8 @@ const AN_LM = {
   m: { lock: 0.7 * 1280, disp: 1.4 * 1280 },
   lsh: 0.9,
   lsl: 0.3,
-  tFill: 20,
-  tXfer: 20,
+  tFill: 30,
+  tXfer: 30,
   qMax: 14,
   stroke: 2,
   seal: 1,
@@ -608,13 +611,15 @@ function lmPub(U) {
      air buffer tank PS-PA1800 (DITL-775 row 7: < 4 bar, O&M 5.6), silo LSH / LSL-SD1800 (DITL-774 rows 3 / 4), vent filter
        M-1301 running (DITL-774 row 10, DITL-777 row 7) on its start command (DITL-774 OUT22 O.060A).
    Numbers: vessel 0.113 m3 x 1440 kg/m3 = 163 kg, silo 100 m3, max 6000 kg/h (O&M L5-2 section 1); conveying of one batch 55 s
-   ("Peak Air Duration 55 seconds"); silo 50.1 % at 150 MW (20.PNG). NO-SOURCE: valve stroke 2 s, seal 1 s, fill of the vessel 15 s
-   (the filling timer is 20 s, O&M 4.2.1), vessel pressure while conveying 2.0 kg/cm2, silo LSH / LSL at the LT-SD1800 alarms 85 / 30 %
+   ("Peak Air Duration 55 seconds"); silo 50.1 % at 150 MW (20.PNG). Fill of the vessel 20 s (3.2.3-beta.58, was 15 s NO-SOURCE): the inlet
+   dome valve stays open 20 s or until the level high LSH-SD1801, whichever first (O&M L5-2 system start cycle IV; filling timer 20 s,
+   4.2.1). NO-SOURCE: valve stroke 2 s, seal 1 s, vessel pressure while conveying 2.0 kg/cm2 (L5-2 gives only the end of conveying,
+   120 s AND PT-SD1800 < 0.5 bar, conveying air 5.0 barg, vessel design 7.0 barg), silo LSH / LSL at the LT-SD1800 alarms 85 / 30 %
    (alarm list; the switch heights are not given). */
 const AN_SD = {
   m: 0.113 * 1440,
   silo: 100,
-  tFill: 15,
+  tFill: 20,
   tConv: 55,
   stroke: 2,
   seal: 1,
@@ -701,7 +706,9 @@ function sdPub(U) {
    Mechanical conveyors (DITL-BA59 / BA60 rows by tag, no address): remote selectors MIL-x at REMOTE (16.PNG "R"), local emergency stop
      contacts ES-L-1090 ~ 1092 closed (IO list "not emergency stop", N.C. from local; DITL-BA62 NOT), speed switches SS-BH1750 ~ 1752 made
      while the machine turns (IO list "1 : speed OK"), block switches not made.
-   NO-SOURCE: valve stroke 2 s, charging of the vessel 30 s, conveying of one batch 60 s, vessel pressure while conveying 1.5 kg/cm2,
+   NO-SOURCE (O&M L6 JAT 130225-OMM-01 p 4 ~ 10 searched 2026-11-11: charging ends at the high level or the charging time, not printed;
+   conveying runs until the low pressure 0.5 kg/cm2 G, then cleaning 10 s and vent 2 s, over-time alarm 900 s; pressing over-time 60 s):
+   valve stroke 2 s, charging of the vessel 30 s, conveying of one batch 60 s, vessel pressure while conveying 1.5 kg/cm2,
      the buffer tank (not modelled: the charge assumes ash in the buffer tank). The air tank PS-BH1750 reads the plant air receiver tanks of the
      model (U.paP, 39.PNG 7.0 kg/cm2), ASSUMED: the transmitter's own air tank is charged at rest with no flow, so it stands at the
      supply pressure, not at the unit header under full plant use (U.paPU 6.8, whose 0.2 drop is NO-SOURCE); decided by SEULGI 2026-11-04
