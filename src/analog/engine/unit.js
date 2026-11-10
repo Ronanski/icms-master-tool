@@ -907,6 +907,8 @@ function anTurbine(cmd, arg) {
     }
     if (cmd === 'sync') {
       if (tb.st === 'sync' || tb.st === 'load') return 'Already synchronised';
+      /* plan c5: G-1B closes 52G1 only with 52L1 closed (elec.js): an open 52L1 timed the synchronizing out after 5 min with no word */
+      if (U.el && U.el.l52 === false) return 'Line breaker 52L1 is open: close 52L1 first (Instructor console, Grid)';
       if (c.step >= 1 && c.step < 3 && tb.rpm > 3550) c.step = 3;
       if (c.step < 3) return c.step < 1 ? 'Roll the turbine first' : 'Not at 3600 rpm / ACCELERATION not finished (' + tb.rpm.toFixed(0) + ' rpm)';
       const r = c.cur >= 0 ? '' : tcsStepIn(U, c.step + 1);
