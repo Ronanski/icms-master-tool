@@ -1071,6 +1071,7 @@
     } catch (e) {}
     fpLive = [];
     fpKey = '';
+    els.fps = null;
     els.prac = 0;
     menuOn = true;
     layout();
@@ -2449,7 +2450,8 @@
     top.append(els.pw, els.ovw, els.early);
     /* the faceplates of the step */
     const key = (s.fps || []).join(',');
-    if (key !== fpKey || first) {
+    /* Mina beta.15 B15-4: the next step with the same faceplates keeps them (the presses in progress were lost when the step turned done) */
+    if (key !== fpKey || !els.fps) {
       fpKey = key;
       fpLive = [];
       els.fps = E('div', { cls: 'gd-fps' });
