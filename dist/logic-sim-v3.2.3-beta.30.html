@@ -23440,6 +23440,8 @@ function anUnitStart() {
   U.di = {
     gcbOn: labOf('ABC-050', 'I.0931'),
     gcbOff: labOf('ABC-050', 'I.0932'),
+    /* plan c4 (elec.js): 52L1 OPEN FOR HOUSE OPERATION (I/O list STN102), read by ABC-013 M.3221 through U.bcast */
+    l52: labOf('ABC-050', 'I.0937'),
     xfer: labOf('ABC-050', 'I.0418'),
     perm: labOf('ABC-001C', 'I.0081'),
     on: labOf('ABC-001C', 'I.0082'),
@@ -23780,6 +23782,8 @@ function anTurbine(cmd, arg) {
   const tb = U.tb;
   /* 3.2.0-beta.66: the 036 TURBINE OIL pumps at the 150 MW snapshot (no TCS model): the oil-only state of tcs.js */
   if (cmd === 'trip') return tcsTripManual(U);
+  /* plan c4: the line breaker 52L1 (instructor): 0 = open (house load operation), 1 = close (elec.js) */
+  if (cmd === '52l') return anElecL52(U, arg);
   if (cmd === 'tripreset') return tcsTripReset(U);
   if (cmd === 'fault') return tcsTripFault(U, arg);
   if (!U.tc && cmd === 'oil') return tcsOilCmd(tcsOilState(U), arg || {});
@@ -25944,6 +25948,8 @@ function anUnitStep0(dt) {
     tb.tgt += Math.max(-(U.rateUp * dt) / 60, Math.min((U.rateUp * dt) / 60, tb.aim - tb.tgt));
     U.tcsT = tb.tgt;
   } else if (!isFinite(U.tcsT)) U.tcsT = U.MW;
+  /* plan c4: 52L1 as the ABC input, and on house load the turbine carries the house load only (elec.js) */
+  if (typeof anElecStep === 'function') anElecStep(U);
   const D = U.tcsT;
   if (U.turb === false) {
     /* 2.2.0-beta.14: cold start, the turbine is not rolled yet: the stop valves are shut (M4 step 4 opens them) */
@@ -27623,6 +27629,8 @@ const TCS_IBD_PV = [
   [/^PS-LOn004/, U => U.loBrg],
   [/^PT-LOn923/, U => U.loEop],
   [/^ICV TO CV TRANSFER COMPLETED?$/, U => (U.tb && U.tb.xfer ? 1 : 0)],
+  /* plan c4 (TD-10 HOUSE LOAD OPERATION ALARM): the line breaker 52L1 of elec.js */
+  [/^52L OPEN/, U => (U.el && U.el.l52 === false ? 1 : 0)],
   [/^52G OPEN$/, U => (U.tb && (U.tb.st === 'sync' || U.tb.st === 'load') ? 0 : 1)],
   [/^TURBINE TRIP$/, (U, c) => (c.trip ? 1 : 0)],
   [/^MSV([AB]) FULL OPEN/, (U, c) => (tcsVp(U, c) >= 1 ? 1 : 0)],
@@ -28166,8 +28174,8 @@ function tcsIbdMissing() {
         L.push(s.id + '@' + g[4] + ',' + g[5]);
   return L;
 }
-/* 3.2.1 plan c4: the generator side of the ATS steps 4 and 5: field switch 41 and AVR (G-4), automatic synchronizing and the close order of 52G (G-1B). The 230 kV side is
-   not modelled: 52L stays closed. No relay is modelled either, so no protection operates by itself; a protection held on TA-9 trips the turbine through the IBD logic. Times
+/* 3.2.1 plan c4: the generator side of the ATS steps 4 and 5: field switch 41 and AVR (G-4), automatic synchronizing and the close order of 52G (G-1B). The 230 kV side
+   is in elec.js (plan c4): 52L1 is closed unless the instructor opens it (house load); 52G1 closes only with 52L1 closed. No relay is modelled either, so no protection operates by itself; a protection held on TA-9 trips the turbine through the IBD logic. Times
    with no number in the drawings are marked model time. */
 const TCS_GEN = { volt: 30 /* s, model time: voltage build-up after 41 */, asd: 60 /* s, model time: ASD matches speed and voltage */, x3: 3 /* G-1B */, to: 300 /* G-1B 5 min */ };
 function tcsGen(U) {
@@ -28205,11 +28213,120 @@ function tcsGenStep(U, dt) {
   }
   g.on25 = y1 && g.ty >= TCS_GEN.asd;
   /* 52G_CLOSE_ORDER = 52G_REMOTE AND 52G_AUTO AND 25_ON AND protection not operated AND 41 and 52L closed */
-  g.close = g.on25 && can;
+  g.close = g.on25 && can && !(U.el && U.el.l52 === false);
 }
 /* a turbine trip: 52G is open, so ST TRIP opens 41 and the AVR (G-4) */
 function tcsGenTrip(U) {
   Object.assign(tcsGen(U), { f41: false, V: 0, ex: false, start: false, x25: false, tx: 0, ty: 0, on25: false, close: false });
+}
+/* 3.2.3 plan c4: a simple electrical model of the unit from the Single Line Diagram (as built):
+   - K1AU3E1-0003 rev 2 KEY ONE LINE DIAGRAM: generator G1 176.5 MVA 13.8 kV 0.85 pf -> GMCB G1 10000 A (= 52G1) -> main transformer
+     TR 2310 180 / 225 MVA (ONAN / ONFA) 13.8 / 230 kV Z 14 % -> GCB 2310 (SYN, 245 kV 4000 A = 52L1) -> 230 kV line. The unit auxiliary
+     transformer TR-1A1 13.8 / 6.6 kV 34 / 44 MVA Z 10 % is tapped between the GMCB and the main transformer and feeds 6.6 kV BUS 1AM
+     (4000 A) through VCB1AM; TR-1B1 / TR-1B2 6.6 kV / 460 V 2500 kVA feed the 460 V buses.
+   - K1AU3E1-0008: the 6.6 kV motors of bus 1A (ACWP, CEP A / B, BFP A / B, IDF, PAF, SAF, FA blower A / B, PA compressor, seawater pump),
+     all with soft starters. Their currents are the plant model currents below (the same values the HMI pages show).
+   The house load = the 6.6 kV motors: P = 1.732 x 6.6 kV x I x pf. pf 0.85 = NO-SOURCE (no motor data sheet for every motor). The 460 V
+   loads (IA compressors, SWBP, make-up water pumps, lighting, etc.) are NOT counted: NO-SOURCE for their sum.
+   Before 52G1 closes the house load comes back from the 230 kV grid through the main transformer and TR-1A1 (back-feed, 52L1 closed).
+   House load operation (52L1 open while 52G1 is closed, the ABC-050 input I.0937 "52L1 OPEN FOR HOUSE OPERATION"): the turbine
+   carries the house load only (the TCS speed control keeps 3600 rpm; the load swing itself is NO-SOURCE, the model goes to the house
+   load at the TCS valve rate; the 106 % speed peak of a load rejection (SU) is not modelled). The relays 78 / 81 open 52L1 in the plant
+   (generator protection relay settings, plant study 05); here the instructor opens it. 52L1 closes again from the instructor command:
+   the plant synchronizes it with ASD2 (sync check relay 25), the model closes it at once; then the operator raises the load again.
+   Not modelled: a blackout of the 6.6 kV bus, the 6.6 kV bus transfer, the diesel generator DG1. */
+const AN_EL = {
+  kV: 6.6,
+  pf: 0.85 /* NO-SOURCE */,
+  mt: 180 /* MVA, TR 2310 ONAN */,
+  uat: 34 /* MVA, TR-1A1 ONAN */,
+  bus: 4000 /* A, BUS 1AM */,
+  /* plant model currents of the 6.6 kV motors of K1AU3E1-0008 */
+  mot: [
+    ['swIa0', 'Seawater pump A'],
+    ['swIa1', 'Seawater pump B'],
+    ['swIa2', 'Seawater pump C'],
+    ['fnPafI', 'Primary air fan'],
+    ['fnSafI', 'Secondary air fan'],
+    ['fnIdfI', 'Induced draft fan'],
+    ['fnIa', 'Fluidizing air blower A'],
+    ['fnIb', 'Fluidizing air blower B'],
+    ['fwI0', 'Boiler feed water pump A'],
+    ['fwI1', 'Boiler feed water pump B'],
+    ['cdI0', 'Condensate pump A'],
+    ['cdI1', 'Condensate pump B'],
+    ['acI0', 'Auxiliary cooling water pump A'],
+    ['acI1', 'Auxiliary cooling water pump B'],
+    ['paI0', 'Plant air compressor A'],
+    ['paI1', 'Plant air compressor B'],
+    ['paI2', 'Plant air compressor C']
+  ]
+};
+function anElec(U) {
+  U = U || AN_UNIT;
+  if (!U || !U.on) return null;
+  const e = U.el || (U.el = { l52: true }),
+    tb = U.tb || {},
+    g52 = tb.st === 'sync' || tb.st === 'load',
+    G = typeof anGenEl === 'function' ? anGenEl() : null,
+    I = AN_EL.mot.reduce((a, [k]) => a + Math.max(0, +U[k] || 0), 0),
+    Pa = (Math.sqrt(3) * AN_EL.kV * I * AN_EL.pf) / 1000,
+    Qa = Pa * Math.tan(Math.acos(AN_EL.pf)),
+    Pg = g52 && G ? Math.max(0, +U.MW || 0) : 0,
+    Qg = g52 && G ? G.MVAr || 0 : 0,
+    /* the main transformer carries the generator minus the house load (export), or the house load from the grid (back-feed) */
+    Pt = e.l52 ? Pg - Pa : 0,
+    Qt = e.l52 ? Qg - Qa : 0,
+    St = Math.hypot(Pt, Qt),
+    Su = Math.hypot(Pa, Qa);
+  return {
+    l52: e.l52 ? 1 : 0,
+    g52: g52 ? 1 : 0,
+    house: !e.l52 && g52 ? 1 : 0,
+    busA: I,
+    busPct: (100 * I) / AN_EL.bus,
+    aux: Pa,
+    auxMVAr: Qa,
+    gen: Pg,
+    exp: Pt,
+    mtMVA: St,
+    mtPct: (100 * St) / AN_EL.mt,
+    uatMVA: Su,
+    uatPct: (100 * Su) / AN_EL.uat,
+    src: g52 ? 'generator' : e.l52 ? 'grid (back-feed)' : 'none'
+  };
+}
+/* the line breaker 52L1 as an ABC input (I.0937) and the turbine target on house load; called by the unit step */
+function anElecStep(U) {
+  const e = U.el || (U.el = { l52: true }),
+    tb = U.tb || {},
+    g52 = tb.st === 'sync' || tb.st === 'load',
+    l = U.di && U.di.l52;
+  if (l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n)) l.S.rt.ext[l.n] = e.l52 ? 0 : 1;
+  if (!e.l52 && g52) {
+    const x = anElec(U);
+    if (x) U.tcsT = x.aux;
+    /* the turbine is on speed control: the DCS control mode (TCS-DI I.0082 DCS CONTROL MODE ON) drops, so that the TCS does not take the
+       turbine master demand of the DCS when 52L1 closes again (NO-SOURCE: the TCS drawings read here do not show this release) */
+    const m = U.di && U.di.on;
+    if (m && m.S.rt.force[m.n] === undefined && m.S.ext.includes(m.n)) m.S.rt.ext[m.n] = 0;
+  }
+}
+/* instructor command: 0 = open 52L1 (house load operation), 1 = close it */
+function anElecL52(U, on) {
+  const e = U.el || (U.el = { l52: true }),
+    tb = U.tb || {},
+    g52 = tb.st === 'sync' || tb.st === 'load';
+  on = on !== 0 && on !== false && on !== '0';
+  if (on === e.l52) return on ? '52L1 is already closed' : '52L1 is already open';
+  if (!on && !g52)
+    return 'Open 52L1 only with the generator on line (52G1 closed): before it the house load comes from the grid through 52L1';
+  e.l52 = on;
+  if (on && g52) {
+    /* back on the grid: the TCS keeps the house load as its target, the operator raises the load again */
+    tb.tgt = tb.aim = +U.MW || 0;
+  }
+  return '';
 }
 /* 3.2.0-beta.14 (plan "per-loop at unit plant model", phase A; user 2026-10-23: "since walang steam, dapat walang ma-generate na PV
    ito kahit anong SV MV mo"): the SOURCE of each loop. The loop model of plant.js makes the PV from the valve command alone (PV =
@@ -32229,6 +32346,7 @@ function anEngAPI() {
     turbine: anTurbine,
     tcs: () => tcsState(),
     gen: () => anGenEl(),
+    elec: () => anElec(),
     unitRestart: k => anUnitRestart(k),
     tcsTrip: () => tcsTripState(AN_UNIT),
     tcsIbd: id => tcsIbdState(id),
@@ -36581,7 +36699,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.3-beta.30';
-      c3.textContent += ' · build 40be1d8'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build b1ca894'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -74379,6 +74497,8 @@ function anUnitStart() {
   U.di = {
     gcbOn: labOf('ABC-050', 'I.0931'),
     gcbOff: labOf('ABC-050', 'I.0932'),
+    /* plan c4 (elec.js): 52L1 OPEN FOR HOUSE OPERATION (I/O list STN102), read by ABC-013 M.3221 through U.bcast */
+    l52: labOf('ABC-050', 'I.0937'),
     xfer: labOf('ABC-050', 'I.0418'),
     perm: labOf('ABC-001C', 'I.0081'),
     on: labOf('ABC-001C', 'I.0082'),
@@ -74719,6 +74839,8 @@ function anTurbine(cmd, arg) {
   const tb = U.tb;
   /* 3.2.0-beta.66: the 036 TURBINE OIL pumps at the 150 MW snapshot (no TCS model): the oil-only state of tcs.js */
   if (cmd === 'trip') return tcsTripManual(U);
+  /* plan c4: the line breaker 52L1 (instructor): 0 = open (house load operation), 1 = close (elec.js) */
+  if (cmd === '52l') return anElecL52(U, arg);
   if (cmd === 'tripreset') return tcsTripReset(U);
   if (cmd === 'fault') return tcsTripFault(U, arg);
   if (!U.tc && cmd === 'oil') return tcsOilCmd(tcsOilState(U), arg || {});
@@ -76883,6 +77005,8 @@ function anUnitStep0(dt) {
     tb.tgt += Math.max(-(U.rateUp * dt) / 60, Math.min((U.rateUp * dt) / 60, tb.aim - tb.tgt));
     U.tcsT = tb.tgt;
   } else if (!isFinite(U.tcsT)) U.tcsT = U.MW;
+  /* plan c4: 52L1 as the ABC input, and on house load the turbine carries the house load only (elec.js) */
+  if (typeof anElecStep === 'function') anElecStep(U);
   const D = U.tcsT;
   if (U.turb === false) {
     /* 2.2.0-beta.14: cold start, the turbine is not rolled yet: the stop valves are shut (M4 step 4 opens them) */
@@ -78568,6 +78692,8 @@ const TCS_IBD_PV = [
   [/^PS-LOn004/, U => U.loBrg],
   [/^PT-LOn923/, U => U.loEop],
   [/^ICV TO CV TRANSFER COMPLETED?$/, U => (U.tb && U.tb.xfer ? 1 : 0)],
+  /* plan c4 (TD-10 HOUSE LOAD OPERATION ALARM): the line breaker 52L1 of elec.js */
+  [/^52L OPEN/, U => (U.el && U.el.l52 === false ? 1 : 0)],
   [/^52G OPEN$/, U => (U.tb && (U.tb.st === 'sync' || U.tb.st === 'load') ? 0 : 1)],
   [/^TURBINE TRIP$/, (U, c) => (c.trip ? 1 : 0)],
   [/^MSV([AB]) FULL OPEN/, (U, c) => (tcsVp(U, c) >= 1 ? 1 : 0)],
@@ -79113,8 +79239,8 @@ function tcsIbdMissing() {
 }
 
 /* ---- engine/tcs-gen.js ---- */
-/* 3.2.1 plan c4: the generator side of the ATS steps 4 and 5: field switch 41 and AVR (G-4), automatic synchronizing and the close order of 52G (G-1B). The 230 kV side is
-   not modelled: 52L stays closed. No relay is modelled either, so no protection operates by itself; a protection held on TA-9 trips the turbine through the IBD logic. Times
+/* 3.2.1 plan c4: the generator side of the ATS steps 4 and 5: field switch 41 and AVR (G-4), automatic synchronizing and the close order of 52G (G-1B). The 230 kV side
+   is in elec.js (plan c4): 52L1 is closed unless the instructor opens it (house load); 52G1 closes only with 52L1 closed. No relay is modelled either, so no protection operates by itself; a protection held on TA-9 trips the turbine through the IBD logic. Times
    with no number in the drawings are marked model time. */
 const TCS_GEN = { volt: 30 /* s, model time: voltage build-up after 41 */, asd: 60 /* s, model time: ASD matches speed and voltage */, x3: 3 /* G-1B */, to: 300 /* G-1B 5 min */ };
 function tcsGen(U) {
@@ -79152,11 +79278,122 @@ function tcsGenStep(U, dt) {
   }
   g.on25 = y1 && g.ty >= TCS_GEN.asd;
   /* 52G_CLOSE_ORDER = 52G_REMOTE AND 52G_AUTO AND 25_ON AND protection not operated AND 41 and 52L closed */
-  g.close = g.on25 && can;
+  g.close = g.on25 && can && !(U.el && U.el.l52 === false);
 }
 /* a turbine trip: 52G is open, so ST TRIP opens 41 and the AVR (G-4) */
 function tcsGenTrip(U) {
   Object.assign(tcsGen(U), { f41: false, V: 0, ex: false, start: false, x25: false, tx: 0, ty: 0, on25: false, close: false });
+}
+
+/* ---- engine/elec.js ---- */
+/* 3.2.3 plan c4: a simple electrical model of the unit from the Single Line Diagram (as built):
+   - K1AU3E1-0003 rev 2 KEY ONE LINE DIAGRAM: generator G1 176.5 MVA 13.8 kV 0.85 pf -> GMCB G1 10000 A (= 52G1) -> main transformer
+     TR 2310 180 / 225 MVA (ONAN / ONFA) 13.8 / 230 kV Z 14 % -> GCB 2310 (SYN, 245 kV 4000 A = 52L1) -> 230 kV line. The unit auxiliary
+     transformer TR-1A1 13.8 / 6.6 kV 34 / 44 MVA Z 10 % is tapped between the GMCB and the main transformer and feeds 6.6 kV BUS 1AM
+     (4000 A) through VCB1AM; TR-1B1 / TR-1B2 6.6 kV / 460 V 2500 kVA feed the 460 V buses.
+   - K1AU3E1-0008: the 6.6 kV motors of bus 1A (ACWP, CEP A / B, BFP A / B, IDF, PAF, SAF, FA blower A / B, PA compressor, seawater pump),
+     all with soft starters. Their currents are the plant model currents below (the same values the HMI pages show).
+   The house load = the 6.6 kV motors: P = 1.732 x 6.6 kV x I x pf. pf 0.85 = NO-SOURCE (no motor data sheet for every motor). The 460 V
+   loads (IA compressors, SWBP, make-up water pumps, lighting, etc.) are NOT counted: NO-SOURCE for their sum.
+   Before 52G1 closes the house load comes back from the 230 kV grid through the main transformer and TR-1A1 (back-feed, 52L1 closed).
+   House load operation (52L1 open while 52G1 is closed, the ABC-050 input I.0937 "52L1 OPEN FOR HOUSE OPERATION"): the turbine
+   carries the house load only (the TCS speed control keeps 3600 rpm; the load swing itself is NO-SOURCE, the model goes to the house
+   load at the TCS valve rate; the 106 % speed peak of a load rejection (SU) is not modelled). The relays 78 / 81 open 52L1 in the plant
+   (generator protection relay settings, plant study 05); here the instructor opens it. 52L1 closes again from the instructor command:
+   the plant synchronizes it with ASD2 (sync check relay 25), the model closes it at once; then the operator raises the load again.
+   Not modelled: a blackout of the 6.6 kV bus, the 6.6 kV bus transfer, the diesel generator DG1. */
+const AN_EL = {
+  kV: 6.6,
+  pf: 0.85 /* NO-SOURCE */,
+  mt: 180 /* MVA, TR 2310 ONAN */,
+  uat: 34 /* MVA, TR-1A1 ONAN */,
+  bus: 4000 /* A, BUS 1AM */,
+  /* plant model currents of the 6.6 kV motors of K1AU3E1-0008 */
+  mot: [
+    ['swIa0', 'Seawater pump A'],
+    ['swIa1', 'Seawater pump B'],
+    ['swIa2', 'Seawater pump C'],
+    ['fnPafI', 'Primary air fan'],
+    ['fnSafI', 'Secondary air fan'],
+    ['fnIdfI', 'Induced draft fan'],
+    ['fnIa', 'Fluidizing air blower A'],
+    ['fnIb', 'Fluidizing air blower B'],
+    ['fwI0', 'Boiler feed water pump A'],
+    ['fwI1', 'Boiler feed water pump B'],
+    ['cdI0', 'Condensate pump A'],
+    ['cdI1', 'Condensate pump B'],
+    ['acI0', 'Auxiliary cooling water pump A'],
+    ['acI1', 'Auxiliary cooling water pump B'],
+    ['paI0', 'Plant air compressor A'],
+    ['paI1', 'Plant air compressor B'],
+    ['paI2', 'Plant air compressor C']
+  ]
+};
+function anElec(U) {
+  U = U || AN_UNIT;
+  if (!U || !U.on) return null;
+  const e = U.el || (U.el = { l52: true }),
+    tb = U.tb || {},
+    g52 = tb.st === 'sync' || tb.st === 'load',
+    G = typeof anGenEl === 'function' ? anGenEl() : null,
+    I = AN_EL.mot.reduce((a, [k]) => a + Math.max(0, +U[k] || 0), 0),
+    Pa = (Math.sqrt(3) * AN_EL.kV * I * AN_EL.pf) / 1000,
+    Qa = Pa * Math.tan(Math.acos(AN_EL.pf)),
+    Pg = g52 && G ? Math.max(0, +U.MW || 0) : 0,
+    Qg = g52 && G ? G.MVAr || 0 : 0,
+    /* the main transformer carries the generator minus the house load (export), or the house load from the grid (back-feed) */
+    Pt = e.l52 ? Pg - Pa : 0,
+    Qt = e.l52 ? Qg - Qa : 0,
+    St = Math.hypot(Pt, Qt),
+    Su = Math.hypot(Pa, Qa);
+  return {
+    l52: e.l52 ? 1 : 0,
+    g52: g52 ? 1 : 0,
+    house: !e.l52 && g52 ? 1 : 0,
+    busA: I,
+    busPct: (100 * I) / AN_EL.bus,
+    aux: Pa,
+    auxMVAr: Qa,
+    gen: Pg,
+    exp: Pt,
+    mtMVA: St,
+    mtPct: (100 * St) / AN_EL.mt,
+    uatMVA: Su,
+    uatPct: (100 * Su) / AN_EL.uat,
+    src: g52 ? 'generator' : e.l52 ? 'grid (back-feed)' : 'none'
+  };
+}
+/* the line breaker 52L1 as an ABC input (I.0937) and the turbine target on house load; called by the unit step */
+function anElecStep(U) {
+  const e = U.el || (U.el = { l52: true }),
+    tb = U.tb || {},
+    g52 = tb.st === 'sync' || tb.st === 'load',
+    l = U.di && U.di.l52;
+  if (l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n)) l.S.rt.ext[l.n] = e.l52 ? 0 : 1;
+  if (!e.l52 && g52) {
+    const x = anElec(U);
+    if (x) U.tcsT = x.aux;
+    /* the turbine is on speed control: the DCS control mode (TCS-DI I.0082 DCS CONTROL MODE ON) drops, so that the TCS does not take the
+       turbine master demand of the DCS when 52L1 closes again (NO-SOURCE: the TCS drawings read here do not show this release) */
+    const m = U.di && U.di.on;
+    if (m && m.S.rt.force[m.n] === undefined && m.S.ext.includes(m.n)) m.S.rt.ext[m.n] = 0;
+  }
+}
+/* instructor command: 0 = open 52L1 (house load operation), 1 = close it */
+function anElecL52(U, on) {
+  const e = U.el || (U.el = { l52: true }),
+    tb = U.tb || {},
+    g52 = tb.st === 'sync' || tb.st === 'load';
+  on = on !== 0 && on !== false && on !== '0';
+  if (on === e.l52) return on ? '52L1 is already closed' : '52L1 is already open';
+  if (!on && !g52)
+    return 'Open 52L1 only with the generator on line (52G1 closed): before it the house load comes from the grid through 52L1';
+  e.l52 = on;
+  if (on && g52) {
+    /* back on the grid: the TCS keeps the house load as its target, the operator raises the load again */
+    tb.tgt = tb.aim = +U.MW || 0;
+  }
+  return '';
 }
 
 /* ---- engine/source.js ---- */
@@ -83200,6 +83437,7 @@ function anEngAPI() {
     turbine: anTurbine,
     tcs: () => tcsState(),
     gen: () => anGenEl(),
+    elec: () => anElec(),
     unitRestart: k => anUnitRestart(k),
     tcsTrip: () => tcsTripState(AN_UNIT),
     tcsIbd: id => tcsIbdState(id),
@@ -95507,6 +95745,41 @@ html body.sc .scaskb button{height:calc(28px*var(--scs,1))!important;min-height:
             E('h5', { txt: 'Turbine protection' }),
             E('small', { txt: tt.first ? 'TRIPPED, first out: ' + tt.first : 'No turbine trip' }),
             E('div', { cls: 'plrow' }, [act('trip', 'Turbine trip'), act('tripreset', 'Turbine reset')])
+          );
+        }
+        /* plan c4: the line breaker 52L1 and the house load (src/analog/engine/elec.js, Single Line Diagram K1AU3E1-0003 / -0008) */
+        let el = null;
+        try {
+          el = AN.elec ? AN.elec() : null;
+        } catch (e) {}
+        if (el) {
+          const f = x => (isFinite(x) ? (+x).toFixed(1) : '-'),
+            st = el.house ? 'HOUSE LOAD OPERATION: 52L1 open, the generator carries the house load only. ' : el.l52 ? '52L1 closed. ' : '52L1 open. ',
+            grid = el.exp >= 0 ? 'to the grid ' + f(el.exp) : 'from the grid ' + f(-el.exp);
+          pop.append(
+            E('h5', { txt: 'Grid (line breaker 52L1)' }),
+            E('small', {
+              txt:
+                st +
+                ('Generator ' + f(el.gen) + ' MW, house load ' + f(el.aux) + ' MW (6.6 kV motors, ' + Math.round(el.busA) + ' A), ' + grid + ' MW. ') +
+                ('Main transformer ' + Math.round(el.mtPct) + ' %, unit auxiliary transformer ' + Math.round(el.uatPct) + ' %.')
+            }),
+            E('div', { cls: 'plrow' }, [
+              E('button', {
+                cls: 'plgo',
+                txt: el.l52 ? 'Open 52L1 (house load)' : 'Close 52L1',
+                on: guard(() =>
+                  withAN(() => {
+                    const r = AN.turbine('52l', el.l52 ? 0 : 1);
+                    try {
+                      window.lsEventAdd && lsEventAdd('TCS', 'TCS', 'Instructor: ' + (el.l52 ? 'open' : 'close') + ' 52L1' + (r ? ': ' + r : ''));
+                    } catch (e) {}
+                    say(r ? 'Grid: ' + r : 'Grid: 52L1 ' + (el.l52 ? 'opened (house load operation)' : 'closed'));
+                    setTimeout(() => !pop.hidden && render(), 1500);
+                  })
+                )
+              })
+            ])
           );
         }
       }
@@ -109845,6 +110118,8 @@ window.LS_GUIDE = (function () {
         return null;
       }
       if (t === 'Turbine trip') return { q: 'Trip the turbine?', t: 'TURBINE TRIP (TA-1): the turbine trips now and the plant reacts to it.', ok: 'Trip turbine', danger: true };
+      if (t === 'Open 52L1 (house load)')
+        return { q: 'Open the line breaker 52L1?', t: 'House load operation: the unit leaves the 230 kV grid and the generator carries the house load only.', ok: 'Open 52L1', danger: true };
       if (t === 'Turbine reset') return { q: 'Reset the turbine trip?', t: 'TURBINE RESET (TA-1): the trip is reset when its causes are clear.', ok: 'Reset' };
       return null;
     }
@@ -111467,7 +111742,22 @@ window.LS_GUIDE = (function () {
       con.hidden = true;
       if (window.lsShellC && lsShellC.openPage) lsShellC.openPage('MK10');
     });
+    /* plan c4: the line breaker 52L1 (src/analog/engine/elec.js): open = house load operation */
+    const el = call(() => (AN.elec ? AN.elec() : null), null);
+    let l52 = null;
+    if (el) {
+      const t = el.l52 ? 'Open 52L1 (house load)' : 'Close 52L1';
+      l52 = btn(t, el.l52 ? 'The 230 kV line breaker opens: house load operation' : 'The 230 kV line breaker closes: the unit is on the grid again');
+      const go = () => {
+        const x = call(() => AN.turbine('52l', el.l52 ? 0 : 1), '');
+        call(() => lsEventAdd('TCS', 'TCS', 'Instructor: ' + (el.l52 ? 'open' : 'close') + ' 52L1' + (x ? ': ' + x : '')));
+        setTimeout(fill, 300);
+      };
+      if (el.l52) arm(l52, t, go, { q: 'Open the line breaker 52L1?', t: 'House load operation: the unit leaves the 230 kV grid and the generator carries the house load only.', ok: 'Open 52L1', danger: true });
+      else l52.onclick = go;
+    }
     r.append(tt, mft);
+    if (l52) r.append(l52);
     body.append(r);
     /* turbine panel extras and the recorder */
     body.append(head('Turbine and recorder'));
@@ -111853,7 +112143,7 @@ window.LS_GUIDE = (function () {
         'Engineering = white symbols, only wires, values and valves coloured'
       );
     const ver = (document.title.match(/v\d[\w.-]*/) || [''])[0];
-    row('Version', E('span', 'scsver', ver + ' · build 40be1d8'));
+    row('Version', E('span', 'scsver', ver + ' · build b1ca894'));
   }
   function openSet(near) {
     if (!set) {

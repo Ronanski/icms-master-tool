@@ -99,6 +99,8 @@ const TCS_IBD_PV = [
   [/^PS-LOn004/, U => U.loBrg],
   [/^PT-LOn923/, U => U.loEop],
   [/^ICV TO CV TRANSFER COMPLETED?$/, U => (U.tb && U.tb.xfer ? 1 : 0)],
+  /* plan c4 (TD-10 HOUSE LOAD OPERATION ALARM): the line breaker 52L1 of elec.js */
+  [/^52L OPEN/, U => (U.el && U.el.l52 === false ? 1 : 0)],
   [/^52G OPEN$/, U => (U.tb && (U.tb.st === 'sync' || U.tb.st === 'load') ? 0 : 1)],
   [/^TURBINE TRIP$/, (U, c) => (c.trip ? 1 : 0)],
   [/^MSV([AB]) FULL OPEN/, (U, c) => (tcsVp(U, c) >= 1 ? 1 : 0)],

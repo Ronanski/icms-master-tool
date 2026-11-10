@@ -188,7 +188,22 @@
       con.hidden = true;
       if (window.lsShellC && lsShellC.openPage) lsShellC.openPage('MK10');
     });
+    /* plan c4: the line breaker 52L1 (src/analog/engine/elec.js): open = house load operation */
+    const el = call(() => (AN.elec ? AN.elec() : null), null);
+    let l52 = null;
+    if (el) {
+      const t = el.l52 ? 'Open 52L1 (house load)' : 'Close 52L1';
+      l52 = btn(t, el.l52 ? 'The 230 kV line breaker opens: house load operation' : 'The 230 kV line breaker closes: the unit is on the grid again');
+      const go = () => {
+        const x = call(() => AN.turbine('52l', el.l52 ? 0 : 1), '');
+        call(() => lsEventAdd('TCS', 'TCS', 'Instructor: ' + (el.l52 ? 'open' : 'close') + ' 52L1' + (x ? ': ' + x : '')));
+        setTimeout(fill, 300);
+      };
+      if (el.l52) arm(l52, t, go, { q: 'Open the line breaker 52L1?', t: 'House load operation: the unit leaves the 230 kV grid and the generator carries the house load only.', ok: 'Open 52L1', danger: true });
+      else l52.onclick = go;
+    }
     r.append(tt, mft);
+    if (l52) r.append(l52);
     body.append(r);
     /* turbine panel extras and the recorder */
     body.append(head('Turbine and recorder'));

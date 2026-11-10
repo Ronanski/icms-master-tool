@@ -7,7 +7,7 @@ Tatlong klase lang (CLAUDE.md rule 5): (a) bug, naayos; (b) tama, may ebidensya;
 ## Roll at acceleration
 1. Acceleration rate 120 / 120 / 120 / 180 / 360 rpm/min (ambient cold, cold 1, cold 2, warm, hot): (b) ATS sheet 22 note *1 at PR-OPE-5002 table.
 2. Heat soak 1800 rpm 88 / 58 / 30 / 0 / 0 min: (b) PR-OPE-5002 table at ATS Fig. 1.
-3. Heat soak 3600 rpm: app 86 / 56 / 27 / 23 / 3 min = ATS sheet 23 FIGURE 2 (3600 rpm HEAT SOAK TIMER, break points 150 / 170 / 230 / 420 C). PR-OPE-5002 table: 86 / 55 / 25 / 22 / 0. **UNUSUAL**: iniwan ang app sa drawing ng TCS (ang logic ng TCS mismo); ang SOP ay buod ng operator.
+3. Heat soak 3600 rpm: app 86 / 56 / 27 / 23 / 3 min = ATS sheet 23 FIGURE 2 (3600 rpm HEAT SOAK TIMER, break points 150 / 170 / 230 / 420 C). PR-OPE-5002 table: 86 / 55 / 25 / 22 / 0. **UNUSUAL**: iniwan ang app sa drawing ng TCS (ang logic ng TCS mismo); ang SOP ay buod ng operator. **Pasya ng user (2026-11-10 7:05 PM PHT): sundin ang TCS drawing.**
 4. Critical zone 1372 ~ 1723 rpm, walang hold: (b) PR-OPE-5002.
 5. Pagkatapos ng 1800 rpm soak: HP first stage inner wall > 170 C at shell expansion > 3 mm: (b) PR-OPE-5002; IBD TD-4 ZE-ST1001 NORMAL ON >= 3 mm (criterion 2.1). Ang TD-4 ay nakakabit na sa c.sexp (3.2.3-beta.27).
 6. Rub check: 200 rpm, tapos kapag < 100 rpm: (b) PR-OPE-5002 at ATS criteria Fig. 1.
@@ -21,7 +21,7 @@ Tatlong klase lang (CLAUDE.md rule 5): (a) bug, naayos; (b) tama, may ebidensya;
 
 ## Initial load at load up
 12. Initial load 3 % (4.5 MW) ambient cold ~ warm, 5 % (7.5 MW) hot: (b) ATS sheet 26 *2 at PR-OPE-5002.
-13. Initial load hold: app 40 / 15 / 0 min = ATS sheet 26 FIGURE 3 (40 min hanggang 230 C, 15 min hanggang 420 C). PR-OPE-5002: 45 min (cold, warm) at may linyang "Warm 15 mins instead of 45". **UNUSUAL**: iniwan sa drawing ng TCS.
+13. Initial load hold: app 40 / 15 / 0 min = ATS sheet 26 FIGURE 3 (40 min hanggang 230 C, 15 min hanggang 420 C). PR-OPE-5002: 45 min (cold, warm) at may linyang "Warm 15 mins instead of 45". **UNUSUAL**: iniwan sa drawing ng TCS. **Pasya ng user (2026-11-10 7:05 PM PHT): sundin ang TCS drawing.**
 14. Hood < 52 C bago LOAD UP: (b) PR-OPE-5002 (naayos sa 3.2.1 plan c3).
 15. Load up rate 5 %/min = 7.5 MW/min: (b) ATS sheet 27 *2, PR-OPE-5002.
 16. ICV -> CV transfer sa 20 MW: (b) PR-OPE-5002 "until HP & LP bypass valve is fully closed or reaches to 20 MW". Sa app ang pangalawang kondisyon ay "ICV full open", hindi "HP at LP bypass sarado": (c) ang logic ng transfer ay nasa TCS (ATS sheet 27 "LOAD UP START (ICV TO CV TRANSFER)" ay communication link lang, walang detalye).

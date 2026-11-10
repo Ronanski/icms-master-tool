@@ -2046,6 +2046,41 @@
             E('div', { cls: 'plrow' }, [act('trip', 'Turbine trip'), act('tripreset', 'Turbine reset')])
           );
         }
+        /* plan c4: the line breaker 52L1 and the house load (src/analog/engine/elec.js, Single Line Diagram K1AU3E1-0003 / -0008) */
+        let el = null;
+        try {
+          el = AN.elec ? AN.elec() : null;
+        } catch (e) {}
+        if (el) {
+          const f = x => (isFinite(x) ? (+x).toFixed(1) : '-'),
+            st = el.house ? 'HOUSE LOAD OPERATION: 52L1 open, the generator carries the house load only. ' : el.l52 ? '52L1 closed. ' : '52L1 open. ',
+            grid = el.exp >= 0 ? 'to the grid ' + f(el.exp) : 'from the grid ' + f(-el.exp);
+          pop.append(
+            E('h5', { txt: 'Grid (line breaker 52L1)' }),
+            E('small', {
+              txt:
+                st +
+                ('Generator ' + f(el.gen) + ' MW, house load ' + f(el.aux) + ' MW (6.6 kV motors, ' + Math.round(el.busA) + ' A), ' + grid + ' MW. ') +
+                ('Main transformer ' + Math.round(el.mtPct) + ' %, unit auxiliary transformer ' + Math.round(el.uatPct) + ' %.')
+            }),
+            E('div', { cls: 'plrow' }, [
+              E('button', {
+                cls: 'plgo',
+                txt: el.l52 ? 'Open 52L1 (house load)' : 'Close 52L1',
+                on: guard(() =>
+                  withAN(() => {
+                    const r = AN.turbine('52l', el.l52 ? 0 : 1);
+                    try {
+                      window.lsEventAdd && lsEventAdd('TCS', 'TCS', 'Instructor: ' + (el.l52 ? 'open' : 'close') + ' 52L1' + (r ? ': ' + r : ''));
+                    } catch (e) {}
+                    say(r ? 'Grid: ' + r : 'Grid: 52L1 ' + (el.l52 ? 'opened (house load operation)' : 'closed'));
+                    setTimeout(() => !pop.hidden && render(), 1500);
+                  })
+                )
+              })
+            ])
+          );
+        }
       }
       if (locked()) pop.append(E('p', { cls: 'plnote', txt: 'VIEW: press RUN to change these.' }));
     }

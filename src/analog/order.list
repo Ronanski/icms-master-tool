@@ -17,6 +17,7 @@ engine/tcs.js
 engine/tcs-ibd-data.js
 engine/tcs-trip.js
 engine/tcs-gen.js
+engine/elec.js
 engine/source.js
 engine/hmi-op.js
 engine/sheets.js
