@@ -138,6 +138,8 @@
         return null;
       }
       if (t === 'Turbine trip') return { q: 'Trip the turbine?', t: 'TURBINE TRIP (TA-1): the turbine trips now and the plant reacts to it.', ok: 'Trip turbine', danger: true };
+      if (t === 'Open 52L1 (house load)')
+        return { q: 'Open the line breaker 52L1?', t: 'House load operation: the unit leaves the 230 kV grid and the generator carries the house load only.', ok: 'Open 52L1', danger: true };
       if (t === 'Turbine reset') return { q: 'Reset the turbine trip?', t: 'TURBINE RESET (TA-1): the trip is reset when its causes are clear.', ok: 'Reset' };
       return null;
     }

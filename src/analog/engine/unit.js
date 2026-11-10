@@ -515,6 +515,8 @@ function anUnitStart() {
   U.di = {
     gcbOn: labOf('ABC-050', 'I.0931'),
     gcbOff: labOf('ABC-050', 'I.0932'),
+    /* plan c4 (elec.js): 52L1 OPEN FOR HOUSE OPERATION (I/O list STN102), read by ABC-013 M.3221 through U.bcast */
+    l52: labOf('ABC-050', 'I.0937'),
     xfer: labOf('ABC-050', 'I.0418'),
     perm: labOf('ABC-001C', 'I.0081'),
     on: labOf('ABC-001C', 'I.0082'),
@@ -855,6 +857,8 @@ function anTurbine(cmd, arg) {
   const tb = U.tb;
   /* 3.2.0-beta.66: the 036 TURBINE OIL pumps at the 150 MW snapshot (no TCS model): the oil-only state of tcs.js */
   if (cmd === 'trip') return tcsTripManual(U);
+  /* plan c4: the line breaker 52L1 (instructor): 0 = open (house load operation), 1 = close (elec.js) */
+  if (cmd === '52l') return anElecL52(U, arg);
   if (cmd === 'tripreset') return tcsTripReset(U);
   if (cmd === 'fault') return tcsTripFault(U, arg);
   if (!U.tc && cmd === 'oil') return tcsOilCmd(tcsOilState(U), arg || {});
@@ -3019,6 +3023,8 @@ function anUnitStep0(dt) {
     tb.tgt += Math.max(-(U.rateUp * dt) / 60, Math.min((U.rateUp * dt) / 60, tb.aim - tb.tgt));
     U.tcsT = tb.tgt;
   } else if (!isFinite(U.tcsT)) U.tcsT = U.MW;
+  /* plan c4: 52L1 as the ABC input, and on house load the turbine carries the house load only (elec.js) */
+  if (typeof anElecStep === 'function') anElecStep(U);
   const D = U.tcsT;
   if (U.turb === false) {
     /* 2.2.0-beta.14: cold start, the turbine is not rolled yet: the stop valves are shut (M4 step 4 opens them) */
