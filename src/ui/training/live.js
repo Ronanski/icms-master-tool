@@ -772,15 +772,32 @@ window.LS_LIVE = (function () {
     return on;
   };
   const BYP700 = DC('furnace lower layer > 700 C (purge by-pass, DITL-02 row 25 M.3339), now or in the last 2 min', () => byNow() || Date.now() - byAt < 120000, () => 'M.3339 = ' + (byNow() ? 1 : 0) + (byAt && !byNow() ? ' (was 1 ' + Math.round((Date.now() - byAt) / 1000) + ' s ago)' : ''));
+  /* 3.2.3-beta.12 (Mina beta.9 ~ 11, B6-7): after the trip from 150 MW the hotwell fell to -293 / -300 mm in 6 min and CEP A stopped on
+     hotwell low-low (ABC-031 M.3211, DITL-61A row 13). Water balance (b3210 runs): the blow-off PCV-MS1001 opens to the air on the trip
+     (ABC-013 back-up command), the feedwater runs about 1 min behind the steam (drum +350 mm) and the deaerator level loop keeps the
+     condensate at 400 ~ 470 T/H. NS 30 MW turbine trip: "monitor MS pressure, drum level, hotwell". Run 3 (b3211): make-up 100 %,
+     LCV-CD1104 held at 10 % (about 220 T/H, the deaerator gives the feedwater), blow-off closed below 220 T/H steam (HP bypass
+     PCV-MS1020 about 227 T/H, valve sheet L21): hotwell lowest -79 mm in 6 min, CEP A kept running; with LCV-CD1104 left at 10 %
+     after the feedwater stopped the hotwell fell to -213 mm, back to AUTO it recovered */
+  const HWOK = lo => ({
+    sig: [],
+    res: () => true,
+    ok: () => isFinite(+U().cdHw) && +U().cdHw >= lo,
+    now: () => 'Hotwell level ' + f1(+U().cdHw) + ' mm',
+    want: 'hotwell level (LT-CD1110) above ' + lo + ' mm',
+    go: { tag: 'LICCD1110A' }
+  });
   const X7 = [
     ['At 150 MW press TURBINE TRIP (page 13, IBD TA-1). All fuel trips by itself (Tab 9 p19 item 7, DITL turbine trip -> MFT).', BIT('I.000F', 1, 'MFT after the turbine trip')],
     ['Read the first out of the turbine trip (page 13) and of the MFT; HP / LP bypass open to cool the reheater (Tab 9 p25). With no bypass and cyclone exit above 535 C the PA fan stops by itself and the RH biasing damper closes (p20).', null, 'CRO' /* sweep 26 (Mina 11-08 step 139): the first outs are read on the CRT: a control room item (the By column of the SOP tables), not the field */],
+    ['Hotwell after the trip (NS: monitor main steam pressure, drum level, hotwell): the blow-off PCV-MS1001 is open to the air and the condensate pumps keep filling the deaerator. Make-up LICCD1110A to MANUAL 100 %; deaerator level LICCD1104 to MANUAL about 10 %, so the deaerator gives the feedwater (keep it above -500 mm, L alarm); blow-off PICMS1002 to MANUAL 0 % when the main steam flow is under 220 T/H (the HP bypass takes the rest). Keep the hotwell above -150 mm (L alarm; low-low -300 mm stops the condensate pumps).', ALL(MODE('LICCD1110A', 'MAN'), MODE('LICCD1104', 'MAN'), HWOK(-150))],
     ['Keep the ID fan, SA fan, PA fan and FA blowers running to remove the volatiles and burn the fuel left in the bed (Tab 9 p21 item 3); drum level in sight: -200 ~ +200 mm through the shrink.', HOLD(60, ALL(BIT('M.3304', 1, 'ID fan running'), BIT('M.3303', 1, 'SA fan running'), VAL('lvl', -200, 200)))],
     /* Mina beta.152: the check read the model bed Tb >= 625 while the text and the logic say 700 C; and nothing reset the MFT. DITL-02 out 16
        FURNACE PURGE COMPLETED = (MFT I.0560 AND NO BOILER TRIP COMMAND I.0561, delayed) AND M.3339 FURNACE LOWER LAYER > 700 C (PURGE
        BY-PASS, row 25) AND FURNACE PURGE START P.B. (row 6): with the bed above 700 C the purge start completes the purge at once, the MFT resets */
     ['Hot restart (Tab 9 p22): the bed at the start-up burner elevation above 700 C (purge bypass permit M.3339): press FURNACE PURGE START, the purge completes at once (no 5 min) and the MFT resets.', ALL(BYP700, BIT('I.000F', 0, 'MFT reset'))],
-    ['Start the coal feeders: bed above 700 C without burners, or above 550 C with the burners in service (Tab 9 p23 item 7).', ANYBIT(['M.3400', 'M.3401', 'M.3402'], 'a coal feeder running')]
+    ['Start the coal feeders: bed above 700 C without burners, or above 550 C with the burners in service (Tab 9 p23 item 7).', ANYBIT(['M.3400', 'M.3401', 'M.3402'], 'a coal feeder running')],
+    ['Deaerator level LICCD1104 back to AUTO (the feedwater is back, or it has stopped: at 10 % the condensate drains the hotwell into the deaerator); make-up LICCD1110A back to AUTO when the hotwell is near its set point (SV not below +100 mm, PR-OPE-5002).', ALL(MODE('LICCD1104', 'AUTO'), MODE('LICCD1110A', 'AUTO'), HWOK(-150))]
   ];
   /* plan e5 recovery (LISA): a BFWP A field trip at 150 MW. DITL-23A (PDF sheet 41; "THE DIAGRAM IS THE SAME FOR BFWP B": DITL-23A #B):
      out 65 BFWP A TRIP (MIT-P1115A) = TRIP COMMAND or ELECTRIC TROUBLE; the TRIP resets the RUNNING latch (out 55 MIR-P1115A); BFWP B
