@@ -383,6 +383,23 @@ AN_CYC.kgmm = {
    15 % margin; reheater 60 m3, total 312 m3, p.5). Less the drum (K1AU3D-101: R 824.2 mm, shell 12.481 m, hemispherical heads,
    about 29 m3) and the superheater, which is dry in service: the procedure gives no split, ASSUMED 60 m3 like the reheater (the
    superheater carries 460 T/H, the reheater 400 T/H) -> 252 - 29 - 60 = 163 m3; AN_THERM.on: the term is used */
+/* 3.2.3: the critical (choked) mass flux of flashing saturated water, kg/m2 s, by the drum pressure Pb (bar abs): homogeneous
+   equilibrium model, read off the Moody chart (ASSUMED, no plant figure). Used by the blowdowns of the drum (anProcStep) */
+const AN_BDG = [
+  [1.013, 0],
+  [13.8, 3900],
+  [34.5, 8300],
+  [69, 14650],
+  [138, 23900]
+];
+function anBdG(Pb) {
+  const G = AN_BDG,
+    k = G.findIndex(g => g[0] >= Pb),
+    i = k < 1 ? (k === 0 ? 1 : G.length - 1) : k,
+    a = G[i - 1],
+    b = G[i];
+  return Math.max(0, a[1] + ((b[1] - a[1]) * (Math.min(Pb, 138) - a[0])) / (b[0] - a[0]));
+}
 const AN_THERM = { vEvap: 163, on: false }; /* not in AN_CYC: a loaded state replaces AN_CYC's fields */
 AN_CYC.vacLoss = (U, T) => (6 * Math.max(-1, T - 38.65) * 0.7 * U.ms) / 3600;
 AN_CYC.y = {};
@@ -839,32 +856,32 @@ function anProcStep(S, dt) {
          flashing in the 2.5" line is choked: flow = A x G x opening, A = 2.5" pipe, schedule not printed, ASSUMED Sch 80 (ID 59.0 mm,
          0.002734 m2); G = the critical mass flux of saturated water, homogeneous equilibrium model (Moody chart, read off: 3,900 kg/m2 s
          at 13.8 bar, 8,300 at 34.5, 14,650 at 69, 23,900 at 138; ASSUMED, no plant figure). About 80 T/H full open at 35 kg/cm2.
-         The continuous blowdown MV-BD1002 (6" BD-1-003) is open at 150 MW and inside the water loss of the snapshot (integLoss):
-         not added here */
+         The continuous blowdown MV-BD1002: below */
       let mbdQ = 0;
       if (typeof anDitlPos === 'function' && q.y > lo) {
         const pos = anDitlPos('DITL-38', 0),
           Pb = drumP * 0.980665 + 1.013; /* bar abs */
         if (pos > 0 && Pb > 1.1) {
-          const G = [
-              [1.013, 0],
-              [13.8, 3900],
-              [34.5, 8300],
-              [69, 14650],
-              [138, 23900]
-            ],
-            k = G.findIndex(g => g[0] >= Pb),
-            i = k < 1 ? (k === 0 ? 1 : G.length - 1) : k,
-            [a, b] = [G[i - 1], G[i]],
-            g = a[1] + ((b[1] - a[1]) * (Math.min(Pb, 138) - a[0])) / (b[0] - a[0]);
-          mbdQ = (0.002734 * Math.max(0, g) * Math.min(100, pos) * 3.6) / 100; /* kg/s -> T/H */
+          mbdQ = (0.002734 * anBdG(Pb) * Math.min(100, pos) * 3.6) / 100; /* kg/s -> T/H */
         }
       }
       lhdQ += mbdQ;
       AN_CYC.mbd = mbdQ;
+      /* 3.2.3 CONTINUOUS BLOWDOWN (PR-OPE-5002 5698 "MBD and CBD"; flow diagram K1AU3-PD-019: MV-BD1002, DITL-38 #MV-BD1002, line
+         BD-1-003). The water that leaves the drum besides the main steam at 150 MW (pr.integLoss, 03.png 499.1 - 474.1 = 25 T/H) is
+         taken as the continuous blowdown in service (src/world/ditl150.js: MV-BD1002 open; ASSUMED). integLoss stays the setting of the
+         field blowdown valve (AN.blowdown); now it also follows the MOV position and, as a choked flashing flow, the drum pressure:
+         x G(P) / G(134 kg/cm2, the drum at 150 MW, unit model Start at 150 MW). Before: 25 T/H at any pressure and with MV-BD1002
+         shut. About 9 T/H at 35 kg/cm2 */
+      let loss = pr.integLoss || 0;
+      if (loss > 0 && typeof anDitlPos === 'function') {
+        const pc = anDitlPos('DITL-38 #MV-BD1002', 0);
+        if (pc != null) loss *= (Math.min(100, Math.max(0, pc)) / 100) * (anBdG(drumP * 0.980665 + 1.013) / anBdG(134 * 0.980665 + 1.013));
+      }
+      AN_CYC.cbd = loss;
       /* a feedwater heater with its tubes and its bypass shut stops the feedwater (unit.js anHtrPath) */
       if (typeof AN_UNIT !== 'undefined' && AN_UNIT.on && isFinite(AN_UNIT.fwPath)) ffw *= AN_UNIT.fwPath;
-      q.y = Math.max(lo, Math.min(lo + span, q.y + dt * AN_CYC.rate('dr') * (ffw - fst - (pr.integLoss || 0) - lhdQ)));
+      q.y = Math.max(lo, Math.min(lo + span, q.y + dt * AN_CYC.rate('dr') * (ffw - fst - loss - lhdQ)));
       /* 3.2.3 THERMAL EXPANSION of the boiler water (PR-OPE-5002 5697: "Observe steam drum level: swelling approximately > 100 C; use
          lowering header drain ... above 10 kg/cm2 the MBD and CBD"). The economizer, waterwall and downcomers stay full of water: when it
          heats its density falls (anWaterRho, steam table) and the water it no longer holds goes into the drum, kg = AN_THERM.vEvap x the
@@ -878,7 +895,7 @@ function anProcStep(S, dt) {
         q.rhoE = r;
       }
       AN_CYC.y.dr = q.y;
-      AN_CYC.dl = fst + (pr.integLoss || 0) + lhdQ; /* water and steam that leave the drum */
+      AN_CYC.dl = fst + loss + lhdQ; /* water and steam that leave the drum */
       AN_CYC.ffw = ffw; /* the deaerator gives this water (condensate cycle balance) */
       /* 2.2.0-beta.12 (M3): SHRINK / SWELL. A fast change of the drum pressure moves the level the other way for a while (the steam
          bubbles in the water collapse when the pressure rises after a turbine trip, grow when it falls after an MFT): the level
