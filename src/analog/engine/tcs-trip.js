@@ -463,10 +463,15 @@ function tcsTripHold(U, dt) {
     return;
   }
   if (ib.first) return;
-  const v = isFinite(U.cdP) && U.cdP > AN_CD.Ptrip;
-  ib.first = v ? 'CONDENSER VACUUM VERY LOW TRIP' : 'TURBINE TRIP (DCS I.0400)';
+  /* Mina T1, 3.2.3-beta.1: a Turbine trip pressed in the first 2 s after a state load set I.0400 before the scan named it, so the log said
+     TURBINE TRIP (DCS I.0400) while page 13 said MANUAL TRIP. The push button kept (ib.pm) or still held names the trip */
+  const pm = ib.pm === 'MANUAL TRIP' || ib.pb.trip > 0;
+  ib.pm = '';
+  const v = !pm && isFinite(U.cdP) && U.cdP > AN_CD.Ptrip;
+  ib.first = pm ? 'MANUAL TRIP' : v ? 'CONDENSER VACUUM VERY LOW TRIP' : 'TURBINE TRIP (DCS I.0400)';
+  if (pm && !c.trip) c.trip = ib.first;
   ib.at = +U.t || 0;
-  ib.ext = !v;
+  ib.ext = !v && !pm;
   tcsTripLog(ib.first);
 }
 /* TA-1 TURBINE TRIP P.B. */
@@ -517,7 +522,12 @@ function tcsTripState(U) {
   const c = U.tc || U.tco;
   if (!c) return null;
   const ib = tcsIb(c);
-  return { first: ib.first, at: ib.at };
+  /* Mina T3, 3.2.3-beta.1: a Turbine reset refused showed no cause. held = the TA-9 trip inputs at 1 now (a held trip keeps the A gate
+     of the reset at 0, IBD TA-1), so the page can say what holds the trip */
+  const s = TCS_IBD.by['TA-9'],
+    v = ib.v['TA-9'] || [],
+    held = s ? s.i.filter(i => v[i[0]] > 0.5).map(i => tcsIbdName(i[1])) : [];
+  return { first: ib.first, at: ib.at, held };
 }
 /* the live values of one sheet, for the drawing */
 function tcsIbdState(id) {
