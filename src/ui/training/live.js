@@ -355,6 +355,13 @@ window.LS_LIVE = (function () {
     w('SP2MV', g('TICBR1150', mvOf));
     w('RHSMV', g('TICHR1002', mvOf));
     w('RHDMV', g('TICHR1002A', mvOf));
+    /* 3.2.3-beta.10 (Mina beta.9 B6-7, hotwell -293 mm after the trip): where the steam goes after a trip. ABC-013 blow-off
+       PICMS1002 (PCV-MS1001, to the air: the water leaves the cycle) and ABC-050 HP bypass PICMS1006 (PCV-MS1020, back to the
+       condenser through the reheater and the LP bypass) */
+    w('BOSV', g('PICMS1002', svOf));
+    w('BOMV', g('PICMS1002', mvOf));
+    w('HPBSV', g('PICMS1006', svOf));
+    w('HPBMV', g('PICMS1006', mvOf));
     return r;
   };
   setInterval(() => {
@@ -378,7 +385,7 @@ window.LS_LIVE = (function () {
     } catch (e) {}
   }, 1000);
   const recCsv = () => {
-    const X = ['RHT', 'HW', 'CDQ', 'DA', 'DAMV', 'MUMV', 'MSOMV', 'SP1MV', 'SP2MV', 'RHSMV', 'RHDMV'],
+    const X = ['RHT', 'HW', 'CDQ', 'DA', 'DAMV', 'MUMV', 'MSOMV', 'SP1MV', 'SP2MV', 'RHSMV', 'RHDMV', 'BOSV', 'BOMV', 'HPBSV', 'HPBMV'],
       H = ['t_min'].concat(REC_K, X);
     /* Mina, load run of 3.2.2: t_min 42 came twice. A row is taken once per whole minute (Math.floor), so the column counts the same
        way: Math.round put 41.5 min and 42.0 min both at 42 */
