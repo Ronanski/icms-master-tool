@@ -2854,7 +2854,9 @@
         /* Mina F62: "1 / 1 OK" counted the values to watch and said nothing of the condition that ends the step */
         C: rd ? 'done' : s.c && !call(() => s.c.ok(), false) ? 'not done' : li('C') || (W.length ? wOk + ' / ' + W.length + ' OK' : '')
       };
-    const cur = els.stg.find(o => !ok[o.k]) || els.stg[els.stg.length - 1];
+    /* Mina beta.23 B23-1: a done step with faceplates opened its Check stage and hid the controls (the text still asks to lower the
+       feedwater before NEXT): a done step keeps the stage with its faceplates open */
+    const cur = els.stg.find(o => !ok[o.k]) || (rd && (s.fps || []).length && els.stg.find(o => o.k === 'S')) || els.stg[els.stg.length - 1];
     els.stCur = cur.k;
     const op = stOpenK(s);
     els.stg.forEach((o, j) => {
