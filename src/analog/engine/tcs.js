@@ -642,8 +642,8 @@ function tcsStep(U, dt) {
   }
   c.tm += dt;
   switch (c.cur) {
-    case 0 /* HP TURBINE WARMING (page 13): metal <= 150 C -> warming with steam through CV (B), until above 150 C (TE-1 / TE-2 of the
-        TCS drawing are not in the repository: ASSUMED end at 150 C) */:
+    case 0 /* HP TURBINE WARMING (page 13): metal <= 150 C -> warming with steam through CV (B), until above 150 C (IBD 310SC90-794
+        TE-1 page 90: TE-STn001-1 HP TURBINE FIRST STAGE comparator ON >= 150 C, OFF <= 145 C = HP TURBINE WARMING COMPLETE) */:
       if (c.Thp > 150) tcsDone(U, 0);
       else c.ph = 'warm';
       break;
