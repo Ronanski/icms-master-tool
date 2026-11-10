@@ -378,6 +378,12 @@ AN_CYC.kgmm = {
   da: () => 3.3 * 13.14 * 0.909,
   dr: () => 2 * 0.8242 * 12.481 * (anWaterRho(typeof AN_UNIT !== 'undefined' && isFinite(AN_UNIT.Tw) ? AN_UNIT.Tw : 30) / 1000)
 };
+/* 3.2.3: the water volume outside the drum that heats with it (thermal expansion above): Boiler Hydrostatic Test Procedure K1AU3-R3-0-101
+   R0 p.6: boiler without the reheater (economizer, drum, waterwall, superheater to the hydro boundary) about 252 m3 (290 m3 with a
+   15 % margin; reheater 60 m3, total 312 m3, p.5). Less the drum (K1AU3D-101: R 824.2 mm, shell 12.481 m, hemispherical heads,
+   about 29 m3) and the superheater, which is dry in service: the procedure gives no split, ASSUMED 60 m3 like the reheater (the
+   superheater carries 460 T/H, the reheater 400 T/H) -> 252 - 29 - 60 = 163 m3; AN_THERM.on: the term is used */
+const AN_THERM = { vEvap: 163, on: false }; /* not in AN_CYC: a loaded state replaces AN_CYC's fields */
 AN_CYC.vacLoss = (U, T) => (6 * Math.max(-1, T - 38.65) * 0.7 * U.ms) / 3600;
 AN_CYC.y = {};
 AN_CYC.levels = () => ({ ...AN_CYC.y });
@@ -816,6 +822,18 @@ function anProcStep(S, dt) {
       /* a feedwater heater with its tubes and its bypass shut stops the feedwater (unit.js anHtrPath) */
       if (typeof AN_UNIT !== 'undefined' && AN_UNIT.on && isFinite(AN_UNIT.fwPath)) ffw *= AN_UNIT.fwPath;
       q.y = Math.max(lo, Math.min(lo + span, q.y + dt * AN_CYC.rate('dr') * (ffw - fst - (pr.integLoss || 0) - lhdQ)));
+      /* 3.2.3 THERMAL EXPANSION of the boiler water (PR-OPE-5002 5697: "Observe steam drum level: swelling approximately > 100 C; use
+         lowering header drain ... above 10 kg/cm2 the MBD and CBD"). The economizer, waterwall and downcomers stay full of water: when it
+         heats its density falls (anWaterRho, steam table) and the water it no longer holds goes into the drum, kg = AN_THERM.vEvap x the
+         density drop; cooling takes it back (shrink after a trip). The drum water itself is the level (kgmm.dr). OFF until the Training
+         has the drain steps (AN_THERM.on, also AN.therm for a test, coordinator 2026-11-10): the density is tracked always, so switching it on does not jump */
+      if (typeof AN_UNIT !== 'undefined' && isFinite(AN_UNIT.Tw)) {
+        const r = anWaterRho(AN_UNIT.Tw);
+        if (!AN.therm) AN.therm = AN_THERM;
+        if (AN_THERM.on && isFinite(q.rhoE) && !AN.steady)
+          q.y = Math.max(lo, Math.min(lo + span, q.y + (AN_THERM.vEvap * (q.rhoE - r)) / AN_CYC.kgmm.dr()));
+        q.rhoE = r;
+      }
       AN_CYC.y.dr = q.y;
       AN_CYC.dl = fst + (pr.integLoss || 0) + lhdQ; /* water and steam that leave the drum */
       AN_CYC.ffw = ffw; /* the deaerator gives this water (condensate cycle balance) */
