@@ -61,6 +61,10 @@
 .fpo-box .fpo-il li em{flex:none;font:12px var(--mf,monospace);font-style:normal;color:#7f8b97}
 .fpo-box .fpo-il li.ok{color:#c3ced8}
 .fpo-box .fpo-il li.bad{color:#ffd08a}
+.fpo-box .fpo-il li:has(.fpo-fix){flex-wrap:wrap;row-gap:4px}
+.fpo-box .fpo-il li:has(.fpo-fix) span{flex:1 1 60%}
+.fpo-box .fpo-il li .fpo-fix{order:3;flex:none;margin-left:20px;padding:2px 8px;border:1px solid #d9a441;border-radius:4px;background:#3a2f1a;color:#ffd08a;font-weight:600;font-size:12px;cursor:pointer}
+.fpo-box .fpo-il li .fpo-fix:hover{background:#4a3b1f}
 .fpo-box .fpo-ln{display:flex;gap:4px 12px;flex-wrap:wrap;border-top:1px solid #2b3742;padding-top:6px}
 .fpo-box .fpo-a{background:none!important;border:0!important;padding:2px 0!important;min-height:0!important;color:#7fb3e0!important;font-weight:500!important;text-decoration:underline;text-underline-offset:2px}
 @media (prefers-reduced-motion:reduce){.fpo-box .fpo-lamp.trip,.fpo-box .fpo-lp.trip i{animation:none}}

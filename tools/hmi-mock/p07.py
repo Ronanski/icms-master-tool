@@ -79,6 +79,8 @@ for i, x, y, w in (('BD2', 142, 680, 130), ('BD1', 142, 780, 130), ('BR', 941, 2
                    ('TS1', 864, 866, 130), ('THR2', 552, 748, 260), ('PHR391', 986, 320, 130), ('D80', 900, 424, 130), ('PHR3', 1108, 452, 130),
                    ('THR12', 1108, 508, 130)):
     p.mach(i, hits=[(x, y, w, 16)])
+# tracker e1: the lower ring header drains label (field valves, a FIELD pop-out)
+p.mach('LHD', hits=[(95, 458, 260, 16)])
 bad = p.check()
 assert not bad, bad
 p.write('p07-head.js', 'hmi-mock-ms.js')

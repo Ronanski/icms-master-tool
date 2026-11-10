@@ -260,6 +260,12 @@
     call(() => window.lsSetTab && window.lsSetTab('logic'));
     call(() => dk.openD(nm, null));
   };
+  /* the service text of a field input row without its address (dock.js svcN): one key per signal */
+  const fsvc = x =>
+    String(x || '')
+      .replace(/^\(FROM STATION WIRING\)\s*/, '')
+      .replace(/^[\w./]*\d\S*\s+/, '')
+      .trim();
   /* ---------- the motor faceplate ---------- */
   function motor(M) {
     const dk = D();
@@ -649,17 +655,55 @@
       for (const r of I ? I.rows : []) {
         const t = String(r.svc).replace(/^[\w./]*\d\S*\s+/, '') + (r.cmp ? ' (' + r.cmp + ')' : ''),
           o = rows.find(x => x.t === t && x.other === r.other && x.ok === r.ok);
-        if (o) o.no += ' · ' + r.no;
-        else rows.push({ ...r, t, no: String(r.no) });
+        if (o) (o.no += ' · ' + r.no), o.src.push(r);
+        else rows.push({ ...r, t, no: String(r.no), src: [r] });
       }
       const kk = JSON.stringify(rows.map(r => [r.no, r.ok, r.other]));
       if (kk !== k0) {
         k0 = kk;
+        /* tracker e1 (user 2026-11-10: a cold start without Training): the FIELD contact behind a missing row (the LOCAL / REMOTE selector,
+           a NOT TRIP contact, a limit switch ...) gets the same FIELD button as the Training dock interlock row (dock.js: LS_DOCK.fieldOf
+           finds the field input rows the row needs, LS_DOCK.fieldSet sets them, every row of the same address). A CRT selection (AUTO MODE
+           SELECTED) and a process value of the plant model get no button: no FORCE */
+        const fo = rows.some(r => !r.ok) ? call(() => dk.fieldOf(M.ad), null) : null,
+          used = new Set();
+        const fixOf = r => {
+          if (r.ok || !fo) return null;
+          const out = [];
+          for (const x of r.src) {
+            const o = fo.by[((x.s || s) && (x.s || s).name) + ':' + x.row];
+            for (const f of (o && o.field) || []) {
+              const k = f.s.name + '|' + fsvc(f.svc);
+              if (f.av || used.has(k) || /AUTO MODE SELECTED|\bCRT\b/.test(f.svc)) continue;
+              used.add(k);
+              const L = fo.field.filter(g => !g.av && g.s.name + '|' + fsvc(g.svc) === k),
+                n0 = fsvc(f.svc),
+                lb = f.want ? (/\bREMOTE\b/.test(n0) ? 'to REMOTE' : 'set') : 'reset';
+              const b = E('button', 'fpo-fix', 'FIELD: ' + lb);
+              b.type = 'button';
+              b.title = 'Field operator: ' + call(() => dk.dName(f.s), '') + ' row ' + (L.length ? L : [f]).map(g => g.row + 1).join(', ') + ' (' + n0 + ') = ' + (f.want ? 1 : 0);
+              b.onclick = e => {
+                e.stopPropagation();
+                ask(
+                  'FIELD: ' + n0 + ' = ' + (f.want ? 1 : 0) + '?',
+                  () => {
+                    call(() => dk.fieldSet(L.length ? L : [f]));
+                    call(() => window.lsEventAdd(call(() => dk.dName(f.s), nm), 'FIELD', 'Field operator: ' + n0 + ' = ' + (f.want ? 1 : 0) + ' (faceplate)'));
+                    k0 = '';
+                  },
+                  1
+                );
+              };
+              out.push(b);
+            }
+          }
+          return out.length ? out : null;
+        };
         ilL.replaceChildren(
           ...(rows.length
             ? rows.slice(0, 12).map(r => {
                 const li = E('li', r.ok ? 'ok' : 'bad');
-                li.append(E('i', '', String(r.ok ? +r.want : 1 - r.want)), E('span', '', r.t), E('em', '', (r.other ? r.other + ' ' : '') + 'row ' + r.no));
+                li.append(E('i', '', String(r.ok ? +r.want : 1 - r.want)), E('span', '', r.t), ...(fixOf(r) || []), E('em', '', (r.other ? r.other + ' ' : '') + 'row ' + r.no));
                 li.title = (r.ok ? 'OK: ' : 'Missing: ') + r.svc + ' · ' + (r.other || nm) + ' row ' + r.no + (r.want ? ' (must be 1)' : ' (must be 0)');
                 return li;
               })
@@ -992,6 +1036,90 @@
           return li;
         }));
       }
+    }
+    paint = tick;
+    tick();
+    place(me);
+    me._iv = setInterval(tick, 500);
+    return true;
+  }
+  /* tracker e1 (user 2026-11-10: a cold start without Training): a field item that only the Training dock could set had no control on
+     the HMI. A small FIELD pop-out: its state (two lamps) and the field operator's actions, each asked first (EXECUTE / CANCEL) and logged
+     in Events as "Field operator", the same calls as the Training dock. P = { n, t, d, io, why, use, lamps: [on, off], st: () => true |
+     false | null, val: () => text, acts: [[label, fn, cur: () => bool, question, 'stop' = green when current]] } */
+  function fset(P) {
+    if (!P || !P.acts || !P.acts.length) return false;
+    const F = frame(P.n, (P.t || '') + ' · ' + (P.d || 'field'));
+    const me = box;
+    F.hd.querySelector('.fpo-tt').append(E('span', 'fpo-chip', 'FIELD'));
+    const L = P.lamps || ['ON', 'OFF'],
+      lO = lampEl(L[0]),
+      lC = lampEl(L[1]);
+    F.bd.append(row('STATUS', lO, lC));
+    const why = E('div', 'fpo-why', P.why || '');
+    if (P.why) F.bd.append(why);
+    const B = P.acts.map(a => {
+      const b = E('button', 'fpo-cmd', a[0]);
+      b.type = 'button';
+      return [a, b];
+    });
+    for (let i = 0; i < B.length; i += 2) F.bd.append(row(i ? '' : 'FIELD', ...B.slice(i, i + 2).map(x => x[1])));
+    const ex = E('div', 'fpo-ex'),
+      exT = E('span'),
+      exGo = E('button', 'fpo-go', 'EXECUTE'),
+      exNo = E('button', '', 'CANCEL');
+    exGo.type = exNo.type = 'button';
+    ex.classList.add('fld');
+    ex.append(exT, exGo, exNo);
+    ex.hidden = true;
+    F.bd.append(ex);
+    let pend = null;
+    exNo.onclick = () => ((pend = null), (ex.hidden = true));
+    exGo.onclick = () => {
+      const f = pend;
+      pend = null;
+      ex.hidden = true;
+      if (f) f();
+      setTimeout(tick, 150);
+    };
+    for (const [a, b] of B)
+      b.onclick = () => {
+        if (b.disabled) return;
+        pend = () => (a[1](), call(() => window.lsEventAdd(P.d || 'FIELD', 'FIELD', 'Field operator: ' + P.n + ' ' + a[0] + ' (faceplate)')));
+        exT.textContent = a[3] || 'FIELD: ' + P.n + ' ' + a[0] + '?';
+        ex.hidden = false;
+        exGo.focus();
+      };
+    const msg = E('div', 'fpo-why');
+    F.bd.append(msg);
+    if (P.use) F.bd.append(E('div', 'fpo-dim', P.use));
+    const ln = E('div', 'fpo-ln');
+    if (P.io) {
+      const a = E('button', 'fpo-a', 'Info');
+      a.type = 'button';
+      a.onclick = () => call(() => window.lsInfo(P.io));
+      ln.append(a);
+    }
+    const ev = E('button', 'fpo-a', 'Events');
+    ev.type = 'button';
+    ev.onclick = () => call(() => document.getElementById('evbtn').click());
+    ln.append(ev);
+    F.bd.append(ln);
+    function tick() {
+      if (!me.isConnected) return closeEl(me);
+      const st = call(P.st, null),
+        run = isRun();
+      F.lamp.className = 'fpo-lamp ' + (st === true ? 'run' : st === false ? 'stop' : '');
+      F.val.textContent = call(P.val, null) || (st === true ? L[0] : st === false ? L[1] : '-----');
+      lO.className = 'fpo-lp' + (st === true ? ' run' : '');
+      lC.className = 'fpo-lp' + (st === false ? ' stop' : '');
+      for (const [a, b] of B) {
+        const cur = !!call(a[2], false);
+        b.disabled = !run || cur;
+        b.classList.toggle(a[4] === 'stop' ? 'lit-stop' : 'lit-run', cur);
+      }
+      msg.textContent = run ? '' : 'Simulation PAUSED: press ▶ RUN first (nothing moves while paused).';
+      msg.hidden = !msg.textContent;
     }
     paint = tick;
     tick();
@@ -1570,7 +1698,7 @@
     me._iv = setInterval(tick, 500);
     return true;
   }
-  window.LS_FPOP = { motor, valve, valveTag, valveKind, valveOpen, tcs, mov, fieldPct, pb, field, yn, hit, openAd, place, close, info, get open() {
+  window.LS_FPOP = { motor, valve, valveTag, valveKind, valveOpen, tcs, mov, fieldPct, pb, field, fset, yn, hit, openAd, place, close, info, get open() {
     return anyOpen();
   } };
 })();

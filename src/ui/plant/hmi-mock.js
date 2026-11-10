@@ -649,6 +649,8 @@
           if (LS_FPOP.pb({ n: m.n, t: m.t, d: m.d, io: m.io, st: { row: m.df.st, on: m.df.on || 'IN OPERATION', off: m.df.off || 'STOPPED' }, pbs: m.df.pbs, perm, permWhy: m.df.why, vals: m.df.dp ? [[m.df.dp, () => cur(m.df.dp), 'mmH2O']] : [] }))
             return;
         }
+        /* tracker e1: a field item that only the Training dock could set: the lower ring header drains */
+        if (m.fset && window.LS_FPOP && LS_FPOP.fset && LS_FPOP.fset(m.fset())) return;
         if (m.fieldOp && window.LS_FPOP && LS_FPOP.field)
           return void LS_FPOP.field({ n: m.n, t: m.t, d: m.d, io: m.io, why: (m.why || '') + (m.fld ? '' : ' This pump has no plant model.'), st: () => (m.fld ? mst(m) : null), fld: m.fld ? on => AN.field(m.fld, on) : null });
         if (m.mov && window.LS_FPOP && LS_FPOP.mov)
