@@ -288,8 +288,8 @@ window.LS_GUIDE = (function () {
   };
   const bOff = L => btn('BURNER ' + L + ' OFF (DITL-09)', () => dPress(BR[L][1], 10), () => dOut(BR[L][0], 19) === 0);
   /* e5 section 13 restart (boiler model thread, Jennie OK 2026-11-11): the firing restart swells the drum (automatic run: 250 -> 820 mm, HH,
-     second MFT, feedwater left near 400 T/H); the feedwater -5 % shows when the drum is above +100 mm */
-  const fwDn = () => Object.assign(btn('Feedwater FICFW1007 MANUAL, MV −5 % (drum above +100 mm)', () => { const m = mv('FICFW1007'); A.man('FICFW1007', isFinite(m) ? Math.max(0, m - 5) : 0); }), { hide: () => !(h().lvl() > 100) });
+     second MFT, feedwater left near 400 T/H); the feedwater button shows when the drum is above 0 mm (Jennie: -10 % above +100, -5 % at 0 ~ +100, MV 10 % with no steam) */
+  const fwDn = () => Object.assign(btn('Feedwater FICFW1007 MANUAL: MV −10 % (drum over +100 mm), −5 % (0 ~ +100 mm), 10 % when there is no steam yet', () => { const m = mv('FICFW1007'), l = h().lvl(); if (!isFinite(m)) return A.man('FICFW1007', 0); /* Jennie 2026-11-11: no steam (MSF < 20 T/H) = the feedwater of the start-up valve only (PR-OPE-5002 hot restart), so MV 10 % at once */ A.man('FICFW1007', h().MSF() < 20 && m > 10 ? 10 : Math.max(0, m - (l > 100 ? 10 : 5))); }), { hide: () => !(h().lvl() > 0) });
   /* 3.2.0-beta.23 coal feeder outlet discharge valve (DITL-20 row 6 OPEN P.B. -> SV-CL1061-A, out 6 OPENED): a start permissive of the
      feeder (DITL-19 row 14); feeder B / C = machine instances #B / #C. Without the one world: nothing to do (the ABC has no such signal) */
   const fDis = L => {
