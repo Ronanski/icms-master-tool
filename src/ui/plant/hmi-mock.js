@@ -260,6 +260,17 @@
           call(() => window.lsEventAdd && lsEventAdd('TCS', 'TCS', 'Operator: ' + nm + ' (page 13)'));
           const r = call(() => AN.turbine(cmd), '');
           if (typeof r === 'string' && r) call(() => window.lsEventAdd && lsEventAdd('TCS', 'TCS', nm + ': ' + r));
+          /* Mina T3, 3.2.3-beta.1: a reset that the logic refuses said nothing. 2.5 s after the press (the push button is held 1.5 s),
+             a trip still standing gets a line with what holds it (the TA-9 trip inputs at 1, tcs-trip.js tcsTripState held) */
+          if (cmd === 'tripreset')
+            setTimeout(() => {
+              const s = call(() => AN.tcsTrip(), null);
+              if (!s || !s.first) return;
+              const h = (s.held || []).filter(Boolean);
+              const t = 'TURBINE RESET refused: the trip is still held by ' + (h.length ? h.join(', ') : 'a trip input of the TCS (IBD TA-9)');
+              call(() => window.lsEventAdd && lsEventAdd('TCS', 'TCS', t));
+              call(() => typeof msg === 'function' && msg(t));
+            }, 2500);
         });
       });
       qa('[data-go]').forEach(e => {

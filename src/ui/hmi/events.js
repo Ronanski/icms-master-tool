@@ -560,7 +560,28 @@
       if (mount()) clearInterval(iv);
     } catch (e) {}
   }, 500);
+  /* Mina T2, 3.2.3-beta.1: a new starting state (150 MW, Cold, a save point) or a Reset that takes the plant time back starts a new log;
+     the trips of the run before no longer mix with the new run (the same test as the trend recorder, live.js) */
+  let ldN = -1,
+    ldT = -1;
+  const newRun = () => {
+    const n = (window.AN && AN.loadN) || 0,
+      t = window.AN && AN.plantT ? +AN.plantT() : NaN;
+    const back = isFinite(t) && ldT >= 0 && t + 1 < ldT;
+    if (ldN >= 0 && (n !== ldN || back)) {
+      LOG.length = 0;
+      unseen = 0;
+      prev = {};
+      sheetK = '';
+      draw();
+    }
+    ldN = n;
+    if (isFinite(t)) ldT = t;
+  };
   setInterval(() => {
+    try {
+      newRun();
+    } catch (e) {}
     try {
       tick();
     } catch (e) {}
