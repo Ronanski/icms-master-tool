@@ -72,7 +72,9 @@
   L.push(['I.0163', uOf('baConv'), 0.5, 'hi', 0, undefined, /CHAIN CONVEYOR/, /DITL-21A/]);
   /* the emergency stop LIS3-L1060x sits in the inverter panel box, it has no row: its answer is the row I.0256 / 536 / 646 / 686 (DITL-21A out 62,
      row 18 NOT EMERGENCY STOP). A released N.C. stop gives 1. The tag LIS3 matched no row, so the row stood 0 and tripped the cooler */
-  for (const a of ['I.0256', 'I.0536', 'I.0646', 'I.0686']) L.push([a, () => 1, 0.5, 'hi', 0, undefined, /EMERGENCY STOP/, /DITL-21A/]);
+  /* 3.2.3-beta.61 (Sakura, ash_fp.js): the switch held the row at 1 on every scan, so the EMERGENCY STOP of the faceplate (the field operator,
+     LS_DOCK.fieldRow row 18 = 0) did nothing. The contact follows the field: pressed (the row set to 0 by the field) = 0, RELEASE = 1 again; dead band 0 (a contact, the 10 of the level switches kept it made) */
+  for (const a of ['I.0256', 'I.0536', 'I.0646', 'I.0686']) L.push([a, m => (m.s.sig && m.s.sig[m.row + ':S'] === false ? 0 : 1), 0.5, 'hi', 0, 0, /EMERGENCY STOP/, /DITL-21A/]);
   /* Mina M3 (beta.88 / beta.89: PR-OPE-5002 19.5 "Initiate START of LOP of BFP A/B"). Each BFWP has two auxiliary lube oil pumps, DCS
      motors of DITL-22 (IO list STN103: machine A = LOP A of BFWP-A O.0126 / I.0050, B = LOP B of BFWP-A O.0446 / I.0370, C = LOP A of
      BFWP-B O.0127 / I.0053, D = LOP B of BFWP-B O.0447 / I.0373; world.js isLop4). The lube oil HEADER pressure is held by the pressure control valve at 2.0 kg/cm2(g) while an oil pump runs (KSB
