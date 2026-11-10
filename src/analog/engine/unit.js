@@ -568,7 +568,7 @@ function anUnitStart() {
      start-up control valve is not in the repository; the snapshots show it at 0.1 % M at 150 MW) */
   U.suv = ctlOut('ABC-010', 'LICBR1001B');
   U.fwp = procOf('ABC-010', 'FICFW1007');
-  U.ksu = 0.3;
+  U.ksu = 0.3; /* 3.2.3: no longer used for the flow (anSuFw, the valve sheet); kept for the probes that read it */
   /* furnace pressure: the two IDF actuators in series (hydraulic coupling PICFG108, inlet damper PICFG108A) take the flue gas out */
   U.fp = procsOf('ABC-008', ['PICFG108', 'PICFG108A']);
   U.idf = labOf('ABC-008', 'M.3304');
@@ -2560,6 +2560,30 @@ const AN_AIR = {
      XV-FW1111-1 / XV-FW1121-1 have an airlock (SMC VSA 3-way): they stay in place (3.5, NO-SOURCE set point).
    Not in the package (no sheet: they keep following their command): PCV-MS1020 / PCV-HR1010 bypass, TCV-FW1060 / FW1150,
    PCV-AS1010, TCV-CD1115 / 1124 / 1126, XV-FW1151, XV-HR1010-1, XV-CR1013, the air dampers. */
+/* 3.2.3 (boiler model thread, drum level swings on the start-up level control): the start-up feedwater valve FCV-FW1130-2 (ABC-010
+   LICBR1001B) from its valve sheet, K1AU3-E2-0-123 p147 (plant-study 12-assumptions #10): Cv max 15.58 at 100 % travel, 120,000 kg/h at
+   76 % travel (Cv 11.7) with P1 214.5 and P2 64.6 kg/cm2 (dP 149.9), 6,000 kg/h at 10 % travel (Cv 0.585 at the same dP). Between the
+   points of the sheet the Cv is interpolated on a log scale (an equal percentage trim; the sheet gives no curve), below 10 % straight
+   to 0. The flow of a liquid goes with the square root of the dP: W = 120 T/H x Cv(x) / 11.7 x sqrt((214.5 - drum pressure) / 149.9),
+   P1 = the inlet pressure of the sheet. Before: 30 % of the anchor feedwater at 100 %, linear, no dP (150 T/H full, 15 T/H at 10 %,
+   75 T/H at 50 % against the sheet 6 and about 36 T/H) */
+const AN_SUFW = { pts: [[10, 0.585], [76, 11.7], [100, 15.58]], cv76: 11.7, w76: 120, p1: 214.5, dp76: 149.9 };
+function anSuFwCv(x) {
+  const P = AN_SUFW.pts;
+  if (!(x > 0)) return 0;
+  if (x <= P[0][0]) return (P[0][1] * x) / P[0][0];
+  for (let i = 1; i < P.length; i++)
+    if (x <= P[i][0]) {
+      const [x0, c0] = P[i - 1],
+        [x1, c1] = P[i];
+      return c0 * Math.pow(c1 / c0, (x - x0) / (x1 - x0));
+    }
+  return P[P.length - 1][1];
+}
+function anSuFw(x, pd) {
+  const dp = Math.max(0, AN_SUFW.p1 - Math.max(0, +pd || 0));
+  return ((AN_SUFW.w76 * anSuFwCv(x)) / AN_SUFW.cv76) * Math.sqrt(dp / AN_SUFW.dp76);
+}
 const AN_AV = {
   lock: 3.5,
   reg: 3.5,
@@ -3357,9 +3381,8 @@ function anUnitStep0(dt) {
   if (U.paNet >= 0 && U.pa.length) anUnitWrite(U.pa, Math.max(0, +U.tafS.rt.v[U.paNet]) * AN_PA_FURN);
   /* ---- 2.2.0-beta.15 (M4 step 2): the start-up feedwater valve adds to the feedwater flow ---- */
   if (U.suv && U.fwp && U.fwp.pr) {
-    const o = Math.max(0, Math.min(100, anAv('LICBR1001B', +U.suv.S.rt.v[U.suv.n] || 0))),
-      fw0 = U.fwp.pr.hop && U.fwp.pr.hop.pv > 0 ? U.fwp.pr.hop.pv : 500;
-    U.fwp.pr.op = (U.ksu * fw0 * o) / 100;
+    const o = Math.max(0, Math.min(100, anAv('LICBR1001B', +U.suv.S.rt.v[U.suv.n] || 0)));
+    U.fwp.pr.op = anSuFw(o, U.Pd);
   }
   /* ---- 2.2.0-beta.12 (M3): machines stopped, furnace pressure ---- */
   for (const m of U.mul || []) {
