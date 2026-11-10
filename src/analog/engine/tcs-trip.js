@@ -383,6 +383,14 @@ function tcsIbdStep(U, c, dt) {
   tcsI0400(U, ib);
   ib.rst0 = !!c.rst;
   ib.pb.trip = Math.max(0, (ib.pb.trip || 0) - dt);
+  /* Mina T3 / N2, 3.2.3-beta.4: the refused reset was written by the page from its own copy of the sheets (Worker ON: no TA-9 values, held = []).
+     The engine writes it now, at the end of the 1.5 s push button, from its own values: the TA-9 trip inputs at 1, else the MFT of DITL-03A
+     (TA-9 BOILER MFT 1 / 2 into the TURBINE TRIP COMMAND of TA-1) */
+  if (ib.pb.rst > 0 && ib.pb.rst - dt <= 0 && c.trip && window.lsEventAdd && !(window.ENG && ENG.mode === 'mirror')) {
+    const h = (tcsTripState(U).held || []).filter(Boolean);
+    if (!h.length && tcsMft()) h.push('BOILER MFT (DITL-03A MFT active: reset the MFT first)');
+    lsEventAdd('TCS TA-1', 'TCS', 'TURBINE RESET refused: the trip is still held by ' + (h.length ? h.join(', ') : 'the TURBINE TRIP COMMAND of IBD TA-9'));
+  }
   ib.pb.rst = Math.max(0, (ib.pb.rst || 0) - dt);
   ib.pb.sd = Math.max(0, (ib.pb.sd || 0) - dt);
   ib.pb.auto = Math.max(0, (ib.pb.auto || 0) - dt);
@@ -391,6 +399,10 @@ function tcsIbdStep(U, c, dt) {
 const tcsTripLog = n => {
   if (window.lsEventAdd && !(window.ENG && ENG.mode === 'mirror'))
     lsEventAdd('TCS TA-9', 'TRIP', 'TURBINE TRIP, first out: ' + n);
+};
+/* Mina N1, 3.2.3-beta.4: a good Turbine reset had no line of its own. The reset of TA-1 is logged by the engine as a TCS event */
+const tcsResetLog = () => {
+  if (window.lsEventAdd && !(window.ENG && ENG.mode === 'mirror')) lsEventAdd('TCS TA-1', 'TCS', 'TURBINE RESET: trip cleared');
 };
 /* the name of a row of TA-9 without its off-page number */
 const tcsIbdName = n =>
@@ -421,6 +433,7 @@ function tcsTripScan(U, dt) {
     ib.first = '';
   }
   ib.t0 += dt;
+  ib.rsd = false;
   if (!tcsMft()) ib.mft0 = true;
   const a = !!(ib.v['TA-1'] && ib.v['TA-1'][TA1_RESET] > 0.5);
   /* a push button held now (Turbine trip, ATS shut-down): plant plan 4B, the Instructor trip at t = 0 after a 150 MW load fell inside the 2 s below */
@@ -432,6 +445,7 @@ function tcsTripScan(U, dt) {
     if (c.trip) {
       c.trip = '';
       ib.first = '';
+      tcsResetLog();
       const l = U.vtrip;
       if (l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n)) l.S.rt.ext[l.n] = 0;
     }
@@ -458,11 +472,18 @@ function tcsTripHold(U, dt) {
   if (ib.v['TA-1'][TA1_RESET] > 0.5 && c.trip) {
     c.trip = '';
     ib.first = '';
+    /* Mina N1, 3.2.3-beta.4: after a good reset the DCS trip input I.0400 still stood for some scans (the stop valves are still shut,
+       TA-6), so the next scan named it a new trip 'TURBINE TRIP (DCS I.0400)'. What is left of the trip just reset is no new trip:
+       ib.rsd holds until I.0400 falls (tcsTripScan); a new TA-9 trip input or the trip push button still trips */
+    ib.rsd = true;
+    tcsResetLog();
     const l = U.vtrip;
     if (l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n)) l.S.rt.ext[l.n] = 0;
     return;
   }
   if (ib.first) return;
+  if (ib.rsd && !(ib.pm === 'MANUAL TRIP' || ib.pb.trip > 0) && !(tcsTripState(U).held || []).length) return;
+  ib.rsd = false;
   /* Mina T1, 3.2.3-beta.1: a Turbine trip pressed in the first 2 s after a state load set I.0400 before the scan named it, so the log said
      TURBINE TRIP (DCS I.0400) while page 13 said MANUAL TRIP. The push button kept (ib.pm) or still held names the trip */
   const pm = ib.pm === 'MANUAL TRIP' || ib.pb.trip > 0;
