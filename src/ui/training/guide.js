@@ -157,6 +157,13 @@ window.LS_GUIDE = (function () {
       () => md('PICMS1002') === 'AUTO' && ((+svOf('PICMS1002') || 0) >= 35 || simT() - bovT < 120)
     );
   const svStep = (l, t, d, lo, hi) => Object.assign(btn(l, () => (md(t) === 'AUTO' ? A.auto(t, Math.max(lo, Math.min(hi, Math.round((+svOf(t) || 0) + d)))) : 'Mode ' + md(t) + ' on ' + t + ': put it in A first')), { tag: t });
+  /* 3.2.3 automatic run (beta.52, steps 74 ~ 76): the SV +1 and oil buttons had no done state: the runner pressed them every look, the HP
+     bypass SV went to 123 (no steam out, drum +259 mm HH, MFT) and the oil went up with no pause. Now the HP bypass SV goes +1 at most
+     once a minute up to 61 (PR-OPE-5002 roll pressure 61.2; the pace is the step text: SV +1 per minute) and the oil ▲ / ▼ show only
+     outside the 40 ~ 55 T/H band, one press each 2 minutes (ASSUMED pace) */
+  const paceT = {};
+  const svRamp = (t, hi, sec) => Object.assign(btn(t + ' SV +1 (one each minute, up to ' + hi + ')', () => { if (md(t) !== 'AUTO') return 'Put ' + t + ' in A first'; paceT[t] = simT(); const v = Math.min(hi, Math.round(+svOf(t) || 0) + 1); if (t === 'PICMS1006' && md('PICMS1002') === 'AUTO' && (+svOf('PICMS1002') || 0) < v + 2) A.auto('PICMS1002', v + 2); return A.auto(t, v); }, () => md(t) === 'AUTO' && ((+svOf(t) || 0) >= hi || simT() - (paceT[t] || -1e9) < sec)), { tag: t });
+  const oilBand = (up, lo, hi) => { const k = up ? 'oilU' : 'oilD', due = () => (up ? h().MSF() < lo : h().MSF() > hi), b0 = oilStep(up ? 'Oil A / D ▲ +5 % (steam flow under ' + lo + ' T/H)' : 'Oil A / D ▼ −5 % (steam flow over ' + hi + ' T/H)', ['A', 'D'], up ? 5 : -5), f0 = b0.f; b0.f = () => ((paceT[k] = simT()), f0()); return Object.assign(b0, { on: () => !due() || simT() - (paceT[k] || -1e9) < 120, hide: () => !due() }); };
   /* ---------- reading ---------- */
   const mv = t => {
     const f = L().fp(t);
@@ -518,7 +525,7 @@ window.LS_GUIDE = (function () {
     /* automatic run 2026-11-11 (thermal swell ON): at x300 the level went -92 -> +378 mm between two looks at the screen while burner D waited, the drain came too late, MFT. A warm-up step asks for x10 while the level is above 0 or a drain is due */
     const drnSlow = () => (dLv() > 0 && dPd() < 35) || DRN.some(x => !x.hide());
     /* automatic run 2026-11-11: MV-BD1001 is the first valve of DITL-38 (no machine instance) and stood LOCAL: MCV REMOTE MODE SELECTED was 0 and OPEN did nothing. The field operator puts it in REMOTE first, as the other DITL-38 MOVs */
-    { const c = DRN[2], g = c.f; c.f = () => { try { const m = window.LS_DOCK && LS_DOCK.modeOf && LS_DOCK.modeOf(c.ad); if (window.LS_DOCK && (!m || m.rem === false)) LS_DOCK.dremote(c.ad, 'MV-BD1001'); } catch (e) {} return g(); }; }
+    { const c = DRN[2], g = c.f; c.f = () => { try { const m = window.LS_DOCK && LS_DOCK.modeOf && LS_DOCK.modeOf('DITL-38'); if (m && m.rem === false) LS_DOCK.dremote('DITL-38', 'MV-BD1001'); } catch (e) {} return g(); }; }
     const fldB = (k, l) =>
       Object.assign(
         btn('FIELD: START ' + l, () => {
@@ -1033,11 +1040,15 @@ window.LS_GUIDE = (function () {
         d: 'The HP bypass (PICMS1006) holds the main steam pressure, the LP bypass (PICHR1003) the reheat pressure at 7.6 kg/cm². HP bypass SV = the pressure now.',
         c: b.ALL(b.MODE('PICMS1006', 'AUTO'), b.MODE('PICHR1003', 'AUTO')),
         fps: ['PICMS1006', 'PICHR1003', 'PICHR1391'],
-        a: [btn('Set all', () => {
+        slow: drnSlow,
+        a: [...DRN, btn('Set all', () => {
           /* 3.2.0-beta.38: the SV at the pressure of now (the step text), not 61 under it: at 85 kg/cm2 the bypass opened full and the
              drum level went to -300 mm (MFT, Cold run) */
-          const p = Math.max(50, Math.ceil(h().MSP()));
-          A.auto('PICMS1002', p > 50 ? p + 5 : 50);
+          const p = Math.ceil(h().MSP()); /* beta.52 run: max(50, MSP) left the boiler closed from 35 to 50, then the bypass opened 0 -> 100 T/H at once (drum LL): the SV is the pressure of now, as the step says */
+          /* 3.2.3 automatic run (beta.51): SV 50 held the main steam at 50 kg/cm2 through the MS blow-off while the HP bypass went up
+             to 61: the ready-to-roll step waited 20 h and the drum level fell to MFT. The blow-off stays 2 above the HP bypass SV and follows its ramp (svRamp), so the steam passes to the bypass as it opens, with no
+             closed boiler (beta.52 run: SV 66 at once shut 47 T/H, the bypass opened only 5 %, drum +259 mm HH) */
+          A.auto('PICMS1002', p + 2);
           A.auto('PICMS1006', p);
           A.auto('PICHR1003', 7.6);
           A.man('PICHR1391', 20);
@@ -1049,8 +1060,8 @@ window.LS_GUIDE = (function () {
         })],
         field: [29]
       },
-      { st: 6, sec: 30, t: 'Bypass servicing: MSP ≥ 48 kg/cm² and steam flow ≥ 40 T/H', d: 'Do: raise the oil firing until steam flow is 40 ~ 55 T/H, trim the air, then raise the HP bypass SV up to 61. (1) Oil firing up (oil ▲) until steam flow is 40 ~ 55 T/H, (2) air: O₂ 3.5 ~ 8 % with the SA damper (SA ▲ / ▼), PA flow 280 T/H once the bed is hot (PA ▲ / ▼), (3) when the HP bypass is in service (MSP ≥ 48, steam ≥ 40), raise the HP bypass PICMS1006 SV by 1 kg/cm² per minute up to 61.', c: b.ALL(b.VAL('MSP', 48, null), b.VAL('MSF', 40, null)), fps: ['PICMS1006', 'FICFA1081', 'FICFA1071'], get a() { return [oilStep('Oil A / D ▲ +5 %', ['A', 'D'], 5), oilStep('Oil A / D ▼ −5 %', ['A', 'D'], -5), oilStep('Oil B / C ▲ +5 %', ['B', 'C'], 5), oilStep('Oil B / C ▼ −5 %', ['B', 'C'], -5), step('SA damper ▲ +2 %', 'FICFA1081', 2), step('SA damper ▼ −2 %', 'FICFA1081', -2), step('PA damper ▲ +1 %', 'FICFA1071', 1), step('PA damper ▼ −1 %', 'FICFA1071', -1), svStep('HP bypass SV +1', 'PICMS1006', 1, 0, 123)].concat(muFill()); }, w: BYP, wait: 1 },
-      { st: 6, sec: 30, t: 'Main steam pressure 61 kg/cm²: ready to roll', d: 'PR-OPE-5002 (cold start): MS 61.2 kg/cm², steam flow > 40 T/H, reheat ≤ 8.5 kg/cm². The HP bypass holds 61 (SV +1 per minute) and the LP bypass holds the reheat; you control the oil for 40 ~ 55 T/H.', c: b.HOLD(120, b.ALL(b.VAL('MSP', 59, null), b.VAL('MSF', 40, null), b.VAL('RHP', null, 9))), fps: ['PICMS1006'], a: [oilStep('Oil A / D ▲ +5 %', ['A', 'D'], 5), oilStep('Oil A / D ▼ −5 %', ['A', 'D'], -5), svStep('HP bypass SV +1', 'PICMS1006', 1, 0, 61), svStep('HP bypass SV −1', 'PICMS1006', -1, 0, 123)], w: BYP, wait: 1 },
+      { st: 6, sec: 30, t: 'Bypass servicing: MSP ≥ 48 kg/cm² and steam flow ≥ 40 T/H', d: 'Do: raise the oil firing until steam flow is 40 ~ 55 T/H, trim the air, then raise the HP bypass SV up to 61. (1) Oil firing up (oil ▲) until steam flow is 40 ~ 55 T/H, (2) air: O₂ 3.5 ~ 8 % with the SA damper (SA ▲ / ▼), PA flow 280 T/H once the bed is hot (PA ▲ / ▼), (3) when the HP bypass is in service (MSP ≥ 48, steam ≥ 40), raise the HP bypass PICMS1006 SV by 1 kg/cm² per minute up to 61.', c: b.ALL(b.VAL('MSP', 48, null), b.VAL('MSF', 40, null)), fps: ['PICMS1006', 'FICFA1081', 'FICFA1071'], slow: drnSlow, get a() { return [...DRN, oilBand(1, 40, 55), oilBand(0, 40, 55), oilStep('Oil B / C ▲ +5 %', ['B', 'C'], 5), oilStep('Oil B / C ▼ −5 %', ['B', 'C'], -5), step('SA damper ▲ +2 %', 'FICFA1081', 2), step('SA damper ▼ −2 %', 'FICFA1081', -2), step('PA damper ▲ +1 %', 'FICFA1071', 1), step('PA damper ▼ −1 %', 'FICFA1071', -1), svRamp('PICMS1006', 61, 60)].concat(muFill()); }, w: BYP, wait: 1 },
+      { st: 6, sec: 30, t: 'Main steam pressure 61 kg/cm²: ready to roll', d: 'PR-OPE-5002 (cold start): MS 61.2 kg/cm², steam flow > 40 T/H, reheat ≤ 8.5 kg/cm². The HP bypass holds 61 (SV +1 per minute) and the LP bypass holds the reheat; you control the oil for 40 ~ 55 T/H.', c: b.HOLD(120, b.ALL(b.VAL('MSP', 59, null), b.VAL('MSF', 40, null), b.VAL('RHP', null, 9))), fps: ['PICMS1006'], slow: drnSlow, a: [...DRN, oilBand(1, 40, 55), oilBand(0, 40, 55), svRamp('PICMS1006', 61, 60), Object.assign(svStep('HP bypass SV −1', 'PICMS1006', -1, 0, 123), { on: () => h().MSP() <= 63, hide: () => h().MSP() <= 63 })], w: BYP, wait: 1 },
       /* ---- 7 turbine on oil ---- */
       FIELD(7, 'Field checks before the roll: drains, TCS lamps, turbine area (field)', [36, 37, 38, 39], { d: 'Field operator tasks. The ATS steps are on the TCS panel (next steps).' }),
       /* 3.2.0-beta.38 (CHECKLIST 0.6): the ATS steps of the TCS model (tcs.js; ATS Sequence 310SC90-775, Criteria 310SC90-776). Before
