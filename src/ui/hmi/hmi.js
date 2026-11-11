@@ -478,12 +478,34 @@
       ]);
       const raCol = E('div', { cls: 'fpr' }, (c.remote ? [bRem] : []).concat([bAuto, bMan])),
         mvBr = E('div', { cls: 'mvb' }, [barMv]);
+      /* 3.2.3-beta.77 (Mina B74-3, PICMS1002 in MANUAL): the operator part had no visible MV buttons (only a click on the MV box, and
+         0 / 50 / 100 inside the Engineering fold); the MAN stations (coal feeder) show ▲▲ ▲ ▼ ▼▼. Now the controller shows the same row
+         for the value the operator may change: MV in MANUAL (1 / 5 %), SV in AUTO (its nice step); hidden when neither is open */
+      const opK = () => (!mvIn.disabled ? 'MV' : !svIn.disabled ? 'SV' : null),
+        opLab = E('span', { cls: 'sub', style: 'min-width:22px' }),
+        opStep = (sg, big) => stepBtn(sg > 0 ? (big ? '▲▲' : '▲') : big ? '▼▼' : '▼', 'hold = faster', m => {
+          const k = opK();
+          if (!k) return;
+          const st = popStep(k) * (big ? 5 : 1);
+          popSet(k, popBase(k) + sg * st * m);
+        }),
+        opRow = E('div', { cls: 'row mls fpopr' }, [opLab, opStep(1, 1), opStep(1, 0), opStep(-1, 0), opStep(-1, 1)]),
+        opTick = () => {
+          const k = opK();
+          opRow.style.display = k ? '' : 'none';
+          if (k) {
+            const st = popStep(k);
+            opLab.textContent = k;
+            opRow.title = k + ': ▲ ' + sfmt(st) + ' · ▲▲ ' + sfmt(st * 5) + ' ' + (k === 'SV' ? unit : '%') + ' per press; hold to ramp';
+          }
+        };
       const card = E('div', { cls: 'fp fpx' }, [
         E('div', { cls: 'fpt', txt: c.desc || (AN.descOf && AN.descOf(sh, c.tag)) || c.tag }),
         E('div', { cls: 'fpm' }, [
           graph,
           E('div', { cls: 'fpc' }, [pvBox, svBox, E('div', { cls: 'fps' }, [raCol, mvBr]), mvBox])
         ]),
+        opRow,
         fmBox,
         cutEl,
         E('div', { cls: 'tg' }, [
@@ -771,6 +793,7 @@
           mvIn.disabled = (isAuto || rem) && !!c.amt;
           mvB.forEach(x => (x.disabled = (isAuto || rem) && !!c.amt));
         }
+        opTick();
         if (document.activeElement !== svIn && isFinite(svv)) svIn.value = +svv.toFixed(3);
         if (document.activeElement !== mvIn && isFinite(mvv)) mvIn.value = +mvv.toFixed(2);
         const tr = trendOf(key);
