@@ -87,7 +87,12 @@ const TCS = {
   pWarm: 5.0 /* kg/cm2 g, STIE-14747 p35 ~ 36 upper value, see tauWarm */,
   tauChest: 900 /* s, CV chest inner wall toward the main steam in chest warming */,
   tauChestO: 1500 /* s, CV chest outer wall toward the inner wall */,
-  tauCool: 72000 /* s, metal cooling with no steam */,
+  /* 3.2.3-beta.75 CALC (user: reverse engineer, no ASSUMED): turbine metal cooling with no steam. The start-up modes of the plant by
+     the time since shutdown, FHI SECT_7 Fig. 3 / 4 (warm start-up after an 8 to 56 hour shutdown, hot under 8 hours), are the turbine
+     modes by metal temperature, STIE-14811 p147 Fig. 1.4 (Hot above 420 C, Warm 230 ~ 420 C). First order toward the ambient 30 C:
+     (420 - 30) / (230 - 30) = exp((56 - 8) h / tau), tau = 48 h / ln(1.95) = 71.9 h = 258,900 s (the metal at the trip then fits
+     30 + 390 x exp(8 / 71.9) = 466 C). Before 72,000 s (20 h, NO-SOURCE): a turbine was Warm after about 3 h */
+  tauCool: 258900,
   tauX: 600 /* s, LP exhaust hood */,
   tauAux: 120 /* s, aux steam header */,
   names: [
