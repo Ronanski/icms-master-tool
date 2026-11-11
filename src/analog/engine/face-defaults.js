@@ -401,13 +401,13 @@ const AN_DEF = {
     },
     {
       tag: 'SIM1311',
-      hh: 98,
-      h: 90,
-      l: 5,
-      ll: 1,
+      hh: null,
+      h: null,
+      l: null,
+      ll: null,
       u: '%',
       desc: 'Limestone rotary feeder speed (0-100 %)',
-      basis: 'speed in percent'
+      basis: 'ST-M1311 is in none of the alarm lists (2015-12-24, 2016-02-01, 2016-09-12): no set point. Mina B66-1: the HH 98 / H 90 / L 5 / LL 1 of before had no source and stood LOW-LOW at 150 MW, where the snapshot 19.PNG reads 0.0 % with the feeder running'
     },
     /* 3.2.0-beta.50 (live check #96): the alarm list (document-references/alarm-list.zip, "Alarm List _20160912" sheet LT 15 ~ 17,
        LT-BR1001-1 / -2 / -3): HH 254, H 127, L -100 (dcs), LL -178 (dcs); transmitter 3: L -178, LL -254. Before: +-75 / +-150

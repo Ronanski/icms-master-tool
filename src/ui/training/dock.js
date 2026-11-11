@@ -2224,7 +2224,9 @@
       const ad = a.stop || a.dg ? motAddr(a) : null; /* 3.2.0-beta.30: a BURNER ON (dg) has its interlock too (DITL-12 out 7) */
       /* user 2026-10-29 (mock-up v3 "iwasan ang doble"): a step button that only writes the MV / mode of a loop shown in the controls
          above ("SA damper 0 %", "SA damper ▲▲ +5 %") is left out: the operator uses the faceplate. The guide still knows it (s.a) */
-      if (!a.stop && !a.dg && !a.loc && !a.mot && !a.sel && fpTags.length) {
+      /* Mina B67-4 (step 140): a step button whose action depends on the plant (a.keep: the deaerator 12 / 6 / 0 % by the feedwater) is
+         no double of the faceplate and stays */
+      if (!a.stop && !a.dg && !a.loc && !a.mot && !a.sel && !a.keep && fpTags.length) {
         const m = /\bA\.(?:man|auto|rem|loc)\(\s*'([^']+)'/.exec(String(a.f)),
           tg = a.tag || (m && m[1]);
         if (tg && fpTags.includes(call(() => LV().ctlTag(tg), null) || tg)) continue;
@@ -3604,7 +3606,16 @@
       /* Mina #M14: a valve button (XV-MU1109 OPEN / CLOSE, AUTO / MAN of DITL-78) shows the valve's own state, not RUNNING / STOPPED of a
          motor: OPEN red, CLOSED green (the colour convention of the plant), AUTO / MAN */
       const vk = !B.a.stop && /\b(OPEN|CLOSE|AUTO \/ MAN)\b/.exec(String(B.a.l || ''));
-      if (vk) {
+      /* Mina B67-2 / B24-6 (beta.67 step 150): a field RESET of a protection relay ("FIELD: reset the BFWP A relay") is no motor: its
+         done-state read as RUNNING (red) while the pump was stopped. It shows the relay: TRIPPED until the reset, then RESET */
+      const rk = !vk && !B.ad && !B.a.stop && /\bRESET\b/i.test(String(B.a.l || ''));
+      if (rk) {
+        B.lab.textContent = on ? 'RESET' : 'TRIPPED';
+        B.lab.className = 'gd-mst' + (on ? '' : ' trip');
+        B.lab.title = 'Protection relay in the field (TRIPPED / RESET)';
+        B.bt.classList.remove('lit-run'); /* the reset button was lit red (RUN) once done */
+        B.bt.classList.toggle('did', !!on);
+      } else if (vk) {
         const vt = vk[1] === 'OPEN' ? (on ? 'OPEN' : 'CLOSED') : vk[1] === 'CLOSE' ? (on ? 'CLOSED' : 'OPEN') : on ? 'AUTO' : 'MAN';
         B.lab.textContent = vt;
         B.lab.className = 'gd-mst' + (vt === 'OPEN' ? ' run' : vt === 'CLOSED' ? ' stop' : '');
