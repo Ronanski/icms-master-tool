@@ -12,12 +12,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: Playwright and Chromium
+      - name: Playwright and the browser (no apt step)
+        # The runner image already carries Google Chrome; the old "playwright install --with-deps" ran apt on security.ubuntu.com
+        # and the runner DNS error there stopped the job before any test ran. Only the npm package is installed now; when the image
+        # has no Chrome, Playwright downloads its own Chromium from its CDN (still no apt).
         run: |
-          npm install --no-save --no-package-lock playwright@1.64.1
-          npx playwright install --with-deps chromium
+          for i in 1 2 3; do npm install --no-save --no-package-lock playwright@1.64.1 && break; sleep $((i*5)); done
           echo "PLAYWRIGHT_MODULE=$PWD/node_modules/playwright" >> "$GITHUB_ENV"
-          echo "CHROMIUM=$(node -e "console.log(require('playwright').chromium.executablePath())")" >> "$GITHUB_ENV"
+          B="$(command -v google-chrome || command -v google-chrome-stable || true)"
+          if [ -z "$B" ]; then npx playwright install chromium; B="$(node -e "console.log(require('playwright').chromium.executablePath())")"; fi
+          echo "browser: $B"; "$B" --version
+          echo "CHROMIUM=$B" >> "$GITHUB_ENV"
       - name: Engine alone (54 ABC sheets, same values as the whole simulator)
         continue-on-error: true
         run: |
