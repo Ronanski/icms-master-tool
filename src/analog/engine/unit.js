@@ -513,6 +513,16 @@ function anUnitStart() {
   ]
     .filter(([a, b]) => a && a.S.ext.includes(a.n))
     .map(([a, b]) => [a, b.filter(x => x && x.S.ext.includes(x.n))]);
+  /* 3.2.3-beta.74 (Mina B72-1, MSP HH after the load rejection): the quick-open solenoids of the bypass control valves. ABC-050:
+     M.0124 (turbine trip / 52G1 open / house operation) -> TPS 3 s TR236 -> O.0842 "HP BYPASS PRESSURE SOLENOID VALVE FOR CONTROL VALVE
+     OPEN" (PCV-MS1020) and the timed pulse TR237 -> O.0843 "LP BYPASS PRESSURE SOLENOID VALVE FOR CONTROL VALVE OPEN" (PCV-HR1010).
+     The logic drove them, the plant did not read them: while the solenoid is on, the valve is fully open whatever its positioner says */
+  const foutOf = (k, t) => {
+    const x = shOf(k),
+      b = x && x.S && x.S.blk.find(y => y.k === 'FOUT' && y.tag === t);
+    return b && b.i && b.i.length ? { S: x.S, n: b.i[0] } : null;
+  };
+  U.qo = { hp: foutOf('ABC-050', 'O.0842'), lp: foutOf('ABC-050', 'O.0843') };
   U.trip = [labOf('ABC-050', 'I.0400'), labOf('ABC-001C', 'M.3200')].filter(Boolean);
   U.vtrip = labOf('ABC-050', 'I.0400');
   U.vac = 1; /* 3.2.0-beta.15: a plant in service has its condenser vacuum (Cold puts it to 0) */
@@ -3091,8 +3101,24 @@ function anUnitStep0(dt) {
       if (U.cold) dirt(U.di.xfer, 1);
     }
   } else {
-    tb.icv = 1;
-    U.gv = Math.max(0.02, Math.min(1.4, U.gv + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
+    /* 3.2.3 PLU (POWER LOAD UNBALANCE, TG manual 2-2 TURBINE CONTROL SYSTEM_R1 5.3.2.4): the fast acting solenoid valves of the CVs and
+       ICVs are energized when the generator current falls faster than 40 % / 10 ms and the power (reheat bowl pressure) minus the load
+       (generator current) is over 40 % of the rating, 2 out of 3 modules. Here: 52L1 opened on load (the load drops at once to the house
+       load, elec.js) and the turbine power U.MW minus that load over 40 % of U.MW0. The valves close at the trip rate (U.tauTrip, the same
+       fast acting dump; NO-SOURCE: the PLU closing time) until the unbalance is under 40 %, then the speed control opens them again.
+       Not modelled: the speed peak, the 2 out of 3 voting (one value) */
+    const ld = U.el && U.el.l52 === false ? D : U.MW,
+      plu = U.el && U.el.l52 === false && (U.MW - ld) / U.MW0 > 0.4;
+    if (plu && !tb.plu && typeof window !== 'undefined' && window.lsEventAdd && !(window.ENG && ENG.mode === 'mirror'))
+      lsEventAdd('TCS', 'TCS', 'PLU (power load unbalance): CV and ICV fast closing, turbine ' + Math.round(U.MW) + ' MW against ' + Math.round(ld) + ' MW load');
+    tb.plu = plu;
+    if (plu) {
+      U.gv = Math.max(0.02, U.gv - dt / U.tauTrip);
+      tb.icv = Math.max(0, tb.icv - dt / U.tauTrip);
+    } else {
+      tb.icv = Math.min(1, (tb.icv == null ? 1 : tb.icv) + dt / U.tcs);
+      U.gv = Math.max(0.02, Math.min(1.4, U.gv + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
+    }
   }
   /* steam flow through the valves: m = Kt x gv x MSP, MSP = drum - kdp x m^2 */
   /* 3.2.0 P1 #3: the steam reaches the turbine through the main steam stop MOV MV-MS1391 (or its warming bypass, anUnitStepX) */
@@ -3104,8 +3130,10 @@ function anUnitStep0(dt) {
   const P1 = Math.max(0, U.Pd - U.kdp * U.ms * U.ms);
   U.mb = 0;
   U.mhp = 0;
+  const qOn = l => !!(l && l.S && l.S.rt && +l.S.rt.v[l.n] > 0.5),
+    qHp = qOn(U.qo && U.qo.hp);
   for (const x of U.vlv) {
-    const o = Math.max(0, Math.min(100, anAv(x.t, +x.S.rt.v[x.n] || 0))),
+    const o = x.rh && qHp ? 100 : Math.max(0, Math.min(100, anAv(x.t, +x.S.rt.v[x.n] || 0))),
       q = (((x.f * U.m0 * o) / 100) * P1) / U.P0;
     U.mb += q;
     if (x.rh) U.mhp += q;
@@ -3233,7 +3261,7 @@ function anUnitStep0(dt) {
     shifted = (L, d) => anUnitWrite(L, i => L.a0[i] + d);
   /* reheat pressure: proportional to the steam through the IP / LP turbine = turbine steam + HP bypass, less what the LP bypass
      takes (its size lpb x the anchor flow at the anchor pressure); first stage pressure: proportional to the turbine steam */
-  const olp = U.lpv ? Math.max(0, Math.min(100, +U.lpv.S.rt.v[U.lpv.n] || 0)) : 0;
+  const olp = qOn(U.qo && U.qo.lp) ? 100 : U.lpv ? Math.max(0, Math.min(100, +U.lpv.S.rt.v[U.lpv.n] || 0)) : 0;
   if (!tb.xfer) {
     /* 2.2.0-beta.16 (M4 step 3): turbine shut (no IP / LP turbine flow): the hot reheat pressure is the steam stored in the
        reheater: in = HP bypass (U.mhp), out = LP bypass + RH blow-off, each = size x anchor flow x opening x pressure / anchor

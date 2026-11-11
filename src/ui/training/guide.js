@@ -190,6 +190,10 @@ window.LS_GUIDE = (function () {
      below 128: the same seek on HIC-BM (t), lowered also while M.0255 = 1.
      One press each 30 s up / 60 s down and the 0.2 kg/cm2 'rising' are the pace of the Do it for me (as loadSeek), not plant values */
   const coalSeek = (lo, t = 'FIC-CF') => () => { const P = h().MSP(), bo = h().bit('ABC-001C', 'M.0255') > 0.5; if (simT() - (paceT.cs || -1e9) < 30) return; const rise = paceT.csP != null && P > paceT.csP + 0.2, up = P < lo && !rise, dn = (bo || P > 128 || (P > 123 && rise)) && simT() - (paceT.csD || -1e9) >= 60; paceT.cs = simT(); paceT.csP = P; if (!(up || dn)) return; if (dn) paceT.csD = simT(); const m = mv(t); if (md(t) === 'MAN' && isFinite(m)) A.man(t, Math.max(0, Math.min(100, m + (up ? 1 : -1)))); };
+  /* STATION 101 M.0101 (ABC-001C), not STATION 102 M.0101 of ABC-017 */
+  const m0101 = () => +h().bit('ABC-001C', 'M.0101');
+  /* the TARGET MW set of HIC-ULD (ABC-001A COS SI0243), as the 'HIC-ULD A, TARGET 150' button */
+  const uldT = () => { const s = station('HIC-ULD'), d = s && (s.T.drv[s.b.i[s.b.svI]] || []).find(z => z.k === 'AMT'); return d ? { S: s.T, a: d.a } : null; };
   const bmRdy = () => h().MSF() > 230 && bit('M.2013') < 0.5;
   const fw3Rdy = () => h().FW() > 110 && bit('M.0228') < 0.5;
   const loadSlow = () => h().MSP() < 60 || Math.abs(h().lvl()) > 100;
@@ -1143,8 +1147,13 @@ window.LS_GUIDE = (function () {
          'Boiler master HIC-BM in AUTO' (steam flow 149 T/H, needs > 230, M.2013 steam flow < 220 T/H BU-CMD, ABC-001C): no step took the
          load above 45 MW. PR-OPE-5002 load up (SU 9334-9419): NORMAL OPERATION at 45 MW, then raise toward 90 MW; SU 10617-10692: at
          230 T/H main steam flow (about 75 MW, plant-study 01-operation.md phase 11) boiler master AUTO (boiler follow), PAF / SAF and the
-         coal master REMOTE. LOAD UP on the TCS at its rateUp (7.5 MW/min, PR-OPE-5002 LOAD UP 5 %/min) */
-      { st: 8, sec: 44, t: 'LOAD UP to 75 MW (TCS): main steam flow ≥ 230 T/H', d: 'PR-OPE-5002: after NORMAL OPERATION at 45 MW raise the load toward 90 MW. At 230 T/H main steam flow (about 75 MW) the boiler master goes to AUTO (boiler follow) and the PA / SA air and the coal master to REMOTE. Raise the coal with the load (FIC-CF ▲) to hold about 123 kg/cm².', c: b.VAL('MSF', 230, null), fps: ['FIC-CF'], slow: loadSlow, seek: coalSeek(123), a: [btn('LOAD UP 75 MW (TCS)', () => A.tcs('loadup', 75), () => !!(U().tb && U().tb.aim >= 75)), step('FIC-CF ▲ +1 %', 'FIC-CF', 1), step('FIC-CF ▼ −1 %', 'FIC-CF', -1)], wait: 1 },
+         coal master REMOTE. LOAD UP on the TCS at its rateUp (7.5 MW/min, PR-OPE-5002 LOAD UP 5 %/min). Run 2026-11-11 c: at 75 MW the
+         steam settled at 225 T/H, under the 230 T/H of the SOP, so the Do it raises the TCS target 5 MW more (one press
+         each 300 s, the pace of the Do it, not a plant value) while the steam is under 230 T/H or M.0101 = 0, up to the 90 MW of the SOP; held 120 s.
+         M.0101 is read on ABC-001C (STATION 101 "BOILER MAIN STEAM FLOW > 220 T/H"): the memory addresses are per station, and
+         bit('M.0101') read ABC-017 (STATION 102 M.0101 = SB INLET PRESSURE CONTROL FORCE MANUAL, memory list), 0, so this step and
+         'O2 control AICFG112 in AUTO' waited for ever at 264 T/H */
+      { st: 8, sec: 44, t: 'LOAD UP (TCS) until the main steam flow is ≥ 230 T/H (about 75 MW)', d: 'PR-OPE-5002: after NORMAL OPERATION at 45 MW raise the load toward 90 MW. At 230 T/H main steam flow (about 75 MW) the boiler master goes to AUTO (boiler follow) and the PA / SA air and the coal master to REMOTE. Raise the coal with the load (FIC-CF ▲) to hold about 123 kg/cm².', c: b.HOLD(120, b.ALL(b.VAL('MSF', 230, null), C('Steam flow > 220 T/H (ABC-001C M.0101)', () => m0101() > 0.5, () => 'M.0101 = ' + f0(m0101())))), fps: ['FIC-CF'], slow: loadSlow, seek: () => { coalSeek(123)(); const tb = U().tb; if (tb && tb.st === 'load' && (h().MSF() < 230 || m0101() < 0.5) && Math.abs((+tb.tgt || 0) - (+tb.aim || 0)) < 0.5 && (+tb.aim || 0) >= 75 && (+tb.aim || 0) < 90 && h().MSP() > 118 && simT() - (paceT.lu || -1e9) >= 300) { paceT.lu = simT(); A.tcs('loadup', Math.min(90, (+tb.aim || 0) + 5)); } }, a: [btn('LOAD UP 75 MW (TCS)', () => A.tcs('loadup', 75), () => !!(U().tb && U().tb.aim >= 75)), step('FIC-CF ▲ +1 %', 'FIC-CF', 1), step('FIC-CF ▼ −1 %', 'FIC-CF', -1)], wait: 1 },
       /* ---- 9 load up ---- */
       {
         st: 9,
@@ -1194,8 +1203,8 @@ window.LS_GUIDE = (function () {
         d: 'Allowed when steam flow is > 220 T/H (M.0101) and PV ≈ SV.',
         c: b.MODE('AICFG112', 'AUTO'),
         fps: ['AICFG112'],
-        ready: () => bit('M.0101') > 0.5,
-        readyTxt: () => 'Wait: steam flow > 220 T/H (M.0101 = ' + f0(bit('M.0101')) + ')',
+        ready: () => m0101() > 0.5,
+        readyTxt: () => 'Wait: steam flow > 220 T/H (M.0101 = ' + f0(m0101()) + ')',
         a: [btn('AICFG112 A', () => {
           const H = h(),
             S2 = H.sh('ABC-002'),
@@ -1207,6 +1216,13 @@ window.LS_GUIDE = (function () {
           return '';
         })]
       },
+      /* boiler model thread 2026-11-11 (automatic run): EIC-TM went to AUTO (CCS) at 80 MW, the load ramped to 133 MW and the main steam
+         fell to 62 kg/cm2 (HIC-BM back to MANUAL). PR-OPE-5002 load up (SU 9334-9419): "raise to 90 MW per boiler; above 90 MW CCS can
+         be set"; boiler master AUTO (boiler follow) until 90 MW (SU 10617-10692, 01-operation.md phase 11 / 12) */
+      { st: 9, sec: 44, req: ['bm'], t: 'LOAD UP to 90 MW (TCS) in boiler follow', d: 'PR-OPE-5002: the boiler master in AUTO holds the pressure (PIC-COBM) while you raise the load to 90 MW: with DCS CONTROL MODE ON (I.0082) the TCS follows the turbine master, so raise EIC-TM in MANUAL (MW); without it, LOAD UP on the TCS. The coordinated control (CCS) is set above 90 MW.', c: b.HOLD(120, b.ALL(b.VAL('MW', 89, null), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150))), slow: loadSlow,
+        /* one press of 5 MW each 60 s of the plant while the main steam is above 118 (the band of the 150 MW hold): the pace of the Do it, under the 7.5 MW/min LOAD UP rate */
+        seek: () => { if (h().MW() >= 89 || h().MSP() < 118 || simT() - (paceT.l9 || -1e9) < 60) return; paceT.l9 = simT(); if (bit('I.0082') > 0.5) { const m = mv('EIC-TM'); if (md('EIC-TM') === 'MAN' && isFinite(m)) A.man('EIC-TM', Math.min(90, m + 5)); } else A.tcs('loadup', 90); },
+        a: [step('EIC-TM ▲ +5 MW', 'EIC-TM', 5), btn('LOAD UP 90 MW (TCS, DCS control mode OFF)', () => A.tcs('loadup', 90), () => bit('I.0082') > 0.5 || !!(U().tb && U().tb.aim >= 90))], wait: 1 },
       {
         st: 9,
         sec: 44,
@@ -1218,7 +1234,10 @@ window.LS_GUIDE = (function () {
         fps: ['EIC-TM'],
         ready: () => bit('I.0082') > 0.5 && bit('M.2016') < 0.5 && Math.abs(h().val('ABC-001C', 'SI0236') - (+U().tcsT || 0)) < 1,
         readyTxt: () => 'Wait: DCS control mode I.0082 = ' + f0(bit('I.0082')) + ', SI0236 ' + f1(h().val('ABC-001C', 'SI0236')) + ' ≈ TCS target ' + f1(+U().tcsT),
-        a: [btn('EIC-TM A', () => A.auto('EIC-TM'))]
+        /* boiler model thread 2026-11-11 (automatic run): HIC-ULD starts in AUTO with the TARGET 150 of the 150 MW snapshot (hmi-op.js,
+           33.PNG); with EIC-TM in AUTO at 90 MW the CCS ramped the load to 142 MW before the 'TARGET 150' step and the main steam fell to
+           62 kg/cm2. The target is set to the load of the moment first (no bump), the 150 MW target is its own step below */
+        a: [btn('HIC-ULD TARGET = load now', () => { const d = uldT(); if (!d) return 'no target'; d.S.rt.ext[d.a] = Math.round(h().MW()); return ''; }, () => { const d = uldT(); return !!d && Math.abs((+d.S.rt.ext[d.a] || 0) - h().MW()) < 2; }), btn('EIC-TM A', () => A.auto('EIC-TM'))]
       },
       /* roadmap 2 (PR-OPE-5002 8043 "Set biasing damper and RH to Remote-Auto when RHT-PV is almost equal to R-SV"; 39.PNG at 150 MW:
          HICHR1002A / B A, TICHR1002A R, TICHR1002 A SV 541). ABC-020: the RH damper is forced MANUAL while the SH damper is MANUAL and under
@@ -1232,13 +1251,17 @@ window.LS_GUIDE = (function () {
         d: 'PR-OPE-5002: "Set biasing damper and RH to Remote-Auto when RHT-PV is almost equal to R-SV". The "Remote" of TICHR1002A is SV: LOGIC (SV from MW, LN6, with a bumpless ramp of 1 %/min). Do the SH damper (HICHR1002B) first: while it is MANUAL, the RH damper is forced MANUAL (ABC-020 M.0179, together with steam flow < 15 % MCR). The RH spray allows AUTO once its shut-off valve is open (DITL-35).',
         c: b.ALL(b.MODE('HICHR1002B', 'AUTO'), b.MODE('HICHR1002A', 'AUTO'), C('TICHR1002A AUTO, SV: LOGIC (LN6, MW → reheat SV)', () => md('TICHR1002A') === 'AUTO' && svLogic('ABC-020', 'TICHR1002A'), () => md('TICHR1002A') + (svLogic('ABC-020', 'TICHR1002A') ? ', SV: LOGIC' : ', SV: OPERATOR')), b.MODE('TICHR1002', 'AUTO')),
         fps: ['HICHR1002B', 'HICHR1002A', 'TICHR1002A', 'TICHR1002'],
-        ready: () => bit('I.0418') > 0.5 && h().MSF() >= 69 && !(h().bit('ABC-019', 'I.088F') > 0.5),
+        /* boiler model thread 2026-11-11 (automatic run at 90 MW): the step waited for ever on 'RH spray shut-off valve closed': no button
+           opened it. DITL-35 (REHEATER INLET DESUPERHEATER SPRAY WATER SHUT OFF VALVE): OPEN P.B. M.0640 (row 1) or AUTO MODE M.0642 (opens
+           above saturation + 11 C, ABC-019), after the ICV -> CV transfer I.0418, not in MFT. The Do it presses OPEN P.B. on the drawing. The valve wait now gates the TICHR1002 button only */
+        ready: () => bit('I.0418') > 0.5 && h().MSF() >= 69,
         readyTxt: () => 'Wait: ICV → CV transfer I.0418 = ' + f0(bit('I.0418')) + ', steam ' + f0(h().MSF()) + ' T/H (≥ 69), RH spray shut-off valve ' + (h().bit('ABC-019', 'I.088F') > 0.5 ? 'closed' : 'open'),
         a: [
           btn('SH damper HICHR1002B A', () => A.auto('HICHR1002B'), () => md('HICHR1002B') === 'AUTO'),
           btn('RH damper HICHR1002A A', () => A.auto('HICHR1002A'), () => md('HICHR1002A') === 'AUTO'),
           btn('TICHR1002A A, SV: LOGIC', () => A.rem('TICHR1002A'), () => md('TICHR1002A') === 'AUTO' && svLogic('ABC-020', 'TICHR1002A')),
-          btn('TICHR1002 A, SV 541', () => A.auto('TICHR1002', 541), () => md('TICHR1002') === 'AUTO')
+          btn('RH spray shut-off valve OPEN P.B. (DITL-35 row 1, M.0640)', () => (WL() ? (dPress('DITL-35', 0), '') : ''), () => !WL() || !(h().bit('ABC-019', 'I.088F') > 0.5)),
+          Object.assign(btn('TICHR1002 A, SV 541', () => A.auto('TICHR1002', 541), () => md('TICHR1002') === 'AUTO'), { hide: () => h().bit('ABC-019', 'I.088F') > 0.5 })
         ]
       },
       {
@@ -1246,10 +1269,13 @@ window.LS_GUIDE = (function () {
         sec: 44,
         req: ['bm', 'tm'],
         t: 'Unit load demand HIC-ULD in AUTO, TARGET 150 MW',
-        d: 'The CCS now raises the load at 3 MW per minute (HIC-MWRL).',
-        c: b.ALL(b.MODE('HIC-ULD', 'AUTO'), b.VAL('MW', 90, null)),
-        fps: ['HIC-ULD'],
-        a: [btn('HIC-ULD A, TARGET 150', () => {
+        d: 'First the load change rate HIC-MWRL 0.67 MW/min (FHI Fig. 2 COLD STARTUP: 60 % at 11.0 h to 100 % at 12.5 h = 60 MW in 1.5 h), then the TARGET 150 MW: the CCS raises the load at that rate.',
+        c: b.ALL(b.MODE('HIC-ULD', 'AUTO'), b.VAL('MW', 90, null), C('HIC-MWRL 0.67 MW/min', () => Math.abs((+mv('HIC-MWRL') || 0) - 0.67) < 0.05, () => f1(+mv('HIC-MWRL'))), C('TARGET 150 MW', () => { const d = uldT(); return !!d && +d.S.rt.ext[d.a] >= 149; }, () => { const d = uldT(); return d ? f0(+d.S.rt.ext[d.a]) : '—'; })),
+        fps: ['HIC-ULD', 'HIC-MWRL'],
+        /* boiler model thread 2026-11-11 (automatic run): with the 3 MW/min of the 150 MW snapshot (33.PNG HIC-MWRL) the load went 90 -> 144 MW,
+           the coal hit the feeder MV limit 83.3 % (FIC-CM forced MANUAL, M.0137) and the main steam fell 126 -> 62 kg/cm2. FHI P2 S7 Fig 2
+           (plant-study 02-fhi-curves.md): 60 % load at 11.0 h, 90 % at 12.0 h, 100 % at 12.5 h: CALC (150 - 90) MW / 90 min = 0.67 MW/min */
+        a: [btn('HIC-MWRL 0.67 MW/min', () => A.man('HIC-MWRL', 0.67), () => Math.abs((+mv('HIC-MWRL') || 0) - 0.67) < 0.05), btn('HIC-ULD A, TARGET 150', () => {
           A.loc('HIC-ULD');
           const s = station('HIC-ULD'),
             d = s && (s.T.drv[s.b.i[s.b.svI]] || []).find(z => z.k === 'AMT');

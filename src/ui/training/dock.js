@@ -606,6 +606,17 @@
       render();
     } catch (e) {}
   }
+  /* Mina B67-1 (beta.67 step 150): the AUTO MODE SELECTED of BFWP A (DITL-23A row 18) written only on the page was put under by the
+     next patch of the Worker (its copy still 0) before the page's write went out: the first press logged but did not latch, a second
+     press did. The same row is now also written by the engine action WORLD.dset (src/world/dock-eng.js, runs in the Worker at once);
+     the page write stays for a paused world (dset needs the world running, and no patch comes while paused) */
+  function engSet(s, row, v) {
+    if (!(window.WORLD && WORLD.dset)) return;
+    for (const r of [row].concat(twinRows(s, row)))
+      try {
+        WORLD.dset(s.name, r, !!v);
+      } catch (e) {}
+  }
   /* retest #47: a maintained CRT selection of a DITL input row (SEAWATER PUMP x AUTO MODE SELECTED, DITL-29A row 4), logged; PAUSED too */
   function dsel(nm, row, v, txt) {
     const s = dSheet(nm);
@@ -615,6 +626,7 @@
       /* one address = one signal (CLAUDE.md 1): DITL-29A rows 4 and 19 are both M.1152 */
       for (const r of twinRows(s, row)) s.sig[r + ':S'] = !!v;
     }
+    engSet(s, row, v);
     if (WORLD.live) WORLD.busy = true;
     pscan();
     try {
