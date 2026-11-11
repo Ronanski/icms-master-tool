@@ -879,6 +879,16 @@
     if (els.spdB && els.spdB.textContent !== tx) els.spdB.textContent = tx;
   }
   setInterval(() => els.spdB && paintSpeed(), 1500);
+  /* Mina beta.92 B92-3: the x10 "slow" of a step (Mina F43: stop near a level) was checked only while the dock drew its step, so x300 from
+     the Instructor console with the dock closed ran past the drum fill stop twice. Checked here every 0.25 s, dock open or not */
+  setInterval(() => {
+    try {
+      const g = GD();
+      if (!g || !g.on) return;
+      const s = g.steps()[g.cur];
+      if (s && s.slow && call(() => s.slow(), false) && +((window.AN && AN.spd) || 1) > 10) setSpeed(10);
+    } catch (e) {}
+  }, 250);
   /* 3.2.1 (user 2026-11-08 testing plan 5): while the Training step is a HOLD (hold 90 MW 8 ~ 10 min, purge 5 min, drum level 30 s ...)
      and its condition is met, the plant runs x10 by itself (only when the speed was lower); the speed of the trainee comes back when
      the step is done, moves on, or its condition is lost. Logged as an event. A PC that cannot give x10 runs as fast as it can */

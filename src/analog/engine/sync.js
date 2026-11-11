@@ -127,6 +127,7 @@ function anSyncSlots() {
     () => {
       const r = { f: {}, s: {} };
       for (const k of AN_STATE_FLAGS) r.f[k] = AN[k];
+      r.f.startN = AN.startN; /* Mina beta.92 B92-3: the count of the loads (hmi-op.js), page only: not in a save point */
       for (const k of AN_STATE_SETS) r.s[k] = AN[k];
       r.u = AN.unit === AN_UNIT ? 1 : 0;
       r.h = AN.hmiDI === AN_HMI_DI ? 1 : 0;
@@ -134,6 +135,7 @@ function anSyncSlots() {
     },
     d => {
       for (const k of AN_STATE_FLAGS) AN[k] = d.f[k];
+      if (d.f.startN != null) AN.startN = d.f.startN;
       for (const k of AN_STATE_SETS) AN[k] = d.s[k];
       if (d.u) AN.unit = AN_UNIT;
       else delete AN.unit;
