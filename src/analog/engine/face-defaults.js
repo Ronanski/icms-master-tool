@@ -547,13 +547,13 @@ const AN_DEF = {
     },
     {
       tag: 'PIST10011',
-      hh: 120,
-      h: 110,
-      l: 5,
-      ll: 1,
+      hh: null,
+      h: null,
+      l: null,
+      ll: null,
       u: 'kg/cm2',
       desc: 'HP turbine first stage pressure A (0-150)',
-      basis: 'about 95-105 kg/cm2 at full load; low alarm only meaningful when loaded'
+      basis: 'alarm list 2015-12-24, 2016-02-01 and 2016-09-12, PT sheet item 84 PT-ST1001-1: no set point (3.2.3-beta.68; before HH 120 / H 110 / L 5 / LL 1 with no source)'
     },
     {
       tag: 'PIST10012',
@@ -563,7 +563,7 @@ const AN_DEF = {
       ll: 1,
       u: 'kg/cm2',
       desc: 'HP turbine first stage pressure B',
-      basis: 'alarm list 2016-09-12, PT-ST1001-2'
+      basis: 'alarm list 2016-09-12 (DCS temporary values), PT sheet item 85 PT-ST1001-2: HH (105-dcs), H (93.8-dcs); the 2015-12-24 and 2016-02-01 lists have none. Stands at 150 MW: the first stage is 96.8 kg/cm2 there (hmi-op.js AI0884, from the LP bypass REMOTE SV 36.0 of 5.png through ABC-052 LN12)'
     },
     {
       tag: 'PIST10013',
@@ -573,7 +573,7 @@ const AN_DEF = {
       ll: -1,
       u: 'kg/cm2',
       desc: 'HP turbine first stage pressure C',
-      basis: 'alarm list 2016-09-12, PT-ST1001-3'
+      basis: 'alarm list 2016-09-12 (DCS temporary values), PT sheet item 86 PT-ST1001-3: HH (125-dcs), H (62.5-dcs), L / LL (-1.0 dcs); stands at 150 MW like B'
     },
     {
       tag: 'TIHR10021',
