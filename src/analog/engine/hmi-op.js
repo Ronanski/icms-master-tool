@@ -1284,6 +1284,8 @@ function anLoadStart(kind, on) {
       }
       AN.startState = cold ? 'plantCold' : 'plantLoad150';
       AN.restartKind = rs;
+      /* Mina beta.92 B92-3: a count of the loads, so a Cold loaded over a Cold is seen as new (guide.js: the Training back to step 1) */
+      AN.startN = (AN.startN || 0) + 1;
       return n;
     });
   AN._loadP = p;

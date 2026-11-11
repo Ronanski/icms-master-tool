@@ -1784,13 +1784,17 @@ window.LS_GUIDE = (function () {
      (Plant ▾ > Cold, Reset then Cold, a reload then Cold) starts the Training again at step 1 with no ticks; before, a reload kept
      step 2 (lineup 15 / 16) while the step 1 purge of the new cold plant showed 0:00 / 6:00. A reload with no new Cold keeps the
      progress (the plant has not changed) */
-  let ss0 = window.AN ? AN.startState : undefined;
+  /* Mina beta.92 B92-3: the Instructor "Cold start" over a plant that was itself started from Cold kept the dock on step 77 (the name of
+     the state did not change). A true Cold (no warm / hot restart) counts as new at every load (hmi-op.js AN.startN) */
+  const ssKey = A => A.startState + (A.startState === 'plantCold' && !A.restartKind ? '#' + (A.startN || 0) : '');
+  let ss0 = window.AN ? ssKey(AN) : undefined;
   setInterval(() => {
     const A = window.AN;
     if (!A) return;
-    const ss = A.startState;
-    if (ss === ss0) return;
-    ss0 = ss;
+    const ss = A.startState,
+      k = ssKey(A);
+    if (k === ss0) return;
+    ss0 = k;
     if (ss !== 'plantCold' || A._gdWait || A._startPending) return;
     if (!G.cur && !Object.keys(G.mine || {}).length && !Object.keys(ls0('ls-train')).length) return;
     G.cur = 0;
