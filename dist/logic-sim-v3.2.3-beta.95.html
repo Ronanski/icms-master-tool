@@ -36991,7 +36991,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.3-beta.95';
-      c3.textContent += ' · build 88f2a6e'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 6a65490'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -101338,25 +101338,30 @@ window.LS_GUIDE = (function () {
   /* user 2026-10-29 (#108, no coach): the operator's own trims, one press = one step of the faceplate (the same signal as the sheet) */
   /* .tag: the loop of the button (the dock leaves out a button whose loop has its own control card: the same MV ▲▼ twice) */
   const step = (l, t, d) => Object.assign(btn(l, () => A.man(t, Math.max(0, Math.min(100, Math.round((+mv(t) || 0) * 2) / 2 + d)))), { tag: t });
-  /* 3.2.3-beta.94 (drum LOW-LOW at step 68, automatic run on beta.93): the floor of the oil ▼ is the burner minimum fire, not 20 %.
+  /* 3.2.3-beta.95 (drum LOW-LOW at step 68, automatic run on beta.93): the floor of the oil ▼ is the burner minimum fire, not 20 %.
      PR-OPE-5002 sect 27 "min = 614.4 ... max = 3078" and the M&S load curve 1612 13-4-71 (614.4 kg/h MIN, range 1:5): the MV that gives
      614.4 kg/h at the ring pressure of now, by the burner model of boiler.js (Q = Kb x MV x sqrt(P2 - Q / g)); about 15 % at 10.5
      kg/cm2. Before: 20 % (NO-SOURCE), about 820 kg/h a burner: four burners at 20 % made 68 T/H of steam on the 35 kg/cm2 hold, more than
      the full open blow-off passes (about 62 T/H), the pressure rose to 38 and the drum fell to -307 mm (low-low MFT) */
-  const oilMin = () => {
-    try {
-      /* the constants of boiler.js AN_DO (that file runs in the engine, not in this page): g = 614.4 kg/h per bar at the gun (M&S
-         1612 13-4-71), Kb = FCV-DO1043-x3 full open, 3072 kg/h at 5 bar with the 10.5 kg/cm2 ring (MB-022 8-x) */
-      const P2 = +(AN.unit && AN.unit.doP2), q = 0.6144, g = 0.6144 * 0.980665, kb = 3.072 / Math.sqrt(10.5 - 5 / 0.980665);
-      if (!(P2 > q / g)) return 20;
-      return Math.max(1, Math.min(20, Math.ceil((100 * q) / (kb * Math.sqrt(P2 - q / g)))));
-    } catch (e) {
-      return 20;
+  /* the ring pressure P2 is read back from a lit burner (its flow PV FICDO1043x and its valve MV): P2 = (Q / (Kb x MV))^2 + Q / g, the
+     same burner model; the engine's own ring pressure is not in this page. With no lit burner: 20 % as before */
+  const oilMin = ks => {
+    const q = 0.6144,
+      g = 0.6144 * 0.980665,
+      kb = 3.072 / Math.sqrt(10.5 - 5 / 0.980665);
+    let lo = 20;
+    for (const k of ks || ['A', 'B', 'C', 'D']) {
+      const x = (+mv('FICDO1043' + k) || 0) / 100,
+        Q = +pv('FICDO1043' + k) || 0;
+      if (!(x > 0.02 && Q > 0.05)) continue;
+      const P2 = (Q / (kb * x)) ** 2 + Q / g;
+      if (P2 > q / g) lo = Math.min(lo, Math.max(1, Math.ceil((100 * q) / (kb * Math.sqrt(P2 - q / g)))));
     }
+    return lo;
   };
   const oilStep = (l, ks, d) =>
     btn(l, () => {
-      const lo = oilMin();
+      const lo = oilMin(ks);
       for (const k of ks) if (bit({ A: 'M.3412', B: 'M.3413', C: 'M.3418', D: 'M.3419' }[k]) > 0.5) A.man('FICDO1043' + k, Math.max(lo, Math.min(100, Math.round(+mv('FICDO1043' + k) || 0) + d)));
       return '';
     });
@@ -113138,7 +113143,7 @@ window.LS_GUIDE = (function () {
         'Engineering = white symbols, only wires, values and valves coloured'
       );
     const ver = (document.title.match(/v\d[\w.-]*/) || [''])[0];
-    row('Version', E('span', 'scsver', ver + ' · build 88f2a6e'));
+    row('Version', E('span', 'scsver', ver + ' · build 6a65490'));
   }
   function openSet(near) {
     if (!set) {
