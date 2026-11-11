@@ -9,7 +9,7 @@
      (6512: aux > 10, gland done, vacuum breaker MV-AV1391 closed, ejectors), ROLLING (8254: cold MS 60 kg/cm2 / 400 C, RH 7.5 / 415 C),
      heat soak table (8437), LP exhaust hood < 80 C before sync (8673) and < 52 C before load up (9123)
    Table of the criteria against the app: docs/tcs/ATS_CRITERIA.md. The numbers that the drawings give as "REFER TO IBD" (graphic, not
-   readable here) are taken from PR-OPE-5002 and marked so; the time constants of the metal are ASSUMED (marked).
+   readable here) are taken from PR-OPE-5002 and marked so; the time constants of the metal are NO-SOURCE (marked; searched 2026-11-11: IBD, ATS 775 / 776, TCS Elementary, PR-OPE-5002, plant-study 12-assumptions.md; the TG OEM scans on the PC are asked of Jennie).
    The state is AN_UNIT.tc; the operator acts on the TCS panel with AN.turbine(cmd) (unit.js anTurbine). */
 const TCS = {
   /* start-up mode judgement on the lower of the reheat bowl and the HP first stage inner wall metal temperatures (page 12). The
@@ -74,7 +74,7 @@ const TCS = {
   },
   rub: 200 /* rpm, PR-OPE-5002 8325 "target speed 200 rpm for rub check"; complete below 100 rpm (criteria page 14 Fig. 1) */,
   crit: [1372, 1723] /* rpm, critical zone, no hold (PR-OPE-5002 8561) */,
-  /* time constants (ASSUMED: the turbine heat capacity is not in the repository) */
+  /* time constants (NO-SOURCE: the turbine heat capacity and a turbine start-up curve are not in the docs searched, see the head) */
   tauMetal: 2400 /* s, HP first stage / reheat bowl inner wall toward the steam while steam flows */,
   tauChest: 900 /* s, CV chest inner wall toward the main steam in chest warming */,
   tauChestO: 1500 /* s, CV chest outer wall toward the inner wall */,
@@ -127,7 +127,7 @@ function tcsInit(U, how) {
     copAu: [false, svc],
     eop: false,
     eopArm:
-      svc /* the EOP auto start (bearing oil <= 1.05) is armed once the lube oil was in service (ASSUMED: not at a cold plant) */,
+      svc /* the EOP auto start (bearing oil <= 1.05) is armed once the lube oil was in service (a model choice: not armed at a cold plant; the SOP gives the start at 1.05 only) */,
     brgOk: svc,
     vex: svc /* main oil tank vapour extractor (1.18) */,
     tg: svc && how !== 'load' /* turning gear selected (1.19); the gear engages below 4 rpm */,
@@ -578,7 +578,7 @@ function tcsStep(U, dt) {
   if (!c.brgOk) c.tg = false;
   /* turning gear: about 3 rpm (PR-OPE-5002 7955); disengages above 4 rpm and engages again at zero speed */
   const steam = tb.st !== 'off' && (tb.icv > 0.001 || U.gv > 0.001);
-  /* metal: toward the steam while steam flows, else cooling to the ambient (ASSUMED time constants) */
+  /* metal: toward the steam while steam flows, else cooling to the ambient (NO-SOURCE time constants, see the head) */
   const Ta = U.Tamb || 30;
   if (steam) {
     c.Thp += ((s.mst - c.Thp) * dt) / TCS.tauMetal;
@@ -592,18 +592,18 @@ function tcsStep(U, dt) {
   if ((c.cur === 1 && c.ph === 'chest') || c.rst) c.Tcvi += ((s.mst - c.Tcvi) * dt) / TCS.tauChest;
   else c.Tcvi += ((Ta - c.Tcvi) * dt) / TCS.tauCool;
   c.Tcvo += ((c.Tcvi - c.Tcvo) * dt) / TCS.tauChestO;
-  /* shell expansion (HP side), mm: 3 mm at about 180 C (page 20 question 2 > 3 mm after the 1800 rpm soak; ASSUMED linear) */
+  /* shell expansion (HP side), mm: 3 mm at about 180 C (page 20 question 2 > 3 mm after the 1800 rpm soak; IBD TD-4 3 mm ON / 2.5 OFF; the linear law is NO-SOURCE) */
   c.sexp = Math.max(0, (c.Thp - Ta) * 0.02);
   /* LP exhaust hood: windage of the blades with little steam, the hood spray below 15 % load (PR-OPE-5002 9195), the vacuum
-     (ASSUMED, ambient 30 C: with the spray about 56 C at 3600 rpm with no load, about 49 C at the initial load 4.5 MW, about 58 C on load: under the 80 C of 1.12) */
+     (NO-SOURCE law, limits 80 / 52 C sourced, ambient 30 C: with the spray about 56 C at 3600 rpm with no load, about 49 C at the initial load 4.5 MW, about 58 C on load: under the 80 C of 1.12) */
   const sp = Math.min(1, (tb.rpm || 0) / 3600),
     /* 3.2.0-beta.38: the hood spray FVCD1904 in AUTO (PR-OPE-5002 6307, put in AUTO at the vacuum up) sprays below 15 % load (22.5
-       MW, 9195) and takes 70 % of the windage heat (ASSUMED). Without it: 82 C at 3600 rpm with no load, over the 80 C of 1.12 (hold) */
+       MW, 9195) and takes 70 % of the windage heat (NO-SOURCE). Without it: 82 C at 3600 rpm with no load, over the 80 C of 1.12 (hold) */
     hs = c.hsp && (U.MW || 0) < 22.5 ? 0.3 : 1,
     XSS =
       Ta + 15 + 37 * hs * sp * sp * Math.max(0.35, 1 - (U.MW || 0) / 7.5) + 120 * Math.max(0, 0.9 - (U.vac || 0)) * sp,
     /* 3.2.1 (IRENE, 29.PNG 151 MW: TEST11101 ~ 3 38 / 38 / 37 C = the saturation of the condenser 0.056 kg/cm2A): on load the steam
-       carries the windage away and the hood is wet steam at the condenser saturation. ASSUMED: from the windage value at 7.5 MW to the
+       carries the windage away and the hood is wet steam at the condenser saturation. NO-SOURCE blend: from the windage value at 7.5 MW to the
        saturation at 22.5 MW (15 % load, the hood spray limit of PR-OPE-5002 9195), linear; below 7.5 MW unchanged */
     Tsc = isFinite(U.cdP) && typeof anTsatA === 'function' ? anTsatA(U.cdP) : NaN,
     fL = Math.max(0, Math.min(1, ((U.MW || 0) - 7.5) / 15)),
@@ -792,15 +792,15 @@ function tcsStep(U, dt) {
      EOP P-1923 (DC)   bearing oil; starts at the bearing oil (1PSLO1004) <= 1.05 kg/cm2g; stop by hand only (SOP);
      vapour extractor  F-1937 (main oil tank vacuum PGLO1920 -20 ~ -50 mmH2O);
      oil purifier      P-1941, local panel (AN_SRC.field.pur), discharge ~ 2.96 kg/cm2 (SOP).
-   Values (36.PNG at 149 MW, SOP limits; the rest ASSUMED and marked):
+   Values (36.PNG at 149 MW, SOP limits; the rest NO-SOURCE and marked):
      MOP discharge     6.1 kg/cm2g while running (SOP 5.6 ~ 6.6; 36.PNG shows 6.9, UNUSUAL: above the SOP range, so the SOP mid value);
-     bearing oil       3.3 (36.PNG PILO10031 ~ 33) with a MOP; 1.6 with the EOP only (ASSUMED, above its 1.05 start); else 0;
-     EOP discharge     1.6 while running (ASSUMED);
+     bearing oil       3.3 (36.PNG PILO10031 ~ 33) with a MOP; 1.6 with the EOP only (NO-SOURCE, above its 1.05 start); else 0;
+     EOP discharge     1.6 while running (NO-SOURCE);
      COP discharge     163.2 while running (SOP "163.2 ksc"; 36.PNG 164.2); control oil header = discharge - 0.6 (the filter, 36.PNG
                        164.2 -> 163.6); trip oil (PILO10071 ~ 73) = the control oil while the turbine is reset (36.PNG 163.2 ~ 163.7), 0 tripped;
      cooler inlet      TILO1001 = the cooler outlet (TICLO1002 PV, ABC-053) + 16 C x speed / 3600 (36.PNG 62 / 46 C) with lube oil;
      bearing outlet    TIGE1007 / 1008 = the cooler outlet + 9 / 10 C x speed / 3600 (36.PNG 55 / 56 C);
-     pressures follow with a lag of 1.5 s (ASSUMED), so a stopped running pump lets the header fall and the standby in AUTO start. */
+     pressures follow with a lag of 1.5 s (NO-SOURCE), so a stopped running pump lets the header fall and the standby in AUTO start. */
 const TCS_OIL = {
   mop: 6.1,
   brg: 3.3,
@@ -865,7 +865,7 @@ function tcsOilCmd(c, a) {
      DO  _IKA AUTO, _IKH MANUAL, _IYS CRT AVAILABLE, _JYP STOP, _JYS START, _IKR RESET (HOLD 3000 ms: 1 for 3 s after the command);
      AI  1PTLO1931A_PV / B_PV COP (A) / (B) DISCHARGE OIL PRESS. (FOR COP (B) / (A) AUTO START);
      alarm 1PTLO1931AA_XA "COP (B) DISCHARGE OIL PRESS. (FOR COP (A) AUTO START) LOW" / 1PTLO1931BA_XA = the other pump's discharge at or
-         below the auto start of the SOP NOTE (<= 133 kg/cm2g) while that pump runs (ASSUMED: the LOW contact is the auto start one).
+         below the auto start of the SOP NOTE (<= 133 kg/cm2g) while that pump runs (NO-SOURCE: which contact drives the auto start is not in the docs; the LOW contact is taken).
    The model has no fault of these pumps: ABN / IEP / IES / IET / YEE are 0 and IYP / IYS (CRT operation permitted / available) 1. */
 function tcsIO(U) {
   U = U || AN_UNIT;
@@ -981,10 +981,10 @@ function tcsOil(U, dt) {
      shaft vibrations of the TCS I/O list HMI_AI: 1TEST1009 / 1010 (No.1 / 2 turbine journal), 1TEGE1001 / 1002 (No.3 / 4), 0 ~ 150 C;
      1VEST10011 / 12, 10021 / 22, 1VEGE10011 / 12, 10021 / 22 (X / Y), 0 ~ 0.4 mm. 3.2.1: the values at speed from snapshot P35SHAFT
      (035 SHAFT MONITOR, 3596 rpm, 130 MW) with the lube oil after the cooler 46 C (36.PNG TILO10021 / 22): bearing metal No.1 / 2 / 3 / 4
-     91 / 102 / 80 / 78 C = the cooler outlet + 45 / 56 / 34 / 32 C x speed / 3600 (was ASSUMED 25 / 28 / 22 / 20), thrust bearing front
+     91 / 102 / 80 / 78 C = the cooler outlet + 45 / 56 / 34 / 32 C x speed / 3600 (before beta.27: 25 / 28 / 22 / 20 without a source), thrust bearing front
      TIST10111 / 12 54 / 55 C and rear TIST10121 / 22 63 / 60 C = + 8.5 / + 15.5 C; vibration X / Y 0.033 / 0.035, 0.038 / 0.028, 0.016 /
      0.016, 0.063 / 0.037 mm x (speed / 3600)^2 (the square law and the first critical speed bump of 0.03 mm at about 1700 rpm, bell 250
-     rpm, stay ASSUMED). Without oil + 60 C x speed / 3600 (no film); a lag of 20 s. */
+     rpm: SU 8561 band 1372 ~ 1723 rpm, the peak height NO-SOURCE). Without oil + 60 C (NO-SOURCE) x speed / 3600 (no film); a lag of 20 s. */
   const rpm = U.tb ? U.tb.rpm : 0,
     crit = 0.03 * Math.exp(-(((rpm - 1700) / 250) ** 2)),
     lagS = (k, x) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, 20)) / 20 : x);

@@ -11,7 +11,7 @@
      hold = the PV (a tank level) does not answer the valve while the pump that moves the water is stopped.
    Only while the unit model runs (a starting state: Cold, Warm, Hot, 150 MW). With no starting state the loop models are as before.
    The machines that have no DCS signal (diesel oil pump P-0005, DITL-31) are FIELD equipment: AN.field (Start ▾ > Field equipment).
-   Numbers marked ASSUMED are not in the repository. */
+   Numbers marked NO-SOURCE are not in the documents searched (user 2026-11-11: no ASSUMED). */
 const AN_SRC = {
   field: { hypo: true, hypoB: false, hypoU: false, pur: true, mu1033: false, esp: true, cw1001: true, lhd: false } /* 3.2.0 retest #33: hypochlorite pump (no DCS signal); R9 #77: turbine oil purifier pump P-n941 (local); live test 2026-10-30 #23: V-MU1033 expansion tank bypass (manual valve, PD-021) */,
   Tamb: 30,
@@ -91,7 +91,8 @@ function srcState(t0) {
   /* (never above their own source: the PV of that loop lags one scan, a new plant state must not see the old header) */
   s.Pdo = s.dop ? srcPv('ABC-028', 'PICDO0005') : 0;
   s.Paux = Math.min(srcPv('ABC-030', 'PICAS1005'), Math.max(s.Pms, s.Pcrh));
-  /* no. 4 extraction to the deaerator (ABC-056 PT-TS1022 0 ~ 5 kg/cm2): proportional to the turbine steam (ASSUMED 4.5 at MCR) */
+  /* no. 4 extraction to the deaerator (ABC-056 PT-TS1022 0 ~ 5 kg/cm2): proportional to the turbine steam, 4.5 at MCR (NO-SOURCE: the mass balance has one load point, MB-013: extraction III to
+     the deaerator 5.37, IV to LP heater #3 0.91 kg/cm2; which of them PT-TS1022 reads, I/O list STN102 AI0562 "NO.4 extraction" 0 ~ 5, is open) */
   s.Pext = 4.5 * s.ext * Math.min(1, ms / m0);
   s.Pex3 = 5.3 * s.ext * Math.min(1.05, ms / 474.1);
   AN_SRC.t = t;
@@ -118,7 +119,7 @@ const SRC_RULES = (() => {
   R.DPICFG108 = s => ({ mul: s.paf });
   /* loop 7, SOx at the stack: from the coal that burns */
   R.AICFG10571 = s => ({ mul: s.coal });
-  /* loop 11, bypass desuperheaters: the outlet temperature needs steam through the bypass (ASSUMED full from 3 % of the MCR flow) */
+  /* loop 11, bypass desuperheaters: the outlet temperature needs steam through the bypass (full from 3 % of the MCR flow, NO-SOURCE; the L21 sheets give the minimum cases of the valves, 62 T/H HP / 27 T/H LP, not this gate) */
   /* TT-MS1022 is on the cold reheat side of the HP bypass: it also sees the HP turbine exhaust (03.png: 357.5 C at 150 MW with the
      bypass shut); TT-HR1012 after the LP bypass is kept warm by the warming valve XV-HR1010 while the hot reheat has pressure (DITL-83;
      snapshot 136 C with the LP bypass shut) */

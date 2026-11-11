@@ -27,10 +27,10 @@ const AN_UNIT = {
      1500 / 60 s the cross-over of that PI is where its phase is best (about 0.01 rad/s). Not measured on the plant */
   C: 1500 /* (T/H) x s per kg/cm2 of drum pressure */,
   tauF: 60 /* s, coal -> steam made */,
-  tauMW: 10 /* s, steam flow -> MW (reheater, ASSUMED) */,
-  tcs: 20 /* s, TCS load loop (ASSUMED) */,
+  tauMW: 10 /* s, steam flow -> MW (reheater, NO-SOURCE: the plant trends are 60 s averages, too slow to fit it) */,
+  tcs: 20 /* s, TCS load loop (NO-SOURCE: the TCS soft logic is a PC-only scan) */,
   /* other steam outlets of the main steam line, flow at 100 % open and the anchor pressure, as a share of the anchor flow (the valve
-     sizes are not in the repository, ASSUMED): ABC-050 PICMS1006 HP turbine bypass PCV-MS1020 (main steam -> cold reheat) and
+     sizes: valve sheets below): ABC-050 PICMS1006 HP turbine bypass PCV-MS1020 (main steam -> cold reheat) and
      ABC-013 PICMS1002 main steam blow-off PCV-MS1001 (start-up vent to the silencer) */
   hpb: 0.48 /* PCV-MS1020, valve sheet L21: 141.7 T/H at 62 % stroke, trim Cv 215 = about 227 T/H (plant-study/12-assumptions.md) */,
   blo: 0.46 /* PCV-MS1001, valve sheet E2-0-123 p5: 184 T/H at 76 % travel, full Cv 232 = about 217 T/H */,
@@ -39,7 +39,7 @@ const AN_UNIT = {
        is a fixed nozzle, so its inlet pressure is proportional to the steam through it (design: RH 181.9 T/H at 36.6 / 35.1 kg/cm2
        at MCR; 02.png: 15.0 kg/cm2 at 203.7 T/H, 4.PNG 34.0 at 474 T/H: 34.0 x 203.7 / 474 = 14.6). The HP bypass PCV-MS1020
        (ABC-050) adds steam to the cold reheat; the LP bypass PCV-HR1003 (ABC-052) takes steam out of the hot reheat (size as the
-       HP bypass, lpb, ASSUMED). Reheater volume lag tauRH (ASSUMED).
+       valve sheet L21, lpb below). Reheater volume lag tauRH (NO-SOURCE).
      - SH / RH temperature versus load (boiler manual SECT_7 Fig 6 "SH & RH steam temperature versus load": 541 C from 100 to 60 %
        MCR; Fig 10 "SH spray versus load": spray 2.7 % of MSF at 100 %, 1.95 at 85, 1.1 at 70, 0 at 60 % MCR). The spray loops
        (ABC-011 TICBR1130, ABC-012 TICBR1150, ABC-019 TICHR1002) see a load disturbance: at 60 % MCR the spray of the snapshot is
@@ -52,15 +52,14 @@ const AN_UNIT = {
        about 26 %; design 20 %). Analyzer lag tauO2 (ASSUMED). PA to the furnace FT-FA1079 (ABC-006 indicator) follows the PAF flow */
   lpb: 1.05 /* PCV-HR1010, L21: 87.4 T/H at 8.3 ata at 81 % stroke, trim Cv 1700 = about 117 T/H. Before, 0.8. */ /* 2.2.0-beta.16: was 0.3; sized so that at 7.5 kg/cm2 it passes the HP bypass flow of the bypass servicing with the valve
     in its working range (PR-OPE-5002: steam flow > 40 T/H, RH pressure 7.5 ksc held by the LP bypass in AUTO): 0.8 x 475 x 7.6 / 34.4 =
-    84 T/H, about 60 % open at 50 T/H (ASSUMED; a two-stage bypass is usually sized for 60 ~ 100 % of the boiler flow) */,
+    84 T/H, about 60 % open at 50 T/H (that sizing replaced by the L21 sheet above) */,
   tauRH: 10,
   /* 2.2.0-beta.16 (M4 step 3, bypass system and pressure raise): while the turbine is shut (cold start, before the roll) the reheater
      is a closed volume: the HP bypass fills it, the LP bypass (ABC-052 PCV-HR1003) and the RH blow-off (ABC-054 PICHR1391, PR-OPE-5002
      "Reheat blow-off MVHR1391 open" for warming, closed when the LP bypass is in service) empty it. Crh = steam stored per kg/cm2 of
-     hot reheat pressure ((T/H) x s per kg/cm2; the reheater + piping volume is not in the repository, ASSUMED about 200 m3: steam at
+     hot reheat pressure ((T/H) x s per kg/cm2; the reheater alone is 60 m3 (FHI T8T2 60,068 kg of water, hydro test 60 m3; RH alone Crh = 120), the piping volume is NO-SOURCE, about 200 m3 in all kept: steam at
      7.6 kg/cm2 is about 4 kg/m3, so about 110 kg per kg/cm2 = 400 (T/H) x s; 40 T/H through the HP bypass fills 0 -> 7.6 kg/cm2 in
-     about 75 s); rhb = size of the RH blow-off as a share of the anchor flow at the anchor reheat pressure (ASSUMED, as the main steam
-     blow-off) */
+     about 75 s); rhb = size of the RH blow-off as a share of the anchor flow at the anchor reheat pressure (silencer, below) */
   Crh: 400,
   rhb: 0.42 /* RH blow-off: silencer Z-1006 200 T/H (Equipment List p2); no valve sheet in the docs */,
   /* 2.2.0-beta.17 (M4 step 4, turbine roll / sync / load up; PR-OPE-5002 4.4 ~ 4.6): the turbine and its TCS are a black box outside
@@ -69,14 +68,14 @@ const AN_UNIT = {
      -> 'sync' (3600 rpm, the TCS closes the GCB: I.0931 = 1 / I.0932 = 0, INITIAL LOAD 4.5 MW on the ICV) -> 'load' (LOAD UP
      at rate MW/min = 5 % of 150 MW per minute; at MWxf = 20 MW or the ICV full open the HP control valves take over, ICV -> CV
      TRANSFER COMPLETE I.0418 = 1, "transfer at 20 MW or HP bypass closed"). While the generator is on the grid the MW is the HP
-     steam (1 - cIP) + the IP / LP steam cIP (reheat unit: about 60 % of the work in the IP / LP, ASSUMED) less the anchor losses
+     steam (1 - cIP) + the IP / LP steam cIP (cIP below: 75 %, CALC from HEAT_BALANCE.md) less the anchor losses
      (c x m0 - MW0, fading out with a small IP flow). Before the transfer the IP / LP steam comes from the HP bypass through the
      reheater (U.rr integrator of beta.16, with the ICV flow out). DCS CONTROL MODE PERMISSIVE I.0081 = 1 above MWperm (NORMAL
-     OPERATION, 30 % load, PR-OPE-5002 4.6; the TCS logic is not in the repository, ASSUMED), DCS CONTROL MODE ON I.0082 set by the
+     OPERATION, 30 % load, PR-OPE-5002 4.6 / SU 9396; the TCS logic of I.0081 itself is a PC-only scan), DCS CONTROL MODE ON I.0082 set by the
      pulse O.0178 of ABC-001C while I.0081, reset by O.0179. These inputs are written only in a start-up (U.cold); the snapshot of
      "Start at 150 MW" keeps its own. */
   rollRate: 120 /* rpm/min, PR-OPE-5002 cold start (the holds at 1800 / 3600 rpm of the procedure are the operator's; not modelled) */,
-  icvRoll: 0.13 /* ICV opening for the roll steam (about 14 T/H at 7.6 kg/cm2 reheat, ASSUMED) */,
+  icvRoll: 0.13 /* ICV opening for the roll steam (about 14 T/H at 7.6 kg/cm2 reheat, NO-SOURCE: the SOP gives CV 10 / 3 % at 400 rpm, no ICV opening) */,
   cIP: 0.75 /* calculated: HP 38 MW, IP / LP 113 MW of the shaft, HEAT_BALANCE.md */,
   MWxf: 20,
   MWperm: 45,
@@ -127,7 +126,7 @@ const AN_UNIT = {
   /* 2.2.0-beta.12 (M3, trips). The DCS drawings give the LOGIC of a trip (force manual, BU-CMD, interlock); the plant answers:
      - TURBINE TRIP (STN102 I.0400 TCS-DI1003 "#1 Turbine trip", FROM ARP; memory list STN101 M.3200 "T/B TRIP (BC FROM S2)" and
        M.3220 "52G1 OPENED (BC FROM S2)" <- I.0932 "GCB 52G1 off"): the station wiring broadcasts the S2 inputs to S1 (bcast below,
-       so one input of the operator trips the whole DCS). The TCS closes the turbine valves (tauTrip, ASSUMED 1 s): no steam to the
+       so one input of the operator trips the whole DCS). The TCS closes the turbine valves (tauTrip 1 s, NO-SOURCE: the valve closing time is in the PC-only TG valve scans, asked of Jennie): no steam to the
        turbine, MW 0; the HP bypass (ABC-050) and the blow-off (ABC-013) take the steam. TURBINE TRIP is an MFT first out of the
        DITL (STN104 memory list M.053F / B.125F "TURBINE TRIP FIRST OUT"; PR-OPE-5003: the alarm is bypassed only for a normal
        shutdown), so the boiler trips with the turbine and cools down through the bypass; the pulse M.0124 / M.0256 of ABC-050 is
@@ -185,8 +184,8 @@ const AN_UNIT = {
   Tb0: 850,
   /* 3.2.0-beta.15 (phase B, utilities): CONDENSER VACUUM. The turbine exhausts to the condenser, cooled by the seawater pumps (SWP-A ~ C
      M.3353 ~ M.3355) with the condensate pumps (CP-A / B M.3350 / M.3351) taking the water out (PR-OPE-5002: SWP, CEP and VACUUM UP
-     before the turbine is rolled). The vacuum (share 0 ~ 1) rises in vacUp s once a SWP and a CEP run (ASSUMED 15 min with the
-     vacuum pumps, a field step) and is lost in vacDn s when they stop (ASSUMED 1 min). The turbine cannot be rolled below 90 %; a
+     before the turbine is rolled). The vacuum (share 0 ~ 1) rises in vacUp s once a SWP and a CEP run (vacUp below, ED 066 p15) and is
+     lost in vacDn s when they stop (1 min, NO-SOURCE: no vacuum decay curve in the docs). The turbine cannot be rolled below 90 %; a
      turning or loaded turbine is tripped by the TCS below 60 % (LOW VACUUM TRIP -> ABC-050 I.0400 TURBINE TRIP) */
   vacUp: 1846 /* ED 066 p15: starting ejector 0.345 kg/cm2 A at 20 min, 65 % of full vacuum */,
   vacDn: 60
@@ -1516,11 +1515,11 @@ function anMakeupStep(U, dt) {
                   750). The UA in service is CALIBRATED on 27.PNG (return 40 C, supply 38 C at 1500 m3/h = 3,452 kW, seawater
                   28.5 C, 2 SWBP): 7.2 % of the clean UA (UNUSUAL: fouled plates, or the snapshot heat load is not the design one);
                   effectiveness-NTU, counter flow, with the seawater of the running SWBP (U.swQbT) shared by the units in service;
-     heat load    3,480 kW x (0.4 + 0.6 x load / 150 MW) (27.PNG 3,452 kW at 148 MW; the split ASSUMED as 3.2.0-beta.69);
+     heat load    3,480 kW x (0.4 + 0.6 x load / 150 MW) (27.PNG 3,452 kW at 148 MW; the 40 / 60 split NO-SOURCE, as 3.2.0-beta.69);
      temperature  one node for the water of the loop, 180,000 kJ/K (about 43 m3, NO-SOURCE: the loop volume is not in the repository;
                   10 min to settle at full load, ~17 min from 40 to 60 C without seawater); no ACWP: no flow, the water goes to the
                   room temperature 30 C (NO-SOURCE) in 30 min; the bottom ash cooler outlets TT-CW1060 = the supply + 1 C while an
-                  ACWP runs (ASSUMED, the ash heat is not modelled; the snapshot reads 36 ~ 38 C at 37 C).
+                  ACWP runs (NO-SOURCE, the ash heat is not modelled; the snapshot reads 36 ~ 38 C at 37 C).
    Logic: DITL-76 / 77 START / trip drive the pumps here; PT-CW1152 (< 3.5 kg/cm2 = standby AUTO start), DPT-CW1108-A / B (> 0.8 trip),
    LT-CW1109 (< 0.3 m trip) go back into DITL-76 / 77; PT-CW1156 (DITL-41 < 3.5 / > 7 kg/cm2 annunciator), TT-CW1060 (DITL-21A) and the
    flow switches FS-CW1060 (DITL-21B, low flow) follow this model (plantsw.js). */
@@ -2244,7 +2243,7 @@ function anCdTagStep(U, ld) {
      ZT-AS1020-1 / -2 = the F(X) of the PIC-AS1005 MV (held by the airlock without air, AN_AV);
      gland header (in service: the TCS gland sealing, or a turbine on load): 0.32 kg/cm2 = 29.PNG, the TCS steam seal set point is not
      in the docs (CALIBRATED); out of service 0;
-     ASSUMED (no load curve in the docs): from no load (fed from the aux steam header, TT-AS1015 = TT-AS1003) to 150 MW (self-sealing, 29.PNG)
+     NO-SOURCE (no load curve in the docs): from no load (fed from the aux steam header, TT-AS1015 = TT-AS1003) to 150 MW (self-sealing, 29.PNG)
      linear in the load: TT-AS1015 + 21 C, TEGS1002 + 107 C over TT-AS1015, TEGS1003 = TEGS1002 - 2, PV-GS1034 42.6 %; the temperatures
      follow with 300 s;
      MV-AS1011 = 40 % while the TCS is in HP TURBINE WARMING (step 0, phase warm), else 0. */
@@ -2453,10 +2452,10 @@ function anLubeCoolStep(U, dt) {
    pumps P-1108A / B and the ID fan (I/O list STN103: TT-SW1501-x3 / x4 / xU / xV / xW AI0720 ~ 0758, VT-SW1501-x1 / x2; TT-CW1108-x3 /
    x4 / xU / xV / xW AI0912 ~ 0932; TT-FG1056-1 ~ 4 / U / V / W AI0672 ~ 0678, VT-FG1056-1 ~ 4 AI0528 ~ 0531). PR-OPE-5002 2.19 / 2.21
    / 2.27 (TI SW1501A3 / A4, VI SW1501A1 / A2) and 22.13 ~ 22.15 ask the operator to read them. No curve of the motors in the repository:
-     running      bearing to 55 C (ASSUMED) with a 30 min time constant, winding to 85 C (ASSUMED) with 15 min; vibration 1.8 mm/s (pumps)
-                  / 2.2 mm/s (IDF) (ASSUMED) at once;
+     running      bearing to 55 C (NO-SOURCE) with a 30 min time constant, winding to 85 C (NO-SOURCE) with 15 min; vibration 1.8 mm/s (pumps)
+                  / 2.2 mm/s (IDF) (NO-SOURCE; the alarm list and the SOP give limits only) at once;
      stopped      back to the ambient 30 C with twice the time constant, vibration 0.1 mm/s;
-     each element +0 ~ 2.5 C / +0 ~ 0.3 mm/s of its own (ASSUMED) so that two elements are not one number.
+     each element +0 ~ 2.5 C / +0 ~ 0.3 mm/s of its own (NO-SOURCE) so that two elements are not one number.
    Limits (alarm list "Alarm List _20160912" TE / VT): SWP bearing H 95 / HH 100, winding H 145 / HH 155, vibration H 7.6 / HH 11.9;
    ACWP bearing H 95 / HH 100, winding H 155 / HH 165 (DITL-76 / 77 rows 13 ~ 17 "> 100" / "> 165 C", plantsw.js); IDF bearing H 90 /
    HH 95 (< 80 / 82 start permissive), winding H 140 / HH 145 (< 130), vibration H 8 / HH 11 mm/s (< 8). U.mt = { tag: value } */
@@ -3525,7 +3524,7 @@ function anUnitStepX(dt, mso) {
     }
   }
   /* P1 #3 MAIN STEAM STOP MOV MV-MS1391 and its warming bypass MV-MS1392 (DITL-38): the share of the turbine steam that passes
-     (bypass ASSUMED 10 %), and the pressure at the MSV inlet that the ATS reads (tcs.js tcsSteam): it follows the main steam
+     (bypass 10 %, NO-SOURCE: the MV-MS1392 line size on PD-011 gives no flow; its closing time 6 s is Limitorque 1/21 ~ 21/21), and the pressure at the MSV inlet that the ATS reads (tcs.js tcsSteam): it follows the main steam
      pressure through the open MOV (30 s), slowly through the bypass alone (the warming of the pipe, 600 s), and falls with both shut
      (the steam in the pipe condenses, 1800 s). The HP bypass takes its steam before the MOV (PD-011) */
   {
