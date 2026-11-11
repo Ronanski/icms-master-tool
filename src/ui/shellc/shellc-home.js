@@ -115,14 +115,55 @@
     }
     return out;
   }
+  /* Mina beta.92 B92-2: after the oil loss MFT the list had only MASTER FUEL TRIP and the pump trip; the cause was in the Engineer event log
+     only. The drawings send these logic outputs to the CRT and the annunciator ("CRT (ANN)"): DITL-05 / 06 BOILER TRIP SIGNAL "... FIRST
+     OUT" (latched until RESET FIRST OUT, DITL-02 out 58), DITL-03F out 3 LOSS OF ALL FUEL, DITL-14 (#B ~ #D) out 4 BURNER A ~ D LOSS OF
+     FLAME. Each one at 1 is a row of its own, with its own Acknowledge (not a unit row: the trip pill keeps reading the 2 unit trips) */
+  const LRULES = [
+    [/^DITL-0[56]$/, /FIRST OUT$/, 'TRIP', 'MK10'],
+    [/^DITL-03F$/, /^LOSS OF ALL FUEL$/, 'TRIP', 'MK10'],
+    [/^DITL-14( #[B-D])?$/, /LOSS OF FLAME$/, '', 'MK07']
+  ];
+  let LA = null;
+  function logicOuts() {
+    const sh = call(() => (typeof S !== 'undefined' && S.sheets ? S.sheets.concat((window.WORLD && WORLD.inst) || []) : []), []);
+    if (LA && LA.n === sh.length && LA.n) return LA.list;
+    const list = [];
+    for (const f of sh) {
+      const nm = String(f.name || '').replace(/^\(\d+\)\s*/, '');
+      const ru = LRULES.find(r => r[0].test(nm));
+      if (!ru) continue;
+      for (const o of call(() => DUI.outs(f), []) || []) {
+        const p = String(o.name || '').split(' · ');
+        if (/ANN/.test(p[2] || '') && ru[1].test(p[1] || '')) list.push({ f, row: o.row, k: 'L|' + nm + '|' + o.row, nm: p[1] + ' (' + nm.replace(/ #.*/, '') + ')', kind: ru[2], pg: ru[3] });
+      }
+    }
+    LA = { n: sh.length, list };
+    return list;
+  }
+  function logicAlarms() {
+    const out = [];
+    if (none() || !window.DUI) return out;
+    const clk = () => call(() => (lsEvents[0] && lsEvents[0].t) || '', '');
+    for (const o of logicOuts()) {
+      if (call(() => DUI.outVal(o.f, o.row), 0) !== 1) {
+        delete UACK[o.k];
+        delete USEEN[o.k];
+        continue;
+      }
+      if (!USEEN[o.k]) USEEN[o.k] = clk();
+      out.push({ k: o.k, nm: o.nm, lv: '', t: USEEN[o.k], kind: o.kind, ack: !!UACK[o.k], lg: 1, pg: o.pg });
+    }
+    return out;
+  }
   function allAlarms() {
     /* Mina, live test of 269: the unit trips stayed on top of newer alarms: every list is in time order (the readers reverse it, newest first) */
     const sec = a => String(a.t || '').split(':').reduce((n, x) => n * 60 + (+x || 0), 0);
-    return [...call(() => lsAlarms.list().filter(a => !a.rtn && !a.sd), []), ...unitTrips()].sort((a, b) => sec(a) - sec(b));
+    return [...call(() => lsAlarms.list().filter(a => !a.rtn && !a.sd), []), ...unitTrips(), ...logicAlarms()].sort((a, b) => sec(a) - sec(b));
   }
-  const ackOne = a => (a.unit ? (UACK[a.k] = 1) : call(() => lsAlarms.ack(a.k)));
+  const ackOne = a => (a.unit || a.lg ? (UACK[a.k] = 1) : call(() => lsAlarms.ack(a.k)));
   const ackAllU = () => {
-    for (const a of unitTrips()) UACK[a.k] = 1;
+    for (const a of [...unitTrips(), ...logicAlarms()]) UACK[a.k] = 1;
     call(() => lsAlarms.ack());
   };
   window.lsShellC = Object.assign(window.lsShellC || {}, { alarms: allAlarms });
@@ -382,7 +423,7 @@
     const byPg = {};
     if (!n0)
       for (const a of allAlarms()) {
-        const p = a.unit ? (a.k === 'U|MFT' ? 'MK07' : 'MK13') : pageOfAlarm(a);
+        const p = a.pg || (a.unit ? (a.k === 'U|MFT' ? 'MK07' : 'MK13') : pageOfAlarm(a));
         if (p) (byPg[p] = byPg[p] || []).push(a);
       }
     /* the blocks read about 20 pages of machines: only while the overview is on screen (light app) */
