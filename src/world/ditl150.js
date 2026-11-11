@@ -490,8 +490,7 @@
          through the main steam stop MOV MV-MS1391 (4.PNG) and the feedwater flows through the discharge MOVs of the pumps (03.png
          BFWP-A in service, BFWP-B standby in AUTO: its discharge open so that the auto start feeds at once); the warming bypass
          MV-MS1392, the filling bypasses MV-FW1391 / 1392 and the mass blowdown MV-BD1001 are shut; the continuous blowdown MV-BD1002
-         in service (the 25 T/H of drum water that does not leave as main steam, plant.js integLoss: 03.png 499.1 - 474.1; the CBD line to
-         the flash tank is designed for 15 T/H, mass balance K1AU3-MB-019 item 22, see plant.js) */
+         in service (the 15 T/H design of the CBD line to the flash tank, mass balance K1AU3-MB-019 item 22, plant.js integLoss) */
       {
         const OPEN = { 'MV-MS1391': 1, 'MV-FW1001': 1, 'MV-FW1002': 1, 'MV-BD1002': 1 };
         for (const s of ALL()) {

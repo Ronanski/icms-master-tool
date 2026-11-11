@@ -833,14 +833,17 @@ function* anPlantLoad150G() {
             b.proc.y0 = 1;
           }
   } catch (e) {}
-  /* 2.1.0-beta.11: drum level (integrating, plant.js): the feedwater that does not leave as main steam on the snapshot
-     (03.png: FICFW1007 499.1 T/H, main steam AI0129 474.1 T/H) */
+  const AN_CBD_DESIGN = 15; /* T/H, MB-019 item 22 */
+  /* 2.1.0-beta.11: drum level (integrating, plant.js): the water that leaves the drum besides the main steam.
+     3.2.3-beta.66 (user: no ASSUMED): the continuous blowdown design flow 15 T/H, mass balance K1AU3-A2-0-001 sheet K1AU3-MB-019
+     item 22 (PDF p 11, drum to the flash tank, 5.5 kg/cm2, 160 C). Before: the snapshot difference 03.png FICFW1007 499.1 - main
+     steam AI0129 474.1 = 25 T/H, of which 10 T/H had no outlet on MB-019. The level control trims the feedwater (about 489 T/H) */
   try {
     const fw = AN_HMI_CTL.FICFW1007,
       ms = AN_HMI_AI['1|AI0129'];
     for (const sh of AN.sheets)
       if (sh.S)
-        for (const b of sh.S.procs || []) if (b.proc && (b.txt || [])[1] === 'LICBR1001' && fw && ms) b.proc.integLoss = b.proc.integLoss0 = Math.max(0, fw.pv - ms[0]);
+        for (const b of sh.S.procs || []) if (b.proc && (b.txt || [])[1] === 'LICBR1001' && fw && ms) b.proc.integLoss = b.proc.integLoss0 = AN_CBD_DESIGN;
   } catch (e) {}
   try {
     for (const sh of AN.sheets) if (sh.S && !/^ABC-000/.test(sh.name)) (stepSet(sh, 0.5), yield);

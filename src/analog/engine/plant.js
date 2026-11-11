@@ -869,12 +869,12 @@ function anProcStep(S, dt) {
       lhdQ += mbdQ;
       AN_CYC.mbd = mbdQ;
       /* 3.2.3 CONTINUOUS BLOWDOWN (PR-OPE-5002 5698 "MBD and CBD"; flow diagram K1AU3-PD-019: MV-BD1002, DITL-38 #MV-BD1002, line
-         BD-1-003). The water that leaves the drum besides the main steam at 150 MW (pr.integLoss, 03.png 499.1 - 474.1 = 25 T/H) is
+         BD-1-003). The water that leaves the drum besides the main steam at 150 MW (pr.integLoss, 15 T/H, MB-019 item 22) is
          taken as the continuous blowdown in service (src/world/ditl150.js: MV-BD1002 open). Mass balance K1AU3-A2-0-001 sheet K1AU3-MB-019
          (boiler vent and drain, PDF p 11): item 22, the CBD line from the drum to the flash tank, design 15 T/H (5.5 kg/cm2, 160 C);
          item 23, the MBD line to the blowdown tank, 50 T/H; item 24, the common drum outlet, 50 T/H at 142.5 kg/cm2; item 25, the
-         soot blowing steam 8 T/H (taken from the superheater, intermittent). So 15 of the 25 T/H is the CBD design; the other 10 T/H
-         is the snapshot difference of the two flow meters, NO-SOURCE (no other continuous drum outlet on MB-019). integLoss stays the setting of the
+         soot blowing steam 8 T/H (taken from the superheater, intermittent). 3.2.3-beta.66: integLoss is now the CBD design 15 T/H
+         (hmi-op.js AN_CBD_DESIGN); before it was the 25 T/H snapshot difference, of which 10 T/H had no outlet on MB-019. integLoss stays the setting of the
          field blowdown valve (AN.blowdown); now it also follows the MOV position and, as a choked flashing flow, the drum pressure:
          x G(P) / G(134 kg/cm2, the drum at 150 MW, unit model Start at 150 MW). Before: 25 T/H at any pressure and with MV-BD1002
          shut. About 9 T/H at 35 kg/cm2 */
