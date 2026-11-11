@@ -23,6 +23,8 @@ jobs:
           grep -qE "c3\.textContent ?= ?'v$V'" "$F" || { echo "version label does not say v$V"; exit 1; }
       - name: The sources build exactly the committed html (src/ is the truth)
         run: node tools/build/build.js --check
+      - name: No team or build name in the operator step texts (Mina B79-2)
+        run: node tools/training/operator-text-check.js
       - name: Scripts of the html parse (every script, also the ones with an id; the old check read only the 4 without one)
         run: |
           node -e "
