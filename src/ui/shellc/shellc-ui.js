@@ -338,7 +338,8 @@
   function pillRow() {
     const scp = document.querySelector('#scstrip .scp'),
       vr = document.querySelector('#crband > .seg');
-    if (scp && vr && gear && vr.parentNode !== scp) scp.insertBefore(vr, gear);
+    /* Mina B79-1: on a narrow window the gear moves into the More menu (scmore2m): insertBefore threw every pass (red ERROR banner) */
+    if (scp && vr && gear && vr.parentNode !== scp) gear.parentNode === scp ? scp.insertBefore(vr, gear) : scp.append(vr);
     /* tooltips on the strip buttons that have none */
     for (const b of document.querySelectorAll('#scstrip button:not([title])')) {
       const t = b.textContent.trim();
