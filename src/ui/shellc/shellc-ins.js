@@ -199,8 +199,9 @@
         call(() => lsEventAdd('TCS', 'TCS', 'Instructor: ' + (el.l52 ? 'open' : 'close') + ' 52L1' + (x ? ': ' + x : '')));
         setTimeout(fill, 300);
       };
+      /* Mina B66-5: Close 52L1 acted at once while Open asked first: both ask (closing onto the grid is a synchronizing step too) */
       if (el.l52) arm(l52, t, go, { q: 'Open the line breaker 52L1?', t: 'House load operation: the unit leaves the 230 kV grid and the generator carries the house load only.', ok: 'Open 52L1', danger: true });
-      else l52.onclick = go;
+      else arm(l52, t, go, { q: 'Close the line breaker 52L1?', t: 'The unit goes back on the 230 kV grid and the generator carries its load again.', ok: 'Close 52L1' });
     }
     r.append(tt, mft);
     if (l52) r.append(l52);
