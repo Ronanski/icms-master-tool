@@ -212,7 +212,7 @@ b.gd-tg{font-weight:600;color:var(--c-tx2)}
 .gd-cd{flex:1;min-width:0;color:var(--c-dim);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gd-mdl{font:700 11px var(--mf);padding:1px 7px;border-radius:4px;border:1px solid var(--c-line2);color:var(--c-tx2)}
 .gd-mdl.man{color:var(--c-mantx2);border-color:var(--c-man);background:var(--c-mansoft)}
-.gd-mdl.auto,.gd-mdl.rem,.gd-mdl.cas{color:#cfe3f5;border-color:#2563eb;background:color-mix(in srgb,#2563eb 22%,transparent)}
+.gd-mdl.auto,.gd-mdl.rem,.gd-mdl.cas{color:#fff;border-color:#2563eb;background:#2563eb} /* Mina B67-6: #cfe3f5 text on the light dock was blank */
 .gd-vs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:5px}
 .gd-vs.mv1{grid-template-columns:minmax(0,1fr)}
 .gd-v{background:var(--c-well);border:1px solid var(--c-line);border-radius:5px;padding:1px 6px;min-width:0}
