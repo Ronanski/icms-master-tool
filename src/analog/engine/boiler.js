@@ -246,6 +246,9 @@ function anDieselOilStep(U, dt) {
   U.doQf = r.qf;
   U.doQrv = r.qrv;
   U.doVo = vo;
+  /* 3.2.3-beta.90: the oil each gun gets with its two valves open (ring pressure and FCV-DO1043-x3 opening), for the flame scanners
+     (03b-sim.js fdStep) */
+  U.doQg = xc.map(x => doBurnerQ(U.doP2, x));
   U.doDp = K.dp0 * (Qc / K.Qp) ** 2;
   /* the tank: the oil burnt leaves it (the recirculation, the ring return and the relief come back) */
   const burn = qb.reduce((s, q) => s + q, 0);

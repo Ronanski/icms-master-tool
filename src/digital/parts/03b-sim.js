@@ -555,7 +555,16 @@ function fdStep(s, dt) {
     else if (d.flame) {
       const v16 = fdSheet(s, 'DITL-16'),
         o = v16 && window.WORLD && WORLD.out && WORLD.out[v16.name],
-        oil = !!(o && o.has(21) && o.has(23)),
+        /* 3.2.3-beta.90 (Mina B80-2 CRITICAL, beta.80 Cold run at step 73: every oil flame went out with no MFT and no alarm): the
+           scanner saw "both oil valves OPENED" only, so with the valves open and NO oil at the gun (diesel oil pumps stopped, service
+           tank T-0701 empty) the four FLAME DETECTOR ON contacts stayed made, DITL-14 never saw a loss of flame and DITL-03A never saw
+           a loss of all fuel. A flame needs fuel: the scanner now also needs the oil that the gun of its burner gets with its valves
+           open (boiler.js U.doQg: doBurnerQ of the burner ring pressure and the FCV-DO1043-x3 opening, the diesel oil model,
+           T/H; 0.001 = the numerical zero, not a plant value). The supply side, not the flow of the last step: the flow comes one
+           engine step after the valves open (up to 3 s at x300) and the ignition trial lost burner D in an automatic run */
+        U0 = typeof AN !== 'undefined' && AN.unit && AN.unit.on ? AN.unit : null,
+        qb = U0 && U0.doQg ? +U0.doQg[(s._inst && s._inst.k) || 0] : NaN,
+        oil = !!(o && o.has(21) && o.has(23)) && !(qb <= 0.001),
         ign = !!(st[0] && st[0].pos >= 1);
       want = oil && (ign || x.pos >= 1) ? 1 : 0;
     }
