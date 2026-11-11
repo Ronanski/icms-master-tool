@@ -1526,7 +1526,10 @@ function anStep(S, dt) {
         s.pk = pickB ? 'B' : 'A';
         /* 3.2.1: a force of the drawing changes the station, so its mode status follows: ABC-007 M.018D needs FICFA1071.LOC after the force at house operation;
            .REM stayed 1 and the PA set point never went to 230 T/H (Mina turbine trip) */
-        if (s.rmSw != null && s.al && /^FICFA10[78]1$/.test(s.mtag || '') && AN.unit && AN.unit.on && +AN.unit.t > 5) {
+        /* 3.2.3-beta.92 (Mina B89-1): FICFW1007 too: ABC-010 M.0228 (feedwater < 100 T/H, TON 60 s) forces it MANUAL, and M.0226 (LICBR1001B
+           AUTO allowed) reads FICFW1007.MAN: the start-up loop stayed refused until the operator pressed M on a station already MANUAL
+           (CLAUDE.md rule 10: a BU-CMD station is MANUAL, .MAN = 1, for the other logic) */
+        if (s.rmSw != null && s.al && /^(FICFA10[78]1|FICFW1007)$/.test(s.mtag || '') && AN.unit && AN.unit.on && +AN.unit.t > 5) {
           if (s.fman) s.lf = 1;
           if (s.lf) {
             const q = rt.st[s.rmSw],
