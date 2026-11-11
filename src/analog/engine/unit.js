@@ -170,7 +170,14 @@ const AN_UNIT = {
   Tburn0: 350,
   Tburn1: 600,
   Cw: 1726 /* water 175.6 t (T8 Tab 2) x 4.18 + evaporative steel 437.7 t (B-0-001) x 0.5 kJ/kg K = 953 MJ/K, in units of 0.554 MW */,
-  uaW: 0.58 /* heat to the water by furnace rise: 460 T/H x (2640 - 1360) kJ/kg = 164 MW over 850 - 340 C = 0.32 MW/K, in the same units */,
+  /* 3.2.3-beta.78 (CHAEWON, Training ramp 90 -> 150 MW stalled at about 113 MW, MSP 127 -> 62): the cap qW = uaW x (Tb - Tw) is in
+     T/H of steam made, the unit of U.Qs (U.a line above). 0.58 came from 0.32 MW/K divided by 0.554 MW, which is not the heat of one T/H
+     of steam made here (164 MW / 460 T/H = 0.356 MW), so the cap was 0.58 x (850 - 335) = about 300 T/H: a boiler started from Cold
+     could not make more than about 300 T/H (about 113 MW). CALC: steam made at 150 MW = 484 T/H main steam (plant trends 2026-11-08,
+     U.a) + 15 T/H CBD (MB-019 item 22, K1AU3-A2-0-001 p11) = 499 T/H, over bed 850 C at full load (FHI Fig 8) minus the drum
+     saturation at the design drum pressure 129 + 16 = 145 kg/cm2 g (FHI P2 S7 design data: SH outlet 129, SH pressure drop 16;
+     IF97 steamTsat 338.5 C): 499 / (850 - 338.5) = 0.976 */
+  uaW: 0.976,
   kcool: 60 /* 2.2.0-beta.21: cooling of the unfired boiler by the air, T/H steam-equivalent at the anchor air and 300 C (ASSUMED, Fig. 5) */,
   kamb: 1 /* 2.2.0-beta.21: bottled boiler loss to the ambient, T/H steam-equivalent at 300 C (ASSUMED) */,
   tauB: 900,
