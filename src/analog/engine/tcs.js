@@ -74,7 +74,9 @@ const TCS = {
   },
   rub: 200 /* rpm, PR-OPE-5002 8325 "target speed 200 rpm for rub check"; complete below 100 rpm (criteria page 14 Fig. 1) */,
   crit: [1372, 1723] /* rpm, critical zone, no hold (PR-OPE-5002 8561) */,
-  /* time constants (NO-SOURCE: the turbine heat capacity and a turbine start-up curve are not in the docs searched, see the head) */
+  /* time constants (NO-SOURCE: the turbine heat capacity and the rotor data are not in the docs searched, see the head). Bounds only:
+     TG operator manual STIE-14811 (Davao sister unit) p147 Fig. 1.1 holding chart 3.8 h at 0 C metal down to 0 h at 150 C, and Fig. 1.4
+     heat soaks; the steam temperature at the metal during the hold is not printed there, so no time constant can be calculated */
   tauMetal: 2400 /* s, HP first stage / reheat bowl inner wall toward the steam while steam flows */,
   tauChest: 900 /* s, CV chest inner wall toward the main steam in chest warming */,
   tauChestO: 1500 /* s, CV chest outer wall toward the inner wall */,
@@ -598,7 +600,7 @@ function tcsStep(U, dt) {
      (NO-SOURCE law, limits 80 / 52 C sourced, ambient 30 C: with the spray about 56 C at 3600 rpm with no load, about 49 C at the initial load 4.5 MW, about 58 C on load: under the 80 C of 1.12) */
   const sp = Math.min(1, (tb.rpm || 0) / 3600),
     /* 3.2.0-beta.38: the hood spray FVCD1904 in AUTO (PR-OPE-5002 6307, put in AUTO at the vacuum up) sprays below 15 % load (22.5
-       MW, 9195) and takes 70 % of the windage heat (NO-SOURCE). Without it: 82 C at 3600 rpm with no load, over the 80 C of 1.12 (hold) */
+       MW, 9195) and takes 70 % of the windage heat (NO-SOURCE share; the spray itself is sourced: FV-CD1904 full open below 15 % load, IBD TC-28, 5226 kg/h, TG maintenance manual p104 and p2520 ~ 2521). Without it: 82 C at 3600 rpm with no load, over the 80 C of 1.12 (hold) */
     hs = c.hsp && (U.MW || 0) < 22.5 ? 0.3 : 1,
     XSS =
       Ta + 15 + 37 * hs * sp * sp * Math.max(0.35, 1 - (U.MW || 0) / 7.5) + 120 * Math.max(0, 0.9 - (U.vac || 0)) * sp,
@@ -804,8 +806,8 @@ function tcsStep(U, dt) {
 const TCS_OIL = {
   mop: 6.1,
   brg: 3.3,
-  brgEop: 1.6,
-  eop: 1.6,
+  brgEop: 1.6 /* kg/cm2, NO-SOURCE inside sourced bounds: above the EOP LOW OFF 1.33 and below the 5.0 design (V-LOn005) */,
+  eop: 1.6 /* same bounds */,
   cop: 163.2,
   filt: 0.6,
   mopLo: 5.6,

@@ -2241,8 +2241,9 @@ function anCdTagStep(U, ld) {
      PTST11101 ~ 3 = PT-CD1110 (the model condenser U.cdP); TEST11101 ~ 3 = the LP exhaust hood of the TCS model (tcs.js c.Tx, start-up),
      the condenser saturation without it (Start at 150 MW);
      ZT-AS1020-1 / -2 = the F(X) of the PIC-AS1005 MV (held by the airlock without air, AN_AV);
-     gland header (in service: the TCS gland sealing, or a turbine on load): 0.32 kg/cm2 = 29.PNG, the TCS steam seal set point is not
-     in the docs (CALIBRATED); out of service 0;
+     gland header (in service: the TCS gland sealing, or a turbine on load): 0.32 kg/cm2 = 29.PNG; the steam seal feed valve
+     sheet (TG maintenance manual p2500 ~ 2501) gives a set point of about 0.3 kg/cm2 g (CALC), the LOW alarm is 0.10 kg/cm2 (ATS 1.10);
+     out of service 0;
      NO-SOURCE (no load curve in the docs): from no load (fed from the aux steam header, TT-AS1015 = TT-AS1003) to 150 MW (self-sealing, 29.PNG)
      linear in the load: TT-AS1015 + 21 C, TEGS1002 + 107 C over TT-AS1015, TEGS1003 = TEGS1002 - 2, PV-GS1034 42.6 %; the temperatures
      follow with 300 s;

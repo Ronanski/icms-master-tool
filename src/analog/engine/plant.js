@@ -870,7 +870,11 @@ function anProcStep(S, dt) {
       AN_CYC.mbd = mbdQ;
       /* 3.2.3 CONTINUOUS BLOWDOWN (PR-OPE-5002 5698 "MBD and CBD"; flow diagram K1AU3-PD-019: MV-BD1002, DITL-38 #MV-BD1002, line
          BD-1-003). The water that leaves the drum besides the main steam at 150 MW (pr.integLoss, 03.png 499.1 - 474.1 = 25 T/H) is
-         taken as the continuous blowdown in service (src/world/ditl150.js: MV-BD1002 open; ASSUMED). integLoss stays the setting of the
+         taken as the continuous blowdown in service (src/world/ditl150.js: MV-BD1002 open). Mass balance K1AU3-A2-0-001 sheet K1AU3-MB-019
+         (boiler vent and drain, PDF p 11): item 22, the CBD line from the drum to the flash tank, design 15 T/H (5.5 kg/cm2, 160 C);
+         item 23, the MBD line to the blowdown tank, 50 T/H; item 24, the common drum outlet, 50 T/H at 142.5 kg/cm2; item 25, the
+         soot blowing steam 8 T/H (taken from the superheater, intermittent). So 15 of the 25 T/H is the CBD design; the other 10 T/H
+         is the snapshot difference of the two flow meters, NO-SOURCE (no other continuous drum outlet on MB-019). integLoss stays the setting of the
          field blowdown valve (AN.blowdown); now it also follows the MOV position and, as a choked flashing flow, the drum pressure:
          x G(P) / G(134 kg/cm2, the drum at 150 MW, unit model Start at 150 MW). Before: 25 T/H at any pressure and with MV-BD1002
          shut. About 9 T/H at 35 kg/cm2 */
@@ -901,7 +905,13 @@ function anProcStep(S, dt) {
       /* 2.2.0-beta.12 (M3): SHRINK / SWELL. A fast change of the drum pressure moves the level the other way for a while (the steam
          bubbles in the water collapse when the pressure rises after a turbine trip, grow when it falls after an MFT): the level
          read is the water level minus ks x (pressure - its lag of tauS), so a pressure step gives a transient of ks mm per
-         kg/cm2 that fades in tauS (ASSUMED: ks 10 mm per kg/cm2, tauS 60 s; not in the repository) */
+         kg/cm2 that fades in tauS (ks 10 mm per kg/cm2, tauS 60 s). CALC check (3.2.3, no ASSUMED): the saturated water of the boiler,
+         furnace 74.5 t + evaporator 14.0 t + drum about 16 t = 104.5 t (FHI P2 S8 Tab 2 p 2-8-TAB_2-1, plant-study 12-assumptions), at
+         130 bar (hf 1531.4, hfg 1131 kJ/kg, rho water 647, steam 76.6 kg/m3; hf falls 3.96 kJ/kg per kg/cm2) flashes 104,500 x 3.96 /
+         1131 = 366 kg of steam per kg/cm2 of pressure drop: 366 x (1 / 76.6 - 1 / 647) = 4.2 m3, over the drum water surface 20.6 m2
+         (2 x 0.8242 x 12.481, K1AU3D-101) = 204 mm per kg/cm2 while that steam is in the risers. On a ramp the model gives ks x tauS x
+         dP/dt = 600 mm per kg/cm2/s, the flash 204 x tr: the two agree for a riser transit time tr of about 3 s, which is NO-SOURCE
+         (no circulation data in the FHI manual), so ks and tauS stay as they are */
       if (S1 && pr.integ.pd >= 0) {
         const ps = S1.rt.st[pr.integ.pd],
           P = ps && isFinite(ps.val) ? +ps.val : NaN;
