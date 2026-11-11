@@ -78,6 +78,13 @@ const TCS = {
      TG operator manual STIE-14811 (Davao sister unit) p147 Fig. 1.1 holding chart 3.8 h at 0 C metal down to 0 h at 150 C, and Fig. 1.4
      heat soaks; the steam temperature at the metal during the hold is not printed there, so no time constant can be calculated */
   tauMetal: 2400 /* s, HP first stage / reheat bowl inner wall toward the steam while steam flows */,
+  /* 3.2.3-beta.67 CALC: HP prewarming (step 0). STIE-14747 p35 ~ 36: prewarm with the HP shell at 4.0 ~ 5.0 kg/cm2 g; condensing steam,
+     so the metal goes toward the saturation (steam table, anTsatA: 157.8 C at 5.0 kg/cm2 g). STIE-14811 p147 Fig. 1.1 prewarming hold
+     3.8 h from 0 C, about 2.5 h from 95 C, about 1.75 h from 125 C, 0 h at 150 C (the end, IBD TE-1 comparator 150 C). First order:
+     t = tau x ln((Ts - T0) / (Ts - 150)) gives tau 4540 / 4303 / 4372 s at 5.0 kg/cm2 g (mean 4405); at 4.0 kg/cm2 g the three
+     disagree (2679 / 2188 / 1883 s), so 5.0 kg/cm2 g is the pressure that fits the chart */
+  tauWarm: 4400,
+  pWarm: 5.0 /* kg/cm2 g, STIE-14747 p35 ~ 36 upper value, see tauWarm */,
   tauChest: 900 /* s, CV chest inner wall toward the main steam in chest warming */,
   tauChestO: 1500 /* s, CV chest outer wall toward the inner wall */,
   tauCool: 72000 /* s, metal cooling with no steam */,
@@ -586,7 +593,8 @@ function tcsStep(U, dt) {
     c.Thp += ((s.mst - c.Thp) * dt) / TCS.tauMetal;
     c.Trh += ((s.rht - c.Trh) * dt) / TCS.tauMetal;
   } else if (c.cur === 0 && c.ph === 'warm') {
-    c.Thp += ((s.mst - c.Thp) * dt) / TCS.tauMetal;
+    const Tw = typeof anTsatA === 'function' ? anTsatA(TCS.pWarm + 1.033) : 157.8;
+    c.Thp += ((Math.min(s.mst, Tw) - c.Thp) * dt) / TCS.tauWarm;
   } else {
     c.Thp += ((Ta - c.Thp) * dt) / TCS.tauCool;
     c.Trh += ((Ta - c.Trh) * dt) / TCS.tauCool;

@@ -56,7 +56,7 @@ Binasa ulit ang page 3 noong 2026-11-08: ang dating talaan ay isang column ang l
 
 **Steam sa roll (boiler side):** ang SH / RH outlet sa start-up ay sumusunod sa FHI SECT_7 Fig. 2 / 3 / 4 (cold 418 °C, warm 430 °C, hot 490 °C mula roll hanggang transfer; 505 °C sa 30 % load; 541 °C mula 60 %). Ang dating extrapolation ng load test ay 468 °C sa 12 % load: hindi makaka-roll. Ang SH at RH spray ay hindi makakatulong doon ayon sa drawing (DITL-33: SOV bukas lang kapag finishing SH inlet ≥ 350 °C at steam > 46 T/H; DITL-35: RH spray pagkatapos lang ng ICV → CV transfer).
 
-Mga numerong hindi mabasa sa drawing ("REFER TO IBD"): kinuha sa PR-OPE-5002. Ang time constant ng metal ng turbine ay NO-SOURCE (wala sa docs ang heat capacity at rotor data ng turbine), nakasulat sa `tcs.js`; ang hangganan lang ay galing sa STIE-14811 p147 Fig. 1.1 (holding chart 3.8 h sa 0 °C hanggang 0 h sa 150 °C).
+Mga numerong hindi mabasa sa drawing ("REFER TO IBD"): kinuha sa PR-OPE-5002. Ang HP prewarming (step 0) ay CALC na: 4400 s papunta sa 157.8 °C (saturation sa 5.0 kg/cm2 g, STIE-14747 p35 ~ 36), mula sa STIE-14811 p147 Fig. 1.1. Ang ibang time constant ng metal ng turbine ay NO-SOURCE (wala sa docs ang heat capacity at rotor data ng turbine), nakasulat sa `tcs.js`; ang hangganan lang ay galing sa STIE-14811 p147 Fig. 1.1 (holding chart 3.8 h sa 0 °C hanggang 0 h sa 150 °C).
 
 **Thermal stress (STIE-14811 TG operator manual, Davao sister unit, p147 Table 1.2 Thermal Stress Control Value).** Reference data lang; HINDI pa ito kinukuwenta ng app dahil ang stress ay kailangan ng rotor geometry at material data na NO-SOURCE. Kaya ang thermal stress hold ay hindi pa umaandar.
 
