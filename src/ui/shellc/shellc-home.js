@@ -119,10 +119,16 @@
      only. The drawings send these logic outputs to the CRT and the annunciator ("CRT (ANN)"): DITL-05 / 06 BOILER TRIP SIGNAL "... FIRST
      OUT" (latched until RESET FIRST OUT, DITL-02 out 58), DITL-03F out 3 LOSS OF ALL FUEL, DITL-14 (#B ~ #D) out 4 BURNER A ~ D LOSS OF
      FLAME. Each one at 1 is a row of its own, with its own Acknowledge (not a unit row: the trip pill keeps reading the 2 unit trips) */
+  /* Mina beta.94 B94-2: the drawings' alarms to the CRT and annunciator ("CRT (ANN)"). DITL-03F LOSS OF ALL FUEL and DITL-14 BURNER x
+     LOSS OF FLAME are 1 only for a moment (the MFT closes the oil valves and the condition is gone), so a row read only at the list's
+     draw time was never seen. Like a DCS alarm: a sampler every 0.25 s latches the row at its rising edge (time from the event log
+     clock, one event log line); the row stays until it is acknowledged AND the output is back to 0 (ISA-18.2 latched alarm). Rows: every
+     CRT (ANN) output of DITL-03F (loss of all fuel, primary air L.L., furnace temperature for coal, emergency trip buttons), the first
+     outs of DITL-05 / 06, and DITL-14 (#B ~ #D) LOSS OF FLAME and LIGHT OFF UNSUCCESSFUL. [sheet, row text, kind, page, event line] */
   const LRULES = [
-    [/^DITL-0[56]$/, /FIRST OUT$/, 'TRIP', 'MK10'],
-    [/^DITL-03F$/, /^LOSS OF ALL FUEL$/, 'TRIP', 'MK10'],
-    [/^DITL-14( #[B-D])?$/, /LOSS OF FLAME$/, '', 'MK07']
+    [/^DITL-0[56]$/, /FIRST OUT$/, 'TRIP', 'MK10', 0],
+    [/^DITL-03F$/, /./, 'TRIP', 'MK10', 1],
+    [/^DITL-14( #[B-D])?$/, /(LOSS OF FLAME|LIGHT OFF UNSUCCESSFUL)$/, '', 'MK07', 1]
   ];
   let LA = null;
   function logicOuts() {
@@ -135,25 +141,48 @@
       if (!ru) continue;
       for (const o of call(() => DUI.outs(f), []) || []) {
         const p = String(o.name || '').split(' · ');
-        if (/ANN/.test(p[2] || '') && ru[1].test(p[1] || '')) list.push({ f, row: o.row, k: 'L|' + nm + '|' + o.row, nm: p[1] + ' (' + nm.replace(/ #.*/, '') + ')', kind: ru[2], pg: ru[3] });
+        if (/^CRT \(ANN\)$/.test(p[2] || '') && ru[1].test(p[1] || ''))
+          list.push({ f, sh: nm, row: o.row, k: 'L|' + nm + '|' + o.row, txt: p[1], nm: p[1] + ' (' + nm.replace(/ #.*/, '') + ')', kind: ru[2], pg: ru[3], ev: ru[4] });
       }
     }
     LA = { n: sh.length, list };
     return list;
   }
+  const LON = {};
+  let LN = -1;
+  function logicScan() {
+    if (none() || !window.DUI) return;
+    /* a new starting state (AN.loadN, the same test as the event log) starts with no logic rows */
+    const n = (window.AN && AN.loadN) || 0;
+    if (n !== LN) {
+      for (const k in USEEN) if (k[0] === 'L') delete USEEN[k];
+      for (const k in UACK) if (k[0] === 'L') delete UACK[k];
+      for (const k in LON) delete LON[k];
+      LN = n;
+    }
+    const clk = () => call(() => (lsEvents[0] && lsEvents[0].t) || '', '');
+    for (const o of logicOuts()) {
+      const on = call(() => DUI.outVal(o.f, o.row), 0) === 1;
+      if (on && !LON[o.k]) {
+        if (!USEEN[o.k] || UACK[o.k]) {
+          USEEN[o.k] = clk();
+          delete UACK[o.k];
+          if (o.ev) call(() => window.lsEventAdd && lsEventAdd(o.sh, 'ALM', o.txt + ' (CRT ANN)'));
+        }
+      }
+      LON[o.k] = on;
+      if (!on && UACK[o.k]) {
+        delete UACK[o.k];
+        delete USEEN[o.k];
+      }
+    }
+  }
+  setInterval(() => call(logicScan), 250);
   function logicAlarms() {
     const out = [];
     if (none() || !window.DUI) return out;
-    const clk = () => call(() => (lsEvents[0] && lsEvents[0].t) || '', '');
-    for (const o of logicOuts()) {
-      if (call(() => DUI.outVal(o.f, o.row), 0) !== 1) {
-        delete UACK[o.k];
-        delete USEEN[o.k];
-        continue;
-      }
-      if (!USEEN[o.k]) USEEN[o.k] = clk();
-      out.push({ k: o.k, nm: o.nm, lv: '', t: USEEN[o.k], kind: o.kind, ack: !!UACK[o.k], lg: 1, pg: o.pg });
-    }
+    call(logicScan);
+    for (const o of logicOuts()) if (USEEN[o.k] != null) out.push({ k: o.k, nm: o.nm, lv: LON[o.k] ? '' : '· back to normal', t: USEEN[o.k], kind: o.kind, ack: !!UACK[o.k], lg: 1, pg: o.pg });
     return out;
   }
   function allAlarms() {
@@ -161,9 +190,10 @@
     const sec = a => String(a.t || '').split(':').reduce((n, x) => n * 60 + (+x || 0), 0);
     return [...call(() => lsAlarms.list().filter(a => !a.rtn && !a.sd), []), ...unitTrips(), ...logicAlarms()].sort((a, b) => sec(a) - sec(b));
   }
-  const ackOne = a => (a.unit || a.lg ? (UACK[a.k] = 1) : call(() => lsAlarms.ack(a.k)));
+  const ackOne = a => (a.unit || a.lg ? ((UACK[a.k] = 1), call(logicScan)) : call(() => lsAlarms.ack(a.k)));
   const ackAllU = () => {
     for (const a of [...unitTrips(), ...logicAlarms()]) UACK[a.k] = 1;
+    call(logicScan);
     call(() => lsAlarms.ack());
   };
   window.lsShellC = Object.assign(window.lsShellC || {}, { alarms: allAlarms });
