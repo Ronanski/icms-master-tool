@@ -173,6 +173,28 @@ window.LS_GUIDE = (function () {
   const mspOil = up => { const k = up ? 'mspU' : 'mspD', due = () => (up ? h().MSP() < 60 : h().MSP() > 100), b0 = oilStep(up ? 'Oil ▲ +5 % (main steam under 60 kg/cm², each 30 s)' : 'Oil ▼ −5 % (main steam over 100 kg/cm²)', ['A', 'B', 'C', 'D'], up ? 5 : -5), f0 = b0.f; b0.f = () => ((paceT[k] = simT()), f0()); return Object.assign(b0, { on: () => !due() || simT() - (paceT[k] || -1e9) < (up ? 30 : 60), hide: () => !due() }); };
   /* the Do it for me never presses the ▲ / ▼ trims (the trainee's own hand, #108): the seek of the load-up steps moves the oil instead, by the same rule as the buttons */
   const loadSeek = () => { const P = h().MSP(), up = P < 60, dn = P > 100; if (!(up || dn) || simT() - (paceT.ls || -1e9) < (up ? 30 : 60)) return; paceT.ls = simT(); mspOil(up ? 1 : 0).f(); };
+  /* coal before the 45 MW hold (boiler model thread 2026-11-11). Every limit has a source:
+     lo = the main steam the step raises the coal to: 100 kg/cm2 at 30 % load with coal in (FHI Part 2 Sect 7 Tab 4 Figure 2 COLD STARTUP;
+          45 MW = 30 % of 150 MW) for the hold and feeder C steps; 123 kg/cm2 for the 123 step (PIC-COBM SV, FHI Fig. 2 123 at 40 %,
+          HMI snapshot 4.PNG MSP 122.9, docs/hmi/OPERATING_POINTS.md).
+     The coal is lowered over 128 kg/cm2, the MS blow-off PICMS1002 SV (HMI snapshot summary list, BLOW-OFF SV 128.0, OPERATING_POINTS.md),
+     and already over 123 kg/cm2 (the PIC-COBM SV) while the main steam is rising, for the lag of the coal.
+     Automatic run 2026-11-11 (the 123 step had no seek): the coal kept the main steam rising 92 -> 131 kg/cm2, the blow-off opened,
+     the main steam 150 -> 265 T/H at 45 MW went out of the cycle, the hotwell drained, the condensate pumps were lost, the deaerator
+     emptied, the feedwater went to 0 and the drum LOW tripped the boiler (DITL-03A row 10).
+     Run 2026-11-11 b: FIC-CF PV = average of the 3 feeder MVs (drawing, hmi-op.js FIC-CF note): with feeders A and B in AUTO at MV 40 %
+     the PV was 26.7 %; feeder C in AUTO took all three to 40 % at once (total coal x 1.5, main steam 97 -> 129, same trip). The feeder C
+     AUTO button now first sets FIC-CF MV = its PV (CALC: three feeders at the old average carry the same total coal as before).
+     Run 2026-11-11 c: at 75 MW the boiler master HIC-BM in MANUAL held the main steam at the blow-off SV 128 with the blow-off open (M.0255
+     = 1, ABC-013 -> ABC-001C M.2013 BU-CMD), so HIC-BM could not go to AUTO; the step text says lower HIC-BM until the pressure falls
+     below 128: the same seek on HIC-BM (t), lowered also while M.0255 = 1.
+     One press each 30 s up / 60 s down and the 0.2 kg/cm2 'rising' are the pace of the Do it for me (as loadSeek), not plant values */
+  const coalSeek = (lo, t = 'FIC-CF') => () => { const P = h().MSP(), bo = h().bit('ABC-001C', 'M.0255') > 0.5; if (simT() - (paceT.cs || -1e9) < 30) return; const rise = paceT.csP != null && P > paceT.csP + 0.2, up = P < lo && !rise, dn = (bo || P > 128 || (P > 123 && rise)) && simT() - (paceT.csD || -1e9) >= 60; paceT.cs = simT(); paceT.csP = P; if (!(up || dn)) return; if (dn) paceT.csD = simT(); const m = mv(t); if (md(t) === 'MAN' && isFinite(m)) A.man(t, Math.max(0, Math.min(100, m + (up ? 1 : -1)))); };
+  /* STATION 101 M.0101 (ABC-001C), not STATION 102 M.0101 of ABC-017 */
+  const m0101 = () => +h().bit('ABC-001C', 'M.0101');
+  /* the TARGET MW set of HIC-ULD (ABC-001A COS SI0243), as the 'HIC-ULD A, TARGET 150' button */
+  const uldT = () => { const s = station('HIC-ULD'), d = s && (s.T.drv[s.b.i[s.b.svI]] || []).find(z => z.k === 'AMT'); return d ? { S: s.T, a: d.a } : null; };
+  const bmRdy = () => h().MSF() > 230 && bit('M.2013') < 0.5;
   const fw3Rdy = () => h().FW() > 110 && bit('M.0228') < 0.5;
   const loadSlow = () => h().MSP() < 60 || Math.abs(h().lvl()) > 100;
   /* ---------- reading ---------- */
@@ -323,9 +345,15 @@ window.LS_GUIDE = (function () {
     return '';
   };
   const bOff = L => btn('BURNER ' + L + ' OFF (DITL-09)', () => dPress(BR[L][1], 10), () => dOut(BR[L][0], 19) === 0);
-  /* e5 section 13 restart (boiler model thread, Jennie OK 2026-11-11): the firing restart swells the drum (automatic run: 250 -> 820 mm, HH,
-     second MFT, feedwater left near 400 T/H); the feedwater button shows when the drum is above 0 mm (Jennie: -10 % above +100, -5 % at 0 ~ +100, MV 10 % with no steam) */
-  const fwDn = () => Object.assign(btn('Feedwater FICFW1007 MANUAL: MV −10 % (drum over +100 mm), −5 % (0 ~ +100 mm), 10 % when there is no steam yet', () => { const m = mv('FICFW1007'), l = h().lvl(); if (!isFinite(m)) return A.man('FICFW1007', 0); /* Jennie 2026-11-11: no steam (MSF < 20 T/H) = the feedwater of the start-up valve only (PR-OPE-5002 hot restart), so MV 10 % at once */ A.man('FICFW1007', h().MSF() < 20 && m > 10 ? 10 : Math.max(0, m - (l > 100 ? 10 : 5))); }), { hide: () => !(h().lvl() > 0) });
+  /* e5 section 13 restart (boiler model thread 2026-11-11): the firing restart swells the drum (automatic run: up to +345 mm, over HH).
+     FHI Part 2 Sect 8 Tab 9 p 2-8-TAB_9-26 / 27, high water: open the intermittent blowdown (MBD, MV-BD1001 DITL-38), reduce steaming,
+     feedwater control to MANUAL. They show from the drum level H alarm +127 mm (alarm list 20160912, LT-BR1001; HH +254 = MFT, DITL-03E).
+     The MV step of 5 % is the size of the button press (like the other ▲ ▼ buttons), not a plant value */
+  const hiW = () => [
+    Object.assign(btn('High water: feedwater FICFW1007 MANUAL, MV −5 % (drum above H +127 mm)', () => { const m = mv('FICFW1007'); A.man('FICFW1007', isFinite(m) ? Math.max(0, m - 5) : 0); }), { hide: () => !(h().lvl() > 127) }),
+    Object.assign(mcvB('MV-BD1001', 1), { hide: () => !(h().lvl() > 127) }),
+    Object.assign(mcvB('MV-BD1001', 0), { hide: () => !(mcvPos('MV-BD1001') > 0 && h().lvl() <= 127) })
+  ];
   /* 3.2.0-beta.23 coal feeder outlet discharge valve (DITL-20 row 6 OPEN P.B. -> SV-CL1061-A, out 6 OPENED): a start permissive of the
      feeder (DITL-19 row 14); feeder B / C = machine instances #B / #C. Without the one world: nothing to do (the ABC has no such signal) */
   const fDis = L => {
@@ -1104,15 +1132,28 @@ window.LS_GUIDE = (function () {
       /* 3.2.0-beta.24: the MS blow-off to its load SV 128 (4.PNG 148.8 MW: BLOW-OFF A, SV 128, MV 0). The bypass coach left it at the
          HP bypass SV + 5 of the moment its step ended (118 + 5 = 123 in some runs): at 80 MW it opened > 5 % at MSP 123, and its
          M.0255 (ABC-013 -> ABC-001C M.2013 BU-CMD) put the boiler and turbine master back to MANUAL at the CCS handover */
+      /* coal before the 45 MW hold (boiler model thread 2026-11-11, from JENNIE's run: at 'Hold 45 MW' on oil only the main steam fell 69 -> 19 kg/cm2, drum +773 mm, MFT):
+         FHI Part 2 Sect 7 Tab 4, Figure 2 COLD STARTUP: IP/HP transfer 7.75 h, START COAL 8.6 h at 23 % boiler load and 80 kg/cm2, coal in by 30 % (9.2 h); 45 MW (30 %) is not held on oil. The bed is already above 600 C from the oil warm-up */
+      { st: 7, sec: 44, t: 'Bed temperature ≥ 550 °C: coal feeder ready', d: 'FHI Part 2 Sect 8 Tab 9 p 2-8-TAB_9-14 step 23: coal may start when the furnace temperature at the burner elevation reaches 550 °C (burners reduced at 700 °C, out from 750 °C).', c: b.VAL('Tb', 550, null), wait: 1 },
+      { st: 7, sec: 44, t: 'Batch firing of feeder A up to bed 600 °C', d: 'Do: START feeder A for about 10 seconds, STOP it for about 60 seconds, repeat until the bed is 600 °C (PR-OPE-5002 solid fuel firing). Watch the bed temperature: it rises when the coal burns.', c: C('Bed ≥ 600 °C', () => U().Tb >= 600, () => f0(U().Tb) + ' °C'), a: [fDis('A'), mot('M.3400', 'feeder A')] },
+      { st: 7, sec: 44, t: 'Feeder A continuous, FICCL1061A in AUTO, coal demand FIC-CF 10 %', d: 'After 600 °C, feeder A runs continuously. Once it runs, put it in AUTO (the drawing forces it to manual while it is stopped). From here you change over the firing: coal (FIC-CF ▲) for the turbine steam, oil down 5 % per minute to 20 % (PR-OPE-5002: 2.55 T/H coal = 1 T/H diesel), pressure up to 123 kg/cm² (the TCS holds 45 MW). Watch the bed: < 700 °C with no burner = coal trip (DITL-03F).', c: b.ALL(b.BIT('M.3400', 1, 'feeder A running'), b.MODE('FICCL1061A', 'AUTO'), SETmin('FIC-CF', 8)), fps: ['FICCL1061A', 'FIC-CF'], a: [fDis('A'), mot('M.3400', 'feeder A'), btn('FICCL1061A A', () => A.loc('FICCL1061A')), btn('FIC-CF M 10 %', () => A.man('FIC-CF', 10)), step('FIC-CF ▲ +1 %', 'FIC-CF', 1), step('FIC-CF ▼ −1 %', 'FIC-CF', -1), oilStep('Oil (all) ▼ −5 %', ['A', 'B', 'C', 'D'], -5)], w: COAL },
+      { st: 7, sec: 44, t: 'Feeder B, then FICCL1061B in AUTO', d: 'The second feeder.', c: b.ALL(b.BIT('M.3401', 1, 'feeder B running'), b.MODE('FICCL1061B', 'AUTO')), fps: ['FICCL1061B'], a: [fDis('B'), mot('M.3401', 'feeder B'), btn('FICCL1061B A', () => A.loc('FICCL1061B'))] },
       { st: 7, sec: 42, t: 'HP bypass in REMOTE, HP and LP bypass and MS blow-off closed at 45 MW', d: 'After the transfer, put the HP bypass SV in R (SV = PV + 2): it closes and the turbine takes all the steam. From here the pressure rises with the load (FHI Fig. 2: 61 kg/cm² at 15 % load, 123 at 40 %). The MS blow-off PICMS1002 is AUTO SV 128 (closed; a blow-off open > 5 %, M.0255, is a back-up command of the boiler master).', c: b.ALL(b.VAL('MW', 44, null), b.MODE('PICMS1006', 'REM'), b.BIT('M.0709', 0, 'HP bypass open'), b.BIT('M.0255', 0, 'MS blow-off open'), C('MS blow-off PICMS1002 AUTO, SV ≥ 125 kg/cm²', () => md('PICMS1002') === 'AUTO' && svOf('PICMS1002') >= 125, () => 'PICMS1002 ' + md('PICMS1002') + ' SV ' + f0(svOf('PICMS1002')))), fps: ['PICMS1006', 'PICMS1002'], slow: loadSlow, seek: loadSeek, a: [mspOil(1), mspOil(0), btn('HP bypass R', () => A.rem('PICMS1006'), () => md('PICMS1006') === 'REM'), btn('PICMS1002 A, SV 128', () => A.auto('PICMS1002', 128))] },
-      { st: 7, sec: 42, t: 'Hold 45 MW: MSP ≥ 90 kg/cm², drum level ±150 mm', d: 'NORMAL OPERATION on the TCS. The firing is still oil only; you raise the oil as the pressure rises (Fig. 2: about 98 kg/cm² at 45 MW).', fps: ['FICDO1043A', 'FICDO1043B'], w: BYP, c: b.ALL(C('TCS NORMAL OPERATION (ATS step 7)', () => TC().step >= 7, () => (TC().step >= 7 ? 'OK' : TC().next || 'press NORMAL OPERATION')), b.HOLD(120, b.ALL(b.VAL('MW', 44, null), b.VAL('MSP', 90, 131), b.VAL('lvl', -150, 150)))), a: [btn('NORMAL OPERATION (TCS)', () => A.tcs('normal'), () => TC().step >= 7), oilStep('Oil A / D ▲ +5 %', ['A', 'D'], 5), oilStep('Oil A / D ▼ −5 %', ['A', 'D'], -5), oilStep('Oil B / C ▲ +5 %', ['B', 'C'], 5), oilStep('Oil B / C ▼ −5 %', ['B', 'C'], -5)], wait: 1 },
+      { st: 7, sec: 42, t: 'Hold 45 MW: MSP ≥ 90 kg/cm², drum level ±150 mm', d: 'NORMAL OPERATION on the TCS. Coal (feeders A and B) and the oil burners fire together; raise the coal (FIC-CF ▲) or the oil as the pressure needs (FHI Fig. 2: coal from 23 % load, 100 kg/cm² at 30 %).', fps: ['FICDO1043A', 'FICDO1043B'], w: BYP, c: b.ALL(C('TCS NORMAL OPERATION (ATS step 7)', () => TC().step >= 7, () => (TC().step >= 7 ? 'OK' : TC().next || 'press NORMAL OPERATION')), b.HOLD(120, b.ALL(b.VAL('MW', 44, null), b.VAL('MSP', 90, 131), b.VAL('lvl', -150, 150)))), seek: coalSeek(100), a: [btn('NORMAL OPERATION (TCS)', () => A.tcs('normal'), () => TC().step >= 7), step('FIC-CF ▲ +1 %', 'FIC-CF', 1), step('FIC-CF ▼ −1 %', 'FIC-CF', -1), oilStep('Oil A / D ▲ +5 %', ['A', 'D'], 5), oilStep('Oil A / D ▼ −5 %', ['A', 'D'], -5), oilStep('Oil B / C ▲ +5 %', ['B', 'C'], 5), oilStep('Oil B / C ▼ −5 %', ['B', 'C'], -5)], wait: 1 },
       /* ---- 8 coal at 45 MW (PR-OPE-5002 solid fuel firing) ---- */
-      { st: 8, sec: 44, t: 'Bed temperature ≥ 400 °C: coal feeder ready', d: 'Coal burns only on a hot bed.', c: b.VAL('Tb', 400, null), wait: 1 },
-      { st: 8, sec: 44, t: 'Batch firing of feeder A up to bed 600 °C', d: 'Do: START feeder A for about 10 seconds, STOP it for about 60 seconds, repeat until the bed is 600 °C (PR-OPE-5002 solid fuel firing). Watch the bed temperature: it rises when the coal burns.', c: C('Bed ≥ 600 °C', () => U().Tb >= 600, () => f0(U().Tb) + ' °C'), a: [fDis('A'), mot('M.3400', 'feeder A')] },
-      { st: 8, sec: 44, t: 'Feeder A continuous, FICCL1061A in AUTO, coal demand FIC-CF 10 %', d: 'After 600 °C, feeder A runs continuously. Once it runs, put it in AUTO (the drawing forces it to manual while it is stopped). From here you change over the firing: coal (FIC-CF ▲) for the turbine steam, oil down 5 % per minute to 20 % (PR-OPE-5002: 2.55 T/H coal = 1 T/H diesel), pressure up to 123 kg/cm² (the TCS holds 45 MW). Watch the bed: < 700 °C with no burner = coal trip (DITL-03F).', c: b.ALL(b.BIT('M.3400', 1, 'feeder A running'), b.MODE('FICCL1061A', 'AUTO'), SETmin('FIC-CF', 8)), fps: ['FICCL1061A', 'FIC-CF'], a: [fDis('A'), mot('M.3400', 'feeder A'), btn('FICCL1061A A', () => A.loc('FICCL1061A')), btn('FIC-CF M 10 %', () => A.man('FIC-CF', 10)), step('FIC-CF ▲ +1 %', 'FIC-CF', 1), step('FIC-CF ▼ −1 %', 'FIC-CF', -1), oilStep('Oil (all) ▼ −5 %', ['A', 'B', 'C', 'D'], -5)], w: COAL },
-      { st: 8, sec: 44, t: 'Feeder B, then FICCL1061B in AUTO', d: 'The second feeder.', c: b.ALL(b.BIT('M.3401', 1, 'feeder B running'), b.MODE('FICCL1061B', 'AUTO')), fps: ['FICCL1061B'], a: [fDis('B'), mot('M.3401', 'feeder B'), btn('FICCL1061B A', () => A.loc('FICCL1061B'))] },
-      { st: 8, sec: 44, t: 'Bed ≥ 650 °C: feeder C, then FICCL1061C in AUTO', d: 'The third feeder, once the bed is hot enough.', c: b.ALL(b.VAL('Tb', 650, null), b.BIT('M.3402', 1, 'feeder C running'), b.MODE('FICCL1061C', 'AUTO')), fps: ['FICCL1061C'], a: [fDis('C'), WLm('M.3402', 'feeder C', () => (A.motor('M.3402', 1), A.motor('M.3405', 1))), btn('FICCL1061C A', () => A.loc('FICCL1061C'))] },
-      { st: 8, sec: 44, t: 'Main steam pressure 123 kg/cm² at 45 MW', d: 'Coal is now the main fuel; the oil burners stay at 20 % up to about 60 % load (FHI Fig. 2). Raise the coal (FIC-CF ▲ / ▼) to 123 kg/cm² (the PIC-COBM SV in CCS); watch the bed (> 700 °C).', c: b.HOLD(120, b.ALL(b.VAL('MW', 44, null), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150))), fps: ['FIC-CF'], a: [step('FIC-CF ▲ +1 %', 'FIC-CF', 1), step('FIC-CF ▼ −1 %', 'FIC-CF', -1), oilStep('Oil (all) ▼ −5 %', ['A', 'B', 'C', 'D'], -5)], w: COAL, wait: 1 },
+      { st: 8, sec: 44, t: 'Bed ≥ 650 °C: feeder C, then FICCL1061C in AUTO', d: 'The third feeder, once the bed is hot enough.', seek: coalSeek(100), c: b.ALL(b.VAL('Tb', 650, null), b.BIT('M.3402', 1, 'feeder C running'), b.MODE('FICCL1061C', 'AUTO')), fps: ['FICCL1061C'], a: [fDis('C'), WLm('M.3402', 'feeder C', () => (A.motor('M.3402', 1), A.motor('M.3405', 1))), btn('FICCL1061C A', () => { const q = pv('FIC-CF'); if (bit('M.3402') > 0.5 && md('FICCL1061C') !== 'AUTO' && md('FIC-CF') === 'MAN' && isFinite(q) && mv('FIC-CF') > q) A.man('FIC-CF', q); A.loc('FICCL1061C'); })] },
+      { st: 8, sec: 44, t: 'Main steam pressure 123 kg/cm² at 45 MW', seek: coalSeek(123), d: 'Coal is now the main fuel; the oil burners stay at 20 % up to about 60 % load (FHI Fig. 2). Raise the coal (FIC-CF ▲ / ▼) to 123 kg/cm² (the PIC-COBM SV in CCS); watch the bed (> 700 °C).', c: b.HOLD(120, b.ALL(b.VAL('MW', 44, null), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150))), fps: ['FIC-CF'], a: [step('FIC-CF ▲ +1 %', 'FIC-CF', 1), step('FIC-CF ▼ −1 %', 'FIC-CF', -1), oilStep('Oil (all) ▼ −5 %', ['A', 'B', 'C', 'D'], -5)], w: COAL, wait: 1 },
+      /* boiler model thread 2026-11-11 (automatic run): after 'Main steam pressure 123 kg/cm2 at 45 MW' the run waited for ever at
+         'Boiler master HIC-BM in AUTO' (steam flow 149 T/H, needs > 230, M.2013 steam flow < 220 T/H BU-CMD, ABC-001C): no step took the
+         load above 45 MW. PR-OPE-5002 load up (SU 9334-9419): NORMAL OPERATION at 45 MW, then raise toward 90 MW; SU 10617-10692: at
+         230 T/H main steam flow (about 75 MW, plant-study 01-operation.md phase 11) boiler master AUTO (boiler follow), PAF / SAF and the
+         coal master REMOTE. LOAD UP on the TCS at its rateUp (7.5 MW/min, PR-OPE-5002 LOAD UP 5 %/min). Run 2026-11-11 c: at 75 MW the
+         steam settled at 225 T/H, under the 230 T/H of the SOP, so the Do it raises the TCS target 5 MW more (one press
+         each 300 s, the pace of the Do it, not a plant value) while the steam is under 230 T/H or M.0101 = 0, up to the 90 MW of the SOP; held 120 s.
+         M.0101 is read on ABC-001C (STATION 101 "BOILER MAIN STEAM FLOW > 220 T/H"): the memory addresses are per station, and
+         bit('M.0101') read ABC-017 (STATION 102 M.0101 = SB INLET PRESSURE CONTROL FORCE MANUAL, memory list), 0, so this step and
+         'O2 control AICFG112 in AUTO' waited for ever at 264 T/H */
+      { st: 8, sec: 44, t: 'LOAD UP (TCS) until the main steam flow is ≥ 230 T/H (about 75 MW)', d: 'PR-OPE-5002: after NORMAL OPERATION at 45 MW raise the load toward 90 MW. At 230 T/H main steam flow (about 75 MW) the boiler master goes to AUTO (boiler follow) and the PA / SA air and the coal master to REMOTE. Raise the coal with the load (FIC-CF ▲) to hold about 123 kg/cm².', c: b.HOLD(120, b.ALL(b.VAL('MSF', 230, null), C('Steam flow > 220 T/H (ABC-001C M.0101)', () => m0101() > 0.5, () => 'M.0101 = ' + f0(m0101())))), fps: ['FIC-CF'], slow: loadSlow, seek: () => { coalSeek(123)(); const tb = U().tb; if (tb && tb.st === 'load' && (h().MSF() < 230 || m0101() < 0.5) && Math.abs((+tb.tgt || 0) - (+tb.aim || 0)) < 0.5 && (+tb.aim || 0) >= 75 && (+tb.aim || 0) < 90 && h().MSP() > 118 && simT() - (paceT.lu || -1e9) >= 300) { paceT.lu = simT(); A.tcs('loadup', Math.min(90, (+tb.aim || 0) + 5)); } }, a: [btn('LOAD UP 75 MW (TCS)', () => A.tcs('loadup', 75), () => !!(U().tb && U().tb.aim >= 75)), step('FIC-CF ▲ +1 %', 'FIC-CF', 1), step('FIC-CF ▼ −1 %', 'FIC-CF', -1)], wait: 1 },
       /* ---- 9 load up ---- */
       {
         st: 9,
@@ -1149,10 +1190,11 @@ window.LS_GUIDE = (function () {
         d: 'When steam flow is > 230 T/H and the back-up command is gone (M.2013 = 0): PIC-COBM A SV 123, HS-COAL R, then HIC-BM A. M.2013 is also 1 while the MS blow-off PICMS1002 (M.0255) or the HP bypass (M.0709) is open > 5 %: lower HIC-BM until the pressure falls below 128.',
         c: b.MODE('HIC-BM', 'AUTO'),
         fps: ['PIC-COBM', 'HIC-BM', 'PICMS1002'] /* OFF unless switched on: boiler follow by hand on HIC-BM (the faceplate) */,
-        ready: () => h().MSF() > 230 && bit('M.2013') < 0.5,
+        /* the wait gates the three buttons only (doIt returns on a false ready, so the seek would never lower HIC-BM: as beta.56 3-ELEMENT) */
+        seek: coalSeek(123, 'HIC-BM'),
         readyTxt: () =>
           'Wait: steam flow ' + f0(h().MSF()) + ' T/H (> 230), M.2013 = ' + f0(bit('M.2013')) + ' (0)' + (h().bit('ABC-001C', 'M.0255') > 0.5 ? ': blow-off PICMS1002 open (M.0255 = 1, MSP ' + f1(h().MSP()) + ')' : '') + (bit('M.0709') > 0.5 ? ': HP bypass open (M.0709 = 1)' : ''),
-        a: [btn('PIC-COBM A, SV 123', () => A.auto('PIC-COBM', 123)), btn('HS-COAL R', () => A.rem('HS-COAL')), btn('HIC-BM A', () => A.auto('HIC-BM'))]
+        a: [btn('PIC-COBM A, SV 123', () => A.auto('PIC-COBM', 123)), btn('HS-COAL R', () => A.rem('HS-COAL')), btn('HIC-BM A', () => A.auto('HIC-BM'))].map(x => Object.assign(x, { on: () => !bmRdy(), hide: () => !bmRdy() }))
       },
       {
         st: 9,
@@ -1161,8 +1203,8 @@ window.LS_GUIDE = (function () {
         d: 'Allowed when steam flow is > 220 T/H (M.0101) and PV ≈ SV.',
         c: b.MODE('AICFG112', 'AUTO'),
         fps: ['AICFG112'],
-        ready: () => bit('M.0101') > 0.5,
-        readyTxt: () => 'Wait: steam flow > 220 T/H (M.0101 = ' + f0(bit('M.0101')) + ')',
+        ready: () => m0101() > 0.5,
+        readyTxt: () => 'Wait: steam flow > 220 T/H (M.0101 = ' + f0(m0101()) + ')',
         a: [btn('AICFG112 A', () => {
           const H = h(),
             S2 = H.sh('ABC-002'),
@@ -1174,6 +1216,13 @@ window.LS_GUIDE = (function () {
           return '';
         })]
       },
+      /* boiler model thread 2026-11-11 (automatic run): EIC-TM went to AUTO (CCS) at 80 MW, the load ramped to 133 MW and the main steam
+         fell to 62 kg/cm2 (HIC-BM back to MANUAL). PR-OPE-5002 load up (SU 9334-9419): "raise to 90 MW per boiler; above 90 MW CCS can
+         be set"; boiler master AUTO (boiler follow) until 90 MW (SU 10617-10692, 01-operation.md phase 11 / 12) */
+      { st: 9, sec: 44, req: ['bm'], t: 'LOAD UP to 90 MW (TCS) in boiler follow', d: 'PR-OPE-5002: the boiler master in AUTO holds the pressure (PIC-COBM) while you raise the load to 90 MW: with DCS CONTROL MODE ON (I.0082) the TCS follows the turbine master, so raise EIC-TM in MANUAL (MW); without it, LOAD UP on the TCS. The coordinated control (CCS) is set above 90 MW.', c: b.HOLD(120, b.ALL(b.VAL('MW', 89, null), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150))), slow: loadSlow,
+        /* one press of 5 MW each 60 s of the plant while the main steam is above 118 (the band of the 150 MW hold): the pace of the Do it, under the 7.5 MW/min LOAD UP rate */
+        seek: () => { if (h().MW() >= 89 || h().MSP() < 118 || simT() - (paceT.l9 || -1e9) < 60) return; paceT.l9 = simT(); if (bit('I.0082') > 0.5) { const m = mv('EIC-TM'); if (md('EIC-TM') === 'MAN' && isFinite(m)) A.man('EIC-TM', Math.min(90, m + 5)); } else A.tcs('loadup', 90); },
+        a: [step('EIC-TM ▲ +5 MW', 'EIC-TM', 5), btn('LOAD UP 90 MW (TCS, DCS control mode OFF)', () => A.tcs('loadup', 90), () => bit('I.0082') > 0.5 || !!(U().tb && U().tb.aim >= 90))], wait: 1 },
       {
         st: 9,
         sec: 44,
@@ -1185,7 +1234,10 @@ window.LS_GUIDE = (function () {
         fps: ['EIC-TM'],
         ready: () => bit('I.0082') > 0.5 && bit('M.2016') < 0.5 && Math.abs(h().val('ABC-001C', 'SI0236') - (+U().tcsT || 0)) < 1,
         readyTxt: () => 'Wait: DCS control mode I.0082 = ' + f0(bit('I.0082')) + ', SI0236 ' + f1(h().val('ABC-001C', 'SI0236')) + ' ≈ TCS target ' + f1(+U().tcsT),
-        a: [btn('EIC-TM A', () => A.auto('EIC-TM'))]
+        /* boiler model thread 2026-11-11 (automatic run): HIC-ULD starts in AUTO with the TARGET 150 of the 150 MW snapshot (hmi-op.js,
+           33.PNG); with EIC-TM in AUTO at 90 MW the CCS ramped the load to 142 MW before the 'TARGET 150' step and the main steam fell to
+           62 kg/cm2. The target is set to the load of the moment first (no bump), the 150 MW target is its own step below */
+        a: [btn('HIC-ULD TARGET = load now', () => { const d = uldT(); if (!d) return 'no target'; d.S.rt.ext[d.a] = Math.round(h().MW()); return ''; }, () => { const d = uldT(); return !!d && Math.abs((+d.S.rt.ext[d.a] || 0) - h().MW()) < 2; }), btn('EIC-TM A', () => A.auto('EIC-TM'))]
       },
       /* roadmap 2 (PR-OPE-5002 8043 "Set biasing damper and RH to Remote-Auto when RHT-PV is almost equal to R-SV"; 39.PNG at 150 MW:
          HICHR1002A / B A, TICHR1002A R, TICHR1002 A SV 541). ABC-020: the RH damper is forced MANUAL while the SH damper is MANUAL and under
@@ -1199,13 +1251,17 @@ window.LS_GUIDE = (function () {
         d: 'PR-OPE-5002: "Set biasing damper and RH to Remote-Auto when RHT-PV is almost equal to R-SV". The "Remote" of TICHR1002A is SV: LOGIC (SV from MW, LN6, with a bumpless ramp of 1 %/min). Do the SH damper (HICHR1002B) first: while it is MANUAL, the RH damper is forced MANUAL (ABC-020 M.0179, together with steam flow < 15 % MCR). The RH spray allows AUTO once its shut-off valve is open (DITL-35).',
         c: b.ALL(b.MODE('HICHR1002B', 'AUTO'), b.MODE('HICHR1002A', 'AUTO'), C('TICHR1002A AUTO, SV: LOGIC (LN6, MW → reheat SV)', () => md('TICHR1002A') === 'AUTO' && svLogic('ABC-020', 'TICHR1002A'), () => md('TICHR1002A') + (svLogic('ABC-020', 'TICHR1002A') ? ', SV: LOGIC' : ', SV: OPERATOR')), b.MODE('TICHR1002', 'AUTO')),
         fps: ['HICHR1002B', 'HICHR1002A', 'TICHR1002A', 'TICHR1002'],
-        ready: () => bit('I.0418') > 0.5 && h().MSF() >= 69 && !(h().bit('ABC-019', 'I.088F') > 0.5),
+        /* boiler model thread 2026-11-11 (automatic run at 90 MW): the step waited for ever on 'RH spray shut-off valve closed': no button
+           opened it. DITL-35 (REHEATER INLET DESUPERHEATER SPRAY WATER SHUT OFF VALVE): OPEN P.B. M.0640 (row 1) or AUTO MODE M.0642 (opens
+           above saturation + 11 C, ABC-019), after the ICV -> CV transfer I.0418, not in MFT. The Do it presses OPEN P.B. on the drawing. The valve wait now gates the TICHR1002 button only */
+        ready: () => bit('I.0418') > 0.5 && h().MSF() >= 69,
         readyTxt: () => 'Wait: ICV → CV transfer I.0418 = ' + f0(bit('I.0418')) + ', steam ' + f0(h().MSF()) + ' T/H (≥ 69), RH spray shut-off valve ' + (h().bit('ABC-019', 'I.088F') > 0.5 ? 'closed' : 'open'),
         a: [
           btn('SH damper HICHR1002B A', () => A.auto('HICHR1002B'), () => md('HICHR1002B') === 'AUTO'),
           btn('RH damper HICHR1002A A', () => A.auto('HICHR1002A'), () => md('HICHR1002A') === 'AUTO'),
           btn('TICHR1002A A, SV: LOGIC', () => A.rem('TICHR1002A'), () => md('TICHR1002A') === 'AUTO' && svLogic('ABC-020', 'TICHR1002A')),
-          btn('TICHR1002 A, SV 541', () => A.auto('TICHR1002', 541), () => md('TICHR1002') === 'AUTO')
+          btn('RH spray shut-off valve OPEN P.B. (DITL-35 row 1, M.0640)', () => (WL() ? (dPress('DITL-35', 0), '') : ''), () => !WL() || !(h().bit('ABC-019', 'I.088F') > 0.5)),
+          Object.assign(btn('TICHR1002 A, SV 541', () => A.auto('TICHR1002', 541), () => md('TICHR1002') === 'AUTO'), { hide: () => h().bit('ABC-019', 'I.088F') > 0.5 })
         ]
       },
       {
@@ -1213,10 +1269,13 @@ window.LS_GUIDE = (function () {
         sec: 44,
         req: ['bm', 'tm'],
         t: 'Unit load demand HIC-ULD in AUTO, TARGET 150 MW',
-        d: 'The CCS now raises the load at 3 MW per minute (HIC-MWRL).',
-        c: b.ALL(b.MODE('HIC-ULD', 'AUTO'), b.VAL('MW', 90, null)),
-        fps: ['HIC-ULD'],
-        a: [btn('HIC-ULD A, TARGET 150', () => {
+        d: 'First the load change rate HIC-MWRL 0.67 MW/min (FHI Fig. 2 COLD STARTUP: 60 % at 11.0 h to 100 % at 12.5 h = 60 MW in 1.5 h), then the TARGET 150 MW: the CCS raises the load at that rate.',
+        c: b.ALL(b.MODE('HIC-ULD', 'AUTO'), b.VAL('MW', 90, null), C('HIC-MWRL 0.67 MW/min', () => Math.abs((+mv('HIC-MWRL') || 0) - 0.67) < 0.05, () => f1(+mv('HIC-MWRL'))), C('TARGET 150 MW', () => { const d = uldT(); return !!d && +d.S.rt.ext[d.a] >= 149; }, () => { const d = uldT(); return d ? f0(+d.S.rt.ext[d.a]) : '—'; })),
+        fps: ['HIC-ULD', 'HIC-MWRL'],
+        /* boiler model thread 2026-11-11 (automatic run): with the 3 MW/min of the 150 MW snapshot (33.PNG HIC-MWRL) the load went 90 -> 144 MW,
+           the coal hit the feeder MV limit 83.3 % (FIC-CM forced MANUAL, M.0137) and the main steam fell 126 -> 62 kg/cm2. FHI P2 S7 Fig 2
+           (plant-study 02-fhi-curves.md): 60 % load at 11.0 h, 90 % at 12.0 h, 100 % at 12.5 h: CALC (150 - 90) MW / 90 min = 0.67 MW/min */
+        a: [btn('HIC-MWRL 0.67 MW/min', () => A.man('HIC-MWRL', 0.67), () => Math.abs((+mv('HIC-MWRL') || 0) - 0.67) < 0.05), btn('HIC-ULD A, TARGET 150', () => {
           A.loc('HIC-ULD');
           const s = station('HIC-ULD'),
             d = s && (s.T.drv[s.b.i[s.b.svI]] || []).find(z => z.k === 'AMT');
@@ -1333,15 +1392,15 @@ window.LS_GUIDE = (function () {
             cold(btn('Biasing dampers: reheater HICHR1002A 30 %, superheater HICHR1002B 60 % (purge)', () => (A.man('HICHR1002A', Math.max(30, mv('HICHR1002A'))), A.man('HICHR1002B', Math.max(60, mv('HICHR1002B')))), () => mv('HICHR1002A') >= 30 && mv('HICHR1002B') >= 60)),
             cold(btn('Burner air dampers A ~ D 25 % (purge position)', () => BA.forEach(t => A.man(t, 25)), () => BA.every(t => mv(t) >= 23 && mv(t) <= 27))),
             btn('FURNACE PURGE START (DITL-02)', () => (!(bit('M.3339') > 0.5) && dOut('DITL-02', 9) !== 1 ? 'Purge not ready (DITL-02 out 10): see the Purge and trip page for the missing permissive' : dPress('DITL-02', 5)), () => dOut('DITL-03A', 12) === 0),
-            fwDn()
+            ...hiW()
           ];
         } },
       /* Mina beta.19 B19-1: the burner buttons sat in the hidden Start stage of the feeder (its permissive needs a burner in service): the burners are their own step, as in the cold start (steps of section 4) */
       { st: 13, sec: 51, slow: () => h().lvl() > 0 /* Jennie 2026-11-11: x10 while the drum is above 0, time before HH */, t: 'Burners A and D (when the furnace lower layer is under 700 °C)', d: 'FHI Tab 9 p23: below 700 °C on the furnace lower layer (DCS average of the bed thermocouples TIFG1090, the value the purge by-pass reads; it is above the bed temperature of the plant view) the coal needs the start-up burners in service and the bed above 550 °C. As in the cold start: SA damper and oil FCV to ignition, BURNER ON (DITL-09), then the oil flow 60 %; burner A, then D. With the lower layer still above 700 °C this step is done at once.', c: b.X7[5][1], fps: ['FICDO1043A', 'FICDO1043D', 'FICFW1007', 'LICBR1001A'], get a() {
-          return (WL() ? [bIgn('A'), bOn('A'), bOil('A', 60), bIgn('D'), bOn('D'), bOil('D', 60)] : [btn('BURNER A ON', () => A.motor('M.3412', 1), () => bit('M.3412') > 0.5), btn('BURNER D ON', () => A.motor('M.3419', 1), () => bit('M.3419') > 0.5)]).concat(fwDn());
+          return (WL() ? [bIgn('A'), bOn('A'), bOil('A', 60), bIgn('D'), bOn('D'), bOil('D', 60)] : [btn('BURNER A ON', () => A.motor('M.3412', 1), () => bit('M.3412') > 0.5), btn('BURNER D ON', () => A.motor('M.3419', 1), () => bit('M.3419') > 0.5)]).concat(hiW());
         } },
-      { st: 13, sec: 51, slow: () => h().lvl() > 0 /* Jennie 2026-11-11: x10 while the drum is above 0, time before HH */, t: 'Start the coal feeders', d: 'FHI Tab 9 p23: start solid fuel when the bed is above 700 °C without the burners, or above 550 °C with the burners in service. Open the feeder discharge valve, then START the feeder. Then continue as in the cold start after coal is in.', c: b.X7[6][1], fps: ['FICFW1007', 'LICBR1001A', 'LICCD1110A', 'LICCD1104'], a: [fDis('A'), mot('M.3400', 'feeder A'), fDis('B'), mot('M.3401', 'feeder B'), fwDn()] },
-      { st: 13, sec: 51, t: 'Feedwater, deaerator and make-up back to AUTO, cycle steady', d: 'First the feedwater FICFW1007 back to AUTO (the drum level loop matches the feedwater to the steam; in MANUAL with no steam it fills the drum). With the steam flow under 100 T/H the logic holds FICFW1007 in MANUAL (ABC-010 force manual M.0228) and the low load drum level loop LICBR1001A drives the valve: then put LICBR1001A in AUTO instead (Mina beta.22 B22-1). The deaerator LICCD1104 back to AUTO only when the hotwell is above 0 mm and the feedwater flows: in AUTO below its set point it opens and the condensate pumps draw the hotwell down faster than the make-up (58 T/H) fills it; if the hotwell falls under -150 mm, LICCD1104 back to MANUAL 0 ~ 6 %. Make-up LICCD1110A back to AUTO when the hotwell is near its set point (SV not below +100 mm, PR-OPE-5002). The step ticks after 2 min with the hotwell above -150 mm, the deaerator within 200 mm of its set point and the drum -200 ~ +200 mm. A condensate pump stays running; if it stopped on hotwell low-low, start it again here once the hotwell is above -150 mm.', c: b.X7[7][1], fps: ['FICFW1007', 'LICBR1001A', 'LICCD1110A', 'LICCD1104'], a: [mot('M.3350', 'CEP-A'), fwDn(),
+      { st: 13, sec: 51, slow: () => h().lvl() > 0 /* Jennie 2026-11-11: x10 while the drum is above 0, time before HH */, t: 'Start the coal feeders', d: 'FHI Tab 9 p23: start solid fuel when the bed is above 700 °C without the burners, or above 550 °C with the burners in service. Open the feeder discharge valve, then START the feeder. Then continue as in the cold start after coal is in.', c: b.X7[6][1], fps: ['FICFW1007', 'LICBR1001A', 'LICCD1110A', 'LICCD1104'], a: [fDis('A'), mot('M.3400', 'feeder A'), fDis('B'), mot('M.3401', 'feeder B'), ...hiW()] },
+      { st: 13, sec: 51, t: 'Feedwater, deaerator and make-up back to AUTO, cycle steady', d: 'First the feedwater FICFW1007 back to AUTO (the drum level loop matches the feedwater to the steam; in MANUAL with no steam it fills the drum). With the steam flow under 100 T/H the logic holds FICFW1007 in MANUAL (ABC-010 force manual M.0228) and the low load drum level loop LICBR1001A drives the valve: then put LICBR1001A in AUTO instead (Mina beta.22 B22-1). The deaerator LICCD1104 back to AUTO only when the hotwell is above 0 mm and the feedwater flows: in AUTO below its set point it opens and the condensate pumps draw the hotwell down faster than the make-up (58 T/H) fills it; if the hotwell falls under -150 mm, LICCD1104 back to MANUAL 0 ~ 6 %. Make-up LICCD1110A back to AUTO when the hotwell is near its set point (SV not below +100 mm, PR-OPE-5002). The step ticks after 2 min with the hotwell above -150 mm, the deaerator within 200 mm of its set point and the drum -200 ~ +200 mm. A condensate pump stays running; if it stopped on hotwell low-low, start it again here once the hotwell is above -150 mm.', c: b.X7[7][1], fps: ['FICFW1007', 'LICBR1001A', 'LICCD1110A', 'LICCD1104'], a: [mot('M.3350', 'CEP-A'), ...hiW(),
         /* sources (3.2.3, no ASSUMED): PR-OPE-5002 / 5003 / 5004 give no valve positions for a trip recovery (searched: deaerator,
            LCV-CD1104); 6 % = 36 T/H, control valve sheet p74 LCV-CD1104; 12 % = about 215 T/H on the valve line of plant.js anDaQ
            (6 % 36 T/H to 17.5 % 380 T/H, 03.png / 28.png): CALC, enough for a feedwater over 100 T/H; 0 % with no feedwater (the

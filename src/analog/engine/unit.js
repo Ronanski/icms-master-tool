@@ -573,8 +573,8 @@ function anUnitStart() {
   U.mul[0].dis = U.mul[0].run.length === 2 ? [['DITL-38 #MV-FW1001', 'DITL-38 #MV-FW1391'], ['DITL-38 #MV-FW1002', 'DITL-38 #MV-FW1392']] : null;
   /* 2.2.0-beta.15 (M4 step 2): the start-up feedwater valve (ABC-010 LICBR1001B, single-element drum level control for the start-up,
      FCV-FW1060) is a second line into the drum beside the main valve of FICFW1007: its flow is added to the feedwater flow
-     transmitter (plant.js pr.op of the FICFW1007 loop), ksu = 30 % of the anchor feedwater at 100 % open (ASSUMED: the size of a
-     start-up control valve is not in the repository; the snapshots show it at 0.1 % M at 150 MW) */
+     transmitter (plant.js pr.op of the FICFW1007 loop), its flow is from the valve sheet (anSuFw below, K1AU3-E2-0-123 p147);
+     the snapshots show it at 0.1 % M at 150 MW */
   U.suv = ctlOut('ABC-010', 'LICBR1001B');
   U.fwp = procOf('ABC-010', 'FICFW1007');
   U.ksu = 0.3; /* 3.2.3: no longer used for the flow (anSuFw, the valve sheet); kept for the probes that read it */

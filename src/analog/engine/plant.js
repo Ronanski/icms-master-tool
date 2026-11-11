@@ -382,10 +382,10 @@ AN_CYC.kgmm = {
 /* 3.2.3: the water volume outside the drum that heats with it (thermal expansion above): Boiler Hydrostatic Test Procedure K1AU3-R3-0-101
    R0 p.6: boiler without the reheater (economizer, drum, waterwall, superheater to the hydro boundary) about 252 m3 (290 m3 with a
    15 % margin; reheater 60 m3, total 312 m3, p.5). Less the drum (K1AU3D-101: R 824.2 mm, shell 12.481 m, hemispherical heads,
-   about 29 m3) and the superheater, which is dry in service: the procedure gives no split, ASSUMED 60 m3 like the reheater (the
-   superheater carries 460 T/H, the reheater 400 T/H) -> 252 - 29 - 60 = 163 m3; AN_THERM.on: the term is used */
+   about 29 m3) and the superheater, which is dry in service: 75.8 m3 (FHI Part 2 Sect 8 Tab 2 p 2-8-TAB_2-1; before 60 m3 taken like
+   the reheater) -> 252 - 29 - 75.8 = 147 m3; AN_THERM.on: the term is used */
 /* 3.2.3: the critical (choked) mass flux of flashing saturated water, kg/m2 s, by the drum pressure Pb (bar abs): homogeneous
-   equilibrium model, read off the Moody chart (ASSUMED, no plant figure). Used by the blowdowns of the drum (anProcStep) */
+   equilibrium model, read off the standard Moody critical flow chart (CALCULATION: a fluid property like the steam table). Used by the blowdowns of the drum (anProcStep) */
 const AN_BDG = [
   [1.013, 0],
   [13.8, 3900],
@@ -401,7 +401,7 @@ function anBdG(Pb) {
     b = G[i];
   return Math.max(0, a[1] + ((b[1] - a[1]) * (Math.min(Pb, 138) - a[0])) / (b[0] - a[0]));
 }
-const AN_THERM = { vEvap: 163, on: false }; /* not in AN_CYC: a loaded state replaces AN_CYC's fields */
+const AN_THERM = { vEvap: 147, on: false }; /* not in AN_CYC: a loaded state replaces AN_CYC's fields */
 AN_CYC.vacLoss = (U, T) => (6 * Math.max(-1, T - 38.65) * 0.7 * U.ms) / 3600;
 AN_CYC.y = {};
 AN_CYC.levels = () => ({ ...AN_CYC.y });
@@ -713,8 +713,8 @@ function anProcStep(S, dt) {
         if (b.p.lt === 'level' && (b.txt || [])[1] === 'LICBR1001') {
           const fw = S.procs.find(x => (x.txt || [])[1] === 'FICFW1007'),
             s1 = AN.sheets.find(x => x.name === 'ABC-001C');
-          /* the start-up feedwater valve FCVFW11302 (LICBR1001B) feeds the drum beside the main valve: its flow is added. Its size is
-             not in the repository: 30 % of the feedwater range at 100 % open is ASSUMED (a typical start-up valve) */
+          /* the start-up feedwater valve FCVFW11302 (LICBR1001B) feeds the drum beside the main valve: its flow is added. Its flow is
+             now from its valve sheet (unit.js anSuFw, K1AU3-E2-0-123 p147); suK is only the fallback without the unit model */
           const su = S.procs.find(x => (x.txt || [])[1] === 'LICBR1001B'),
             fsp = fw && fw.p ? (fw.p.span > 0 ? fw.p.span : 550) : 550;
           if (fw && fw.proc && s1)
@@ -854,16 +854,17 @@ function anProcStep(S, dt) {
          SECT_8 TAB_9: "if the water level is abnormally high, reduce the level by opening the intermittent blowdown valves"). Flow
          diagram K1AU3-PD-019 (A1-0-001 RA p15): the drum line BD-1-001-LE1W-2.5" goes through V-BD1002 to the mass blowdown MOV
          MV-BD1001 (DITL-38, its position) and BD-1-002-DC1W-8" MASS BLOWDOWN LINE to the blowdown tank T-1051. Saturated water
-         flashing in the 2.5" line is choked: flow = A x G x opening, A = 2.5" pipe, schedule not printed, ASSUMED Sch 80 (ID 59.0 mm,
-         0.002734 m2); G = the critical mass flux of saturated water, homogeneous equilibrium model (Moody chart, read off: 3,900 kg/m2 s
-         at 13.8 bar, 8,300 at 34.5, 14,650 at 69, 23,900 at 138; ASSUMED, no plant figure). About 80 T/H full open at 35 kg/cm2.
+         flashing is choked at the smallest bore: flow = A x G x opening, A = the MV-BD1001 valve bore, 45.0 mm inlet (62.6 mm outlet), KOSO
+         MA5ES3P1425a-01 p24 (0.00159 m2; before: the 2.5" pipe taken as Sch 80, 59.0 mm); G = the critical mass flux of saturated water,
+         homogeneous equilibrium model (CALCULATION: the standard Moody critical flow chart, a property like the steam table: 3,900 kg/m2 s
+         at 13.8 bar, 8,300 at 34.5, 14,650 at 69, 23,900 at 138). About 48 T/H full open at 35 kg/cm2.
          The continuous blowdown MV-BD1002: below */
       let mbdQ = 0;
       if (typeof anDitlPos === 'function' && q.y > lo) {
         const pos = anDitlPos('DITL-38', 0),
           Pb = drumP * 0.980665 + 1.013; /* bar abs */
         if (pos > 0 && Pb > 1.1) {
-          mbdQ = (0.002734 * anBdG(Pb) * Math.min(100, pos) * 3.6) / 100; /* kg/s -> T/H */
+          mbdQ = (0.00159 * anBdG(Pb) * Math.min(100, pos) * 3.6) / 100; /* kg/s -> T/H */
         }
       }
       lhdQ += mbdQ;
