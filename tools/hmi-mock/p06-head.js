@@ -21,6 +21,7 @@
       C1051: { n: 'LICHD11051', t: 'No.1 HP heater drain LCV-HD1105-1', ctl: 'LICHD11051', io: 'LICHD11051' },
       CSU: { n: 'LICBR1001B', t: 'Start-up FCV-FW1130-2', ctl: 'LICBR1001B', io: 'LICBR1001B' },
       CMN: { n: 'FICFW1007', t: 'Main FCV-FW1130-1 (three element)', ctl: 'FICFW1007', io: 'FICFW1007' },
+      C1001A: { n: 'LICBR1001A', t: 'Drum level 1 element (ABC-010)', ctl: 'LICBR1001A', io: 'LICBR1001A' },
       C1130: { n: 'TICBR1130', t: 'Superheater spray 1 TCV-FW1110-1 / -2', ctl: 'TICBR1130', io: 'TICBR1130' },
       C1150: { n: 'TICBR1150', t: 'Superheater spray 2 TCV-FW1120-1 / -2', ctl: 'TICBR1150', io: 'TICBR1150' },
       C1002: { n: 'TICHR1002', t: 'Reheater inlet spray TCV-FW1150', ctl: 'TICHR1002', io: 'TICHR1002' },

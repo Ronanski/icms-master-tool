@@ -247,6 +247,9 @@ function anDieselOilStep(U, dt) {
   U.doQf = r.qf;
   U.doQrv = r.qrv;
   U.doVo = vo;
+  /* 3.2.3-beta.90: the oil each gun gets with its two valves open (ring pressure and FCV-DO1043-x3 opening), for the flame scanners
+     (03b-sim.js fdStep) */
+  U.doQg = xc.map(x => doBurnerQ(U.doP2, x));
   U.doDp = K.dp0 * (Qc / K.Qp) ** 2;
   /* the tank: the oil burnt leaves it (the recirculation, the ring return and the relief come back) */
   const burn = qb.reduce((s, q) => s + q, 0);
@@ -816,7 +819,7 @@ function baPub(U) {
    Capture: SO2 = raw x exp(-k x Ca/S), the form of the model before; k from the design point: at Ca/S 2.71 the stack reads the set point
    of the SOx control, 200 ppm (HMI snapshot 19.PNG ABC-005 AICFG10571 SV 200): k = ln(1822 / 200) / 2.715 = 0.814 (CALC). The bed lime
    starts at the design Ca/S (z0). Was k 11 and z0 0.346, a fit to the snapshot 41 ppm with limestone STOP (not a document).
-   3.2.3-beta.86 (SAKURA, user 2026-11-11 "reverse engineer o calibrate, wag lng assumed"):
+   3.2.3-beta.91 (SAKURA, user 2026-11-11 "reverse engineer o calibrate, wag lng assumed"):
    Lag of the lime in the bed, tau (CALC): the bed lime is renewed as the bed solids leave. Bed inventory about 100 t (FHI P2S8 Tab 9
    page 2-8-TAB_9-3, bed charge of the furnace and seal pots); solids leaving at MCR = coal ash 89 x 0.0682 = 6.07 T/H (Tab 2) + CaO of
    the limestone 12 x 0.9366 x 56.08 / 100.09 = 6.30 + SO3 taken up 89 x 0.0149 x (1 - 200 / 1822) x 80.06 / 32.06 = 2.95 + limestone

@@ -106,7 +106,7 @@ const SRC_RULES = (() => {
   R.PICDO1008 = s => ({ cap: s.Pdo });
   for (const x of 'ABCD') {
     R['PICDO1043' + x] = s => ({ cap: s.Pdo });
-    /* oil flow: needs header pressure. 3.2.3-beta.86 (CALC, was ASSUMED full flow from 3 kg/cm2): the gun pressure is linear in the
+    /* oil flow: needs header pressure. 3.2.3-beta.91 (CALC, was ASSUMED full flow from 3 kg/cm2): the gun pressure is linear in the
        flow, 5.0 bar = 5.10 kg/cm2 at the MAX 3072 kg/h (M&S load curve 1612 13-4-71; SOP 27 max 5 kg/cm2), and the gun cannot be above
        the pump header PT-DO0005, so the share of the demand that can pass is header / 5.10 up to 1 (line losses not counted) */
     R['FICDO1043' + x] = s => ({ mul: srcCl(s.Pdo / (5.0 / 0.980665)) });

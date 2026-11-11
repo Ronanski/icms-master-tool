@@ -168,7 +168,7 @@ window.LS_GUIDE = (function () {
      recommended"; the upper 55 and the one press each 2 minutes: NO-SOURCE, team-files ASSUMED_sources_2026-11-11 row 17) */
   const paceT = {};
   const svRamp = (t, hi, sec) => Object.assign(btn(t + ' SV +1 (one each minute, up to ' + hi + ')', () => { if (md(t) !== 'AUTO') return 'Put ' + t + ' in A first'; paceT[t] = simT(); const v = Math.min(hi, Math.round(+svOf(t) || 0) + 1); if (t === 'PICMS1006' && md('PICMS1002') === 'AUTO' && (+svOf('PICMS1002') || 0) < v + 2) A.auto('PICMS1002', v + 2); return A.auto(t, v); }, () => md(t) === 'AUTO' && ((+svOf(t) || 0) >= hi || simT() - (paceT[t] || -1e9) < sec)), { tag: t });
-  const oilBand = (up, lo, hi) => { const k = up ? 'oilU' : 'oilD', due = () => (up ? h().MSF() < lo : h().MSF() > hi), b0 = oilStep(up ? 'Oil A / D ▲ +5 % (steam flow under ' + lo + ' T/H)' : 'Oil A / D ▼ −5 % (steam flow over ' + hi + ' T/H)', ['A', 'D'], up ? 5 : -5), f0 = b0.f; b0.f = () => ((paceT[k] = simT()), f0()); return Object.assign(b0, { on: () => !due() || simT() - (paceT[k] || -1e9) < 120, hide: () => !due() }); };
+  const oilBand = (up, lo, hi) => { const k = up ? 'oilU' : 'oilD', due = () => (up ? h().MSF() < lo : h().MSF() > hi), b0 = oilStep(up ? 'Oil A / D ▲ +5 % (steam flow under ' + lo + ' T/H)' : 'Oil A / D ▼ −5 % (steam flow over ' + hi + ' T/H)', ['A', 'D'], up ? 5 : -5), f0 = b0.f; b0.f = () => ((paceT[k] = simT()), f0()); return Object.assign(b0, { on: () => !due() || simT() - (paceT[k] || -1e9) < 120, hide: () => !due(), band: 1 }); };
   /* 3.2.3-beta.56 (automatic run, load up to 45 MW on oil): the turbine took 96 T/H while the oil stayed at the 40 ~ 55 T/H of the bypass steps; the main steam fell 61 -> 10 kg/cm2 and the drum swelled to HH (MFT). The load-up steps now show oil ▲ (all lit burners +5 %) while the main steam is under 60 kg/cm2 and oil ▼ over 100 (FHI Part 2 Sect 7 Tab 4 Fig. 2: 60 kg/cm2 at 15 % load, 100 at 30 % = 45 MW; FHI Tab 9 p 2-8-TAB_9-11 step 12 and PR-OPE-5002 27.17: all four burners together to meet the start-up curve), one press each 30 s up / 60 s down (pace NO-SOURCE, ASSUMED_sources row 17), and run x10 while the pressure is under 60. */
   const mspOil = up => { const k = up ? 'mspU' : 'mspD', due = () => (up ? h().MSP() < 60 : h().MSP() > 100), b0 = oilStep(up ? 'Oil ▲ +5 % (main steam under 60 kg/cm², each 30 s)' : 'Oil ▼ −5 % (main steam over 100 kg/cm²)', ['A', 'B', 'C', 'D'], up ? 5 : -5), f0 = b0.f; b0.f = () => ((paceT[k] = simT()), f0()); return Object.assign(b0, { on: () => !due() || simT() - (paceT[k] || -1e9) < (up ? 30 : 60), hide: () => !due() }); };
   /* the Do it for me never presses the ▲ / ▼ trims (the trainee's own hand, #108): the seek of the load-up steps moves the oil instead, by the same rule as the buttons */
@@ -493,6 +493,24 @@ window.LS_GUIDE = (function () {
     const a = H[0],
       z = H[H.length - 1];
     return z[1] > a[1] || z[1] < a[1] ? ((z[1] - a[1]) * 3600) / Math.max(1, z[0] - a[0]) : 0;
+  };
+  /* 3.2.3-beta.90 (CHAEWON, automatic runs on the in-page Do it for me: drum LEVEL L.L. MFT at step 57 in 2 of 5 runs). The Do it for
+     me never presses the oil ▲ / ▼ of the warm-up (#108), so the firing of the burner steps (A / D 60 %, B / C 25 %) stayed: the drum
+     went 2 -> 27 kg/cm2 in 38 minutes of the plant (saturation 120 -> 229 C, about 170 C/h against the PR-OPE-5002 gradient 1 C a
+     minute = 60 C/h and FHI Fig. 1 110 C/h), the blow-off PICMS1002 (SV +1 each 2 minutes) fell behind and opened to 89 %, the steam
+     left faster than the start-up valve fed the drum and the level fell under the LSLL -178 mm. (The test tools of before trimmed the
+     oil themselves, so the runs did not show it.) The warm-up steps now do what their text tells the trainee: heating rate over 55 C/h
+     oil ▼ −5 %, under 45 C/h oil ▲ +5 % (only under 33 kg/cm2, the low end of the 35 kg/cm2 hold of step 57), on every lit burner, not
+     under 20 % (oilStep). Limit = PR-OPE-5002 60 C/h; the 45 ~ 55 band is the band of the step text (Training, margin under 60); one
+     press each 2 minutes of the plant = the pace of oilBand (ASSUMED_sources row 17, the pace of the Do it for me, not a plant value) */
+  const heatSeek = () => {
+    const r = rate();
+    if (!isFinite(r) || simT() - (paceT.hs || -1e9) < 120) return;
+    const dn = r > 55,
+      up = r < 45 && (+U().Pd || 0) < 33;
+    if (!(dn || up)) return;
+    paceT.hs = simT();
+    oilStep('', ['A', 'B', 'C', 'D'], dn ? -5 : 5).f();
   };
   const f1w = x => (typeof x === 'number' ? f1(x) : x);
   const WARM = [
@@ -1019,7 +1037,7 @@ window.LS_GUIDE = (function () {
         } },
       /* Mina F65 (beta.63): this step lowered the PA and SA flows to 10 % after light-off and the total air fell under 25 % MCR: MFT, burners out. PR-OPE-5002 has no air reduction after light-off; its 10 % is the secondary staging air nozzle dampers at their limit stop in the FURNACE PURGE line-up (section FURNACE PURGE: 'Dampers of secondary staging air nozzles close to limit stop (10% OPEN)', 'Total Air Flow > 25% MCR'). Kept as a confirm step (the step numbers stay), no air reduction */ { st: 4, sec: 28, slow: drnSlow, need: 1, cr: 1, t: 'Air stays above the purge minimum after light-off', d: 'PR-OPE-5002 FURNACE PURGE: total air flow above 25 % MCR, the secondary staging air nozzle dampers at their limit stop (10 % open), the PA fan at its minimum air flow. Do not lower the PA or SA air under that after light-off: total air under 25 % MCR is an MFT condition (DITL-03A row 6). The oil flame adds flue gas and the furnace pressure rises: the ID fan coupling PICFG108 must stay in AUTO (SV −15 mmH₂O). Under 16 % the drawing puts it in MANUAL by itself (ABC-008 M.0206 = PICFG108.MV < 16, M.0205 force manual; parameter list ML 0): then raise the coupling 1 % at a time to 16 % or more and press A, SV −15. A furnace pressure HIGH-HIGH is an MFT. Confirm when checked.', fps: ['FICFA1071', 'FICFA1081', 'PICFG108'], c: b.ALL(b.MODE('PICFG108', 'AUTO'), b.PV('PICFG108', -60, 25, 'mmH₂O')), a: [...DRN, btn('Coupling PICFG108 M +1 % (only while MANUAL under 16 %)', () => (md('PICFG108') !== 'AUTO' && mv('PICFG108') < 16 ? A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1)) : 'Not needed: PICFG108 ' + md('PICFG108') + ' MV ' + f0(mv('PICFG108')) + ' %')), btn('PICFG108 A, SV −15', () => (mv('PICFG108') >= 16 && !(h().bit('ABC-008', 'M.0205') > 0.5) ? A.auto('PICFG108', -15) : 'Wait: PICFG108 MV ' + f0(mv('PICFG108')) + ' % (≥ 16)'), () => md('PICFG108') === 'AUTO')] /* 3.2.3 automatic run: the PID took the coupling to 14 % before light-off (ML 0), M.0206 forced MANUAL, the oil flame took the furnace to +176 mmH2O and HIGH-HIGH = MFT at step 59 */ },
       { st: 4, sec: 28, slow: drnSlow, t: 'Warm-up: wait for the water to boil (100 °C)', d: 'You control the firing: the temperature rise is ≤ 60 °C per hour (PR-OPE-5002: gradient 1 °C a minute). Watch the "Heating rate": below 45 °C/h, oil ▲ +5 %; above 55 °C/h, oil ▼ −5 %. Speed up the simulation if you want.', c: b.VAL('Tw', 100, null), fps: ['FICDO1043A', 'FICDO1043D'], a: [...DRN, oilStep('Oil A / D ▲ +5 %', ['A', 'D'], 5), oilStep('Oil A / D ▼ −5 %', ['A', 'D'], -5)], w: WARM, wait: 1 },
-      { st: 4, sec: 28, slow: drnSlow, t: 'Drum pressure 2 kg/cm²: close the vents and drains (field)', d: 'Once there is pressure, the field operator closes the vents and drains of the steam side.', c: b.VAL('Pd', 2, null), wait: 1, field: [], a: DRN },
+      { st: 4, sec: 28, slow: drnSlow, t: 'Drum pressure 2 kg/cm²: close the vents and drains (field)', d: 'Once there is pressure, the field operator closes the vents and drains of the steam side. The steam now leaves through the MS blow-off (open ≥ 10 % since the drum filling), so the feedwater flow is continuous: put the start-up level LICBR1001B in AUTO SV 0 now (PR-OPE-5002: "Set to AUTO the Feedwater control as soon as possible and practicable after continuous Feedwater flow is established").', c: b.VAL('Pd', 2, null), wait: 1, field: [], fps: ['LICBR1001B'], get a() { return DRN.concat([btn('LICBR1001B A, SV 0', () => A.auto('LICBR1001B', 0), () => md('LICBR1001B') === 'AUTO')]); } } /* 3.2.3-beta.90 (CHAEWON, warm-up drum LEVEL L.L. MFT at steps 55 ~ 57 in about 2 of 9 automatic runs): the drum fill ends near -150 mm (PR-OPE-5002 monitor line "Drum level (-150mm)"), 28 mm over the LSLL -178 mm (alarm list, plantsw.js). The steam left through the blow-off from the first kg/cm2 with the start-up valve shut until the AUTO of step 54; when that step came late in plant time the level fell under -178 = MFT (DITL-03A row 9). PR-OPE-5002 (BOILER AUTOMATIC CONTROL): "Set to AUTO the Feedwater control as soon as possible and practicable after continuous Feedwater flow is established": the feed is continuous once the steam leaves the drum, that is this step */,
       { st: 4, sec: 28, slow: drnSlow, t: 'Drum pressure 15 kg/cm²: light burners B and C', d: 'At 15 kg/cm² the other two burners are added: SA damper and oil FCV to ignition, BURNER ON (the DITL opens the oil valve), then FICDO1043B / C 20 % (PR-OPE-5002: B / C after 30 minutes). With four burners the pressure rises fast and the steam leaves through the MS blow-off (open ≥ 10 % since the drum filling, PR-OPE-5002): first put the MS blow-off PICMS1002 in AUTO with its set point at the drum pressure and the start-up level LICBR1001B in AUTO SV 0. Then raise the blow-off set point 1 kg/cm² at a time, one every 2 minutes, up to 35: the blow-off stays open and passes steam all the way up (a set point of 35 at once shuts it, the boiler stores the heat and at 35 the blow-off goes from shut to full open, the drum level falls to the low-low and trips the boiler), and the water that leaves as steam is fed back by the start-up valve.', c: b.ALL(b.VAL('Pd', 15, null), b.BURN4, b.MODE('PICMS1002', 'AUTO'), b.MODE('LICBR1001B', 'AUTO')), fps: ['PICMS1002', 'LICBR1001B', 'FICDO1043B', 'FICDO1043C'] /* 3.2.3 automatic run: with the blow-off set only at step 57 the closed boiler on 4 burners went 21 -> 114 kg/cm2 at ≤ 110 C/h, then the blow-off opening dropped the drum to -422 mm = MFT */, get a() {
           const pre = [bovAuto(), btn('LICBR1001B A, SV 0', () => A.auto('LICBR1001B', 0), () => md('LICBR1001B') === 'AUTO'), bovRamp()];
           return DRN.concat(WL() ? pre.concat([bIgn('B'), bIgn('C'), bOn('B'), bOn('C'), bOil('B', 20), bOil('C', 20)]) : pre.concat([btn('Open oil valves B and C', () => (A.oil('M.3411', true), A.oil('M.3416', true))), btn('BURNER B and C ON', () => (A.motor('M.3413', 1), A.motor('M.3418', 1)), () => bit('M.3413') > 0.5 && bit('M.3418') > 0.5), btn('FICDO1043B / C M 20 %', () => (A.man('FICDO1043B', 20), A.man('FICDO1043C', 20)))]));
@@ -1050,6 +1068,12 @@ window.LS_GUIDE = (function () {
         /* 3.2.3-beta.80: also the SV 35 of the title and the blow-off not full open (the text: "so the blow-off does not stand full open") */
         c: b.ALL(b.MODE('LICBR1001B', 'AUTO'), b.MODE('PICMS1002', 'AUTO'), b.VAL('Pd', 33, 37), b.VAL('lvl', -100, 127), C('PICMS1002 SV 35', () => (+svOf('PICMS1002') || 0) >= 35, () => f0(+svOf('PICMS1002'))), C('MS blow-off not full open', () => (+mv('PICMS1002') || 0) < 100, () => f0(+mv('PICMS1002')) + ' %')) /* 3.2.3-beta.57 (no assumed values): the "blow-off <= 60 % for 300 s" of beta.43 is in no document (ASSUMED_sources row 15); the step is done at the hold pressure with the drum level inside its L / H alarms (-100 / +127 mm, alarm list 20160912). Before: */ /* 3.2.3 automatic run: on four burners the blow-off stayed full open (75 T/H to the air), the deaerator ran empty 100 min later, BFWP A / B LOW-LOW trip, drum -422 mm, MFT. 3.2.3 automatic run (sections 17 ~ 40): at 30 kg/cm2 the blow-off was still shut, so 'MV <= 60 %' passed before the pressure reached its set point; the oil was never trimmed, the field and vacuum steps that follow have no oil buttons, the drum went 30 -> 41 kg/cm2 with the blow-off full open and the level low-low (drum level -259 mm) was an MFT at the vacuum up: the balance is checked at the set point (drum 33 ~ 37 kg/cm2, blow-off <= 60 %, 5 minutes; a second run passed at 38.7 kg/cm2 with the blow-off still opening, 20 -> 98 % in 6 minutes, and the drum level fell 33 -> -306 mm) */,
         fps: ['LICBR1001B', 'PICMS1002', 'FICDO1043A', 'FICDO1043B'],
+        /* 3.2.3-beta.90 (Mina live run on beta.80: the "Do it for me" stopped here with the blow-off full open and the main steam 52 kg/cm2):
+           beta.80 made "blow-off not full open" part of the step, but the Do it for me never presses the oil ▼ (the ▲ / ▼ are the trainee's
+           own hand, #108), so nothing lowered the oil. The seek does what the step text says: while the blow-off stands full open, oil ▼
+           −5 % on every lit burner, not under 20 % (oilStep), one press each 2 minutes of the plant (the pace of oilBand, ASSUMED_sources row
+           17: the pace of the Do it for me, not a plant value) */
+        seek: () => { if ((+mv('PICMS1002') || 0) < 100 || simT() - (paceT.bo57 || -1e9) < 120) return; paceT.bo57 = simT(); oilStep('', ['A', 'B', 'C', 'D'], -5).f(); },
         /* 3.2.3 automatic run (beta.36 LP heater open): the blow-off passed 60 ~ 70 T/H, the hotwell fell to -306 mm on LCV-MU1110 alone,
            the CEP stopped, the deaerator ran empty, MFT: MV-MU1001 opens when the hotwell is low (muFill) */
         get a() {
@@ -1564,7 +1588,24 @@ window.LS_GUIDE = (function () {
         h().setx(null, a, 0);
         delete PUSH[a];
       }
+    /* 3.2.3-beta.90: the automatic run in plant time (auto) */
+    if (AUTO && simT() - AUTO.t >= AUTO.dt) {
+      AUTO.t = simT();
+      try {
+        if (AUTO.pre) AUTO.pre();
+        API.autoNext = true;
+        doIt();
+        scan();
+      } catch (e) {}
+    }
   };
+  /* 3.2.3-beta.90 (CHAEWON, coordinator: the step timing of the automatic run depended on the speed of the page): the test tools called
+     doIt() from outside the page once a second of the wall clock; at x300 that is 300 s of the plant or more when the page is slow, so the
+     same step was done at 7 or at 19 kg/cm2 from run to run (the drum level AUTO of step 54 came late and the drum fell to the low-low).
+     auto(true) runs doIt() and scan() inside the engine steps, once every dt seconds of the PLANT (default 10 s), whatever the speed
+     of the page; pre() runs before each doIt (the tools use it for the field operator). auto(false) stops it */
+  let AUTO = null;
+  const auto = (on, pre, dt) => (AUTO = on ? { t: -1e9, pre: pre || null, dt: +dt > 0 ? +dt : 10 } : null);
   /* inside every step of the engine when it runs on this page (ENG.mode 'local'); with the engine in the worker (3.2.0 Web Worker) the
      steps run there: the coach runs here after each patch, with the plant time that passed (it reads the dock and the page; its writes go
      to the engine through the radio, src/world/eng.js) */
@@ -1823,6 +1864,9 @@ window.LS_GUIDE = (function () {
     }
     /* again after a minute of the plant when the step is still not done (a value the drawing held while the machine was stopping) */
     if (G.did === s.i && simT() - (G.didT || 0) < 60) return;
+    /* 3.2.3-beta.90: the warm-up steps (stage 4 with the heating rate on their card, or once the drum has pressure) hold the heating
+       rate as their text says */
+    if (s.st === 4 && ((s.w || []).some(r => r[1] === rate) || (+U().Pd || 0) > 0.5)) heatSeek();
     /* a trim step: the seek moves the stations toward the band of the SOP; the ▲ / ▼ buttons are never pressed here (below) */
     if (s.seek) s.seek();
     /* max counts the machines of the step (the START / STOP buttons); its valve and field buttons are pressed as before */
@@ -1836,7 +1880,9 @@ window.LS_GUIDE = (function () {
     for (const [i, a] of L0.entries())
       if (!a.on || !a.on()) {
         /* the ▲ / ▼ trims are the trainee's own hand (#108, no coach); pressed together they cancel: a seek does them */
-        if (/[▲▼]/.test(a.l)) continue;
+        /* 3.2.3-beta.90: except a band button (oilBand: pressed only outside its band, at its own pace), the seek of the bypass steps;
+           before, the Do it for me never kept the 40 ~ 55 T/H of the bypass servicing (automatic runs: drum LOW-LOW at steps 75 ~ 81) */
+        if (/[▲▼]/.test(a.l) && !a.band) continue;
         if (lastM >= 0 && i > lastM && runN < (s.max || 1)) continue;
         if (isM(a) && s.max && n >= s.max) continue;
         a.f();
@@ -1885,6 +1931,7 @@ window.LS_GUIDE = (function () {
     confirm,
     preStart,
     doIt,
+    auto,
     early,
     fieldOf,
     live,

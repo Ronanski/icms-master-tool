@@ -18,7 +18,7 @@ Tag: **NO-SOURCE** = walang dokumento ang numero (ang code mismo ang umaamin). *
 - `src/ui/plant/hmi-bias.js`: NO-SOURCE 1, FOUND 5
 - `src/ui/plant/hmi-mock-gn.js`: NO-SOURCE 1, FOUND 0
 - `src/ui/plant/hmi2.js`: NO-SOURCE 2, FOUND 17
-- `src/ui/training/guide.js`: NO-SOURCE 5, FOUND 107
+- `src/ui/training/guide.js`: NO-SOURCE 5, FOUND 109
 - `src/ui/uat/check.js`: NO-SOURCE 1, FOUND 82
 - `src/world/ditl150.js`: NO-SOURCE 1, FOUND 27
 - `src/world/plantsw.js`: NO-SOURCE 3, FOUND 40
@@ -31,11 +31,11 @@ Kabuuang NO-SOURCE: **58**
   - Kulang: The valve sizes (K) are CALIBRATED on 6.PNG with that split; linear valves (NO-SOURCE: no valve curve). Check: PCV-DO0002 full open passes 20.4
 - `src/analog/engine/boiler.js:40` **NO-SOURCE (bahagi)** · `q6: 25 - 12.8 * 0.242 * Math.sqrt(12.8),`
   - Kulang: the line from the header to the ring (pipe, fittings, flow element) in series takes the rest (CALIBRATED on 6.PNG; the pipe itself is NO-SOURCE). The return PCV-DO1009 passes the same 13.9 T/H at 85.7 % and 11.0.
-- `src/analog/engine/boiler.js:458` **NO-SOURCE (bahagi)** · `const AN_LM = {`
+- `src/analog/engine/boiler.js:461` **NO-SOURCE (bahagi)** · `const AN_LM = {`
   - Kulang: no ASSUMED): silo to lock vessel 30 s = the SHORT FILL TIMER (O&M L5-3 2.3.2 / 2.3.3 / 2.8, PLC limestone_logic.xls sheet 4
-- `src/analog/engine/boiler.js:698` **NO-SOURCE (bahagi)** · `const AN_BA = {`
+- `src/analog/engine/boiler.js:701` **NO-SOURCE (bahagi)** · `const AN_BA = {`
   - Kulang: the charge assumes ash in the buffer tank). The air tank PS-BH1750 reads the plant air receiver tanks of the model (U.paP, 39.PNG 7
-- `src/analog/engine/boiler.js:807` **NO-SOURCE (bahagi)** · `const AN_SOX = { raw: 1822, k: 0.814, z0: 2.71, tau: 22400, o2d: 21 * (1 - 1 / 1.2) };`
+- `src/analog/engine/boiler.js:810` **NO-SOURCE (bahagi)** · `const AN_SOX = { raw: 1822, k: 0.814, z0: 2.71, tau: 22400, o2d: 21 * (1 - 1 / 1.2) };`
   - Kulang: 3 b5, user 2026-11-11 "bawal ang ASSUMED": every number from a document or a CALC from documented inputs). Raw SO2 (CALC): performance coal, FHI P2S7 Tab
 - `src/analog/engine/face-defaults.js:412` **NO-SOURCE (bahagi)** · `{`
   - Kulang: +-75 / +-150 (ASSUMED), so the -150 mm of STEAM DRUM FILLING was a LOW LOW alarm
@@ -54,7 +54,7 @@ Kabuuang NO-SOURCE: **58**
 - `src/analog/engine/source.js:1` **NO-SOURCE (bahagi)** · `const AN_SRC = {`
   - Kulang: no ASSUMED).
 - `src/analog/engine/source.js:109` **NO-SOURCE** · `R['FICDO1043' + x] = s => ({ mul: srcCl(s.Pdo / (5.0 / 0.980665)) });`
-  - Kulang: 86 (CALC, was ASSUMED full flow from 3 kg/cm2): the gun pressure is linear in the flow, 5.0 bar = 5.10 kg/cm2 at the MAX 3072 kg/h (M&
+  - Kulang: 91 (CALC, was ASSUMED full flow from 3 kg/cm2): the gun pressure is linear in the flow, 5.0 bar = 5.10 kg/cm2 at the MAX 3072 kg/h (M&
 - `src/analog/engine/tcs-trip.js:156` **NO-SOURCE (bahagi)** · `'TC-18': { 0: U => (U.tb && U.tb.icv > 0.001 ? 1 : 0) },`
   - Kulang: its source is the TCS soft logic TCE163 (I/O list HMI_DI HEAT SOAK SET / RESET), not in the repository (docs/tcs/IBD_UNBOUND.md)
 - `src/analog/engine/tcs-trip.js:659` **NO-SOURCE** · `function tcsIbdMissing() {`
@@ -125,13 +125,13 @@ Kabuuang NO-SOURCE: **58**
   - Kulang: the plant estimate from the live values E (snapshot anchors, ASSUMED proportions). kb = bed temperature rise over the 150 MW one (7.PNG average 937 C), gas = (PA + SA + FA) / 594 T/
 - `src/ui/training/guide.js:146` **NO-SOURCE (bahagi)** · `let bovT = -1e9;`
   - Kulang: was marked ASSUMED)
-- `src/ui/training/guide.js:550` **NO-SOURCE (bahagi)** · `const dPd = () => +U().Pd || 0,`
+- `src/ui/training/guide.js:568` **NO-SOURCE (bahagi)** · `const dPd = () => +U().Pd || 0,`
   - Kulang: 57 (no assumed values): open over the drum level H alarm +127 mm (alarm list 20160912 LT-BR1001), close back at the normal leve
-- `src/ui/training/guide.js:722` **NO-SOURCE** · `(fstate('cw1001') && +U().cwPrime < 1 ? ' · priming the closed loop ' + Math.round(100 * (+U().cwPrime || 0)) + ' % (the tank level falls, then make up to 1.7 m`
+- `src/ui/training/guide.js:740` **NO-SOURCE** · `(fstate('cw1001') && +U().cwPrime < 1 ? ' · priming the closed loop ' + Math.round(100 * (+U().cwPrime || 0)) + ' % (the tank level falls, then make up to 1.7 m`
   - Kulang: js etPrime, ASSUMED loop volume): said in the step
-- `src/ui/training/guide.js:1051` **NO-SOURCE (bahagi)** · `c: b.ALL(b.MODE('LICBR1001B', 'AUTO'), b.MODE('PICMS1002', 'AUTO'), b.VAL('Pd', 33, 37), b.VAL('lvl', -100, 127), C('PICMS1002 SV 35', () => (+svOf('PICMS1002')`
+- `src/ui/training/guide.js:1069` **NO-SOURCE (bahagi)** · `c: b.ALL(b.MODE('LICBR1001B', 'AUTO'), b.MODE('PICMS1002', 'AUTO'), b.VAL('Pd', 33, 37), b.VAL('lvl', -100, 127), C('PICMS1002 SV 35', () => (+svOf('PICMS1002')`
   - Kulang: 57 (no assumed values): the "blow-off <= 60 % for 300 s" of beta.43 is in no document (ASSUMED_sources row 15); the step is don
-- `src/ui/training/guide.js:1438` **NO-SOURCE (bahagi)** · `Object.assign(btn('Deaerator LICCD1104 MANUAL: 12 % (feedwater over 100 T/H), 6 % (under), 0 % (no feedwater)', () => { const f = pv('FICFW1007'); A.man('LICCD1`
+- `src/ui/training/guide.js:1462` **NO-SOURCE (bahagi)** · `Object.assign(btn('Deaerator LICCD1104 MANUAL: 12 % (feedwater over 100 T/H), 6 % (under), 0 % (no feedwater)', () => { const f = pv('FICFW1007'); A.man('LICCD1`
   - Kulang: 3, no ASSUMED): PR-OPE-5002 / 5003 / 5004 give no valve positions for a trip recovery (searched: deaerator, LCV-CD1104); 6 % =
 - `src/ui/uat/check.js:1084` **NO-SOURCE (bahagi)** · `if (o.load != null && o.p45 == null && o.ff) o.cf = Math.max(o.cf, (o.ff.cf * (o.ff.c + (89 / 150) * Math.max(0, h.MW() - o.ff.mw))) / o.ff.c);`
   - Kulang: 593, ASSUMED linear in the load); PR-OPE-5002 "ADJUST the Fuel Flow". The demand in % from the demand / coal at the start. A
