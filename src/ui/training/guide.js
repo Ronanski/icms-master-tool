@@ -1900,6 +1900,16 @@ window.LS_GUIDE = (function () {
     /* 3.2.3-beta.90: the warm-up steps (stage 4 with the heating rate on their card, or once the drum has pressure) hold the heating
        rate as their text says */
     if (s.st === 4 && ((s.w || []).some(r => r[1] === rate) || (+U().Pd || 0) > 0.5)) heatSeek();
+    /* 3.2.3-beta.95 (drum LOW-LOW at step 68, automatic runs on beta.93 / 95): the 35 kg/cm2 hold of step 57 lasts through the field and
+       TCS steps 58 ~ 73 (its text: the blow-off "holds the main steam pressure at 35 kg/cm2 while the TCS auxiliaries and the vacuum are
+       done ... lower the oil so the blow-off does not stand full open"), but only step 57 lowered the oil. The bed kept heating (441 ->
+       468 C), the blow-off stood full open, the pressure rose to 38 ~ 39 and the drum fell to the low-low level. The same oil ▼ (−5 % each
+       2 minutes, down to the burner minimum fire) now acts in those steps too, while the blow-off holds (AUTO) and the HP bypass is not in
+       service yet */
+    else if (s.st === 5 && md('PICMS1002') === 'AUTO' && md('PICMS1006') !== 'AUTO' && (+mv('PICMS1002') || 0) >= 100 && simT() - (paceT.bo57 || -1e9) >= 120) {
+      paceT.bo57 = simT();
+      oilStep('', ['A', 'B', 'C', 'D'], -5).f();
+    }
     /* a trim step: the seek moves the stations toward the band of the SOP; the ▲ / ▼ buttons are never pressed here (below) */
     if (s.seek) s.seek();
     /* max counts the machines of the step (the START / STOP buttons); its valve and field buttons are pressed as before */
