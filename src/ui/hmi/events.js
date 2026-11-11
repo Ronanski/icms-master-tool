@@ -249,7 +249,13 @@
   /* sweep 2: the suppressed alarms already written once since the load */
   const LATEK = new Set();
   /* transmitters that the drawing alarms by comparators (not by an ALM block): tag, sheet, AI address, limits (kg/cm2) */
-  const XALM = [{ tag: 'PIMS1002', d: 'main steam pressure (PT-MS1002, finishing superheater outlet header)', sh: 'ABC-001C', ai: 'AI0131', hh: 134, h: 130, l: 100, ll: 72.9 }];
+  /* Mina B66-3 (beta.66 house load: hotwell -1 to -285 mm, then condensate pump A stopped with no alarm before it): ABC-031 has no ALM block
+     on the hotwell level AI0640 (LT-CD1110, -436 ~ 464 mm), only the comparator < -300 mm M.3211 WATER LEVEL LOW LOW to DITL-61A row 13 (the
+     condensate pump stop). The alarm list (Alarm List _20160912, unit.js AN_CD) gives LT-CD1110 H 150 / HH 300, L -150 / LL -300 mm */
+  const XALM = [
+    { tag: 'PIMS1002', d: 'main steam pressure (PT-MS1002, finishing superheater outlet header)', sh: 'ABC-001C', ai: 'AI0131', hh: 134, h: 130, l: 100, ll: 72.9 },
+    { tag: 'LICD1110', d: 'condenser hotwell level (LT-CD1110)', sh: 'ABC-031', ai: 'AI0640', hh: 300, h: 150, l: -150, ll: -300 }
+  ];
   function xalmVal(A, p) {
     const sh = A.sheets.find(x => x.name === p.sh),
       S = sh && sh.S;
