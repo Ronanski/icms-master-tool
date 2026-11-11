@@ -52,6 +52,7 @@ p.inner(556, 390, 'LCV-HD1105-1 · ' + CTLMV('LICHD11051'))
 p.inner(1270, 186, V('FT-FW1007-1', 1) + ' · ' + V('FT-FW1007-2', 1))
 p.inner(1350, 186, CTLMV('LICBR1001B') + ' ' + MODE('LICBR1001B'))
 p.inner(1350, 266, CTLMV('FICFW1007'))
+p.inner(1350, 330, CTLMV('LICBR1001A') + ' ' + MODE('LICBR1001A'))  # Mina B87-1: the 1 element drum level loop (ABC-010), needed in MANUAL before LICBR1001B AUTO (M.0226)
 p.inner(1350, 282, 'flow <tspan data-ctl="FICFW1007|pv|1">-----</tspan> SV <tspan data-ctl="FICFW1007|sv|1| T/H">-----</tspan>')
 p.inner(1590, 318, V('PT-FW1160', 1, ' kg/cm2') + ' · ' + V('TT-FW1160', 0, ' °C'))
 # superheater sprays (ABC-011 TICBR1130, ABC-012 TICBR1150; block valves DITL-32 / #B, DITL-33 / #B)
@@ -71,7 +72,7 @@ p.inner(910, 612, V('FT-FW1059', 1, ' T/H') + ' FT-FW1059')
 p.inner(910, 628, 'XV-FW1061 ' + MOV('DITL-79', 'XV-FW1061', 'oc') + ' · TCV-FW1060 ' + CTLMV('TICMS1022') + ' ' + MODE('TICMS1022'))
 p.inner(910, 644, '')
 # faceplates: controllers and valves (transparent hits over their texts)
-for i, x, y, w in (('C1061', 1016, 328, 160), ('C1051', 552, 378, 160), ('CSU', 1346, 160, 160), ('CMN', 1346, 238, 210),
+for i, x, y, w in (('C1061', 1016, 328, 160), ('C1051', 552, 378, 160), ('CSU', 1346, 160, 160), ('CMN', 1346, 238, 210), ('C1001A', 1346, 304, 110),
                    ('C1130', 1322, 452, 200), ('C1150', 1322, 632, 200), ('C1002', 906, 488, 330), ('C1022', 906, 618, 330),
                    ('M1003', 240, 40, 120), ('M1002', 804, 74, 120), ('M1001', 1104, 74, 120), ('MA', 396, 382, 120), ('MB', 396, 620, 120),
                    ('BA', 470, 458, 80), ('BB', 470, 548, 80), ('X11A', 1322, 480, 90), ('X21A', 1322, 660, 90)):
