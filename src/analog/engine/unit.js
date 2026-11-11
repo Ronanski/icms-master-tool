@@ -3091,8 +3091,24 @@ function anUnitStep0(dt) {
       if (U.cold) dirt(U.di.xfer, 1);
     }
   } else {
-    tb.icv = 1;
-    U.gv = Math.max(0.02, Math.min(1.4, U.gv + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
+    /* 3.2.3 PLU (POWER LOAD UNBALANCE, TG manual 2-2 TURBINE CONTROL SYSTEM_R1 5.3.2.4): the fast acting solenoid valves of the CVs and
+       ICVs are energized when the generator current falls faster than 40 % / 10 ms and the power (reheat bowl pressure) minus the load
+       (generator current) is over 40 % of the rating, 2 out of 3 modules. Here: 52L1 opened on load (the load drops at once to the house
+       load, elec.js) and the turbine power U.MW minus that load over 40 % of U.MW0. The valves close at the trip rate (U.tauTrip, the same
+       fast acting dump; NO-SOURCE: the PLU closing time) until the unbalance is under 40 %, then the speed control opens them again.
+       Not modelled: the speed peak, the 2 out of 3 voting (one value) */
+    const ld = U.el && U.el.l52 === false ? D : U.MW,
+      plu = U.el && U.el.l52 === false && (U.MW - ld) / U.MW0 > 0.4;
+    if (plu && !tb.plu && typeof window !== 'undefined' && window.lsEventAdd && !(window.ENG && ENG.mode === 'mirror'))
+      lsEventAdd('TCS', 'TCS', 'PLU (power load unbalance): CV and ICV fast closing, turbine ' + Math.round(U.MW) + ' MW against ' + Math.round(ld) + ' MW load');
+    tb.plu = plu;
+    if (plu) {
+      U.gv = Math.max(0.02, U.gv - dt / U.tauTrip);
+      tb.icv = Math.max(0, tb.icv - dt / U.tauTrip);
+    } else {
+      tb.icv = Math.min(1, (tb.icv == null ? 1 : tb.icv) + dt / U.tcs);
+      U.gv = Math.max(0.02, Math.min(1.4, U.gv + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
+    }
   }
   /* steam flow through the valves: m = Kt x gv x MSP, MSP = drum - kdp x m^2 */
   /* 3.2.0 P1 #3: the steam reaches the turbine through the main steam stop MOV MV-MS1391 (or its warming bypass, anUnitStepX) */
