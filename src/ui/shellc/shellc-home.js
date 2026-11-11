@@ -132,6 +132,7 @@
     crumb = null,
     tiles = [],
     almTile = null,
+    ovEnd = null,
     lines = null;
   const NS = 'http://www.w3.org/2000/svg';
   function buildOv() {
@@ -183,6 +184,7 @@
     end.style.gridColumn = '5';
     end.style.gridRow = '1 / span 2';
     grid.append(end);
+    ovEnd = end;
     almTile = E('button', 'sctile scalm scfalm');
     almTile.type = 'button';
     almTile.title = 'Open the alarm list';
@@ -419,6 +421,15 @@
       }
       if (t.b.title !== tip) t.b.title = tip;
     });
+    /* Mina B66-4: with 52L1 open (house load operation, src/analog/engine/elec.js) the end block said To the grid */
+    if (ovEnd) {
+      let el = null;
+      try {
+        el = window.AN && AN.elec ? AN.elec() : null;
+      } catch (e) {}
+      const tx = el && !el.l52 ? (el.house ? 'House load: 52L1 open' : 'Off the grid: 52L1 open') : 'To the grid';
+      if (ovEnd.textContent !== tx) ovEnd.textContent = tx;
+    }
     drawLines();
     /* the alarm tile: the newest six */
     const AL = allAlarms().slice(-6).reverse();
