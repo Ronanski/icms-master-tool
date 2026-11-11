@@ -1,6 +1,6 @@
 # HANDOFF — iisang file ng estado (para sa kahit sinong Claude o account)
 
-Huling update: **2026-11-11 8:50 AM PHT** (SAKURA: beta.67 HP prewarming metal time constant CALC 4400 s mula STIE-14811 Fig 1.1 at STIE-14747).
+Huling update: **2026-11-11 11:40 AM PHT** (CHAEWON: beta.68 coal bago ang Hold 45 MW, sourced coal seek, bumpless feeder C AUTO, bagong LOAD UP 75 MW step; full run hindi pa tapos).
 
 Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md` at git log.
 
