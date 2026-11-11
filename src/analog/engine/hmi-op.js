@@ -385,7 +385,7 @@ const AN_HMI_CTL = {
   'HICFA1024': { pv: null, sv: null, mv: 48.7, mode: 'R' } /* 2.1.0-beta.10: valve MCVFA1024 48.7 % R A (8.PNG) */,
   'HICFA1025': { pv: null, sv: null, mv: 25.4, mode: 'R' } /* 2.1.0-beta.10: valve MCVFA1025 25.4 % R A (8.PNG) */,
   'HICFA1026': { pv: null, sv: null, mv: 48.3, mode: 'R' } /* 2.1.0-beta.10: valve MCVFA1026 48.3 % R A (8.PNG) */,
-  'LICCD1110A': { pv: null, sv: null, mv: 14.0, mode: 'A' } /* 2.1.0-beta.10: valve LCVMU1110 14.0 % A (28.png) */,
+  'LICCD1110A': { pv: null, sv: null, mv: 33.0, mode: 'A' } /* 2.1.0-beta.10: valve LCVMU1110 14.0 % A (28.png). 3.2.3-beta.87 (Mina B83-1: at 150 MW the hotwell fell 3 -> -7 mm in 4 min with the make-up in AUTO): CALC the balance MV. Mass balance MB-013: the hotwell gets the main steam less the 25 % extractions (480 x 0.75 = 360 T/H) and gives the deaerator 380 T/H, so the make-up is about 19 T/H (the CBD 15 T/H of MB-019 item 22 and the vents); the make-up valve gives 0.58 T/H per % (plant.js anCycFlows, valve sheet p90), 19 / 0.58 = 33 %. Mina's run read the same gap: -2.5 mm/min x 68.8 m2 = 10.3 T/H short at 15 %. The snapshot 14 % is a check only (user 2026-11-07) */,
   'LICCD1110B': { pv: null, sv: null, mv: 0.1, mode: 'A' } /* 2.1.0-beta.10: valve LCVCD1110 0.1 % A (28.png) */,
   'PICDO0005': { pv: null, sv: null, mv: 24.2, mode: 'A' } /* 2.1.0-beta.10: valve PCVDO0002 24.2 % A (6.PNG) */,
   'PICDO1008': { pv: null, sv: null, mv: 85.7, mode: 'A' } /* 2.1.0-beta.10: valve PCVDO1009 85.7 % A (6.PNG) */,
