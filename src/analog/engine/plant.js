@@ -352,12 +352,15 @@ function anCycFlows(t) {
     frec = cep * 2.23 /* FCV-CD1120, valve sheet p96, 223 T/H */ * 100 * c((AN_CYC.u.cf || 0) / 100),
     /* the steam of the turbine and of the HP bypass (MB-011 item 8, MB-012 items 6, 10: bypass -> cold reheat -> reheater -> LP
        bypass -> condenser) both come back as water; only vented steam leaves the cycle */
-    ms = (s.ms || 0) + (s.mhp || 0),
     ext = s.ext || 0;
   /* 3.2.1 (IRENE): no make-up water pump feeding the header (unit.js AN_MU muFeed) = no make-up to the hotwell */
   const muOff = typeof AN_UNIT !== 'undefined' && AN_UNIT.on && AN_UNIT.muFeed === 0;
   const muMv = typeof AN_UNIT !== 'undefined' && AN_UNIT.on ? AN_UNIT.muMvQ || 0 : 0; /* MV-MU1001, parallel to LCV-MU1110 (PD-016 A-7; unit.js AN_MU) */
-  return { fda, frec, hwIn: ms * (1 - 0.25 * ext), daIn: 0.25 * ext * ms, mu: muOff ? 0 : 0.58 /* LCV-MU1110, valve sheet p90 */ * (AN_CYC.u.hw || 0) + muMv };
+  /* Mina B66-3 (house load, 52L1 open: hotwell -297 mm in 6 min, deaerator +117 mm): the 25 % to the deaerator are the extractions and
+     heater drains of the TURBINE steam (MB-013); the HP bypass steam goes cold reheat -> reheater -> LP bypass -> condenser and passes no
+     extraction. Before: 25 % of the bypass flow too went to the deaerator (on house load about 40 ~ 60 T/H taken from the hotwell) */
+  const mt = s.ms || 0;
+  return { fda, frec, hwIn: mt * (1 - 0.25 * ext) + (s.mhp || 0), daIn: 0.25 * ext * mt, mu: muOff ? 0 : 0.58 /* LCV-MU1110, valve sheet p90 */ * (AN_CYC.u.hw || 0) + muMv };
 }
 AN_CYC.flows = anCycFlows;
 /* one water inventory: kg of water per mm of level of each vessel, so the three levels add up to one balance.
