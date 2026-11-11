@@ -106,8 +106,10 @@ const SRC_RULES = (() => {
   R.PICDO1008 = s => ({ cap: s.Pdo });
   for (const x of 'ABCD') {
     R['PICDO1043' + x] = s => ({ cap: s.Pdo });
-    /* oil flow: needs header pressure (ASSUMED full flow from 3 kg/cm2) */
-    R['FICDO1043' + x] = s => ({ mul: srcCl(s.Pdo / 3) });
+    /* oil flow: needs header pressure. 3.2.3-beta.91 (CALC, was ASSUMED full flow from 3 kg/cm2): the gun pressure is linear in the
+       flow, 5.0 bar = 5.10 kg/cm2 at the MAX 3072 kg/h (M&S load curve 1612 13-4-71; SOP 27 max 5 kg/cm2), and the gun cannot be above
+       the pump header PT-DO0005, so the share of the demand that can pass is header / 5.10 up to 1 (line losses not counted) */
+    R['FICDO1043' + x] = s => ({ mul: srcCl(s.Pdo / (5.0 / 0.980665)) });
     /* burner air: from the secondary air fan (HIC-SADBSx = SA damper of the burner) */
     /* 3.2.0-beta.52 (live check #103: FIFA1043A ~ C HIGH-HIGH in the purge): the burner air is a branch of the secondary air header,
        so it follows the SA flow (the purge SA 25 % gives less than the full-load SA of the snapshot), not only the SA fan running */

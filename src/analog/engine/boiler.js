@@ -58,7 +58,8 @@ const AN_DO = {
   dp0: 0.029 /* kg/cm2 strainer at 25 T/H, 6.PNG */,
   I0: 25.4 /* A, P-0702A at 25 T/H x 12.8 kg/cm2, 6.PNG */,
   fI: 0.45 /* NO-SOURCE: share of the current at no load */,
-  A: 23.8 /* m2, NO-SOURCE */,
+  A: 23.8 /* m2, NO-SOURCE; bounded: T-0701 300 m3 (Equipment List K1AU3-L1-0-002 p 29) with the LT-DO0701 H alarm at 7.5 m (alarm list
+              2016-09-12) gives A <= 300 / 7.5 = 40 m2; the tank height is not in the docs */,
   rho: 0.85 /* t/m3, NO-SOURCE */,
   L0: 4.978 /* m, 6.PNG */,
   /* the field valves of the diesel oil line-up (SOP 20, PD-022 1/5 Rev D): tank outlet V-DO0003, strainer inlet V-DO0004, pump A
@@ -818,15 +819,29 @@ function baPub(U) {
    Capture: SO2 = raw x exp(-k x Ca/S), the form of the model before; k from the design point: at Ca/S 2.71 the stack reads the set point
    of the SOx control, 200 ppm (HMI snapshot 19.PNG ABC-005 AICFG10571 SV 200): k = ln(1822 / 200) / 2.715 = 0.814 (CALC). The bed lime
    starts at the design Ca/S (z0). Was k 11 and z0 0.346, a fit to the snapshot 41 ppm with limestone STOP (not a document).
-   NO-SOURCE: the lag of the lime in the bed, tau 2 h; the scale on coal flow min(1.1, coal / coal at start), kept from before. */
-const AN_SOX = { raw: 1822, k: 0.814, z0: 2.71, tau: 7200 };
+   3.2.3-beta.91 (SAKURA, user 2026-11-11 "reverse engineer o calibrate, wag lng assumed"):
+   Lag of the lime in the bed, tau (CALC): the bed lime is renewed as the bed solids leave. Bed inventory about 100 t (FHI P2S8 Tab 9
+   page 2-8-TAB_9-3, bed charge of the furnace and seal pots); solids leaving at MCR = coal ash 89 x 0.0682 = 6.07 T/H (Tab 2) + CaO of
+   the limestone 12 x 0.9366 x 56.08 / 100.09 = 6.30 + SO3 taken up 89 x 0.0149 x (1 - 200 / 1822) x 80.06 / 32.06 = 2.95 + limestone
+   inerts 12 x 0.0634 = 0.76, total 16.08 T/H (Fig. 13 12 T/H, Tab 3 page 2 CaCO3 93.66 %): tau = 100 / 16.08 h = 6.2 h = 22,400 s
+   (was 7200 s NO-SOURCE). Taken at the MCR flows.
+   Dilution (CALC, replaces the NO-SOURCE scale min(1.1, coal / coal at start)): SO2 in ppm = the SO2 of the coal that burns over the
+   flue gas. The model O2 is 21 x (1 - stoichiometric air / total air) (unit.js), so 21 - O2 is the fuel per air; at the design excess
+   air 20 % (Tab 3) O2 = 21 x (1 - 1 / 1.2) = 3.5 %. SO2 = raw x capture x (21 - O2) / 17.5 x (coal burnt / all fuel burnt as coal
+   equivalent: U.burn x coal over U.burn x coal + 2.55 x oil, PR-OPE-5002 4.3.x). No coal burning = 0 (the oil sulphur is not counted:
+   NO-SOURCE, the diesel analysis is not in the docs). */
+const AN_SOX = { raw: 1822, k: 0.814, z0: 2.71, tau: 22400, o2d: 21 * (1 - 1 / 1.2) };
 function anSoxStep(U, dt) {
   const K = AN_SOX;
   if (!isFinite(U.soxZ)) U.soxZ = K.z0;
   const c = U.Fc || 0;
   if (c > 1) U.soxZ += ((((U.lmQ || 0) * 0.9366) / 100.09 / ((c * 0.0149) / 32.06) - U.soxZ) * Math.min(dt, K.tau)) / K.tau;
   U.soxF = Math.exp(-K.k * Math.max(0, U.soxZ));
-  if (U.soxAI && U.soxAI.length) anUnitWrite(U.soxAI, K.raw * U.soxF * Math.min(1.1, c / Math.max(1, U.F0)));
+  const cb = (isFinite(U.burn) ? U.burn : 1) * c,
+    fe = cb + (U.ao || 0) * (U.oilF || 0),
+    dil = U.afs > 0 && isFinite(U.o2v) ? Math.max(0, 21 - U.o2v) / (21 - K.o2d) : Math.min(1.1, c / Math.max(1, U.F0));
+  U.soxD = fe > 0.01 ? (dil * cb) / fe : 0;
+  if (U.soxAI && U.soxAI.length) anUnitWrite(U.soxAI, K.raw * U.soxF * U.soxD);
 }
 function anBoilerStep(U, dt) {
   anDieselOilStep(U, dt);
