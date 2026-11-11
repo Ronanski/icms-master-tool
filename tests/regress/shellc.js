@@ -54,29 +54,31 @@ try{
  /* 6. Engineer: the tool rail; Library, Curves, Loop check open */
  await click(page,'#scstrip .seg button','Engineer');await wait(2500);
  const e0=await page.evaluate(()=>({sceng:document.body.classList.contains('sceng'),rail:(document.getElementById('scetools')||{}).offsetHeight||0,tools:[...document.querySelectorAll('#scetools button')].map(b=>b.textContent)}));
- ck(e0.sceng&&e0.rail>0&&e0.tools.length===6,'Engineer: tool rail shown ('+e0.tools.join(', ')+')');
+ ck(e0.sceng&&e0.rail>0&&/* beta.246 tools as tabs: Logic (its title: Logic side by side), Library, Curves, Loop check, More ▾ holding Recent and Sheet tools */
+ ['Logic','Library','Curves','Loop check','Recent','Sheet tools'].every(t=>e0.tools.some(x=>x.trim()===t)),'Engineer: tool rail shown ('+e0.tools.join(', ')+')');
  const tool=async(t,f)=>{await click(page,'#scetools button',t);await wait(1500);return page.evaluate(f)};
  ck(await tool('Library',()=>{const w=document.getElementById('libws');return document.body.classList.contains('scet-lib')&&!!w&&getComputedStyle(w).display!=='none'&&w.offsetWidth>0}),'Engineer: Library opens in the right pane');
  ck(await tool('Curves',()=>{const w=document.getElementById('fxws');return document.body.classList.contains('scet-fx')&&!!w&&w.classList.contains('open')&&w.offsetWidth>0}),'Engineer: Curves opens in the right pane');
  ck(await tool('Loop check',()=>{const w=document.getElementById('lcdock');return document.body.classList.contains('scet-loop')&&!!w&&!w.hidden&&w.offsetWidth>0&&document.body.dataset.tab==='logic'}),'Engineer: Loop check opens in the right pane (stays in Engineer)');
- ck(await tool('Logic side by side',()=>document.body.classList.contains('scet-logic')&&(document.getElementById('plantws')||{}).offsetWidth>0&&(document.getElementById('mid')||{}).offsetWidth>0),'Engineer: Logic side by side, plant page and sheet both shown');
+ ck(await tool(/^\s*Logic\s*$/,()=>document.body.classList.contains('scet-logic')&&(document.getElementById('plantws')||{}).offsetWidth>0&&(document.getElementById('mid')||{}).offsetWidth>0),'Engineer: Logic side by side, plant page and sheet both shown');
  /* 7. turbine trip from the Instructor: the pill and the 2 unit rows */
  await click(page,'#scstrip .pill.ins');await wait(500);
  /* exact text: the practice section "Turbine trip and hot restart" is a button of the same console */
- await click(page,'#scins button',/^\s*Turbine trip\s*$/);await wait(200);await click(page,'#scins button',/^\s*Press again: Turbine trip\s*$/);await wait(300);
+ await click(page,'#scins button',/^\s*Turbine trip\s*$/);await wait(200);/* user 2026-11-09: a confirmation dialog (shellc-ask.js) asks first; the second press stays only when the dialog is missing */
+ if(!await click(page,'.scask .scok','Trip turbine'))await click(page,'#scins button',/^\s*Press again: Turbine trip\s*$/);await wait(300);
  await page.keyboard.press('Escape');
  await step(page,30);await wait(1600);
  const tr=await page.evaluate(()=>({pill:(document.querySelector('#scstrip .pill.trip')||{}).textContent||'',st:AN.unit&&AN.unit.tb&&AN.unit.tb.st,rows:window.lsShellC&&lsShellC.alarms?lsShellC.alarms().filter(a=>a.unit).map(a=>a.nm):[]}));
- await click(page,'#scstrip .pill','Turbine trip');await wait(700);
+ await click(page,'#scstrip .pill',/Turbine trip/);await wait(700);
  const shown=await page.evaluate(()=>[...document.querySelectorAll('#scal .scrow')].map(r=>r.textContent).filter(t=>/TURBINE TRIP \(ABC-050|MASTER FUEL TRIP \(MFT/.test(t)).length);
  ck(/Turbine trip · MFT/.test(tr.pill)&&tr.rows.length===2&&shown===2,'turbine trip from the Instructor: pill "'+tr.pill.trim()+'" (turbine '+tr.st+'), unit rows '+tr.rows.length+' ('+tr.rows.join(' | ')+'), in the alarm list '+shown);
  ck(!errs.length,'no page error (ls-shell = c) '+errs.slice(0,3).join(' | '));
  await ctx.close();
- /* 8. without ls-shell: the old layout, no #scstrip */
- const ctx2=await browser.newContext({viewport:{width:1366,height:768}});const p2=await ctx2.newPage();const e2=[];p2.on('pageerror',e=>e2.push(String(e.message)));
+ /* 8. ls-shell = old (layout C is the default: shellc-ask.js; the start screen Old layout sets old): the old layout, no #scstrip */
+ const ctx2=await browser.newContext({viewport:{width:1366,height:768}});await ctx2.addInitScript(()=>{try{localStorage.setItem('ls-shell','old')}catch(e){}});const p2=await ctx2.newPage();const e2=[];p2.on('pageerror',e=>e2.push(String(e.message)));
  await p2.goto(url);await wait(8000);
  const old=await p2.evaluate(()=>({strip:!!document.getElementById('scstrip'),sc:document.body.classList.contains('sc'),band:!!document.getElementById('crband')}));
- ck(!old.strip&&!old.sc&&old.band,'without ls-shell: no #scstrip, no body.sc, the old band is there ('+old.band+')');
+ ck(!old.strip&&!old.sc&&old.band,'ls-shell = old: no #scstrip, no body.sc, the old band is there ('+old.band+')');
  ck(!e2.length,'no page error (old layout) '+e2.slice(0,3).join(' | '));
  await ctx2.close();
 }catch(e){console.log('ERROR '+String(e&&e.stack||e).split('\n').slice(0,3).join(' | '));fail++}
