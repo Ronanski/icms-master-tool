@@ -7,10 +7,13 @@ on:
   workflow_run: { workflows: [Checks], types: [completed] }
   workflow_dispatch: # by hand (after a GO STABLE release: the Stable page takes the new tag at once); the Beta is main
 permissions: { contents: read, pages: write, id-token: write }
-concurrency: { group: pages, cancel-in-progress: true }
+# 2026-11-11: the concurrency is on the job, not the workflow. A Checks run of another branch starts this workflow too; at the
+# workflow level that skipped run took the group and CANCELLED the deploy of main (run 42934546368, beta.67 never reached the
+# Beta page). A skipped job never joins the group. No cancel: a running deploy finishes and the next one queues after it.
 jobs:
   deploy:
     if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    concurrency: { group: pages, cancel-in-progress: false }
     runs-on: ubuntu-latest
     environment: { name: github-pages, url: '${{ steps.d.outputs.page_url }}' }
     steps:
