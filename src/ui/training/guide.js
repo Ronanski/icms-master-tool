@@ -1264,6 +1264,31 @@ window.LS_GUIDE = (function () {
           Object.assign(btn('TICHR1002 A, SV 541', () => A.auto('TICHR1002', 541), () => md('TICHR1002') === 'AUTO'), { hide: () => h().bit('ABC-019', 'I.088F') > 0.5 })
         ]
       },
+      /* 3.2.3-beta.78 (CHAEWON, automatic run with the boiler able to make full steam: 150 MW reached, but the Hold 150 MW step stood at main
+         steam 600 C): no step put the SH spray in AUTO, so the spray stayed MANUAL at 0 % from the roll. PR-OPE-5002 SU 7991-8050 (plant-study
+         01-operation.md 8.4): "MS desuperheater above 46 T/H ... MS desup AUTO". DITL-32 / 33 (and #B): the spray water shut-off valves open in
+         AUTO MODE (row 4, M.1012 / M.1022) above 380 / 440 C and steam flow > 10 % MCR (46 T/H); while a SOV is closed (I.0011 / I.0013 / 0091 /
+         0093) ABC-011 / 012 hold the spray MANUAL (BU-CMD). Modes and SVs of the HMI snapshot (OPERATING_POINTS.md: #1 outer TICBR1140 A SV 462,
+         #1 spray TICBR1130 R, main steam TICMS1004 A SV 541 = FHI design SH outlet 541 C, #2 spray TICBR1150 R); also the X2 list of the Live
+         check (live.js: SH spray TICBR1130 / TICBR1150 in AUTO by 120 MW). Probe at 150 MW: MST 600 -> 541 C in under 30 s of plant */
+      {
+        st: 9,
+        sec: 44,
+        req: ['bm', 'tm'],
+        t: 'Main steam temperature in AUTO: spray shut-off valves AUTO MODE, TICBR1140 A, TICBR1130 R, TICMS1004 A SV 541, TICBR1150 R',
+        d: 'PR-OPE-5002: put the MS desuperheater in AUTO once the steam flow is above 46 T/H. First the spray water shut-off valves in AUTO MODE (DITL-32 / 33: they open above 380 / 440 °C); while a valve is closed the spray is held MANUAL. Then the outer controllers in AUTO (#1 TICBR1140 SV 462, main steam TICMS1004 SV 541) and the sprays in REMOTE (cascade).',
+        c: b.ALL(b.MODE('TICBR1140', 'AUTO'), b.MODE('TICBR1130', 'REM'), b.MODE('TICMS1004', 'AUTO'), b.MODE('TICBR1150', 'REM')),
+        fps: ['TICBR1140', 'TICBR1130', 'TICMS1004', 'TICBR1150'],
+        ready: () => h().MSF() > 46,
+        readyTxt: () => 'Wait: steam flow ' + f0(h().MSF()) + ' T/H (> 46)',
+        a: [
+          btn('Spray shut-off valves AUTO MODE (DITL-32 / 33 row 4)', () => (WL() ? (['DITL-32', 'DITL-33', 'DITL-32 #B', 'DITL-33 #B'].forEach(n => window.LS_DOCK && LS_DOCK.dset && LS_DOCK.dset(n, 4, 1)), '') : ''), () => !WL() || !['I.0011', 'I.0091'].some(a => h().bit('ABC-011', a) > 0.5) && !['I.0013', 'I.0093'].some(a => h().bit('ABC-012', a) > 0.5)),
+          btn('TICBR1140 A, SV 462', () => A.auto('TICBR1140', 462), () => md('TICBR1140') === 'AUTO'),
+          btn('TICBR1130 R', () => A.rem('TICBR1130'), () => md('TICBR1130') === 'REM'),
+          btn('TICMS1004 A, SV 541', () => A.auto('TICMS1004', 541), () => md('TICMS1004') === 'AUTO'),
+          btn('TICBR1150 R', () => A.rem('TICBR1150'), () => md('TICBR1150') === 'REM')
+        ]
+      },
       {
         st: 9,
         sec: 44,
