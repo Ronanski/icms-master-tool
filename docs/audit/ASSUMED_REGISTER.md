@@ -45,16 +45,16 @@ Kabuuang NO-SOURCE: **58**
   - Kulang: the drum level of a cold plant before the STEAM DRUM FILLING of PR-OPE-5002 (mm, ASSUMED: low, under the -150 mm fill target)
 - `src/analog/engine/plant.js:36` **NO-SOURCE** · `function anGap(P, e) {`
   - Kulang: faceplate parameters of the parameter workbook, names and ranges in the textbook (PID panel); the exact DCS formulas are not in the repository, so this is the usual definition (Needs Verification, FINDINGS N-5)
-- `src/analog/engine/plant.js:647` **NO-SOURCE (bahagi)** · `const hu = AN_HMI_OP[AN_KUP[(b.txt || [])[1]]];`
+- `src/analog/engine/plant.js:650` **NO-SOURCE (bahagi)** · `const hu = AN_HMI_OP[AN_KUP[(b.txt || [])[1]]];`
   - Kulang: 42 C, about 139 C at 100 %, linear in the valve ASSUMED). The range limit above gave 162 C at 30.2 %: a shut spray 2 put the finishing SH inlet at 582 C, 120 C above th
-- `src/analog/engine/plant.js:667` **NO-SOURCE (bahagi)** · `if (pr.nsat > 0 && xsl.length) {`
+- `src/analog/engine/plant.js:670` **NO-SOURCE (bahagi)** · `if (pr.nsat > 0 && xsl.length) {`
   - Kulang: nsat = 1 - spray share) the most the other actuators (the RH / SH flue gas biasing damper, ABC-020) can still raise is taken off, so a damper at its end gives the plant value instead of adding its assumed gain on top
-- `src/analog/engine/plant.js:906` **NO-SOURCE (bahagi)** · `if (S1 && pr.integ.pd >= 0) {`
+- `src/analog/engine/plant.js:909` **NO-SOURCE (bahagi)** · `if (S1 && pr.integ.pd >= 0) {`
   - Kulang: 3, no ASSUMED): the saturated water of the boiler, furnace 74.5 t + evaporator 14.0 t + drum about 16 t = 104.5 t (FHI P2 S8 T
 - `src/analog/engine/source.js:1` **NO-SOURCE (bahagi)** · `const AN_SRC = {`
   - Kulang: no ASSUMED).
 - `src/analog/engine/source.js:109` **NO-SOURCE** · `R['FICDO1043' + x] = s => ({ mul: srcCl(s.Pdo / (5.0 / 0.980665)) });`
-  - Kulang: 85 (CALC, was ASSUMED full flow from 3 kg/cm2): the gun pressure is linear in the flow, 5.0 bar = 5.10 kg/cm2 at the MAX 3072 kg/h (M&
+  - Kulang: 86 (CALC, was ASSUMED full flow from 3 kg/cm2): the gun pressure is linear in the flow, 5.0 bar = 5.10 kg/cm2 at the MAX 3072 kg/h (M&
 - `src/analog/engine/tcs-trip.js:156` **NO-SOURCE (bahagi)** · `'TC-18': { 0: U => (U.tb && U.tb.icv > 0.001 ? 1 : 0) },`
   - Kulang: its source is the TCS soft logic TCE163 (I/O list HMI_DI HEAT SOAK SET / RESET), not in the repository (docs/tcs/IBD_UNBOUND.md)
 - `src/analog/engine/tcs-trip.js:659` **NO-SOURCE** · `function tcsIbdMissing() {`
