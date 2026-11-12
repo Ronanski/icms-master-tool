@@ -1576,7 +1576,9 @@ window.LS_GUIDE = (function () {
         t: '30 MW: turbine SHUT-DOWN (MFT follows)',
         d: 'PR-OPE-5003: take out extractions 5 and 4, then trip the turbine. ATS step 8 opens 52G and 41 and trips the turbine below 20 % load. On this unit the turbine trip makes an MFT (DITL drawing); the procedure then keeps the start-up burners and the bypass: that part waits for the bottle-up section.',
         c: b.X5[11][1],
-        a: [btn('Turbine SHUT-DOWN (ATS step 8)', () => A.tcs('shutdown')), btn('Turbine trip (TA-1)', () => A.tcs('trip'))]
+        /* S149-3 (Mina beta.149): a plant from the cold start-up whose ATS stood at step 6 (NORMAL OPERATION never pressed) had SHUT-DOWN
+           refused ("Finish step 7 NORMAL OPERATION", 310SC90-775: step 8 follows step 7) and this step had no way to press it */
+        a: [btn('NORMAL OPERATION (ATS step 7)', () => A.tcs('normal'), () => TC().step >= 7), btn('Turbine SHUT-DOWN (ATS step 8)', () => A.tcs('shutdown')), btn('Turbine trip (TA-1)', () => A.tcs('trip'))]
       },
       /* ---- 12 bottle-up (plan e4, PR-OPE-5004-01; the checks are live.js X6) ---- */
       { st: 12, sec: 50, need: 1, t: 'Steam lines isolated, drain pots open', d: 'PR-OPE-5004: close MV-MS1391, PCV-MS1001 (blow off), the HP bypass isolation and the auxiliary steam isolation; open the TG drain pots (upstream valve first); open hot reheat blow off MV-HR1391 to release the line, then close it. Field and TCS: confirm when done.' },

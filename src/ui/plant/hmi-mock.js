@@ -263,8 +263,9 @@
           }
           /* the press is logged first: a TURBINE TRIP brings its trip and MFT lines in the same scan (Mina: the press line was missing) */
           call(() => window.lsEventAdd && lsEventAdd('TCS', 'TCS', 'Operator: ' + nm + ' (page 13)'));
+          /* a refused command: its reason is written by the engine (unit.js anTurbine, S149-3); here the status bar only */
           const r = call(() => AN.turbine(cmd), '');
-          if (typeof r === 'string' && r) call(() => window.lsEventAdd && lsEventAdd('TCS', 'TCS', nm + ': ' + r));
+          if (typeof r === 'string' && r) call(() => typeof msg === 'function' && msg('TCS: ' + nm + ': ' + r));
           /* Mina T3, 3.2.3-beta.1: a reset that the logic refuses said nothing. 2.5 s after the press (the push button is held 1.5 s),
              a trip still standing gets a line with what holds it (the TA-9 trip inputs at 1, tcs-trip.js tcsTripState held) */
           if (cmd === 'tripreset')

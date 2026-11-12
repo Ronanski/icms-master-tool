@@ -926,7 +926,18 @@ function anUnitLive() {
 /* 2.2.0-beta.17 (M4 step 4): the operator on the TCS panel (outside the DCS): 'roll' (open the stop valves, IP start mode, rpm up
    at rollRate), 'sync' (at 3600 rpm: GCB closed, initial load MWinit), 'loadup' (target MW at rateUp MW/min; default 45 = NORMAL
    OPERATION). Returns the state or a reason ('' = done) */
+/* 3.2.3-beta.152 S149-3 / S149-4 (Mina, beta.149 normal shutdown): ATS SHUT-DOWN was refused ("Finish step 7 NORMAL OPERATION") and the
+   answer went only to the status bar (the TCS / Field menu, the Training buttons), so the press looked silent; a Turbine trip that was not
+   taken said nothing either. The engine writes every refused TCS command to the Event log with its reason (the engine only: a mirror
+   page gets the line from the worker, like the trip lines of tcs-trip.js) */
+const AN_TCS_CMD = { roll: 'ROLL', sync: 'SYNC', loadup: 'LOAD UP', shutdown: 'SHUT-DOWN', holdoff: 'HOLD OFF', trip: 'TURBINE TRIP', tripreset: 'TURBINE RESET', normal: 'NORMAL OPERATION' };
 function anTurbine(cmd, arg) {
+  const r = anTurbine0(cmd, arg);
+  if (typeof r === 'string' && r && AN_TCS_CMD[cmd] && typeof window !== 'undefined' && window.lsEventAdd && !(window.ENG && ENG.mode === 'mirror'))
+    lsEventAdd('TCS', 'TCS', AN_TCS_CMD[cmd] + ' not taken: ' + r);
+  return r;
+}
+function anTurbine0(cmd, arg) {
   const U = AN_UNIT;
   if (!U.on || !U.tb) return 'No unit model: start from Cold first';
   const tb = U.tb;

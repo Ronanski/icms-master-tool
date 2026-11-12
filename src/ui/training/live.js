@@ -758,7 +758,7 @@ window.LS_LIVE = (function () {
     ['At 40 MW: take out extractions 3, 2 and 1; deaerator pressure PCVAS1030 to 2.5 kg/cm2 (field and TCS: confirm).', null],
     ['By hand at about 0.4 MW/min: lower EIC-TM to 30 MW and HIC-BM with it (main steam pressure 115 ~ 126 kg/cm2, under the MS blow-off set point 128).', ALL(VAL('MW', null, 31), VAL('MSP', 115, 126))],
     ['Bed 700 °C: stop the coal feeders A, B and C; lower the PA fan to about 20 %.', ALL(VAL('Tb', null, 710), NOFEED)],
-    ['At 30 MW: take out extractions 5 and 4, then turbine SHUT-DOWN (ATS step 8: 52G open, 41 open, turbine trip). On this unit the turbine trip makes an MFT.', BIT('I.000F', 1, 'MFT after the turbine trip')]
+    ['At 30 MW: take out extractions 5 and 4, then turbine SHUT-DOWN (ATS step 8: 52G open, 41 open, turbine trip). On this unit the turbine trip makes an MFT.', /* S149-7 (Mina beta.149): the MFT alone ticked this step while the turbine still made 29.6 MW: the turbine trip to the DCS (I.0400, TCS IBD TA-6) and the generator off are checked too */ ALL(BIT('I.0400', 1, 'Turbine tripped (TCS to DCS)'), VAL('MW', null, 1), BIT('I.000F', 1, 'MFT after the turbine trip'))]
   ];
   /* plan e4 (PR-OPE-5004-01 SHUTDOWN TO BOTTLE-UP): after the turbine trip (on this unit the trip makes an MFT, so the start-up burners are
      already out). Valves of the field and the TCS are confirmed; motors, drum level, dampers and the furnace pressure are read */

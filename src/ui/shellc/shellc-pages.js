@@ -258,6 +258,7 @@
     ['tcsload', 'Load up to 45 MW'],
     ['tcstarget', 'Target MW…'],
     ['tcsholdoff', 'Release hold'],
+    ['tcsnormal', 'Normal operation'] /* S149-3: ATS step 7, needed before Shut down (step 8) */,
     ['tcsshut', 'Shut down']
   ];
   let tsp = null,
