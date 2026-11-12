@@ -135,3 +135,5 @@
 #libws .trcleg span{display:inline-flex;align-items:center;gap:6px}
 #libws .trcleg i{display:inline-block;width:22px;height:4px;border-radius:2px}
 #libws .trcleg i.dash{background:repeating-linear-gradient(90deg,var(--trc-in) 0 5px,transparent 5px 9px)!important}
+#libws .trcdg .bt2{font:700 12.5px var(--uf,sans-serif);fill:var(--c-tx)}
+#libws .trcdg .w.thin{stroke-width:1.6}
