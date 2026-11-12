@@ -602,7 +602,10 @@ function anUnitStart() {
      preheater outlet air temperatures TT-FA1086 / 1087 (SA, ABC-003A) and TT-FA1076 / 1077 (PA, ABC-006) follow the hot gas like
      the bed thermocouples; the SA pressures PT-FA1085 (SAF outlet, ABC-057) and PT-FA1088 (hot SA, ABC-003A) go with the square
      of the SA flow FT-FA1081 (fan law). The ID fan speed ST-LO1756 (ABC-008 AI0481, no value in the snapshots) is the hydraulic
-     coupling PICFG108 over the speed range of the fan manual (I.D. fan 350 ~ 1140 rpm, linear ASSUMED), 0 with the fan stopped */
+     coupling PICFG108 over the speed range of the fan manual (I.D. fan 350 ~ 1140 rpm), 0 with the fan stopped.
+     3.2.3-beta.104 (plan b3, ID fan cold start): the curve goes through the 150 MW snapshot 7.PNG "HYDRAULIC COUPLING (IDF) 46.1 % /
+     872 rpm" (OPERATING_POINTS.md), two straight pieces 0 % 350 / 46.1 % 872 / 100 % 1140 rpm. Before: one straight line 350 ~ 1140
+     (ASSUMED), which read 714 rpm at the snapshot MV */
   const aiList = re =>
     Object.keys(AN_HMI_AI)
       .filter(k => re.test(AN_HMI_AI[k][1]))
@@ -616,6 +619,13 @@ function anUnitStart() {
   U.idfS = ais('ABC-008', 'AI0481');
   U.idfV = ctlOut('ABC-008', 'PICFG108');
   U.idfRpm = [350, 1140];
+  U.idfCrv = [[0, 350], [46.1, 872], [100, 1140]];
+  U.idfN = m => {
+    const c = U.idfCrv,
+      x = Math.max(0, Math.min(100, +m || 0)),
+      i = x <= c[1][0] ? 0 : 1;
+    return c[i][1] + ((c[i + 1][1] - c[i][1]) * (x - c[i][0])) / (c[i + 1][0] - c[i][0]);
+  };
   /* ---- 3.2.0 roadmap 3 (starting points: Cold = a cold plant, not the 150 MW snapshot) and the P1 fix queue of
      docs/versions/v3.2.0/INSTRUMENT_VALVE_COVERAGE.md ---- */
   /* P2 #14: the second drum pressure transmitter PT-BR1001-2 (ABC-010 AI0385) reads the drum too (it kept 134.1 kg/cm2 in a cold plant) */
@@ -3222,7 +3232,7 @@ function anUnitStep0(dt) {
   if (U.idfS && U.idfS.length) {
     const on = !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5,
       m = U.idfV ? Math.max(0, Math.min(100, +U.idfV.S.rt.v[U.idfV.n] || 0)) : 0;
-    anUnitWrite(U.idfS, () => (on ? U.idfRpm[0] + ((U.idfRpm[1] - U.idfRpm[0]) * m) / 100 : 0));
+    anUnitWrite(U.idfS, () => (on ? U.idfN(m) : 0));
   }
   const Pms = Math.max(0, U.Pd - U.kdp * U.ms * U.ms);
   U.Pms = Pms; /* 3.2.0-beta.14: source of the reducing stations (source.js) */
@@ -3491,9 +3501,12 @@ function anUnitStep0(dt) {
         ia = idf && U.idf && U.idf.S.rt.pm ? Math.max(0, Math.min(1, (tb - 100) / 200)) : 1;
       if (ia < 1 && !p.pr.src) {
         const m = U.idfV ? Math.max(0, Math.min(100, +U.idfV.S.rt.v[U.idfV.n] || 0)) : 0,
-          sp = (U.idfRpm[0] + ((U.idfRpm[1] - U.idfRpm[0]) * m) / 100) / U.idfRpm[1],
-          sp16 = (U.idfRpm[0] + ((U.idfRpm[1] - U.idfRpm[0]) * 16) / 100) / U.idfRpm[1],
-          A = 124,
+          sp = U.idfN(m) / U.idfRpm[1],
+          sp13 = U.idfN(13) / U.idfRpm[1],
+          sp16 = U.idfN(16) / U.idfRpm[1],
+          /* 3.2.3-beta.104: A from the same target as before (the IDF alone at 13 % = -19.5 mmH2O) on the new speed curve, so the
+             cold start of the SOP reads as before at 13 % and 16 % (before: A = 124 fixed on the straight line) */
+          A = 19.5 / (sp13 * sp13),
           Kq = A * sp16 * sp16 - 15,
           ylo = -A * sp * sp + Kq * Math.pow(taf / 406, 2);
         /* the target of the loop model (plant.js ss: y = smul * y + (1 - smul) * sbase); its own lag (<= 5 s) makes the response. Before
