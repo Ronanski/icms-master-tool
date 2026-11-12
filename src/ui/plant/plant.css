@@ -93,3 +93,38 @@
 #plfp .body>.hdr{display:none}
 #plfp .body>.fp{margin:6px 0 0}
 @media (max-width:700px){#plfp{left:0;right:0;top:auto;bottom:0;width:auto;max-height:72%;border-radius:0}}
+
+/* SIGNAL PATH tab (tracer.js): chips, the path picture, the table */
+#libws.trace .libst,#libws.trace .libf,#libws.trace #libcnt,#libws.trace .libhd{display:none!important}
+#libws .trc{--trc-ai:#16a34a;--trc-ao:#0d9488;--trc-di:var(--c-tx);--trc-do:#c2410c;display:flex;flex-direction:column;gap:10px;padding:10px 12px 20px;font:13px var(--uf,sans-serif)}
+#libws .trcl{font:700 11px var(--uf,sans-serif);letter-spacing:.08em;color:var(--c-dim);text-transform:uppercase;margin-bottom:5px}
+#libws .trcc{display:flex;flex-wrap:wrap;gap:5px}
+#libws .trcb{font:600 12px var(--uf,sans-serif);color:var(--c-tx);background:var(--c-pane);border:1px solid var(--c-line);border-radius:6px;padding:4px 9px;min-height:30px;cursor:pointer}
+#libws .trc .trcb{background:var(--c-pane)!important;color:var(--c-tx)!important}
+#libws .trc .trcb[aria-pressed="true"]{background:var(--c-acc)!important;color:#fff!important;border-color:var(--c-acc)!important}
+#libws .trcb.t[aria-pressed="false"]{opacity:.45;text-decoration:line-through}
+#libws .trcbar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+#libws .trcq{flex:1 1 220px}
+#libws .trci{width:100%;box-sizing:border-box;height:32px;padding:0 10px;border:1px solid var(--c-line);border-radius:6px;background:var(--c-well);color:var(--c-tx);font:13px var(--uf,sans-serif)}
+#libws .trcs{background:var(--c-pane);border:1px solid var(--c-line);border-radius:8px;padding:10px}
+#libws .trccap{text-transform:none;letter-spacing:.02em}
+#libws .trcinfo{color:var(--c-acctx);text-decoration:underline;cursor:pointer}
+#libws .trcdg{overflow-x:auto}
+#libws .trcdg svg{display:block;width:100%;min-width:760px;height:auto}
+#libws .trcdg .box{fill:var(--c-pane);stroke:var(--c-tx);stroke-width:1.6}#libws .trcdg .box.dash{stroke-dasharray:6 4}
+#libws .trcdg .bt{font:700 14px var(--uf,sans-serif);fill:var(--c-tx)}#libws .trcdg .bs{font:500 11.5px var(--uf,sans-serif);fill:var(--c-dim)}
+#libws .trcdg .strip{fill:var(--c-well);stroke:var(--c-tx);stroke-width:1}
+#libws .trcdg .tn{font:600 11.5px var(--mf,monospace);fill:var(--c-tx);text-anchor:middle}#libws .trcdg .tl{font:500 11px var(--mf,monospace);fill:var(--c-dim)}
+#libws .trcdg .w{fill:none;stroke-width:2.2}#libws .trcdg .cl{font:600 11.5px var(--mf,monospace);text-anchor:middle}
+#libws .trcdg .term{fill:var(--c-pane);stroke:var(--c-tx);stroke-width:1.4}
+#libws .trcdg .addr{font:700 18px var(--mf,monospace);fill:var(--c-acctx)}
+#libws .trctw{max-height:460px;overflow:auto;border:1px solid var(--c-line);border-radius:6px}
+#libws .trct{width:100%;border-collapse:collapse;font-size:12px}
+#libws .trct th{position:sticky;top:0;background:var(--c-pane);text-align:left;font:700 11px var(--uf,sans-serif);letter-spacing:.05em;color:var(--c-dim);text-transform:uppercase;padding:6px 7px;border-bottom:1px solid var(--c-line);white-space:nowrap}
+#libws .trct td{padding:5px 7px;border-bottom:1px solid var(--c-line);vertical-align:top;color:var(--c-tx)}
+#libws .trct td.m{font:11.5px var(--mf,monospace);white-space:nowrap}
+#libws .trct tr{cursor:pointer}#libws .trct tbody tr:hover td{background:var(--c-well)}#libws .trct tr.on td{background:var(--c-accbg,#e8f0f7)}
+#libws .trcty{font:700 11px var(--mf,monospace);padding:1px 5px;border-radius:3px;color:#fff}
+#libws .trcty.AI{background:var(--trc-ai)}#libws .trcty.AO{background:var(--trc-ao)}#libws .trcty.DI{background:#4b5563}#libws .trcty.DO{background:var(--trc-do)}
+#libws .trcsrc{font-size:11.5px;color:var(--c-dim);margin:0}
+#libws .trct td:nth-child(3){min-width:200px}

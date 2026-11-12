@@ -21,7 +21,8 @@
     rows = { all: [], io: [], mem: [], wire: [], relay: [] },
     WIX = {},
     WRAW = {},
-    tab = 'all',
+    tab = 'trace',
+    ADS = null,
     con = '',
     stn = '',
     q = '',
@@ -138,6 +139,7 @@
     try {
       A = (await AN.ades()) || {};
     } catch (e) {}
+    ADS = A;
     /* marshalling wiring (src/ui/plant/wiring.js): one row per signal, indexed by station + address */
     const WF = window.WIRING_F || [],
       W = window.WIRING || [],
@@ -338,6 +340,13 @@
     if (!box) return;
     box.innerHTML = '';
     if (ws) ws.classList.toggle('calc', tab === 'calc');
+    if (ws) ws.classList.toggle('trace', tab === 'trace');
+    if (tab === 'trace') {
+      /* the signal path view (src/ui/plant/tracer.js), drawn like the DCS Signal Tracer of the control network study */
+      cnt.textContent = '';
+      if (window.LS_TRACER) window.LS_TRACER.render(box, ADS);
+      return;
+    }
     if (tab === 'calc') {
       cnt.textContent = '';
       const C = window.CALC_COMP || [],
@@ -448,6 +457,7 @@
       (tab === 'all' ? ['Station', 'Address', 'Tag', 'Description', 'Path · remark · sheet', 'Type', ''] : ['Station', 'Address', 'Tag', 'Description', 'Range / remark', 'Type · SIG.AB', '']).forEach(t => h.append(E('span', { txt: t })));
     }
     if (c) c.style.display = tab === 'all' ? '' : 'none';
+    if (h) h.style.display = tab === 'trace' ? 'none' : '';
   }
   function fillCon() {
     const c = $('libcon');
@@ -481,7 +491,7 @@
             render();
           }
         });
-    tabs.append(mk('all', 'All signals'), mk('io', 'I/O list'), mk('mem', 'Memory list'), mk('wire', 'Wiring'), mk('relay', 'Relay / SER'), mk('calc', 'Calculations'));
+    tabs.append(mk('trace', 'Signal path'), mk('all', 'All signals'), mk('io', 'I/O list'), mk('mem', 'Memory list'), mk('wire', 'Wiring'), mk('relay', 'Relay / SER'), mk('calc', 'Calculations'));
     const ss = E('select', { cls: 'libst', 'aria-label': 'Station' });
     [['', 'All stations'], ['1', 'STN101'], ['2', 'STN102'], ['3', 'STN103'], ['4', 'STN104'], ['5', 'STN105']].forEach(([v, t]) => {
       const o = E('option', { txt: t });
