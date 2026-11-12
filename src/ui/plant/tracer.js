@@ -38,6 +38,28 @@
     '2|I.041B': ['GCP', [], 'dcs-io-list.xls remark "FROM GCP"'],
     '2|I.041C': ['GCP', [], 'dcs-io-list.xls remark "FROM GCP"']
   };
+  /* STN101 AI0774 GCP-AI1002 #1 Generator MW (D): a direct cable GCP -> DCS (WIRING.xls GCP-->DCS) */
+  ORIG['1|AI0774'] = ['GCP', [['GCP', 'generator MW transducer, 4-20 mA']], 'direct cable GCP to DCS (WIRING.xls)'];
+  /* 3.2.3-beta.115 (user: "Scada agad? Gcp pero walang GCP?", "Buo dapat ang chain at ang address na mga associated nito"): the
+     DCS analog outputs to the SCADA repeat a generator value that the DCS reads on an AI. Pair = the same signal in the I/O list
+     (dcs-io-list.xls, e.g. AO0406 TCS-AO1007 #1 Generator current (B) <- AI0855 TCS-AI1007 #1 GEN. current (B)), as in the control
+     network study. The block that copies the AI to the AO is not in the ABC / DITL drawings of the app (searched: no sheet
+     uses these AO addresses), so the hop inside the DCS is shown without a sheet. */
+  const AOP = {
+    '2|AO0470': '2|AI0775',
+    '2|AO0486': '2|AI0807',
+    '2|AO0487': '1|AI0774',
+    '3|AO0582': '2|AI0871',
+    '3|AO0583': '2|AI0903',
+    '3|AO0886': '2|AI0823',
+    '3|AO0887': '2|AI0839',
+    '2|AO0405': '2|AI0791',
+    '2|AO0406': '2|AI0855',
+    '2|AO0407': '2|AI0887'
+  };
+  /* AI-Wet / AI-Dry of the I/O list (K1AU3-E2-0-118 sheet "DCS Numbering" rows 13-14; WIRING.xls sheet AIO 2W / 4W) */
+  const WIRE = t => (/Wet/i.test(t) ? '2-wire' : /Dry/i.test(t) ? '4-wire' : '');
+  const WIREL = t => (/Wet/i.test(t) ? '2-wire (AI-Wet: the DCS card powers the loop)' : /Dry/i.test(t) ? '4-wire (AI-Dry: the transmitter has its own power)' : '');
   window.LS_ORIG = ORIG;
   const SY = [
     ['All', 'All'],
@@ -130,9 +152,27 @@
       o.og = O ? O[0] : /^GCP-/.test(tag) ? 'GCP' : '';
       o.up = O ? O[1] : [];
       o.ref = O ? O[2] : o.og ? 'tag GCP- (I/O list)' : '';
+      o.wire = WIRE(o.sig);
       o.sys = sysOf(o);
       o.h = (tag + ' ' + desc + ' ' + a + ' ' + o.jb + ' ' + o.mpl + ' ' + o.cab).toLowerCase();
       R.push(o);
+    }
+    /* the AO to SCADA: the whole chain of its AI, then the AI and the AO inside the DCS */
+    const by = {};
+    for (const r of R) by[r.s + '|' + r.a] = r;
+    for (const k in AOP) {
+      const a = by[k],
+        b = by[AOP[k]];
+      if (!a || !b) continue;
+      const sb = 'STN10' + AOP[k].split('|')[0],
+        sa = 'STN10' + k.split('|')[0];
+      a.og = b.og || 'GCP';
+      a.up = b.up.concat([
+        ['DCS ' + sb + ' ' + b.a, b.tag + ' ' + (b.wire ? b.wire + ' ' : '') + 'input (value inside the DCS)'],
+        ['DCS ' + sa + ' ' + a.a, 'sent out to ' + a.sys + ' on this AO']
+      ]);
+      a.pair = b;
+      a.ref = (b.ref ? b.ref + '. ' : '') + 'AO paired with ' + sb + ' ' + b.a + ' (' + b.tag + ') by the same signal in the I/O list; the DCS block that copies the AI to this AO is not in the ABC / DITL drawings';
     }
     PAN = [...new Set(R.map(r => r.mpl).filter(Boolean))].sort();
     return R;
@@ -223,7 +263,8 @@
     const frag = document.createDocumentFragment();
     rows.slice(0, MAX).forEach(r => {
       const S = srcOf(r);
-      const ft = r.up && r.up.length ? [...new Set(r.up.map(h => h[0].split(' ')[0]))].join(' → ') + ' → DCS' : r.og === 'GCP' && S.n.indexOf('GCP') < 0 ? 'GCP value · ' + S.n : S.n;
+      const out = r.t === 'AO' || r.t === 'DO',
+        ft = r.up && r.up.length ? [...new Set(r.up.map(h => h[0].split(' ')[0]).concat(out ? ['DCS'] : []))].join(' → ') + (out ? ' → ' + r.sys : r.up.some(h => /^DCS/.test(h[0])) ? '' : ' → DCS') : r.og === 'GCP' && S.n.indexOf('GCP') < 0 ? 'GCP value · ' + S.n : S.n;
       const tr = E('tr', { cls: r === st.sel ? 'on' : '' }, [
         E('td', {}, [E('span', { cls: 'trcty ' + r.t, txt: r.t })]),
         E('td', { cls: 'm', txt: r.tag }),
@@ -231,7 +272,7 @@
         E('td', { txt: ft }),
         E('td', { cls: 'm', txt: r.mpl + ' ' + r.ms + ' ' + r.mt1 + '/' + r.mt2 }),
         E('td', { cls: 'm', txt: r.cab }),
-        E('td', { cls: 'm', txt: r.fcs + ' ' + r.eb + ' ' + r.e1 + '/' + r.e2 }),
+        E('td', { cls: 'm', txt: r.fcs + ' ' + r.eb + ' ' + r.e1 + '/' + r.e2 + (r.wire ? ' · ' + r.wire : '') }),
         E('td', { cls: 'm', txt: stnOf(r) + ' ' + r.a })
       ]);
       tr.onclick = () => {
@@ -258,7 +299,7 @@
       col = { AI: 'var(--trc-ai)', AO: 'var(--trc-ao)', DI: 'var(--trc-di)', DO: 'var(--trc-do)' }[r.t],
       sys = r.sys,
       who = sys === 'Field' ? 'field' : sys;
-    const org = r.up && r.up.length ? 'origin: ' + r.up.map(h => h[0]).join(' → ') + ' → DCS  ·  ' : r.og === 'GCP' && out ? 'value comes from GCP  ·  ' : '';
+    const org = r.up && r.up.length ? 'chain: ' + r.up.map(h => h[0]).join(' → ') + (out ? ' → ' + r.sys : r.up.some(h => /^DCS/.test(h[0])) ? '' : ' → DCS') + '  ·  ' : r.og === 'GCP' && out ? 'value comes from GCP  ·  ' : '';
     cap.textContent = '';
     cap.append(
       r.tag + '  ·  ' + r.desc + '  ·  ' + org + (out ? 'DCS sends to ' + who : who + ' sends to DCS') + '  ·  ',
@@ -281,20 +322,27 @@
       const n = r.up.length,
         us = el('svg', { viewBox: '0 0 1240 110', role: 'img', 'aria-label': 'Where ' + r.tag + ' starts' }, hp);
       el('defs', {}, us).innerHTML = mk('trcua');
-      tx(us, 16, 16, 'tl', 'BEFORE THE RACK ROOM: where the signal starts');
-      const bw = 250,
-        gap = 60;
+      tx(us, 16, 16, 'tl', out ? 'WHERE THE VALUE COMES FROM, THEN OUT OF THE DCS' : 'BEFORE THE RACK ROOM: where the signal starts');
+      const bw = n > 3 ? Math.floor((1240 - 16 - 150 - (n - 1) * 36 - 40) / n) : 250,
+        gap = n > 3 ? 36 : 60;
       r.up.forEach((h, i) => {
         const x = 16 + i * (bw + gap);
         el('rect', { class: 'box', x, y: 26, width: bw, height: 62, rx: 6 }, us);
-        tx(us, x + 10, 50, 'bt', h[0]);
-        tx(us, x + 10, 70, 'bs', h[1]);
+        const fit = (t, px) => (t.length > Math.floor((bw - 16) / px) ? t.slice(0, Math.floor((bw - 16) / px) - 1) + '…' : t);
+        tx(us, x + 10, 50, 'bt', fit(h[0], 8.2));
+        tx(us, x + 10, 70, 'bs', fit(h[1], 6.2));
+        el('title', {}, el('rect', { x, y: 26, width: bw, height: 62, fill: 'transparent' }, us)).textContent = h[0] + ' · ' + h[1];
         el('path', { class: 'w', d: 'M' + (x + bw) + ',57 H' + (x + bw + gap - 4), stroke: col, 'marker-end': 'url(#trcua)' }, us);
       });
       const lx = 16 + n * (bw + gap);
-      tx(us, lx, 52, 'bt', 'cable to rack room ↓');
-      tx(us, lx, 70, 'bs', 'continues below');
-      tx(us, 16, 104, 'tl', 'Source: ' + r.ref);
+      tx(us, lx, 52, 'bt', out ? 'out to ' + sys + ' ↓' : 'cable to rack room ↓');
+      tx(us, lx, 70, 'bs', out ? 'wiring of the AO below' : 'continues below');
+      /* the source on as many lines as it needs (about 190 characters a line) */
+      const words = ('Source: ' + r.ref).split(' '),
+        lines = [''];
+      for (const w of words) (lines[lines.length - 1] + ' ' + w).length > 190 ? lines.push(w) : (lines[lines.length - 1] = (lines[lines.length - 1] + ' ' + w).trim());
+      us.setAttribute('viewBox', '0 0 1240 ' + (96 + lines.length * 14));
+      lines.forEach((l, i) => tx(us, 16, 104 + i * 14, 'tl', l));
     }
     const svg = el('svg', { viewBox: '0 0 1240 270', role: 'img', 'aria-label': 'Wiring path of ' + r.tag }, hp);
     el('defs', {}, svg).innerHTML = mk('trcar');
@@ -302,7 +350,7 @@
       Y2 = 182,
       S = srcOf(r);
     const B = [
-      { x: 16, w: 150, t: r.up && r.up.length ? 'TCS' : S.k === 'pan' ? (sys === 'Local panels' ? S.n.split('→')[0] : sys) : r.tag, s: S.k === 'pan' ? 'other panel' : 'field device', d: S.k !== 'pan' },
+      { x: 16, w: 150, t: r.up && r.up.length && !out ? 'TCS' : S.k === 'pan' ? (sys === 'Local panels' ? S.n.split('→')[0] : sys) : r.tag, s: S.k === 'pan' ? 'other panel' : 'field device', d: S.k !== 'pan' },
       { x: 200, w: 150, t: S.k === 'jb' ? S.n : S.k === 'pan' ? 'Cable from ' + S.n.split('→')[0] : 'Direct', s: S.k === 'jb' ? 'junction box (field)' : S.k === 'pan' ? 'cable no. not in list' : 'field cable', d: true },
       { x: 390, w: 330, t: r.mpl, s: 'marshalling panel, rack room' },
       { x: 770, w: 290, t: r.fcs, s: 'FCS cabinet, rack room' },
@@ -346,12 +394,16 @@
     };
     strip(440, r.jb.replace(/^(.{16}).+/, '$1…'), r.jt1, r.jt2);
     strip(600, r.ms, r.mt1, r.mt2);
-    strip(830, r.eb + ' ' + (r.brd || ''), r.e1, r.e2);
+    strip(830, r.eb + ' ' + (r.brd || '') + (r.wire ? ' · ' + r.wire : ''), r.e1, r.e2);
     el('rect', { class: 'strip', x: 960, y: Y1 - 26, width: 24, height: Y2 - Y1 + 44, rx: 3 }, svg);
     tx(svg, 972, Y1 - 34, 'tl', 'I/O card', 'middle');
     tx(svg, 30, Y1 + 5, 'tn', '+', 'start');
     tx(svg, 30, Y2 + 5, 'tn', '−', 'start');
     if (r.sig) tx(svg, 1105, 165, 'bs', r.sig);
+    if (r.wire) {
+      tx(svg, 1105, 182, 'bs', r.wire);
+      tx(svg, 780, 262, 'tl', WIREL(r.sig));
+    }
   }
   window.LS_TRACER = { render };
 })();
