@@ -382,7 +382,10 @@
     /* 3.2.3 (SOHEE): DITL-80P rows 2 / 3 "S/B STEAM DRAIN TEMPERATURE(B) TISB1057.PV" / "(A) TISB1056.PV" (> 250 C drain SOV auto close,
        > 220 C blowing permissive, DITL-80A rows 18 ~ 23) = the drain temperatures of the plant model (unit.js AN_SB.dr) */
     [/TT-SB1056\b/, 'sbTa'],
-    [/TT-SB1057\b/, 'sbTb']
+    [/TT-SB1057\b/, 'sbTb'],
+    /* 3.2.3 (SOHEE): DITL-83 rows 15 / 20 "LP TURBINE BYPASS VALVE TT-HR1010 OUTLET TEMP." (< 250 C open, > 330 C close the warming
+       valve XV-HR1010-1 in AUTO) = the plant model's (unit.js AN_HRW) */
+    [/TT-HR1010\b/, 'hrT10']
   ];
   /* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI): the tank and unit header pressure transmitters of the compressed air systems are analog
      rows of the logic (DITL-113 / 114 rows 1 ~ 3: auto start of the standby compressor < 5 kg/cm2; DITL-03G rows 9 ~ 11: MFT on
