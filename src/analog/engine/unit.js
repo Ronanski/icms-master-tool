@@ -2614,7 +2614,8 @@ const AN_AIR = {
      The DITL netlist agrees with every sheet: the coil is inverted (energised = closed) exactly on the spring opening valves.
      XV-FW1111-1 / XV-FW1121-1 have an airlock (SMC VSA 3-way): they stay in place (3.5, NO-SOURCE set point).
    Not in the package (no sheet: they keep following their command): PCV-MS1020 / PCV-HR1010 bypass, TCV-FW1060 / FW1150,
-   PCV-AS1010, TCV-CD1115 / 1124 / 1126, XV-FW1151, XV-HR1010-1, XV-CR1013, the air dampers. */
+   PCV-AS1010, TCV-CD1115 / 1124 / 1126, XV-FW1151, XV-HR1010-1, XV-CR1013, the flue gas biasing dampers TCV-FG1116 / 1117 (their
+   O&M manual, L16 FANS / L14-7 Promax, covers the Festo DAPS double acting R and spring return RS both and names neither for them). */
 /* 3.2.3 (boiler model thread, drum level swings on the start-up level control): the start-up feedwater valve FCV-FW1130-2 (ABC-010
    LICBR1001B) from its valve sheet, K1AU3-E2-0-123 p147 (plant-study 12-assumptions #10): Cv max 15.58 at 100 % travel, 120,000 kg/h at
    76 % travel (Cv 11.7) with P1 214.5 and P2 64.6 kg/cm2 (dP 149.9), 6,000 kg/h at 10 % travel (Cv 0.585 at the same dP). Between the
@@ -2671,8 +2672,16 @@ const AN_AV = {
     TICLO1002: 'TCV-CW1201 (item 40, airlock RK 2-8)',
     PICDO0005: 'PCV-DO0002 (item 41, airlock RK 2-8)',
     PICDO1008: 'PCV-DO1009 (item 42, airlock RK 2-8)',
-    HICDO1012: 'FCV-DO1012 (item 43, airlock RK 2-8)'
+    HICDO1012: 'FCV-DO1012 (item 43, airlock RK 2-8)',
+    /* 3.2.3 (SOHEE): the ID fan damper PCD-FG1056-1 (I/O list "PNEUMATIC CONTROL DAMPER", PD-051, AO0226 by PICFG108A). Source:
+       o&m-package-phase-1 L16 FANS "LMYP-1 Fan Instruction Manual", 4.1 Pneumatic Actuator Data Sheet For I.D.Fan (RF2-0582-DOC-3,
+       STI CMV datasheet 133486SC01 rev 1): line 18 DOUBLE ACTING, line 58 air lock (lock up + 2 x 3 way valves) set 2.5 bar /
+       kg/cm2, line 29 air failure mode IN PLACE, filter regulator NORGREN B73 set 4, supply 4 / 6; operation table: air FAIL/LOSS =
+       lever IN PLACE; Fan Specification Sheet 4 of 5, 3.3.1: FAILURE = LOCK POSITION */
+    PICFG108A: 'PCD-FG1056-1 (ID fan damper, STI CMV double acting, airlock set 2.5, air failure in place)'
   },
+  /* the lock pressure of a valve whose own sheet gives its set point (kg/cm2); the others AN_AV.lock */
+  lk: { PICFG108A: 2.5 },
   /* on / off valves by the tag of the DITL solenoid: spring position (100 open / 0 closed, or 'hold'), precompression and full
      travel pressures (bar g; the psig of the Siemens sheets x 0.0689) */
   sv: {
@@ -2710,7 +2719,7 @@ function anAv(tag, x) {
   if (!tag || !AN_AV.hold[tag]) return x;
   const P = anAvP(),
     H = AN_UNIT.avH || (AN_UNIT.avH = {});
-  if (!isFinite(P) || P >= AN_AV.lock || !isFinite(x)) {
+  if (!isFinite(P) || P >= (AN_AV.lk[tag] || AN_AV.lock) || !isFinite(x)) {
     H[tag] = x;
     return x;
   }
