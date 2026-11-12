@@ -175,11 +175,20 @@ window.LS_GUIDE = (function () {
      blow-off passes steam all the way up and the start-up valve feeds it back as it goes. The ramp is the HP bypass way of step 61 (SV +1);
      its pace is a calculation from the PR-OPE-5002 heating gradient 1 C a minute: steam table 20 -> 35 kg/cm2 is 212 -> 243 C, about
      2 C per kg/cm2, so 1 kg/cm2 each 2 minutes (3.2.3-beta.57: was marked ASSUMED) */
+  /* Sakura headless Hot restart run (beta.162, 2026-11-13): the Cold hold of the MS blow-off at 35 kg/cm2 (step 'Pressure and level ...
+     PICMS1002 AUTO SV 35') took the hot boiler down: drum 98 -> 23.6 kg/cm2 (blow-off 117 T/H to the air), then 'Bypass servicing' had
+     to raise it again to the hot roll pressure 111. FHI Part 2 Sect 7 Tab 4 Fig. 4 HOT STARTUP: SH outlet pressure about 100 kg/cm2 at the
+     start of the fans, about 110 at the turbine roll, never down; Fig. 3 WARM STARTUP: about 40 at the start, about 80 at the roll. The
+     hold is the pressure of the restart (unit.js AN_RESTART: warm 40, hot 100), never under the Cold 35 */
+  const holdP = () => {
+    const r = window.AN && AN.restartKind ? +AN.restartPd || 0 : 0;
+    return Math.max(35, r);
+  };
   let bovT = -1e9;
-  const bovAuto = () => btn('PICMS1002 A, SV at the drum pressure (+1)', () => A.auto('PICMS1002', Math.min(35, Math.max(1, Math.round(+U().Pd || 0) + 1))), () => md('PICMS1002') === 'AUTO');
+  const bovAuto = () => btn('PICMS1002 A, SV at the drum pressure (+1)', () => A.auto('PICMS1002', Math.min(holdP(), Math.max(1, Math.round(+U().Pd || 0) + 1))), () => md('PICMS1002') === 'AUTO');
   const bovRamp = () =>
     btn(
-      'MS blow-off PICMS1002 SV +1 (one each 2 minutes, up to 35)',
+      'MS blow-off PICMS1002 SV +1 (one each 2 minutes, up to the hold pressure: 35 cold)',
       /* 3.2.3-beta.107 (Mina live beta.102: blow-off 94 ~ 100 % from about t 394 to 421 with the SV 26 ~ 34 behind the drum pressure
          after the B / C light-off): when the pressure has run 2 kg/cm2 or more over the SV, the SV goes back to the drum pressure (the
          set point of step 54, "the MS blow-off PICMS1002 in AUTO with its set point at the drum pressure"), not +1 */
@@ -188,14 +197,14 @@ window.LS_GUIDE = (function () {
         bovT = simT();
         const sv = Math.round(+svOf('PICMS1002') || 0),
           p = +U().Pd || 0;
-        return A.auto('PICMS1002', Math.min(35, p >= sv + 2 ? Math.round(p) : sv + 1));
+        return A.auto('PICMS1002', Math.min(holdP(), p >= sv + 2 ? Math.round(p) : sv + 1));
       },
       /* 3.2.3-beta.100 (Mina B94-1 / beta.99 retest, Do it for me every 700 ms at x10): the ramp went +1 each 2 minutes whatever the
          pressure did, SV 4 -> 35 in 64 minutes while the drum was only at 24 kg/cm2: the SV stood over the pressure, the blow-off stayed
          shut (MV 0), the boiler stored its heat closed and at 35 ~ 39 kg/cm2 the blow-off went 0.7 -> 100 % in 14 minutes, 66 T/H of steam
          on 6 ~ 36 T/H of feed, drum low-low MFT. PR-OPE-5002 "Ensure MS BLOW OFF VALVE (BOV) > 10 % OPEN": the next +1 waits until the
          blow-off passes steam again (MV >= 10 %), so the set point follows the pressure instead of running ahead of it */
-      () => md('PICMS1002') === 'AUTO' && ((+svOf('PICMS1002') || 0) >= 35 || simT() - bovT < 120 || (+mv('PICMS1002') || 0) < 10)
+      () => md('PICMS1002') === 'AUTO' && ((+svOf('PICMS1002') || 0) >= holdP() || simT() - bovT < 120 || (+mv('PICMS1002') || 0) < 10)
     );
   const svStep = (l, t, d, lo, hi) => Object.assign(btn(l, () => (md(t) === 'AUTO' ? A.auto(t, Math.max(lo, Math.min(hi, Math.round((+svOf(t) || 0) + d)))) : 'Mode ' + md(t) + ' on ' + t + ': put it in A first')), { tag: t });
   /* 3.2.3 automatic run (beta.52, steps 74 ~ 76): the SV +1 and oil buttons had no done state: the runner pressed them every look, the HP
@@ -694,7 +703,7 @@ window.LS_GUIDE = (function () {
       /* 3.2.3-beta.114 (Worker run of beta.107: oil ▲ at 31 ~ 32 kg/cm2 took the drum to 37.2 against the blow-off SV 35, the blow-off
          opened to 100 % and the drum fell to -136 mm, then rose to +187 at step 73 while it closed): ▲ only under 30 kg/cm2, 5 under
          the hold; the run showed about 5 kg/cm2 of rise after the last ▲ (the lag of the furnace and the bed) */
-      up = r < 45 && (+U().Pd || 0) < 30;
+      up = r < 45 && (+U().Pd || 0) < holdP() - 5;
     /* 3.2.3-beta.133 (Mina beta.125 Cold run: steps 52 ~ 57 heating rate peaks 66 ~ 83 C/h, average 49 ~ 59, against the PR-OPE-5002
        gradient 1 C/min = 60 C/h). The rate is a 5-minute window and the bed lags the oil, so a ▲ +5 at 44 C/h showed up as 70+ a few
        minutes later. The trend (rate now against the rate at the last check, 2 minutes of the plant before) now counts: ▼ also at
@@ -1313,10 +1322,11 @@ window.LS_GUIDE = (function () {
         st: 4,
         sec: 28,
         slow: drnSlow,
-        t: 'Pressure and level: start-up level LICBR1001B AUTO SV 0, MS blow-off PICMS1002 AUTO SV 35',
-        d: 'PR-OPE-5002: the MS blow-off valve is open (≥ 10 %) during the warm-up. The blow-off (PICMS1002) holds the main steam pressure at 35 kg/cm² while the TCS auxiliaries and the vacuum are done, and the start-up valve (LICBR1001B) holds the drum level. The four oil burners make more steam than the blow-off passes at 35 kg/cm² (about 62 T/H full open): lower the oil (▼ −5 %, not under the burner minimum fire, 614.4 kg/h) so the blow-off does not stand full open. The step is done when the drum is at the set point (33 ~ 37 kg/cm²) and the drum level is inside its alarms (−100 ~ +127 mm). The make-up valve LCV-MU1110 alone gives the hotwell about 58 T/H: if the hotwell level falls under −100 mm, open the hotwell filling MOV MV-MU1001 too (PR-OPE-5002 hotwell filling) and close it again when the level is back over +50 mm. The steam that leaves to the air is water the make-up must give back to the hotwell and the deaerator: with the blow-off full open for an hour the deaerator runs empty, the feedwater pumps trip on its low-low level and the drum level low-low is an MFT. Coal comes only after the sync (FHI Fig. 2): oil burners only up to 45 MW.',
+        get t() { return 'Pressure and level: start-up level LICBR1001B AUTO SV 0, MS blow-off PICMS1002 AUTO SV ' + holdP(); },
+        get d() { const p = holdP(); return p === 35 ? this.d0 : this.d0.replace(/at 35 kg\/cm²/g, 'at ' + p + ' kg/cm² (restart: FHI Fig. 3 / 4, the boiler is not taken down to the cold 35)').replace(/\(33 ~ 37 kg\/cm²\)/g, '(' + (p - 2) + ' ~ ' + (p + 2) + ' kg/cm²)'); },
+        d0: 'PR-OPE-5002: the MS blow-off valve is open (≥ 10 %) during the warm-up. The blow-off (PICMS1002) holds the main steam pressure at 35 kg/cm² while the TCS auxiliaries and the vacuum are done, and the start-up valve (LICBR1001B) holds the drum level. The four oil burners make more steam than the blow-off passes at 35 kg/cm² (about 62 T/H full open): lower the oil (▼ −5 %, not under the burner minimum fire, 614.4 kg/h) so the blow-off does not stand full open. The step is done when the drum is at the set point (33 ~ 37 kg/cm²) and the drum level is inside its alarms (−100 ~ +127 mm). The make-up valve LCV-MU1110 alone gives the hotwell about 58 T/H: if the hotwell level falls under −100 mm, open the hotwell filling MOV MV-MU1001 too (PR-OPE-5002 hotwell filling) and close it again when the level is back over +50 mm. The steam that leaves to the air is water the make-up must give back to the hotwell and the deaerator: with the blow-off full open for an hour the deaerator runs empty, the feedwater pumps trip on its low-low level and the drum level low-low is an MFT. Coal comes only after the sync (FHI Fig. 2): oil burners only up to 45 MW.',
         /* 3.2.3-beta.80: also the SV 35 of the title and the blow-off not full open (the text: "so the blow-off does not stand full open") */
-        c: b.ALL(b.MODE('LICBR1001B', 'AUTO'), b.MODE('PICMS1002', 'AUTO'), b.VAL('Pd', 33, 37), b.VAL('lvl', -100, 127), C('PICMS1002 SV 35', () => (+svOf('PICMS1002') || 0) >= 35, () => f0(+svOf('PICMS1002'))), C('MS blow-off not full open', () => (+mv('PICMS1002') || 0) < 100, () => f0(+mv('PICMS1002')) + ' %')) /* 3.2.3-beta.57 (no assumed values): the "blow-off <= 60 % for 300 s" of beta.43 is in no document (ASSUMED_sources row 15); the step is done at the hold pressure with the drum level inside its L / H alarms (-100 / +127 mm, alarm list 20160912). Before: */ /* 3.2.3 automatic run: on four burners the blow-off stayed full open (75 T/H to the air), the deaerator ran empty 100 min later, BFWP A / B LOW-LOW trip, drum -422 mm, MFT. 3.2.3 automatic run (sections 17 ~ 40): at 30 kg/cm2 the blow-off was still shut, so 'MV <= 60 %' passed before the pressure reached its set point; the oil was never trimmed, the field and vacuum steps that follow have no oil buttons, the drum went 30 -> 41 kg/cm2 with the blow-off full open and the level low-low (drum level -259 mm) was an MFT at the vacuum up: the balance is checked at the set point (drum 33 ~ 37 kg/cm2, blow-off <= 60 %, 5 minutes; a second run passed at 38.7 kg/cm2 with the blow-off still opening, 20 -> 98 % in 6 minutes, and the drum level fell 33 -> -306 mm) */,
+        c: b.ALL(b.MODE('LICBR1001B', 'AUTO'), b.MODE('PICMS1002', 'AUTO'), C('Drum pressure at the hold (cold 33 ~ 37, warm 38 ~ 42, hot 98 ~ 102 kg/cm²)', () => Math.abs((+U().Pd || 0) - holdP()) <= 2, () => f1(+U().Pd || 0) + ' kg/cm²'), b.VAL('lvl', -100, 127), C('PICMS1002 SV at the hold pressure', () => (+svOf('PICMS1002') || 0) >= holdP(), () => f0(+svOf('PICMS1002'))), C('MS blow-off not full open', () => (+mv('PICMS1002') || 0) < 100, () => f0(+mv('PICMS1002')) + ' %')) /* 3.2.3-beta.57 (no assumed values): the "blow-off <= 60 % for 300 s" of beta.43 is in no document (ASSUMED_sources row 15); the step is done at the hold pressure with the drum level inside its L / H alarms (-100 / +127 mm, alarm list 20160912). Before: */ /* 3.2.3 automatic run: on four burners the blow-off stayed full open (75 T/H to the air), the deaerator ran empty 100 min later, BFWP A / B LOW-LOW trip, drum -422 mm, MFT. 3.2.3 automatic run (sections 17 ~ 40): at 30 kg/cm2 the blow-off was still shut, so 'MV <= 60 %' passed before the pressure reached its set point; the oil was never trimmed, the field and vacuum steps that follow have no oil buttons, the drum went 30 -> 41 kg/cm2 with the blow-off full open and the level low-low (drum level -259 mm) was an MFT at the vacuum up: the balance is checked at the set point (drum 33 ~ 37 kg/cm2, blow-off <= 60 %, 5 minutes; a second run passed at 38.7 kg/cm2 with the blow-off still opening, 20 -> 98 % in 6 minutes, and the drum level fell 33 -> -306 mm) */,
         fps: ['LICBR1001B', 'PICMS1002', 'FICDO1043A', 'FICDO1043B'],
         /* 3.2.3-beta.90 (Mina live run on beta.80: the "Do it for me" stopped here with the blow-off full open and the main steam 52 kg/cm2):
            beta.80 made "blow-off not full open" part of the step, but the Do it for me never presses the oil ▼ (the ▲ / ▼ are the trainee's
