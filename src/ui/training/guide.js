@@ -1223,14 +1223,14 @@ window.LS_GUIDE = (function () {
         field: [29]
       },
       { st: 6, sec: 30, t: 'Bypass servicing: MSP ≥ 48 kg/cm² and steam flow ≥ 40 T/H', d: 'Do: raise the oil firing until steam flow is 40 ~ 55 T/H, trim the air, then raise the HP bypass SV up to 61. (1) Oil firing up (oil ▲) until steam flow is 40 ~ 55 T/H, (2) air: O₂ 3.5 ~ 8 % with the SA damper (SA ▲ / ▼), PA flow 280 T/H once the bed is hot (PA ▲ / ▼), (3) when the HP bypass is in service (MSP ≥ 48, steam ≥ 40), raise the HP bypass PICMS1006 SV by 1 kg/cm² per minute up to 61.', c: b.ALL(b.VAL('MSP', 48, null), b.VAL('MSF', 40, null)), fps: ['PICMS1006', 'FICFA1081', 'FICFA1071'], slow: drnSlow, get a() { return [...DRN, ...muFill() /* beta.80: MV-MU1001 shut again once the hotwell is back over +50 mm (opened at the 35 kg/cm2 hold, muOpen) */, oilBand(1, 40, 55), oilBand(0, 40, 55), oilStep('Oil B / C ▲ +5 %', ['B', 'C'], 5), oilStep('Oil B / C ▼ −5 %', ['B', 'C'], -5), step('SA damper ▲ +2 %', 'FICFA1081', 2), step('SA damper ▼ −2 %', 'FICFA1081', -2), step('PA damper ▲ +1 %', 'FICFA1071', 1), step('PA damper ▼ −1 %', 'FICFA1071', -1), svRamp('PICMS1006', 61, 60)].concat(muFill()); }, w: BYP, wait: 1 },
-      { st: 6, sec: 30, t: 'Main steam pressure 61 kg/cm²: ready to roll', d: 'PR-OPE-5002 (cold start): MS 61.2 kg/cm², steam flow > 40 T/H, reheat ≤ 8.5 kg/cm². The HP bypass holds 61 (SV +1 per minute) and the LP bypass holds the reheat; you control the oil for 40 ~ 55 T/H.', c: b.HOLD(120, b.ALL(b.VAL('MSP', 59, null), b.VAL('MSF', 40, null), b.VAL('RHP', null, 9))), fps: ['PICMS1006'], slow: drnSlow, a: [...DRN, oilBand(1, 40, 55), oilBand(0, 40, 55), svRamp('PICMS1006', 61, 60), Object.assign(svStep('HP bypass SV −1', 'PICMS1006', -1, 0, 123), { on: () => h().MSP() <= 63, hide: () => h().MSP() <= 63 })], w: BYP, wait: 1 },
+      { st: 6, sec: 30, t: 'Main steam pressure 61 kg/cm²: ready to roll', d: 'PR-OPE-5002 (cold start): MS 61.2 kg/cm², steam flow > 40 T/H, reheat ≤ 8.5 kg/cm². The HP bypass holds 61 (SV +1 per minute) and the LP bypass holds the reheat; you control the oil for 40 ~ 55 T/H.', c: b.HOLD(120, b.ALL(b.VAL('MSP', 59, null), b.VAL('MSF', 40, null), b.VAL('RHP', null, 9))), fps: ['PICMS1006'], slow: drnSlow, a: [...DRN, oilBand(1, 40, 55), oilBand(0, 40, 55), svRamp('PICMS1006', 61, 60), /* 3.2.3-beta.108 (Mina B102-3: step 83 waited about 230 minutes with the HP bypass SV at 57; the Do it pressed SV −1 at each pass, about every 7 s of the plant at x10, while the main steam stayed over 63 after the SV, and nothing raised it again): not under 61, the SV of this step (PR-OPE-5002 MS 61.2 kg/cm2) */ Object.assign(svStep('HP bypass SV −1 (not under 61)', 'PICMS1006', -1, 61, 123), { on: () => h().MSP() <= 63 || (+svOf('PICMS1006') || 0) <= 61, hide: () => h().MSP() <= 63 || (+svOf('PICMS1006') || 0) <= 61 })], w: BYP, wait: 1 },
       /* ---- 7 turbine on oil ---- */
       FIELD(7, 'Field checks before the roll: drains, TCS lamps, turbine area (field)', [36, 37, 38, 39], { d: 'Field operator tasks. The ATS steps are on the TCS panel (next steps).' }),
       /* 3.2.0-beta.38 (CHECKLIST 0.6): the ATS steps of the TCS model (tcs.js; ATS Sequence 310SC90-775, Criteria 310SC90-776). Before
          (beta.37) one ROLL button: 0 -> 3600 rpm in 30 min with no criteria */
       { st: 7, sec: 41, t: 'ATS step 0: HP TURBINE WARMING', d: 'ATS page 13: when the HP first stage metal is ≤ 150 °C, steam at the CV (B) warms it until > 150 °C. Needed: gland seal, vacuum, bearing oil, turning gear (CRITERIA A0).', c: C('HP turbine warming done (HP metal > 150 °C)', () => TC().step >= 0, () => 'HP metal ' + f0(+TC().Thp || 0) + ' °C' + (TC().cur === 0 ? ', warming' : '')), a: [btn('HP TURBINE WARMING', () => A.tcs('warm'), () => TC().cur === 0 || TC().step >= 0)], wait: 1 },
       { st: 7, sec: 41, t: 'ATS step 1: TURBINE PREPARATION (CV chest warming, reset, MSV open)', d: 'ATS page 14 ~ 16: when the CV chest is ≤ 150 °C, CV chest warming for 60 minutes (or diff < 50 °C and outer > 180 °C), then TURBINE RESET, MSV OPEN, LOAD LIMITER UPPER.', c: C('Turbine preparation done', () => TC().step >= 1, () => 'CV chest ' + f0(+TC().Tcvi || 0) + ' / ' + f0(+TC().Tcvo || 0) + ' °C' + (TC().cur === 1 ? ', ' + TC().ph + ' ' + f0(+TC().tmMin || 0) + ' min' : '')), a: [btn('TURBINE PREPARATION', () => A.tcs('prep'), () => TC().cur === 1 || TC().step >= 1), HOFF()], wait: 1 },
-      { st: 7, sec: 41, t: 'Steam for the roll: MS 60 kg/cm² / 400 ~ 420 °C, RH 7.5 kg/cm² / 415 ~ 425 °C', d: 'PR-OPE-5002 8254 COLD START-UP: MS 60 kg/cm², 400 °C; RH 7.5 kg/cm², 415 °C. ATS Fig. 2 / 3: with cold metal, MSV inlet ≤ 420 °C and reheat ≤ 425 °C. You control the main steam temperature with the SH spray TICBR1150 (MV ▲ / ▼) and the reheat with the biasing damper (RH damper HICHR1002A ▲ / ▼).', c: C('CRITERIA A2 (rub check) ready', () => TC().cur < 0 && !TC().next, () => TC().next || 'OK'), fps: ['TICBR1150', 'HICHR1002A'], a: [step('SH spray ▲ +2 %', 'TICBR1150', 2), step('SH spray ▼ −2 %', 'TICBR1150', -2), step('RH damper ▲ +5 %', 'HICHR1002A', 5), step('RH damper ▼ −5 %', 'HICHR1002A', -5)], wait: 1 },
+      { st: 7, sec: 41, t: 'Steam for the roll: MS 60 kg/cm² / 400 ~ 420 °C, RH 7.5 kg/cm² / 415 ~ 425 °C', d: 'PR-OPE-5002 8254 COLD START-UP: MS 60 kg/cm², 400 °C; RH 7.5 kg/cm², 415 °C. ATS Fig. 2 / 3: with cold metal, MSV inlet ≤ 420 °C and reheat ≤ 425 °C. You control the main steam temperature with the SH spray TICBR1150 (MV ▲ / ▼) and the reheat with the biasing damper (RH damper HICHR1002A ▲ / ▼).', c: C('CRITERIA A2 (rub check) ready', () => TC().cur < 0 && !TC().next, () => TC().next || 'OK'), fps: ['TICBR1150', 'HICHR1002A', 'PICMS1006'], a: [/* beta.108 (Mina B102-3): the roll needs MS >= 60; an HP bypass SV left under 61 is raised back here */ svRamp('PICMS1006', 61, 60), step('SH spray ▲ +2 %', 'TICBR1150', 2), step('SH spray ▼ −2 %', 'TICBR1150', -2), step('RH damper ▲ +5 %', 'HICHR1002A', 5), step('RH damper ▼ −5 %', 'HICHR1002A', -5)], wait: 1 },
       { st: 7, sec: 41, t: 'ATS step 2: TURBINE RUB CHECK (200 rpm, coast < 100 rpm)', d: 'ATS page 17 ~ 18: 200 rpm, CV / ICV closed, the rotor is let to slow down; done when < 100 rpm. The field operator listens for rubbing.', c: C('Rub check done', () => TC().step >= 2, () => f0(+TC().rpm || 0) + ' rpm' + (TC().hold ? ' HOLD: ' + TC().hold : '')), a: [btn('RUB CHECK', () => A.tcs('rub'), () => TC().cur === 2 || TC().step >= 2), HOFF()], wait: 1 },
       { st: 7, sec: 41, t: 'ATS step 3: ACCELERATION: 1800 rpm heat soak, then 3600 rpm heat soak', d: 'ATS page 19 ~ 22: 120 rpm/min. Ambient cold: 88 minutes at 1800 rpm, then HP metal > 170 °C and shell expansion > 3 mm, then 3600 rpm for 86 minutes. No hold in the critical zone 1372 ~ 1723 rpm.', c: C('Acceleration done (3600 rpm, heat soak)', () => TC().step >= 3, () => f0(+TC().rpm || 0) + ' rpm' + (TC().cur === 3 ? ', ' + TC().ph + ' ' + f0(+TC().tmMin || 0) + ' / ' + f0(+TC().soakMin || 0) + ' min' : '') + (TC().hold ? ' HOLD: ' + TC().hold : '')), a: [btn('ACCELERATION', () => A.tcs('accel'), () => TC().cur === 3 || TC().step >= 3), HOFF()], wait: 1 },
       { st: 7, sec: 42, t: 'ATS step 4: EXCITATION', d: 'ATS page 23: AVR EXCITATION START, generator voltage OK.', c: C('Excitation done', () => TC().step >= 4, () => (TC().cur === 4 ? 'excitation' : '—')), a: [btn('EXCITATION', () => A.tcs('excite'), () => TC().cur === 4 || TC().step >= 4), HOFF()], wait: 1 },
@@ -2014,6 +2014,29 @@ window.LS_GUIDE = (function () {
     /* only once the machines really run (a pump just started is not the standby) */
     /* automatic run 2026-11-10: the standby set to AUTO in the same second as the start found the common discharge pressure still low
        (DITL-77 row 12) and started too (two ACWPs running, the step never ended): AUTO only after 30 s of the plant with the machines running */
+    /* the PRESSURE LOW / PRESS. L.L. rows of a pump drawing (the standby start of the drawing) */
+    const pLow = (ds, i) => /PRESS(URE|\.)? *(LOW|L\.L\.)/.test((DUI.rowInfo(ds, i) || {}).svc || '') && DUI.rowVal(ds, i) === 1;
+    /* 3.2.3-beta.108 (Mina B102-2): a standby that started on its own (AUTO, pressure low) while the set already has its running pump
+       could not be stopped (its STOP is blocked in AUTO) and the step never ended: once the pressure is back, AUTO off, then STOP; the
+       block below puts it back in AUTO 30 s later as the standby */
+    if (s.sby && s.max && window.LS_DOCK) {
+      const runL = (s.a || []).filter(a => isM(a) && a.ad && a.on && a.on());
+      if (runL.length <= s.max) G.xStop = null;
+      else
+        try {
+          const dsR = a => {
+            const ds = LS_DOCK.dOf(a.ad);
+            return { ds, R: ds && LS_DOCK.amRow(ds) };
+          };
+          const t = runL.find(a => a.ad === G.xStop) || runL.find(a => { const { ds, R } = dsR(a); return R && DUI.rowVal(ds, R.row) === 1; });
+          const { ds, R } = t ? dsR(t) : {};
+          if (t && R && !(ds.rows && ds.rows.some((r, i) => pLow(ds, i)))) {
+            G.xStop = t.ad;
+            if (DUI.rowVal(ds, R.row) === 1) LS_DOCK.dsel(/^DITL-/.test(t.ad) ? t.ad : (String(ds.name).match(/DITL-[^)]*$/) || [t.ad])[0], R.row, 0, R.svc);
+            else t.stop && t.stop.f();
+          }
+        } catch (e) {}
+    }
     const runOk = s.sby && s.max && (s.a || []).filter(a => isM(a) && a.on && a.on()).length >= s.max;
     if (!runOk) G.sbyT = null;
     else if (G.sbyT == null || G.sbyI !== s.i) (G.sbyT = simT()), (G.sbyI = s.i);
@@ -2027,7 +2050,9 @@ window.LS_GUIDE = (function () {
           if (!R) continue;
           /* automatic run 2026-11-10: AUTO with the common discharge pressure still low (ACWP discharge valve not yet open, PT-CW1152 under
              3.5 kg/cm2, DITL-77 row 12) starts the standby at once, as the drawing says: AUTO only once no PRESSURE LOW row of its sheet is made */
-          if (ds && ds.rows && ds.rows.some((r, i) => /PRESSURE LOW/.test((DUI.rowInfo(ds, i) || {}).svc || '') && DUI.rowVal(ds, i) === 1)) continue;
+          /* 3.2.3-beta.108 (Mina B102-2: step 30 waited 320 minutes with both diesel oil pumps running, B in AUTO): DITL-31 row 5 says
+             "DOP OUTLET PRESS. L.L.", not "PRESSURE LOW", so DOP B went to AUTO with the outlet pressure still low and started too */
+          if (ds && ds.rows && ds.rows.some((r, i) => pLow(ds, i))) continue;
           if (m && m.rem === false) LS_DOCK.dremote(a.ad, a.l.replace(/^START /, ''));
           /* plan c5: dsel takes the drawing name; a pump of the ABC memory (CEP M.3351, FAB M.3309, BFWP M.3343) names its drawing
              instance ("DITL-61A #B"), so the standby of those sets was never put in AUTO here */
