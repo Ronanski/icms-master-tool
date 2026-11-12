@@ -19,7 +19,7 @@ await page.evaluate(i=>{LS_GUIDE.open(i)},idx-2);await page.waitForTimeout(1200)
 await clickT('^2Field');await page.waitForTimeout(600);console.log(await page.evaluate(()=>[...document.querySelectorAll('#gdock button')].filter(x=>x.offsetParent).map(x=>x.textContent.trim().slice(0,40)).filter(t=>/FIELD|lance/i.test(t))));ck(await clickT('lances retracted'),'click lances retracted');await page.waitForTimeout(1500);
 console.log('rows',await page.evaluate(()=>{const K=S.sheets.find(x=>/DITL-80K$/.test(x.name));return [4,8,19].map(r=>DUI.rowVal(K,r))}));
 for(const sp of [1,60,300]){
- await page.evaluate(i=>{WORLD.pulseClear();LS_GUIDE.open(i);AN.runOn&&AN.runOn()},idx);await page.waitForTimeout(600);
+ await page.evaluate(i=>{WORLD.pulseClear();LS_GUIDE.aphSbReset&&LS_GUIDE.aphSbReset();LS_GUIDE.open(i);AN.runOn&&AN.runOn()},idx);await page.waitForTimeout(600);
  await page.evaluate(sp=>{AN.spd=sp;DUI.rowVal&&0;const K=S.sheets.find(x=>/DITL-80K$/.test(x.name));},sp);await page.waitForTimeout(2500);
  const pre=await page.evaluate(()=>({aph:LS_GUIDE.aphSb(),cur:LS_GUIDE.cur,chips:[...document.querySelectorAll('#gdock *')].filter(e=>e.children.length==0&&/^not done$/.test(e.textContent)&&e.offsetParent).length}));
  ck(pre.cur===idx&&!pre.aph,'x'+sp+': step open, not started yet');if(sp===1)ck(pre.chips>0,'Check chip says not done');

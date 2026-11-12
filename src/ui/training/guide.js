@@ -2272,7 +2272,11 @@ window.LS_GUIDE = (function () {
     },
     mine: () => G.mine,
     /* live test #57: the APH sootblower was started (forward starter O.077C seen), for the SOP tick of sec 27 (live.js) */
-    aphSb: () => !!G.aphSb || aphSbFwd()
+    aphSb: () => !!G.aphSb || aphSbFwd(),
+    /* tests (guide_step48.js): a new round at another speed starts with the latch of the forward starter cleared, as a new start-up does */
+    aphSbReset: () => {
+      G.aphSb = 0;
+    }
   };
   return API;
 })();

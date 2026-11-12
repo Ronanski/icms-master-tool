@@ -14,14 +14,16 @@ await p.addInitScript(()=>{try{localStorage.setItem('ls-world','1')}catch(e){}})
 await p.goto('file://'+require('path').resolve(html));await p.waitForTimeout(1500);
 await p.evaluate(()=>AN.setCat('an'));await p.waitForFunction(()=>AN.sheets&&AN.sheets.length>=54,null,{timeout:60000});
 await p.evaluate(()=>lsSetTab('operate'));await p.waitForTimeout(800);
-await p.evaluate(()=>document.getElementById('load150').click());await p.waitForTimeout(3000);
+await p.evaluate(()=>document.getElementById('load150').click());await p.waitForTimeout(500);await p.evaluate(()=>AN._startP);await p.waitForTimeout(2500); /* the 150 MW start and its DITL (app.js load150: AN._startP) */
+await p.evaluate(()=>{const k=document.querySelector('#scstart .scskip');if(k&&k.offsetParent)k.click()});await p.waitForTimeout(800); /* layout C: the start screen closed, as the operator */
 await p.evaluate(()=>{lsSetTab('logic');AN.go(AN.sheets.findIndex(s=>s.name==='ABC-010'))});await p.waitForTimeout(1200);
 await p.evaluate(()=>{const x=[...document.querySelectorAll('button')].find(x=>x.offsetParent&&x.textContent.trim()==='RUN');x&&x.click()});await p.waitForTimeout(3000);
-// 1. faceplate Why?
-const w=await p.evaluate(async()=>{const fp=[...document.querySelectorAll('.fp')].find(x=>x.offsetParent&&/LICBR1001B/.test(x.textContent));if(!fp)return {err:'no LICBR1001B faceplate'};
- const bt=fp.querySelector('.whyb');if(!bt||!bt.offsetParent)return {err:'no Why? button'};bt.click();await new Promise(r=>setTimeout(r,300));
+// 1. faceplate Why? (Mina F56, 3.2.1-beta.66: the force-manual line names the reason in words from AN.why, not "M.0226 = 1"; layout C: the Faceplate tab of the Details column shows the controller faceplates of the open analog sheet)
+const fpt=await p.evaluate(()=>{const b=[...document.querySelectorAll('.scdtl button')].find(x=>x.offsetParent&&x.textContent.trim()==='Faceplate');if(!b)return null;const q=b.getBoundingClientRect();return [q.x+q.width/2,q.y+q.height/2]});if(fpt){await p.mouse.click(fpt[0],fpt[1]);await p.waitForTimeout(1500)}
+const w=await p.evaluate(async()=>{const vis=e=>!!(e&&e.getClientRects().length&&e.offsetWidth>0);const fp=[...document.querySelectorAll('.fp')].find(x=>vis(x)&&/LICBR1001B/.test(x.textContent));if(!fp)return {err:'no LICBR1001B faceplate'};
+ const bt=fp.querySelector('.whyb');if(!vis(bt))return {err:'no Why? button'};bt.click();await new Promise(r=>setTimeout(r,300));
  const rows=[...fp.querySelectorAll('.whyr')].map(r=>r.textContent);const set=[...fp.querySelectorAll('.whyr.k-input .b')].map(x=>x.textContent);return {rows,set,fm:fp.querySelector('.whyx span').textContent}});
-ck(!w.err&&/FORCE MANUAL \(M\.0226 = 1\)/.test(w.fm)&&w.rows.some(r=>/^M\.0226 = 1 · OR/.test(r))&&w.rows.some(r=>/FICFW1007\.MAN = 0 · input of the operator/.test(r))&&w.rows.some(r=>/LICBR1001A\.MAN = 0 · input/.test(r))&&w.set.length===2,
+ck(!w.err&&/^FORCE MANUAL: (FICFW1007|LICBR1001A)\.MAN = 0 .*AUTO not allowed$/.test(w.fm)&&w.rows.some(r=>/^M\.0226 = 1 · OR/.test(r))&&w.rows.some(r=>/FICFW1007\.MAN = 0 · input of the operator/.test(r))&&w.rows.some(r=>/LICBR1001A\.MAN = 0 · input/.test(r))&&w.set.length===2,
  'LICBR1001B (ABC-010) at 150 MW: "'+(w.fm||w.err)+'", Why? shows '+(w.rows||[]).length+' lines: '+JSON.stringify((w.rows||[]).slice(0,5))+', change buttons '+JSON.stringify(w.set));
 // 2. info card Why = ?
 const ic=await p.evaluate(async()=>{const S=AN.sheets[AN.i].S;let n=-1;for(const k in S.lab||{})if(S.lab[k]&&S.lab[k].t==='M.0226')n=+k;const L=AN.why(AN.sheets[AN.i],n).lines;return L.map(l=>l.txt)});
@@ -39,7 +41,8 @@ await p2.addInitScript(()=>{try{localStorage.setItem('ls-world','1')}catch(e){}}
 await p2.goto('file://'+require('path').resolve(html));await p2.waitForTimeout(1500);
 await p2.evaluate(()=>AN.setCat('an'));await p2.waitForFunction(()=>AN.sheets&&AN.sheets.length>=54,null,{timeout:60000});
 await p2.evaluate(()=>lsSetTab('operate'));await p2.waitForTimeout(800);
-await p2.evaluate(()=>document.getElementById('load150').click());await p2.waitForTimeout(3000);
+await p2.evaluate(()=>document.getElementById('load150').click());await p2.waitForTimeout(500);await p2.evaluate(()=>AN._startP);await p2.waitForTimeout(2500); /* the 150 MW start and its DITL (app.js load150: AN._startP) */
+await p2.evaluate(()=>{const k=document.querySelector('#scstart .scskip');if(k&&k.offsetParent)k.click()});await p2.waitForTimeout(800); /* layout C: the start screen closed, as the operator */
 await p2.evaluate(()=>{lsSetTab('logic');AN.go(AN.sheets.findIndex(s=>s.name==='ABC-010'))});await p2.waitForTimeout(1200);
 await p2.evaluate(()=>{const x=[...document.querySelectorAll('button')].find(x=>x.offsetParent&&x.textContent.trim()==='RUN');x&&x.click()});await p2.waitForTimeout(3000);
 await p2.evaluate(()=>{lsEvents.length=0;const sh=AN.sheets[AN.i];for(const k in sh.S.lab||{})if(sh.S.lab[k]&&/^M\.017[02]$/.test(sh.S.lab[k].t))AN.setForce(sh,+k,1)});await p2.waitForTimeout(12000);
