@@ -398,7 +398,12 @@ function tcsIbdStep(U, c, dt) {
     if (r.mft.length) for (const net of r.mft) v[net] = ib.mft0 && tcsMft() ? 1 : 0;
     if (id === 'TA-1') {
       /* the push buttons of TA-1 and the ATS AUTO RESET COMMAND (the ATS program sets c.rst, tcs.js) */
-      if (c.rst && !ib.rst0)
+      /* 3.2.3 (Mina S148-6 / S149-5 / S154-4: no turbine trip after an MFT, the generator stayed on load): the command was sent once, on
+         the rise of c.rst. In the cold start-up of b142 a trip input of TA-9 stood at that moment, the A gate kept TA1_RESET at 0 and the
+         command was lost; the ATS rolled the turbine all the same (tcs.js step 1), so TA1_RESET stayed 0 up to 150 MW and a trip had no
+         fall of it to take (save b142: rst true, TA1_RESET 0, r1 false). The ATS holds its reset command while the turbine is in service
+         and the trip block is not reset (not after a trip, not against the trip / shut-down push buttons) */
+      if ((c.rst && !ib.rst0) || (c.rst && !c.trip && !(v[TA1_RESET] > 0.5) && !(ib.pb.auto > 0) && !(ib.pb.trip > 0) && !(ib.pb.sd > 0)))
         ib.pb.auto = 2; /* held 2 s: a (WO) of the trip sheets needs the command through its own scan */
       for (const [net, name] of s.i) {
         if (/RESET ON|TURBINE RESET/.test(name)) v[net] = ib.pb.rst > 0 ? 1 : 0;
