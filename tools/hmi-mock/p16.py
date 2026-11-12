@@ -3,7 +3,7 @@
 (tools/hmi-mock/mock.py). Analyzers AT-SP1001 ~ 1021 = AI0320 ~ AI0358 of the I/O list (AI-R); alarms AL1-SP01 / AL2-SP01 / AL3-SP01 /
 AL-Z1110 = I.053C ~ I.053F; dosing pumps MIR-Z1107A/B, MIR-Z1108A/B, MIR-Z1109A/B = I.0120 ~ I.012A (running); agitator MIR-Z1101A =
 I.012C; tank level switches LSH / LSL / LSLL-CH1101 / 1103 / 1105 = I.0130 ~ I.0138. No ABC / DITL sheet reads these signals and the
-plant model has no water chemistry, so they show '-----' until a sheet or the model gives them (never the snapshot 21 numbers).
+plant model gives them (3.2.3 SOHEE: unit.js AN_CHEM; the ones still without a source stay '-----', never the snapshot 21 numbers).
 Pump capacities (200 ml/min · 184.62 kg/cm2 ...) are design data of flow diagram K1AU3-PD-042. Run: python3 tools/hmi-mock/p16.py"""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -29,11 +29,14 @@ p.inner(22, 606, '* tag shown highlighted in snapshot 21: the value was above th
 for x, tag in ((654, 'AL1-SP01'), (890, 'AL2-SP01'), (1126, 'AL3-SP01'), (1362, 'AL-Z1110')):
     p.text(x, 614, f'data-di="{tag}|Y|N"')
     p.rect(x - 14, 598, f'data-dir="{tag}"')
-for x, tag in ((300, 'MIR-Z1107A'), (420, 'MIR-Z1107B'), (815, 'MIR-Z1108A'), (935, 'MIR-Z1108B'), (1330, 'MIR-Z1109A'), (1450, 'MIR-Z1109B')):
-    p.inner(x, 978, DI(tag, 'RUNNING', 'STOPPED'))
+# 3.2.3 (SOHEE): the dosing pumps are FIELD equipment of the plant model (unit.js AN_CHEM, AN.field tspA ...): their run state
+# (data-st) and a click = the FIELD faceplate (start / stop at the local panel); the I/O list DI MIR-Z11xx is what the model gives
+for x, i in ((300, 'TSPA'), (420, 'TSPB'), (815, 'AMNA'), (935, 'AMNB'), (1330, 'CHZA'), (1450, 'CHZB')):
+    p.mach(i, st=(x, 978), hits=[(x - 40, 910, 80, 76)])
 for x, n in ((130, '1101'), (645, '1103'), (1160, '1105')):
     p.inner(x, 838, 'level H / L / LL: ' + DI(f'LSH-CH{n}', 'Y', 'N') + ' / ' + DI(f'LSL-CH{n}', 'Y', 'N') + ' / ' + DI(f'LSLL-CH{n}', 'Y', 'N'))
 p.inner(130, 870, 'agitator MIR-Z1101A running: ' + DI('MIR-Z1101A', 'Y', 'N'))
+p.mach('AGT', hits=[(126, 858, 270, 18)])
 bad = p.check()
 assert not bad, bad
 p.write('p16-head.js', 'hmi-mock-sp.js')
