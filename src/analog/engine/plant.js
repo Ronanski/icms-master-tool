@@ -348,8 +348,11 @@ function anCycFlows(t) {
     cep = (AN.steady && typeof srcBit === 'function' ? srcBit(['M.3350', 'M.3351']) : s.cep) ? 1 : 0,
     /* a feedwater heater with its tubes and its bypass shut stops the condensate (unit.js anHtrPath) */
     cdp = typeof AN_UNIT !== 'undefined' && AN_UNIT.on && isFinite(AN_UNIT.cdPath) ? AN_UNIT.cdPath : 1,
-    fda = cep * cdp * Math.min(520, anDaQ(AN_CYC.u.da || 0)),
-    frec = cep * 2.23 /* FCV-CD1120, valve sheet p96, 223 T/H */ * 100 * c((AN_CYC.u.cf || 0) / 100),
+    /* 3.2.3 SOHEE: the condensate polisher and its bypass FCV-CD1121 both shut = no condensate, to the deaerator nor back through the
+       min-flow recirculation (its take-off is after the polisher, MK05 / PD-016; unit.js U.polP) */
+    pol = typeof AN_UNIT !== 'undefined' && AN_UNIT.on && isFinite(AN_UNIT.polP) ? AN_UNIT.polP : 1,
+    fda = cep * cdp * pol * Math.min(520, anDaQ(AN_CYC.u.da || 0)),
+    frec = cep * pol * 2.23 /* FCV-CD1120, valve sheet p96, 223 T/H */ * 100 * c((AN_CYC.u.cf || 0) / 100),
     /* the steam of the turbine and of the HP bypass (MB-011 item 8, MB-012 items 6, 10: bypass -> cold reheat -> reheater -> LP
        bypass -> condenser) both come back as water; only vented steam leaves the cycle */
     ext = s.ext || 0;
