@@ -58,6 +58,68 @@
     });
     return o;
   }
+  /* Mina S154-1 (beta.154 shutdown: HIC-BM and EIC-TM went MANUAL at the CCS release, 62.46 MW, M.2013 = 1, and the Event log had no
+     line): the mode lines above come only from the ABC sheet on screen. The mode STATUS of every tag (.MAN / .LOC / .REM, ctrls.js
+     MODEK: what M / A / R press and what the back-up command of the drawing writes, CLAUDE.md 10) is watched on every ABC sheet: a
+     change writes "TAG → MAN / AUTO / REMOTE" once, with the cause (AN.why) of the .MAN net when it goes MAN */
+  /* one line per mode change: the faceplate on screen (tick, the leg of the A/M station) and the mode status (modeAll) can see the
+     same change one scan apart */
+  const MODE_SEEN = new Map();
+  const modeLine = (S, sh, tag, m, why) => {
+    const r = MODE_SEEN.get(tag),
+      t = Date.now();
+    if (r && r.m === m && t - r.t < 3000) return;
+    MODE_SEEN.set(tag, { m, t });
+    add(S, sh, 'MODE', tag + ' → ' + m, why);
+  };
+  let MW = { key: '', tags: null, prev: {} };
+  function modeTags() {
+    /* the mode addresses of a tag are found by AN.modeNetsBy (engine/ctrls.js): by the name TAG.MAN / .LOC / .REM AND by the
+       description wire of the drawing (ABC-001C HIC-BM .MAN is the wire "BOILER MASTER IN MANUAL"), the same addresses that
+       M / A / R and the back-up command write. The tags are the faceplate tags (AN.faceTags: FACE PID / MAN / SUMA); only on a plant
+       with every sheet built (else the walk would build sheets here) */
+    const A = window.AN;
+    if ((A.sheets || []).some(x => !x.S && !/^ABC-000/.test(x.name))) return null;
+    const key = ((A && A.loadN) || 0) + ':' + A.sheets.map(x => (x.S && x.S.rt ? 1 : 0)).join('');
+    if (MW.key === key && MW.tags) return MW.tags;
+    const T = new Map(),
+      tags = A.faceTags ? A.faceTags() : [];
+    const shOf = S => A.sheets.find(x => x.S === S);
+    for (const tag of tags) {
+      const o = { MAN: [], LOC: [], REM: [] };
+      let any = false;
+      for (const k of ['MAN', 'LOC', 'REM'])
+        try {
+          for (const [S2, n] of A.modeNetsBy(tag, A.MODEK[k]) || []) {
+            const sh = shOf(S2);
+            if (sh && /^ABC-/.test(sh.name)) o[k].push([sh, n]), (any = true);
+          }
+        } catch (e) {}
+      if (any) T.set(tag, o);
+    }
+    MW = { key, tags: T, prev: MW.key.split(':')[0] === key.split(':')[0] ? MW.prev : {} };
+    return T;
+  }
+  function modeAll() {
+    const A = window.AN;
+    if (!A || !A.sheets || A._loading) return;
+    const T = modeTags();
+    if (!T) return;
+    const on = L => L.some(([sh, n]) => sh.S && sh.S.rt && +(sh.S.ext.includes(n) && sh.S.rt.ext[n] !== undefined ? sh.S.rt.ext[n] : sh.S.rt.v[n]) > 0.5);
+    for (const [tag, o] of T) {
+      const m = on(o.MAN) ? 'MAN' : on(o.REM) ? 'REMOTE' : on(o.LOC) || !o.LOC.length ? 'AUTO' : '';
+      const a = MW.prev[tag];
+      MW.prev[tag] = m;
+      if (a === undefined || a === m || !m || !a) continue;
+      const [sh, n] = (m === 'MAN' ? o.MAN : m === 'REMOTE' ? o.REM : o.LOC.length ? o.LOC : o.MAN)[0];
+      let why = null;
+      if (m === 'MAN')
+        try {
+          why = AN.why ? AN.why(sh, n).lines.filter(l => l.d > 0) : null;
+        } catch (e) {}
+      modeLine(sh.S, sh, tag, m, why);
+    }
+  }
   function tick() {
     const sh = window.AN && AN.cat === 'an' && AN.sheets && AN.sheets[AN.i];
     if (!sh || !sh.S || !sh.S.rt) return;
@@ -73,7 +135,7 @@
         b = now[k];
       if (a === undefined || a === b) continue;
       const [kind, ...rest] = k.split(':');
-      if (kind === 'm') add(S, sh, 'MODE', rest[0] + ' → ' + b);
+      if (kind === 'm') modeLine(S, sh, rest[0], b);
       else if (kind === 'f') add(S, sh, 'FM', rest[0] + (b ? ' FORCE MANUAL ← ' : ' force manual cleared ← ') + rest[1] + ' = ' + b, b ? cause(sh, rest[1]) : null);
       else if (kind === 't') add(S, sh, b ? 'TRIP' : 'RST', rest.join(':') + ' = ' + b, b ? cause(sh, rest.join(':')) : null);
     }
@@ -471,7 +533,7 @@
         if (e.ack) AT.delete(k);
         else e.rtn = true;
       }
-    if (first && nNew) add({ rt: { t } }, { name: 'DCS' }, 'ALM', A.startState === 'plantLoad150' ? nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing when the unit was loaded at 150 MW: acknowledged, in the alarm list' : nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing at the start: acknowledged and suppressed (shutdown state; listed apart in the alarm list)');
+    if (first && nNew) add({ rt: { t } }, { name: 'DCS' }, 'ALM', savedAs ? nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing when the save point ' + savedAs + ' was loaded: acknowledged, in the alarm list' : A.startState === 'plantLoad150' ? nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing when the unit was loaded at 150 MW: acknowledged, in the alarm list' : nNew + ' alarm' + (nNew > 1 ? 's' : '') + ' standing at the start: acknowledged and suppressed (shutdown state; listed apart in the alarm list)');
   }
   function ack(k) {
     const L = k ? [k] : [...AT.keys()];
@@ -614,7 +676,8 @@
   /* Mina T2, 3.2.3-beta.1: a new starting state (150 MW, Cold, a save point) or a Reset that takes the plant time back starts a new log;
      the trips of the run before no longer mix with the new run (the same test as the trend recorder, live.js) */
   let ldN = -1,
-    ldT = -1;
+    ldT = -1,
+    savedAs = '';
   const newRun = () => {
     const n = (window.AN && AN.loadN) || 0,
       t = window.AN && AN.plantT ? +AN.plantT() : NaN;
@@ -624,6 +687,7 @@
       unseen = 0;
       prev = {};
       sheetK = '';
+      if (n !== ldN) savedAs = '';
       draw();
     }
     ldN = n;
@@ -637,9 +701,29 @@
       tick();
     } catch (e) {}
     try {
+      modeAll();
+    } catch (e) {}
+    try {
       almScan();
     } catch (e) {}
   }, 500);
+  /* Mina S154-2 (beta.154: after LOAD of the 73.5 MW save point the log said "alarms standing when the unit was loaded at 150 MW", and
+     the "Save point loaded" line was gone or twice): a save point keeps the starting state of its run (AN.startState 'plantLoad150') and
+     the plant time goes back, so the log was cleared AFTER its own line and the standing alarms were told as a 150 MW load. Now the load
+     of a save point starts a new log and a new alarm table at once, writes ONE line, and the standing alarms name the save point */
+  window.lsEventsLoaded = name => {
+    LOG.length = 0;
+    unseen = 0;
+    prev = {};
+    sheetK = '';
+    MW.prev = {};
+    savedAs = String(name || '');
+    ldN = (window.AN && AN.loadN) || 0;
+    const t = window.AN && AN.plantT ? +AN.plantT() : NaN;
+    if (isFinite(t)) ldT = t;
+    almScan.reload = true;
+    window.lsEventAdd('DCS', 'DCS', 'Save point loaded: ' + savedAs);
+  };
   window.lsEvents = LOG;
   /* Mina B96-1: the alarm list (shellc-home.js) stamps its rows with the same plant clock and format as this log */
   window.lsTfmt = tfmt;

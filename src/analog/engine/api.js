@@ -140,6 +140,13 @@ function anEngAPI() {
     hmiCtrls: ctrls,
     modeNets: (tag, kinds) => modeNetsByTag(tag, kinds || MODEK.MAN),
     modeNetsBy: modeNetsByTag,
+    /* the faceplate tags (face-defaults.js FACE PID / MAN / SUMA): the Event log watches their mode status (ui/hmi/events.js) */
+    faceTags: () => {
+      const F = (typeof AN_DEF !== 'undefined' && AN_DEF.FACE) || {},
+        t = new Set();
+      for (const k of ['PID', 'MAN', 'SUMA']) for (const q of F[k] || []) if (q && q.tag) t.add(q.tag);
+      return [...t];
+    },
     MODEK,
     latchMode,
     modeStatus,

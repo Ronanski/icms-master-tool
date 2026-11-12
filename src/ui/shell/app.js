@@ -1713,7 +1713,8 @@
         if (e.tr && e.tr.cur != null && G && G.on && G.open) G.open(e.tr.cur);
         if (AN.pauseOn && AN.run) AN.pauseOn();
         if (AN.paint) AN.paint();
-        if (window.lsEventAdd) lsEventAdd('DCS', 'DCS', 'Save point loaded: ' + e.name);
+        if (window.lsEventsLoaded) lsEventsLoaded(e.name);
+        else if (window.lsEventAdd) lsEventAdd('DCS', 'DCS', 'Save point loaded: ' + e.name);
         msg('Plant back at: ' + e.name + '. Paused: press Run to go on.');
       });
     };
