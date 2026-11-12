@@ -766,7 +766,7 @@ window.LS_LIVE = (function () {
     ['Bed 750 °C: PA and SA flow controls to MANUAL (FICFA1071, FICFA1081); stop limestone and sand; APH soot blower continuous.', ALL(VAL('Tb', null, 760), MODE('FICFA1071', 'MAN'), MODE('FICFA1081', 'MAN'))],
     ['Light the start-up burners one by one (SA pressure > 1200 mmH2O); move coal to diesel (2.5 T/H coal = 1 T/H diesel) up to 4 T/H oil per feeder.', BURN4],
     ['Hold 45 MW: drum level ±150 mm.', HOLD(120, ALL(VAL('MW', 43, 47), VAL('lvl', -150, 150), BURN4))],
-    ['At 40 MW: take out extractions 3, 2 and 1; deaerator pressure PCVAS1030 to 2.5 kg/cm2 (field and TCS: confirm).', null],
+    ['At 40 MW: take out extractions 3, 2 and 1 (DCS MOVs MV-TS1003 / 1002 / 1001, DITL-96 / 95 / 94: MANUAL, CLOSE); deaerator pressure PCVAS1030 (PICCD1104, ABC-056) AUTO, SV 2.5 kg/cm2.', null],
     ['By hand at about 0.4 MW/min: lower EIC-TM to 30 MW and HIC-BM with it (main steam pressure 115 ~ 126 kg/cm2, under the MS blow-off set point 128).', ALL(VAL('MW', null, 31), VAL('MSP', 115, 126))],
     ['Bed 700 °C: stop the coal feeders A, B and C; lower the PA fan to about 20 %.', ALL(VAL('Tb', null, 710), NOFEED)],
     ['At 30 MW: take out extractions 5 and 4, then turbine SHUT-DOWN (ATS step 8: 52G open, 41 open, turbine trip). On this unit the turbine trip makes an MFT.', /* S149-7 (Mina beta.149): the MFT alone ticked this step while the turbine still made 29.6 MW: the turbine trip to the DCS (I.0400, TCS IBD TA-6) and the generator off are checked too */ ALL(BIT('I.0400', 1, 'Turbine tripped (TCS to DCS)'), VAL('MW', null, 1), BIT('I.000F', 1, 'MFT after the turbine trip'))]
