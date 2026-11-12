@@ -5842,9 +5842,11 @@ const DREAD = (function () {
     switch (g.t) {
       case 'AND':
         /* FIRST-OUT (ALL): an AND at 1 is held by ALL its inputs (e.g. two of three drum level channels), not the shortest one */
-        return want ? ins.filter(n => !on(n)).flatMap(n => why(s, v, n, 1, seen, d)) : ALL ? ins.flatMap(n => why(s, v, n, 0, seen, d)) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
+        /* ALL: each input with its own copy of the nets seen (DITL-98: the branch of the open command visited "37 must be 0" first, inside a
+           shortest() whose answer was thrown away, and the real branch of the close command then found it seen: no HI-HI in the cause) */
+        return want ? ins.filter(n => !on(n)).flatMap(n => why(s, v, n, 1, seen, d)) : ALL ? ins.flatMap(n => why(s, v, n, 0, new Set(seen), d)) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
       case 'OR':
-        return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))) : ins.filter(on).flatMap(n => why(s, v, n, 0, seen, d));
+        return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))) : ins.filter(on).flatMap(n => why(s, v, n, 0, ALL ? new Set(seen) : seen, d));
       case 'NOT':
         return want ? ins.filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : shortest(ins.map(n => why(s, v, n, 1, seen, d)));
       case 'FF': {
@@ -5854,7 +5856,8 @@ const DREAD = (function () {
           const a = R0 && !g.spri ? (g.r || []).filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : [];
           return a.concat(S0 ? [] : shortest((g.s || []).map(n => why(s, v, n, 1, seen, d))), S0 ? [] : one('then the flip-flop is SET (it stays 1 after S goes 0)'));
         }
-        const a = S0 && g.spri ? (g.s || []).filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : [];
+        /* FIRST-OUT (ALL, the cause of a TRIP / of a MOV command): a SET input that is 1 now is the cause too, also without set priority */
+        const a = S0 && (g.spri || ALL) ? (g.s || []).filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : [];
         return a.concat(R0 ? [] : shortest((g.r || []).map(n => why(s, v, n, 1, seen, d))), R0 ? [] : one('then the flip-flop is RESET'));
       }
       case 'TMR': {
@@ -5937,11 +5940,22 @@ const DREAD = (function () {
      Event log: called by the one world (src/world/world.js) at the scan where a TRIP / MFT output goes 1 */
   D.cause = (s, row) => {
     const o = s.nl && s.nl.outs.find(x => x.row === row);
-    if (!o) return null;
+    return o ? D.causeNet(s, o.n, outName(s, row)) : null;
+  };
+  /* 3.2.3 SOHEE (Sakura beta.150: MV-TS1001 closed by the heater HI-HI with no line): the same for any net of the drawing, the OPEN /
+     CLOSE command of a MOV (nl.mv[].open / .close, the O.xxxx to the valve) */
+  D.netVal = (s, n) => {
+    try {
+      return dRead(s).v[n] ? 1 : 0;
+    } catch (e) {
+      return null;
+    }
+  };
+  D.causeNet = (s, n, name) => {
     ALL = true;
     let L;
     try {
-      L = D.why(s, o.n, 0);
+      L = D.why(s, n, 0);
     } finally {
       ALL = false;
     }
@@ -5961,7 +5975,8 @@ const DREAD = (function () {
       seen.add(t);
       lines.push({ d: 1, k: r.row !== undefined && !r.want ? 'input' : 'gate', txt: t, sh: s.name, row: r.row !== undefined && !r.want ? r.row : undefined });
     }
-    return { name: outName(s, row), lines: lines.slice(0, 12) };
+    /* the inputs first (a deep AND of the valve's own permissives filled the 12 lines before the HI-HI of DITL-98 came) */
+    return { name, lines: lines.filter(l => l.k === 'input').concat(lines.filter(l => l.k !== 'input')).slice(0, 12) };
   };
   D.rowNets = rowNets;
   /* the TRIP / RUNNING outputs of a motor drawing and its state (moved as they were from src/ui/hmi/events.js) */
@@ -6010,7 +6025,7 @@ const DREAD = (function () {
    the automatic rows (_win), the flow dampers (_fd), the field trip (_ftrip); per netlist the nets (_v) and the forces (fx, ufx); per
    part the flip-flop, counter and timer state; the motors and valves (MST, MS), the DCS registers (DREG), the DITL clock, the outputs of
    the one world (WORLD.out) and the protection switches of the plant (src/world/plantsw.js). Part of ONE script (src/digital/order.list). */
-const DITL_SH = ['sig', 'usw', 'av', 'av150', 'avw', '_win', '_fd', '_ftrip'],
+const DITL_SH = ['sig', 'usw', 'av', 'av150', 'avw', '_win', '_fd', '_ftrip', '_mvWhy'] /* _mvWhy: a MOV moved by its logic, its cause (world.js), for the Event log of the page */,
   DITL_NL = ['_v', 'fx', 'ufx'],
   DITL_G = ['q', 'st', 'N', 'pin', 'rp', 'rq', 'Nn', 'cin'],
   DITL_W = ['out', '_o', 'tk', '_ck', 'busy', 'live', '_press', '_rel', 'seen']; /* live, _press, _rel: the dock press (src/world/dock-eng.js) */
@@ -37594,7 +37609,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.3-beta.162';
-      c3.textContent += ' · build a42721f'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build b417d25'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -54986,6 +55001,32 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
           break;
         }
       }
+    /* Sakura beta.150 (Jennie's list): a MOV moved by its logic (MV-TS1001 closed by the No.2 HPH level HI-HI, ABC-036 M.0203 -> DITL-94):
+       the scan where the OPEN / CLOSE command of the valve (nl.mv[].open / .close, the MOR- / MOS- O.xxxx) rises, its cause is read and
+       kept on the sheet (s._mvWhy, the last 1200 scans); a cause with a push button is the operator's own (the operator's line is there). The Event
+       log (src/ui/hmi/events.js) writes it */
+    if (window.DUI && DUI.causeNet && DUI.netVal)
+      for (const s of ALL) {
+        if (!s.nl || !s.nl.mv || !s.nl.mv.length) continue;
+        const pv = s._mvc || (s._mvc = {});
+        s.nl.mv.forEach((m, i) => {
+          for (const k of ['close', 'open']) {
+            const n = m[k] && m[k].n;
+            if (n == null) continue;
+            const v = DUI.netVal(s, n),
+              id = i + k,
+              v0 = pv[id];
+            pv[id] = v;
+            if (!(v === 1 && v0 === 0) || W.tk <= 25) continue;
+            let c = null;
+            try {
+              c = DUI.causeNet(s, n, k);
+            } catch (e) {}
+            if (!c || !c.lines.length || c.lines.some(l => l.k === 'input' && /\b(PB|P\.B\.?|PUSH)\b/.test(String(l.txt || '')))) continue;
+            s._mvWhy = (s._mvWhy || []).filter(x => W.tk - x.tk < 1200).concat({ tk: W.tk, i, k, lines: deeper(s, c.lines, 1) });
+          }
+        });
+      }
     W.out = out;
     /* 3. DITL -> ABC (not while the one world is OFF: then the DITL 150 MW state is computed for the DITL only) */
     for (const a of opt && opt.noAbc ? [] : ain) {
@@ -62388,9 +62429,11 @@ const DREAD = (function () {
     switch (g.t) {
       case 'AND':
         /* FIRST-OUT (ALL): an AND at 1 is held by ALL its inputs (e.g. two of three drum level channels), not the shortest one */
-        return want ? ins.filter(n => !on(n)).flatMap(n => why(s, v, n, 1, seen, d)) : ALL ? ins.flatMap(n => why(s, v, n, 0, seen, d)) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
+        /* ALL: each input with its own copy of the nets seen (DITL-98: the branch of the open command visited "37 must be 0" first, inside a
+           shortest() whose answer was thrown away, and the real branch of the close command then found it seen: no HI-HI in the cause) */
+        return want ? ins.filter(n => !on(n)).flatMap(n => why(s, v, n, 1, seen, d)) : ALL ? ins.flatMap(n => why(s, v, n, 0, new Set(seen), d)) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
       case 'OR':
-        return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))) : ins.filter(on).flatMap(n => why(s, v, n, 0, seen, d));
+        return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))) : ins.filter(on).flatMap(n => why(s, v, n, 0, ALL ? new Set(seen) : seen, d));
       case 'NOT':
         return want ? ins.filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : shortest(ins.map(n => why(s, v, n, 1, seen, d)));
       case 'FF': {
@@ -62400,7 +62443,8 @@ const DREAD = (function () {
           const a = R0 && !g.spri ? (g.r || []).filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : [];
           return a.concat(S0 ? [] : shortest((g.s || []).map(n => why(s, v, n, 1, seen, d))), S0 ? [] : one('then the flip-flop is SET (it stays 1 after S goes 0)'));
         }
-        const a = S0 && g.spri ? (g.s || []).filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : [];
+        /* FIRST-OUT (ALL, the cause of a TRIP / of a MOV command): a SET input that is 1 now is the cause too, also without set priority */
+        const a = S0 && (g.spri || ALL) ? (g.s || []).filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : [];
         return a.concat(R0 ? [] : shortest((g.r || []).map(n => why(s, v, n, 1, seen, d))), R0 ? [] : one('then the flip-flop is RESET'));
       }
       case 'TMR': {
@@ -62483,11 +62527,22 @@ const DREAD = (function () {
      Event log: called by the one world (src/world/world.js) at the scan where a TRIP / MFT output goes 1 */
   D.cause = (s, row) => {
     const o = s.nl && s.nl.outs.find(x => x.row === row);
-    if (!o) return null;
+    return o ? D.causeNet(s, o.n, outName(s, row)) : null;
+  };
+  /* 3.2.3 SOHEE (Sakura beta.150: MV-TS1001 closed by the heater HI-HI with no line): the same for any net of the drawing, the OPEN /
+     CLOSE command of a MOV (nl.mv[].open / .close, the O.xxxx to the valve) */
+  D.netVal = (s, n) => {
+    try {
+      return dRead(s).v[n] ? 1 : 0;
+    } catch (e) {
+      return null;
+    }
+  };
+  D.causeNet = (s, n, name) => {
     ALL = true;
     let L;
     try {
-      L = D.why(s, o.n, 0);
+      L = D.why(s, n, 0);
     } finally {
       ALL = false;
     }
@@ -62507,7 +62562,8 @@ const DREAD = (function () {
       seen.add(t);
       lines.push({ d: 1, k: r.row !== undefined && !r.want ? 'input' : 'gate', txt: t, sh: s.name, row: r.row !== undefined && !r.want ? r.row : undefined });
     }
-    return { name: outName(s, row), lines: lines.slice(0, 12) };
+    /* the inputs first (a deep AND of the valve's own permissives filled the 12 lines before the HI-HI of DITL-98 came) */
+    return { name, lines: lines.filter(l => l.k === 'input').concat(lines.filter(l => l.k !== 'input')).slice(0, 12) };
   };
   D.rowNets = rowNets;
   /* the TRIP / RUNNING outputs of a motor drawing and its state (moved as they were from src/ui/hmi/events.js) */
@@ -62558,7 +62614,7 @@ const DREAD = (function () {
    the automatic rows (_win), the flow dampers (_fd), the field trip (_ftrip); per netlist the nets (_v) and the forces (fx, ufx); per
    part the flip-flop, counter and timer state; the motors and valves (MST, MS), the DCS registers (DREG), the DITL clock, the outputs of
    the one world (WORLD.out) and the protection switches of the plant (src/world/plantsw.js). Part of ONE script (src/digital/order.list). */
-const DITL_SH = ['sig', 'usw', 'av', 'av150', 'avw', '_win', '_fd', '_ftrip'],
+const DITL_SH = ['sig', 'usw', 'av', 'av150', 'avw', '_win', '_fd', '_ftrip', '_mvWhy'] /* _mvWhy: a MOV moved by its logic, its cause (world.js), for the Event log of the page */,
   DITL_NL = ['_v', 'fx', 'ufx'],
   DITL_G = ['q', 'st', 'N', 'pin', 'rp', 'rq', 'Nn', 'cin'],
   DITL_W = ['out', '_o', 'tk', '_ck', 'busy', 'live', '_press', '_rel', 'seen']; /* live, _press, _rel: the dock press (src/world/dock-eng.js) */
@@ -86816,6 +86872,32 @@ window.WIRING=[["DI","1","I.0000","ZSO-BD1002"],["DI","1","I.0001","ZSC-BD1002"]
           if (c && c.lines.length) s._stopWhy = { tk: W.tk, lines: deeper(s, c.lines, 1) };
           break;
         }
+      }
+    /* Sakura beta.150 (Jennie's list): a MOV moved by its logic (MV-TS1001 closed by the No.2 HPH level HI-HI, ABC-036 M.0203 -> DITL-94):
+       the scan where the OPEN / CLOSE command of the valve (nl.mv[].open / .close, the MOR- / MOS- O.xxxx) rises, its cause is read and
+       kept on the sheet (s._mvWhy, the last 1200 scans); a cause with a push button is the operator's own (the operator's line is there). The Event
+       log (src/ui/hmi/events.js) writes it */
+    if (window.DUI && DUI.causeNet && DUI.netVal)
+      for (const s of ALL) {
+        if (!s.nl || !s.nl.mv || !s.nl.mv.length) continue;
+        const pv = s._mvc || (s._mvc = {});
+        s.nl.mv.forEach((m, i) => {
+          for (const k of ['close', 'open']) {
+            const n = m[k] && m[k].n;
+            if (n == null) continue;
+            const v = DUI.netVal(s, n),
+              id = i + k,
+              v0 = pv[id];
+            pv[id] = v;
+            if (!(v === 1 && v0 === 0) || W.tk <= 25) continue;
+            let c = null;
+            try {
+              c = DUI.causeNet(s, n, k);
+            } catch (e) {}
+            if (!c || !c.lines.length || c.lines.some(l => l.k === 'input' && /\b(PB|P\.B\.?|PUSH)\b/.test(String(l.txt || '')))) continue;
+            s._mvWhy = (s._mvWhy || []).filter(x => W.tk - x.tk < 1200).concat({ tk: W.tk, i, k, lines: deeper(s, c.lines, 1) });
+          }
+        });
       }
     W.out = out;
     /* 3. DITL -> ABC (not while the one world is OFF: then the DITL 150 MW state is computed for the DITL only) */
@@ -115011,7 +115093,7 @@ window.LS_GUIDE = (function () {
         'Engineering = white symbols, only wires, values and valves coloured'
       );
     const ver = (document.title.match(/v\d[\w.-]*/) || [''])[0];
-    row('Version', E('span', 'scsver', ver + ' · build a42721f'));
+    row('Version', E('span', 'scsver', ver + ' · build b417d25'));
   }
   function openSet(near) {
     if (!set) {
@@ -118416,6 +118498,28 @@ body.ophmi #anp{display:none!important}
      motor stop that the one world read at the scan where the STOPPED output went 1 (src/world/world.js s._stopWhy): the input rows that
      are 1, without "Input row n" and the addresses ("CONDENSER WATER LSLL-CD1110 LEVEL LOW LOW AND CONDENSER WATER LEVEL LL"). Not a
      stop push button (the operator's own line says it) and not a cause older than about 2 min of scans */
+  /* an input line of a cause as the operator reads it (as stopWhy) */
+  const cleanIn = x =>
+    words(
+      String(x || '')
+        .replace(/^Input row \d+ · /, '')
+        .replace(/\s*·\s*from the equipment.*$/, '')
+        .replace(/\b[IMBO]\.[0-9A-F]{4}(\/[0-9A-F]{3,4})?\b/g, '')
+        .replace(/\s*·\s*/g, ' ')
+        .replace(/\s*=\s*1\s*$/, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+    );
+  const MVLOG = new Set();
+  /* the valve of a MOV drawing by its FULLY CLOSED output ("EXTRACTION STM NO.1 SHUT-OFF MOV FULLY CLOSED") and its tag (MV-TS1001) */
+  const movName = (s, m) => {
+    let nm = '';
+    try {
+      const o = (DUI.outs(s) || []).find(x => /FULLY CLOSED/.test(String(x.name || '')));
+      nm = o ? String(o.name).replace(/^Output row \d+ · /, '').replace(/\s*·.*$/, '').replace(/\s+[IO]\.\S+/g, '').replace(/\s*FULLY CLOSED\s*/, ' ').trim() : '';
+    } catch (e) {}
+    return words(nm || dnm(s)) + (m && m.tag ? (/\bMOV\b/.test(nm) ? ' MV-' : ' ') + m.tag : '');
+  };
   function stopWhy(s) {
     const w = s && s._stopWhy;
     if (!w || w.done || (window.WORLD && (WORLD.tk || 0) - w.tk > 400)) return null;
@@ -118578,6 +118682,24 @@ body.ophmi #anp{display:none!important}
         /* seen only once the world has scanned it twice since the load (Mina #M1, Worker: the page scans the alarms before the first
            patch of the engine brings the cold DITL-777 trip, so the sheet was "seen" without it and its standing trip came as NEW) */
         if (((WORLD.tk || 0) - (almScan.tk0 || 0)) >= 2 || (WORLD.tk || 0) < (almScan.tk0 || 0)) DSEEN.add(s.name);
+        /* Sakura beta.150 (Jennie's list): a MOV of a drawing moved by its logic had no line (MV-TS1001 closed by ABC-036 M.0203 No.2 HPH
+           level HI-HI). The one world reads the cause at the scan where the OPEN / CLOSE command of the valve rises (src/world/world.js
+           s._mvWhy, no push button in it); one line each, by its scan (the engine sends the list again with each patch) */
+        for (const w of s._mvWhy || []) {
+          const id = s.name + '|' + w.tk + '|' + w.i + '|' + w.k;
+          if (MVLOG.has(id) || (window.WORLD && (WORLD.tk || 0) - w.tk > 1200)) continue;
+          MVLOG.add(id);
+          const ins = (w.lines || []).filter(l => l.d === 1 && l.k === 'input');
+          const txt = ins
+            .filter(l => !/\b(REMOTE|AUTO MODE|MANUAL MODE|FULLY (OPEN|CLOSED))\b/.test(String(l.txt || '')) || ins.length < 2)
+            .sort((a, b) => +/HI-HI|HIGH-HIGH|LOW-LOW|\bHH\b|\bLL\b|TRIP/.test(String(b.txt)) - +/HI-HI|HIGH-HIGH|LOW-LOW|\bHH\b|\bLL\b|TRIP/.test(String(a.txt)))
+            .slice(0, 3)
+            .map(l => cleanIn(l.txt))
+            .join(' AND ');
+          /* MOVs only: a solenoid valve of a sequence (sootblower drain SOV XV-SB1054) opens and closes by its own command at each step */
+          const vn = movName(s, (s.nl.mv || [])[w.i]);
+          if (txt && /\bMOV\b/.test(vn)) add({ rt: { t } }, { name: dnm(s) }, 'DCS', vn + ' ' + (w.k === 'close' ? 'CLOSE' : 'OPEN') + ' by its logic: ' + txt, w.lines);
+        }
         const o = motOuts(s);
         if (!o.trip && !s._ftrip) continue;
         /* Mina F12: a motor that starts by its logic (the auto cut-in of a standby, a low header) has its own line: no press of the operator or the
