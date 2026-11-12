@@ -3033,7 +3033,7 @@
     } else if (sbA) {
       who = 'CONTROL ROOM';
       ctx = 'Standby ' + mName(sbA);
-      say = 'Put ' + mName(sbA) + ' in AUTO (standby: starts when the running pump trips)';
+      say = 'Put ' + mName(sbA) + ' in AUTO (standby: its drawing starts it when the running one trips or on its other auto start, e.g. a low header)';
       adr = amAdr(sbA);
       fp = true;
     } else if (pl.length) {
@@ -3062,7 +3062,7 @@
         fp = true;
       } else if (!autoOf(selAd) && B) {
         who = 'CONTROL ROOM';
-        say = 'Put ' + mName(selA) + ' in AUTO (standby: starts when the running pump trips)';
+        say = 'Put ' + mName(selA) + ' in AUTO (standby: its drawing starts it when the running one trips or on its other auto start, e.g. a low header)';
         adr = amAdr(selA);
         fp = true;
       } else {

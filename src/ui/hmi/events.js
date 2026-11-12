@@ -782,6 +782,9 @@
      the plant time goes back, so the log was cleared AFTER its own line and the standing alarms were told as a 150 MW load. Now the load
      of a save point starts a new log and a new alarm table at once, writes ONE line, and the standing alarms name the save point */
   window.lsEventsLoaded = name => {
+    /* the line-up of a save point from an older version (ditl150.js faLineup) is written while the save is put back, before this
+       call: kept, it belongs to this load (Mina S160: the FA blower line-up of beta.156 never showed) */
+    const keep = LOG.filter(e => /^Save point from an older version/.test(String(e.text || '')));
     LOG.length = 0;
     unseen = 0;
     prev = {};
@@ -793,6 +796,7 @@
     if (isFinite(t)) ldT = t;
     almScan.reload = true;
     window.lsEventAdd('DCS', 'DCS', 'Save point loaded: ' + savedAs);
+    LOG.unshift(...keep);
   };
   window.lsEvents = LOG;
   /* Mina B96-1: the alarm list (shellc-home.js) stamps its rows with the same plant clock and format as this log */
