@@ -18,9 +18,11 @@
   const MAX = 400;
   let ws = null,
     btn = null,
-    rows = { io: [], mem: [], wire: [], relay: [] },
+    rows = { all: [], io: [], mem: [], wire: [], relay: [] },
     WIX = {},
-    tab = 'io',
+    WRAW = {},
+    tab = 'all',
+    con = '',
     stn = '',
     q = '',
     loaded = false;
@@ -41,6 +43,47 @@
   /* 2.1.0-beta.9 (user): the VACANT addresses are shown like in the I/O list (memory: tools/data/memspace.py, rows with no
      description in the Excel; I/O and wiring: a channel with no tag and no description) */
   const VAC = 'vacant';
+  /* 3.2.3-beta.109 (user 2026-11-12 "Masterlist ng lahat ng address, tags, memory, user tags, everything"): the ALL SIGNALS tab
+     puts every I/O address (with its marshalling path), every memory address, every relay panel item and every controller
+     tag of the logic sheets in one list. "Connected to" = where the signal comes from or goes to, read from the field side
+     of the marshalling wiring (WIRING.xls column JB / source, e.g. JB1A-B303-AIO = a field junction box, TCS-AIO = the turbine
+     control system, MCC-->DCS = a motor control center). Labels in words; the panel short name is in the tooltip. */
+  const CAT = [
+    ['fld', 'Field instruments and devices', 'Field junction boxes (JB) and devices wired direct to the field'],
+    ['tcs', 'Turbine control', 'Turbine control system (TCS)'],
+    ['gcp', 'Generator control', 'Generator control panel (GCP)'],
+    ['gpp', 'Generator protection', 'Generator protection panel (GPP)'],
+    ['sca', 'Electrical supervisory', 'Switchgear supervisory control (SCADA)'],
+    ['hvp', 'High-voltage switchgear', 'High-voltage motor panels (HVP)'],
+    ['mcc', 'Motor control centers', 'Motor control centers (MCC)'],
+    ['ee', 'Electrical panels', 'Electrical panels (EE)'],
+    ['opc', 'Operator console', 'Operator console push buttons and annunciator (OPC)'],
+    ['rly', 'Relay panels', 'Interlock, alarm and sequence of events relay panels (IRP, ARP, SER) and FCS cabinets'],
+    ['loc', 'Local and package panels', 'Local control panels, feeders, analyzers, compressors, dryers, inverters and other package panels'],
+    ['nw', 'Not wired', 'I/O channel with a tag or description but no field connection in the wiring list'],
+    ['mem', 'Memory (inside the DCS)', 'Word memory, bit memory, timers, patterns, software analog and digital (memory lists STN101 ~ STN105)'],
+    ['tag', 'Controller tags (logic sheets)', 'Controller, manual station, sum and alarm block tags of the ABC sheets'],
+    ['rel', 'Relay panel items', 'IRP, ARP and SER panel lists']
+  ];
+  const CI = {};
+  CAT.forEach((c, i) => (CI[c[0]] = i));
+  const conOf = o => {
+    const j = o.jb || '',
+      m = o.mpl || '';
+    if (!j) return 'nw';
+    if (/^JB|^DIRECT TO/i.test(j)) return 'fld';
+    if (/TCS/.test(j)) return 'tcs';
+    if (/GCP/.test(j)) return 'gcp';
+    if (/GPP/.test(j)) return 'gpp';
+    if (/SCADA/.test(j)) return 'sca';
+    if (/HVP/.test(j)) return 'hvp';
+    if (/MCC/.test(j)) return 'mcc';
+    if (/^EE/.test(j)) return 'ee';
+    if (/OPC/.test(j)) return 'opc';
+    if (/^(IRP|ARP|SER|FCS)/.test(m) || /^(ITB|ALMTB|ATB|STB|TB\d)/.test(j)) return 'rly';
+    return 'loc';
+  };
+  const sl = x => String(x || '').replace(/,/g, '/');
   const nextA = (a, hx) => {
     const m = /^([A-Z]+\.?)([0-9A-F]+)$/.exec(a);
     if (!m) return a;
@@ -122,6 +165,7 @@
       r.gl = r.s + ' · ' + g('k') + (g('fcab') ? ' · FCS cabinet ' + g('fcab') : '');
       rows.wire.push(r);
       WIX[r.st + '|' + r.a] = r.w;
+      WRAW[r.st + '|' + r.a] = { k: g('k'), sig: g('sig'), jb: g('jb'), mpl: g('mpl'), tb: g('tb'), mpl2: g('mpl2'), tbs: g('tbs'), tbn: g('tbn'), cab: g('cab'), ext: g('ext'), fcstb: g('fcstb') };
     }
     /* IRP / ARP / SER items (src/ui/plant/relay.js) */
     for (const r of window.RELAY || []) {
@@ -183,6 +227,62 @@
       r.vac = 1;
       r.h += ' VACANT SPARE';
     }
+    buildAll();
+  }
+  /* ALL SIGNALS: one row per signal, grouped by "Connected to" and station */
+  function addAll(r, c) {
+    const C = CAT[CI[c]];
+    r.cat = c;
+    r.gk = pad(CI[c], 2) + '|' + (r.st || '9');
+    r.gl = C[1] + (r.s && /^STN/.test(r.s) ? ' · ' + r.s : '');
+    r.h += ' ' + (C[1] + ' ' + C[2]).toUpperCase();
+    rows.all.push(r);
+  }
+  function buildAll() {
+    rows.all = [];
+    for (const r of rows.io) {
+      if (r.vac) continue;
+      const o = WRAW[r.st + '|' + r.a];
+      const c = o ? conOf(o) : 'nw';
+      let x = r.x;
+      if (o && o.jb) {
+        const from = /^JB/.test(o.jb) ? o.jb.replace(/-(AIO2?|AI\/?O?|DI\d?|DO\d?|AI\d?)$/i, '') : o.jb;
+        x = from + ' → ' + o.mpl2 + ' ' + o.tbs + ' ' + sl(o.tbn) + ' → ' + o.ext + ' ' + sl(o.fcstb);
+      }
+      addAll(Object.assign({}, r, { x, t: (o && o.sig) || r.t, h: r.h + ' ' + (o ? Object.values(o).join(' ') : '').toUpperCase() }), c);
+    }
+    for (const r of rows.mem) if (!r.vac) addAll(Object.assign({}, r), 'mem');
+    for (const r of rows.relay) addAll(Object.assign({}, r), 'rel');
+    sortAll();
+  }
+  function sortAll() {
+    rows.all.sort((a, b) => (a.gk < b.gk ? -1 : a.gk > b.gk ? 1 : a.a < b.a ? -1 : a.a > b.a ? 1 : 0));
+  }
+  /* the controller tags of the logic sheets (the index the faceplates use, AN.hmiList): read after the list is shown */
+  const KW = { PID: 'Controller', PIDV: 'Controller', MAN: 'Manual station', SUMA: 'Sum block', ALM: 'Alarm block', FX: 'Function curve' };
+  let tagsDone = false;
+  function loadTags() {
+    if (tagsDone) return;
+    tagsDone = true;
+    setTimeout(() => {
+      let L = [];
+      try {
+        L = (window.AN && AN.hmiList && AN.hmiList(true)) || [];
+      } catch (e) {}
+      if (!L.length) return;
+      const seen = {};
+      for (const t of L) {
+        if (seen[t.addr]) continue;
+        seen[t.addr] = 1;
+        const st = t.sh && t.sh.stn ? String(t.sh.stn) : '',
+          kw = KW[t.kind] || 'Logic block',
+          d = t.desc || kw + ' on sheet ' + t.sheet;
+        addAll({ st, s: st ? 'STN10' + st : '', a: t.addr, tag: '', d, x: 'sheet ' + t.sheet, t: kw, ab: '', h: (t.addr + ' ' + t.sheet + ' ' + d + ' ' + kw + ' ' + (t.kind || '')).toUpperCase(), lt: 1 }, 'tag');
+      }
+      sortAll();
+      fillCon();
+      if (tab === 'all') render();
+    }, 400);
   }
   function sortGroups() {
     rows.io.sort((a, b) => (a.gk < b.gk ? -1 : a.gk > b.gk ? 1 : a.ch - b.ch || (a.a < b.a ? -1 : 1)));
@@ -236,7 +336,7 @@
     const frag = document.createDocumentFragment();
     const tk = tab + '|' + stn + '|' + q;
     if (tog._k !== tk) tog = { _k: tk }; /* a new search / station / tab: the groups follow the default again */
-    const ms = src.filter(r => (!stn || r.st === stn) && (!words.length || words.every(w => r.h.includes(w)))),
+    const ms = src.filter(r => (!stn || r.st === stn) && (tab !== 'all' || !con || r.cat === con) && (!words.length || words.every(w => r.h.includes(w)))),
       gc = {};
     const gv = {};
     for (const r of ms) {
@@ -262,7 +362,7 @@
       if (r.gk !== undefined && !isOpen(r.gk)) continue;
       shown++;
       if (shown > MAX) continue;
-      const row = E('div', { cls: 'libr' + (r.vac ? ' vac' : '') }, [
+      const row = E('div', { cls: 'libr' + (r.vac ? ' vac' : '') + (r.cat ? ' pa' : '') }, [
         E('span', { cls: 'st', txt: r.s }),
         E('span', { cls: 'ad', title: 'Copy the address', txt: r.a }),
         E('span', { cls: 'tg', title: r.tag ? 'Copy the tag' : '', txt: r.tag }),
@@ -283,22 +383,50 @@
           return;
         }
         try {
-          window.lsInfo && window.lsInfo(r.a, { stn: r.st, look: 1 });
+          if (r.lt) window.lsInfo && window.lsInfo(r.a, { look: 1 });
+          else window.lsInfo && window.lsInfo(r.a, { stn: r.st, look: 1 });
         } catch (x) {}
       });
       row.children[1].onclick = () => copy(r.a);
       row.children[2].onclick = () => r.tag && copy(r.tag);
-      row.children[6].onclick = () => find(r.a.length && /^[A-Z]{1,2}\.|^AI|^AO|^SI|^SO/.test(r.a) ? r.a : r.tag);
+      row.children[6].onclick = () => find(r.lt ? r.a : r.a.length && /^[A-Z]{1,2}\.|^AI|^AO|^SI|^SO/.test(r.a) ? r.a : r.tag);
       frag.append(row);
     }
     box.append(frag);
     let other = '';
-    if (!n && words.length) {
+    if (!n && words.length && tab !== 'all') {
       const ot = tab === 'io' ? 'mem' : 'io',
         m = rows[ot].filter(r => (!stn || r.st === stn) && words.every(w => r.h.includes(w))).length;
       if (m) other = ' · ' + m + ' in the ' + (ot === 'io' ? 'I/O list' : 'Memory list') + ' tab';
     }
     cnt.textContent = n + (n === 1 ? ' row · ' : ' rows · ') + ng + (ng === 1 ? ' group' : ' groups') + (shown > MAX ? ' · ' + MAX + ' of ' + shown + ' shown (type more to narrow)' : '') + other;
+  }
+  /* the column heads follow the tab; the "Connected to" choice shows on ALL SIGNALS only */
+  function head() {
+    const h = $('libhd'),
+      c = $('libcon');
+    if (h) {
+      h.innerHTML = '';
+      (tab === 'all' ? ['Station', 'Address', 'Tag', 'Description', 'Path · remark · sheet', 'Type', ''] : ['Station', 'Address', 'Tag', 'Description', 'Range / remark', 'Type · SIG.AB', '']).forEach(t => h.append(E('span', { txt: t })));
+    }
+    if (c) c.style.display = tab === 'all' ? '' : 'none';
+  }
+  function fillCon() {
+    const c = $('libcon');
+    if (!c) return;
+    const n = {};
+    for (const r of rows.all) n[r.cat] = (n[r.cat] || 0) + 1;
+    c.innerHTML = '';
+    const o0 = E('option', { txt: 'Connected to: all (' + rows.all.length.toLocaleString('en-US') + ')' });
+    o0.value = '';
+    c.append(o0);
+    for (const C of CAT)
+      if (n[C[0]]) {
+        const o = E('option', { txt: C[1] + ' (' + n[C[0]].toLocaleString('en-US') + ')', title: C[2] });
+        o.value = C[0];
+        c.append(o);
+      }
+    c.value = con;
   }
   function build() {
     ws = E('div', { id: 'libws' });
@@ -311,10 +439,11 @@
           on: () => {
             tab = k;
             tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.k === k));
+            head();
             render();
           }
         });
-    tabs.append(mk('io', 'I/O list'), mk('mem', 'Memory list'), mk('wire', 'Wiring'), mk('relay', 'Relay / SER'), mk('calc', 'Calculations'));
+    tabs.append(mk('all', 'All signals'), mk('io', 'I/O list'), mk('mem', 'Memory list'), mk('wire', 'Wiring'), mk('relay', 'Relay / SER'), mk('calc', 'Calculations'));
     const ss = E('select', { cls: 'libst', 'aria-label': 'Station' });
     [['', 'All stations'], ['1', 'STN101'], ['2', 'STN102'], ['3', 'STN103'], ['4', 'STN104'], ['5', 'STN105']].forEach(([v, t]) => {
       const o = E('option', { txt: t });
@@ -323,6 +452,11 @@
     });
     ss.onchange = () => {
       stn = ss.value;
+      render();
+    };
+    const cs = E('select', { cls: 'libst libcon', id: 'libcon', 'aria-label': 'Connected to', title: 'Where the signal comes from or goes to' });
+    cs.onchange = () => {
+      con = cs.value;
       render();
     };
     const fi = E('input', { cls: 'libf', placeholder: 'Search address, tag or description (e.g. AI0129, FT-MS1031, steam flow)' });
@@ -335,14 +469,17 @@
       }, 150);
     };
     ws.append(
-      E('div', { cls: 'libbar' }, [tabs, ss, fi, E('span', { id: 'libcnt' })]),
-      E('div', { cls: 'libhd' }, ['Station', 'Address', 'Tag', 'Description', 'Range / remark', 'Type · SIG.AB', ''].map(t => E('span', { txt: t }))),
+      E('div', { cls: 'libbar' }, [tabs, ss, cs, fi, E('span', { id: 'libcnt' })]),
+      E('div', { cls: 'libhd', id: 'libhd' }),
       E('div', { id: 'libtb', tabindex: '0', 'aria-label': 'List' })
     );
     document.body.append(ws);
+    head();
     load().then(() => {
       sortGroups();
+      fillCon();
       render();
+      loadTags();
     });
   }
   function place() {
