@@ -21,6 +21,9 @@
       return d;
     }
   };
+  /* Mina B96-1 (beta.96 retest): a row took the time of the newest event log line (2:57:51) while its own event line read the
+     plant time 2:58:04; every row is now stamped with the plant time now, in the event log format (events.js lsTfmt) */
+  const plantClk = () => call(() => (window.lsTfmt && window.AN && AN.plantT ? lsTfmt(+AN.plantT()) : (lsEvents[0] && lsEvents[0].t) || ''), '');
   const none = () => !!(window.AN && AN.plantOn && !AN.startState);
   const gv = k => call(() => (typeof k === 'function' ? +k() : +LS_LIVE.getV(k)), NaN);
   const fmt = (x, d) => (isFinite(x) ? x.toFixed(d).replace(/^-(0(?:\.0*)?)$/, '$1') : '—');
@@ -103,7 +106,7 @@
     try {
       mft = +LS_LIVE.val("I.000F") > 0.5 ? 1 : 0;
     } catch (e) {}
-    const clk = () => call(() => (lsEvents[0] && lsEvents[0].t) || "", "");
+    const clk = plantClk;
     for (const [k, on, nm] of [["U|TT", tt, "TURBINE TRIP (ABC-050 I.0400)"], ["U|MFT", mft, "MASTER FUEL TRIP (MFT, I.000F)"]]) {
       if (!on) {
         delete UACK[k];
@@ -160,7 +163,7 @@
       for (const k in LON) delete LON[k];
       LN = n;
     }
-    const clk = () => call(() => (lsEvents[0] && lsEvents[0].t) || '', '');
+    const clk = plantClk;
     for (const o of logicOuts()) {
       const on = call(() => DUI.outVal(o.f, o.row), 0) === 1;
       if (on && !LON[o.k]) {
