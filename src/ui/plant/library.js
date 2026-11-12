@@ -21,7 +21,8 @@
     rows = { all: [], io: [], mem: [], wire: [], relay: [] },
     WIX = {},
     WRAW = {},
-    tab = 'all',
+    tab = 'trace',
+    ADS = null,
     con = '',
     stn = '',
     q = '',
@@ -62,7 +63,8 @@
     ['loc', 'Local and package panels', 'Local control panels, feeders, analyzers, compressors, dryers, inverters and other package panels'],
     ['nw', 'Not wired', 'I/O channel with a tag or description but no field connection in the wiring list'],
     ['mem', 'Memory (inside the DCS)', 'Word memory, bit memory, timers, patterns, software analog and digital (memory lists STN101 ~ STN105)'],
-    ['tag', 'Controller tags (logic sheets)', 'Controller, manual station, sum and alarm block tags of the ABC sheets'],
+    ['tag', 'Control loops and controller tags', 'DCS loop list (STN101~105_LOOP,USERTAG.xls, sheet LOOP_AX) and the controller, manual station, sum and alarm block tags of the ABC sheets'],
+    ['ut', 'User tags (operator screens)', 'DCS user tag list (STN101~105_LOOP,USERTAG.xls, sheet UserTag_AX): the names the operator screens use for a system address'],
     ['rel', 'Relay panel items', 'IRP, ARP and SER panel lists']
   ];
   const CI = {};
@@ -137,6 +139,7 @@
     try {
       A = (await AN.ades()) || {};
     } catch (e) {}
+    ADS = A;
     /* marshalling wiring (src/ui/plant/wiring.js): one row per signal, indexed by station + address */
     const WF = window.WIRING_F || [],
       W = window.WIRING || [],
@@ -253,12 +256,47 @@
     }
     for (const r of rows.mem) if (!r.vac) addAll(Object.assign({}, r), 'mem');
     for (const r of rows.relay) addAll(Object.assign({}, r), 'rel');
+    addLists();
     sortAll();
   }
   function sortAll() {
     rows.all.sort((a, b) => (a.gk < b.gk ? -1 : a.gk > b.gk ? 1 : a.a < b.a ? -1 : a.a > b.a ? 1 : 0));
   }
-  /* the controller tags of the logic sheets (the index the faceplates use, AN.hmiList): read after the list is shown */
+  /* 3.2.3-beta.112: the DCS loop list, the user tag list and the Modbus point lists of the turbine control system and the SCADA
+     (src/ui/plant/dcslists.js, tools/data/dcslists.py). Loop type codes in words only where the logic sheets show the same tag
+     as that block (checked 2026-11-12 on the app index: 1 = PID 55 tags, 2 = PIDV 2, 22 = MAN 58, 21 = ALM 104, 19 = SUMA 10);
+     18 and 56 have no matching block and stay as their code. */
+  const LT = { 1: 'Controller', 2: 'Controller', 22: 'Manual station', 21: 'Indicator and alarm', 19: 'Totalizer' };
+  const LOOPIX = {};
+  const rec = (F, a) => {
+    const o = {};
+    F.forEach((k, i) => (o[k] = a[i] == null ? '' : String(a[i])));
+    return o;
+  };
+  const rng = o => (o.lo !== '' || o.hi !== '' ? (o.lo === '0' && o.hi === '0' ? '' : o.lo + ' ~ ' + o.hi + (o.unit ? ' ' + o.unit : '')) : '');
+  function addLists() {
+    for (const a of window.DCS_LOOPS || []) {
+      const o = rec(window.DCS_LOOPS_F, a),
+        tg = o.tag.replace(/\s+/g, ''),
+        x = [o.pv && 'PV ' + o.pv.replace(/\s+/g, ''), o.rsv && 'remote SV ' + o.rsv.replace(/\s+/g, ''), o.mv && 'MV ' + o.mv.replace(/\s+/g, ''), rng(o)].filter(Boolean).join(' · '),
+        t = LT[o.type] || 'loop type ' + o.type;
+      LOOPIX[tg.replace(/\.MV$/, '')] = 1;
+      addAll({ st: o.stn, s: 'STN10' + o.stn, a: tg, tag: '', d: o.name, x, t, ab: '', h: (tg + ' ' + o.name + ' ' + x + ' ' + t + ' LOOP').toUpperCase(), lt: 1 }, 'tag');
+    }
+    for (const a of window.DCS_UTAG || []) {
+      const o = rec(window.DCS_UTAG_F, a),
+        t = /DEVICE OPERATE/.test(o.type) ? 'Device operation word' : /UNIFY/.test(o.type) ? 'Engineering value' : o.type;
+      addAll({ st: o.stn, s: 'STN10' + o.stn, a: o.sys, tag: o.utag.replace(/\.VAL$/, ''), d: o.dname, x: rng(o), t, ab: '', h: (o.sys + ' ' + o.utag + ' ' + o.dname + ' ' + o.type + ' USER TAG').toUpperCase(), lt: 1 }, 'ut');
+    }
+    for (const a of window.DCS_MODBUS || []) {
+      const o = rec(window.DCS_MODBUS_F, a),
+        st = o.sys === 'tcs' ? '2' : '5',
+        x = (o.si ? o.si + ' · ' : '') + o.from + ' → ' + o.to;
+      addAll({ st, s: 'STN10' + st, a: 'Modbus ' + o.maddr, tag: o.tag, d: o.d, x, t: o.type + ' by Modbus', ab: '', h: ('MODBUS ' + o.maddr + ' ' + o.tag + ' ' + o.d + ' ' + o.si + ' ' + o.type).toUpperCase(), lt: 1, mb: 1 }, o.sys);
+    }
+  }
+  /* the controller tags of the logic sheets (the index the faceplates use, AN.hmiList): read after the list is shown; the ones
+     already in the loop list are not repeated */
   const KW = { PID: 'Controller', PIDV: 'Controller', MAN: 'Manual station', SUMA: 'Sum block', ALM: 'Alarm block', FX: 'Function curve' };
   let tagsDone = false;
   function loadTags() {
@@ -272,7 +310,7 @@
       if (!L.length) return;
       const seen = {};
       for (const t of L) {
-        if (seen[t.addr]) continue;
+        if (seen[t.addr] || LOOPIX[t.addr]) continue;
         seen[t.addr] = 1;
         const st = t.sh && t.sh.stn ? String(t.sh.stn) : '',
           kw = KW[t.kind] || 'Logic block',
@@ -302,6 +340,13 @@
     if (!box) return;
     box.innerHTML = '';
     if (ws) ws.classList.toggle('calc', tab === 'calc');
+    if (ws) ws.classList.toggle('trace', tab === 'trace');
+    if (tab === 'trace') {
+      /* the signal path view (src/ui/plant/tracer.js), drawn like the DCS Signal Tracer of the control network study */
+      cnt.textContent = '';
+      if (window.LS_TRACER) window.LS_TRACER.render(box, ADS);
+      return;
+    }
     if (tab === 'calc') {
       cnt.textContent = '';
       const C = window.CALC_COMP || [],
@@ -383,13 +428,15 @@
           return;
         }
         try {
-          if (r.lt) window.lsInfo && window.lsInfo(r.a, { look: 1 });
+          if (r.mb) r.tag && window.lsInfo && window.lsInfo(r.tag, { look: 1 });
+          else if (r.cat === 'ut') window.lsInfo && window.lsInfo(r.a, { stn: r.st, look: 1 });
+          else if (r.lt) window.lsInfo && window.lsInfo(r.a, { look: 1 });
           else window.lsInfo && window.lsInfo(r.a, { stn: r.st, look: 1 });
         } catch (x) {}
       });
       row.children[1].onclick = () => copy(r.a);
       row.children[2].onclick = () => r.tag && copy(r.tag);
-      row.children[6].onclick = () => find(r.lt ? r.a : r.a.length && /^[A-Z]{1,2}\.|^AI|^AO|^SI|^SO/.test(r.a) ? r.a : r.tag);
+      row.children[6].onclick = () => find(r.mb ? r.tag || r.d : r.lt ? r.tag || r.a : r.a.length && /^[A-Z]{1,2}\.|^AI|^AO|^SI|^SO/.test(r.a) ? r.a : r.tag);
       frag.append(row);
     }
     box.append(frag);
@@ -410,6 +457,7 @@
       (tab === 'all' ? ['Station', 'Address', 'Tag', 'Description', 'Path · remark · sheet', 'Type', ''] : ['Station', 'Address', 'Tag', 'Description', 'Range / remark', 'Type · SIG.AB', '']).forEach(t => h.append(E('span', { txt: t })));
     }
     if (c) c.style.display = tab === 'all' ? '' : 'none';
+    if (h) h.style.display = tab === 'trace' ? 'none' : '';
   }
   function fillCon() {
     const c = $('libcon');
@@ -443,7 +491,7 @@
             render();
           }
         });
-    tabs.append(mk('all', 'All signals'), mk('io', 'I/O list'), mk('mem', 'Memory list'), mk('wire', 'Wiring'), mk('relay', 'Relay / SER'), mk('calc', 'Calculations'));
+    tabs.append(mk('trace', 'Signal path'), mk('all', 'All signals'), mk('io', 'I/O list'), mk('mem', 'Memory list'), mk('wire', 'Wiring'), mk('relay', 'Relay / SER'), mk('calc', 'Calculations'));
     const ss = E('select', { cls: 'libst', 'aria-label': 'Station' });
     [['', 'All stations'], ['1', 'STN101'], ['2', 'STN102'], ['3', 'STN103'], ['4', 'STN104'], ['5', 'STN105']].forEach(([v, t]) => {
       const o = E('option', { txt: t });

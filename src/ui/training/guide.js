@@ -241,7 +241,7 @@ window.LS_GUIDE = (function () {
     }
     return t - m.t0 >= 600 ? m.v : null;
   };
-  /* 3.2.3-beta.111 (Worker run of beta.107: drum -168 mm at step 75, the oil ▲ each 2 minutes on the steam of the moment ran ahead of
+  /* 3.2.3-beta.114 (Worker run of beta.107: drum -168 mm at step 75, the oil ▲ each 2 minutes on the steam of the moment ran ahead of
      the HP bypass and the blow-off): as the stage-7 band, the bypass-step band reads the 10-minute mean of the steam (ms7, the steam
      of the moment for its first 10 minutes) and presses once each 5 minutes */
   const msB = () => { const m = ms7(); return m == null ? h().MSF() : m; };
@@ -584,7 +584,7 @@ window.LS_GUIDE = (function () {
     const r = rate();
     if (!isFinite(r) || simT() - (paceT.hs || -1e9) < 120) return;
     const dn = r > 55,
-      /* 3.2.3-beta.111 (Worker run of beta.107: oil ▲ at 31 ~ 32 kg/cm2 took the drum to 37.2 against the blow-off SV 35, the blow-off
+      /* 3.2.3-beta.114 (Worker run of beta.107: oil ▲ at 31 ~ 32 kg/cm2 took the drum to 37.2 against the blow-off SV 35, the blow-off
          opened to 100 % and the drum fell to -136 mm, then rose to +187 at step 73 while it closed): ▲ only under 30 kg/cm2, 5 under
          the hold; the run showed about 5 kg/cm2 of rise after the last ▲ (the lag of the furnace and the bed) */
       up = r < 45 && (+U().Pd || 0) < 30;
