@@ -574,7 +574,39 @@
     }
     const r = pbRow(s, on ? /\bSTART\b|\bST$/ : /\bSTOP\b/);
     if (r < 0) return false;
-    return dpress(s.name, r);
+    const ok = dpress(s.name, r);
+    if (ok && on) startWhy(s, addr);
+    return ok;
+  }
+  /* 3.2.3-beta.145 (Mina B139-CF2, beta.139 step 55: START feeder A did nothing, "all stopped", no reason shown). DITL-19: the START
+     needs COAL FEEDER A REMOTE SELECTED (row 6, I.0132, the field selector), the discharge valve OPENED (row 14), no MFT / fault, and
+     (lower layer > 450 C AND a burner in service) OR lower layer > 700 C (rows 16 ~ 21, held by a timer: lost = the feeder stops). A START
+     that the drawing does not take now says why in the Event log: the selector LOCAL at once, any other missing permissive after 3 s */
+  function startWhy(s, addr) {
+    const nm = dName(s),
+      say = t => call(() => window.lsEventAdd && lsEventAdd(nm, 'DCS', t));
+    const m = call(() => modeOf(addr), null);
+    if (m && m.rem === false) {
+      const R = (s._mrows || {}).rem || [];
+      say('START not taken: the field LOCAL / REMOTE selector is LOCAL (row ' + R.map(x => x + 1).join(', ') + ' REMOTE SELECTED = 0). The field operator sets it to REMOTE first.');
+      return;
+    }
+    setTimeout(() => {
+      if (call(() => runOut(s.name), null) !== 0) return;
+      /* DITL-19: (> 450 C AND any burner IN SERVICE) OR > 700 C. A burner row is named only when no burner is in service, a furnace
+         temperature row only when that path is the missing one */
+      const rows = [];
+      for (let q = 0; q < 40; q++) {
+        const v = rowInfo(s, q).svc;
+        if (!/OPENED|ADEQUATE|IN SERVICE|REMOTE SELECTED/.test(v) || /COAL FEEDER [B-C]\b/.test(v)) continue;
+        rows.push({ v, x: call(() => DUI.rowVal(s, q), null), t: 'row ' + (q + 1) + ' ' + v.replace(/^\(FROM STATION WIRING\)\s*/, '') });
+      }
+      const on = re => rows.some(z => re.test(z.v) && z.x === 1),
+        hot = on(/>\s*700/),
+        fire = on(/>\s*450/) && on(/IN SERVICE/),
+        miss = rows.filter(z => z.x === 0 && !(/ADEQUATE|IN SERVICE/.test(z.v) && (hot || fire || (/IN SERVICE/.test(z.v) && on(/IN SERVICE/)))));
+      say('START not taken: the drawing holds the motor stopped' + (miss.length ? '. Inputs at 0: ' + miss.slice(0, 6).map(z => z.t).join('; ') : '') + '. Open ' + nm + ' for the permissive.');
+    }, 3000);
   }
   /* the field operator sets the contacts (the switch of the input row on its DITL sheet, the same as the Inputs tab) */
   function fieldSet(L) {

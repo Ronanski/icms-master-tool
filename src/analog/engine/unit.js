@@ -170,6 +170,10 @@ const AN_UNIT = {
   flowSpan: 0.873,
   Hgen: 4.01,
   dbRpm: 7.2,
+  /* GOVERNOR RUNBACK (TCE p.128 TCE182: TW 60 s of HOUSE LOAD OPERATION, or PLU OPERATED): GOV.SET = the runback position (TCE p.136
+     TCE196: HP START 24.3 %, IP START 4.2 %; the model has the IP start only, TCE p.27 default) */
+  rbIP: 0.042,
+  rbT: 60,
   kfp: 150 /* fallback; the authority of the ID fan of the anchored loop model is used when known (anUnitStart) */,
   /* 2.2.0-beta.14 (M4 step 1, PR-OPE-5002 / boiler manual SECT_7 Fig 1 / 2): COLD START. "Start cold" (hmi-op.js anPlantCold) keeps
      the anchors of "Start at 150 MW" (the gains of every loop model) and puts the plant cold: drum 0 kg/cm2, water and bed at the
@@ -3523,14 +3527,19 @@ function anUnitStep0(dt) {
     if (plu) {
       U.gv = Math.max(0.02, U.gv - dt / U.tauTrip);
       tb.icv = Math.max(0, tb.icv - dt / U.tauTrip);
-      tb.gs = NaN;
+      tb.gs = U.rbIP;
+      tb.hlT = (tb.hlT || 0) + dt;
     } else if (U.el && U.el.l52 === false) {
       /* 3.2.3 house load: the speed governor (TCE p.140 TCE206): flow demand = GOV.SET - flow span x (rpm - 3600) / (droop x 3600), the
          HP CV opening U.gv taken as the flow demand (1 = the anchor flow). GOV.SET (tb.gs) starts at the CV opening after the PLU and is
          trimmed by the TCS load loop toward the house load (elec.js, as before). The CV moves at the trip rate (U.tauTrip, NO-SOURCE).
          Not yet: the GOVERNOR RUNBACK (TCE p.128 / 136: GOV.SET 24.3 % HP / 4.2 % IP start for 60 s), the low droop 16 % */
-      if (!isFinite(tb.gs)) tb.gs = U.gv;
-      tb.gs = Math.max(0, Math.min(1.4, tb.gs + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
+      /* GOVERNOR RUNBACK (rbIP, rbT above): GOV.SET held at the runback position (integral I005 SW = 0, Y = Z) for the 60 s pulse of the
+         house load, then the integral goes on from there (TCE p.136), trimmed by the TCS load loop toward the house load (NO-SOURCE:
+         the input of I005 after the runback is not printed on the sheets read) */
+      tb.hlT = (tb.hlT || 0) + dt;
+      if (tb.hlT <= U.rbT || !isFinite(tb.gs)) tb.gs = U.rbIP;
+      else tb.gs = Math.max(0, Math.min(1.4, tb.gs + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
       const dem = Math.max(0.02, Math.min(1.4, tb.gs - (U.flowSpan * anDb((tb.rpm || 3600) - 3600, U.dbRpm || 0)) / ((U.droop || 0.06) * 3600))),
         r = dt / U.tauTrip;
       U.gv += Math.max(-r, Math.min(r, dem - U.gv));
@@ -3539,6 +3548,7 @@ function anUnitStep0(dt) {
       tb.icv = Math.max(0, Math.min(1, (tb.icv == null ? 1 : tb.icv) + Math.max(-r, Math.min(r, Math.min(1, dem) - (tb.icv == null ? 1 : tb.icv)))));
     } else {
       tb.gs = NaN;
+      tb.hlT = 0;
       tb.icv = Math.min(1, (tb.icv == null ? 1 : tb.icv) + dt / U.tcs);
       U.gv = Math.max(0.02, Math.min(1.4, U.gv + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
     }
