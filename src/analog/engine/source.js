@@ -13,7 +13,7 @@
    The machines that have no DCS signal (diesel oil pump P-0005, DITL-31) are FIELD equipment: AN.field (Start ▾ > Field equipment).
    Numbers marked NO-SOURCE are not in the documents searched (user 2026-11-11: no ASSUMED). */
 const AN_SRC = {
-  field: { hypo: true, hypoB: false, hypoU: false, pur: true, mu1033: false, esp: true, cw1001: true, lhd: false } /* 3.2.0 retest #33: hypochlorite pump (no DCS signal); R9 #77: turbine oil purifier pump P-n941 (local); live test 2026-10-30 #23: V-MU1033 expansion tank bypass (manual valve, PD-021) */,
+  field: { hypo: true, hypoB: false, hypoU: false, pur: true, mu1033: false, esp: true, cw1001: true, lhd: false, tspA: true, tspB: false, amnA: true, amnB: false, chzA: true, chzB: false, agt: false } /* 3.2.0 retest #33: hypochlorite pump (no DCS signal); R9 #77: turbine oil purifier pump P-n941 (local); live test 2026-10-30 #23: V-MU1033 expansion tank bypass (manual valve, PD-021) */,
   Tamb: 30,
   st: null,
   t: -1,

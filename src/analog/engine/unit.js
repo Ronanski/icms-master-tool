@@ -792,6 +792,10 @@ function anUnitStart() {
   AN_SRC.lhdPct = 0;
   U.cwPrime = 1;
   AN_SRC.field.esp = true;
+  /* 3.2.3 SOHEE: the dosing pumps A in service, B standby, agitator stopped (PR-OPE-5002 one pump each); the chemistry at its target */
+  Object.assign(AN_SRC.field, { tspA: true, tspB: false, amnA: true, amnB: false, chzA: true, chzB: false, agt: false });
+  U.chC = U.chP = U.chS = U.chO = U.sp1006 = NaN;
+  U.chCold = 0;
   AN.unit = U;
 }
 /* 2.2.0-beta.14 (M4 step 1): the plant cold, with the anchors of "Start at 150 MW" kept (called by hmi-op.js anPlantCold after
@@ -845,6 +849,10 @@ function anUnitCold() {
   AN_SRC.lhdPct = 0;
   U.cwPrime = 0;
   AN_SRC.field.esp = false;
+  /* 3.2.3 SOHEE: cold = the dosing pumps stopped (PR-OPE-5002 starts them in the start-up); no phosphate yet, the cycle water conditioned */
+  Object.assign(AN_SRC.field, { tspA: false, tspB: false, amnA: false, amnB: false, chzA: false, chzB: false, agt: false });
+  U.chC = U.chP = U.chS = U.chO = U.sp1006 = NaN;
+  U.chCold = 2; /* the water filled cold is not deaerated (air-saturated) until the deaerator is first pressurized (2 = until the transmitter reads the cold deaerator) */
   AN_SRC.t = -1;
   /* 3.2.0-beta.68: cold = the air compressors stopped, the air tanks empty (AN_AIR) */
   U.iaP = U.paP = 0;
@@ -2920,6 +2928,132 @@ function anGenInt(dt) {
   U.genE.MWh += (P * dt) / 3600;
   U.genE.MVArh += (G.MVAr * dt) / 3600;
 }
+/* 3.2.3 (SOHEE : PLANT MODEL HELPER, plan task a7 note): SAMPLING AND CHEMICAL DOSING (page "SAMPLING AND DOSING"). Before: no model,
+   every analyzer '-----'. docs/versions/v3.2.1/SAMPLING_DOSING_PLANT_MODEL.md has the full source list.
+   Dosing (flow diagram K1AU3-PD-042 Rev D, A1-0-001 RA PDF p 36): three skids, each a solution tank and two dosing pumps A / B.
+     Z-1107A/B tri-sodium phosphate 200 ml/min -> economizer inlet (PD-017); Z-1108A/B neutral amine 250 ml/min -> condensate;
+     Z-1109A/B carbon hydraride (carbohydrazide) 100 ml/min -> deaerator; agitator Z-1101. No DCS command: the I/O list has the
+     RUNNING / ELECTRIC TROUBLE DI only (I.0120 ~ I.012D), so the pumps are FIELD equipment (AN.field tspA ... agt, the local panel).
+     PR-OPE-5002: amine at the hotwell (3534 ~ 3569), carbohydrazide at the deaerator (3770 ~ 3781), phosphate after the drum fill
+     (4200 "OPEN V-CH1007 and Start Phosphate Dosing pump"): one pump each (A), B standby.
+   Water and steam (all CALC from the documents below, no fitted number):
+     amine     the neutral amine stays in the cycle (volatile: it leaves the drum with the steam and comes back with the condensate);
+               it leaves only with the blowdown (CBD + MBD of the drum model, AN_CYC.cbd / mbd) and is replaced by make-up without
+               amine. Concentration c (1 = the target) : dc/dt = (dose - c x Fbd) / Mcyc. The dose is the one that holds the target
+               at the design blowdown, CBD 15 T/H (mass balance K1AU3-MB-019 item 22, PDF p 11). Mcyc = hotwell 61.9 m3 (condenser
+               O&M section 1 p 2) + feedwater tank 140.4 - 40 = 100.4 t and deaerator 13.37 - 9.83 = 3.54 t of water (DA O&M section 1
+               p 2, operating minus empty) + the boiler 252 m3 (hydrostatic test procedure K1AU3-R3-0-101 p 8, includes the
+               superheater: an upper bound) at the density of the drum water.
+     pH        target 9.0 (PR-OPE-5002 3929 "PH level = 9.0"; FHI 2-8-TAB_3 p 2 amines 8.8 ~ 9.2). A weak base: [OH-] grows with the
+               square root of its concentration, pH = 9.0 + 0.5 log10(c), not below the make-up water pH 7.5 (alarm list AT-SP1006
+               normal). Feedwater AT-SP1001 / 1003 / 1009 and main steam AT-SP1016 (the amine goes with the steam).
+     phosphate stays in the boiler water: dP/dt = (dose - P x Fbd) / Mb, Mb = the boiler 252 m3 above. The dose holds 5 ppm PO4 at the
+               design CBD 15 T/H: the low end of the coordinated phosphate band (FHI Figure 2-8-TAB_3-2: PO4 5 ~ 10 ppm, pH 9.1 ~ 9.8).
+     drum pH   AT-SP1011: FHI Figure 2-8-TAB_3-3, curve Na/PO4 = 2.6 (FHI: maintain Na/PO4 <= 2.6), read at 1 / 2.5 / 5 / 7.5 / 10 / 15 /
+               20 ppm (the curve is the phosphate water; no phosphate = the feedwater pH, never below it).
+     drum cond AT-SP1012 specific conductivity of the phosphate water at 25 C: Na+ = 2.6 PO4, HPO4-- / PO4--- from the charge balance,
+               OH- from the pH; limiting ionic conductivities (CRC, a property like the steam table) Na+ 50.1, OH- 198.0, 1/2 HPO4--
+               57, 1/3 PO4--- 69 S cm2/mol.
+     cation    AT-SP1002 / 1005 / 1018 / 1019 / 1021: the cation column takes the amine out; the model has no condenser leak, so the water
+     cond.     is pure water: 0.055 uS/cm at 25 C (H+ 349.8 + OH- 198.0 S cm2/mol x 1.0E-7 mol/L). Sodium AT-SP1020: 0 (no leak).
+     oxygen    AT-SP1004: the deaerator holds the dissolved oxygen below 0.01 ppm = 10 ppb while it is pressurized to 0.7 kg/cm2 or more
+               (FHI 2-8-TAB_3 p 2); below that the water is not deaerated: air-saturated water (mg/l, far above the 0 ~ 100 ppb
+               range: the transmitter reads its range top 100; Cold = this water until the deaerator is first pressurized). First order with the residence of the feedwater tank (100.4 t /
+               feedwater flow).
+               AT-SP1010 economizer inlet: the carbohydrazide takes the oxygen (fed in excess: all of it, 0 ppb); without it the
+               oxygen of the deaerator reaches the economizer. The scavenger in the tank fades with the same residence.
+     make-up   AT-SP1006 pH 7.5 (alarm list normal) while a make-up water pump feeds (AN_MU muFeed).
+   NO-SOURCE (kept '-----' on the page): make-up conductivity / silica, saturated steam conductivity, the silica analyzers, the tank
+   levels (the tank height is not in PD-042: the level switches LSH / LSL / LSLL 0.48 / 0.12 / 0.09 m of the alarm list cannot be
+   tied to the 200 L). Alarm AL2-SP01 (analyzer common alarm) = a modelled analyzer beyond its H / L of the alarm list; AL1-SP01, AL3-SP01,
+   AL-Z1110 = 0 (no fault in the model). Only numbers on U (the save is JSON: no function on U, Chaewon beta.108). */
+const AN_CHEM = {
+  pumps: { tspA: 'Z1107A', tspB: 'Z1107B', amnA: 'Z1108A', amnB: 'Z1108B', chzA: 'Z1109A', chzB: 'Z1109B', agt: 'Z1101A' },
+  Fbd0: 15,
+  pH0: 9.0,
+  pHmu: 7.5,
+  P0: 5,
+  hw: 61.9,
+  fwt: 100.4,
+  da: 3.54,
+  boil: 252,
+  Pda: 0.7,
+  o2da: 10,
+  o2air: 100,
+  po4: [[0, 0], [1, 8.85], [2.5, 9.2], [5, 9.5], [7.5, 9.65], [10, 9.77], [15, 9.93], [20, 10.0]],
+  lam: { na: 50.1, oh: 198.0, hpo4: 114, po4: 207, h: 349.8 },
+  /* alarm list "Alarm List _20160912" sheet AT, H / L (dcs) */
+  al: { sp1004: [20, null], sp1009: [9.6, 8.8], sp1010: [4.2, null], sp1011: [9.5, 8.8], sp1012: [10, null], sp1016: [null, 7.0], sp1020: [10, null] }
+};
+function anChemStep(U, dt) {
+  const K = AN_CHEM,
+    f = typeof AN_SRC !== 'undefined' && AN_SRC.field ? AN_SRC.field : {},
+    on = (a, b) => (f[a] || f[b] ? 1 : 0),
+    cyc = typeof AN_CYC !== 'undefined' ? AN_CYC : {},
+    Fbd = Math.max(0, (+cyc.cbd || 0) + (+cyc.mbd || 0)),
+    ffw = Math.max(0, +cyc.ffw || 0),
+    rho = typeof anWaterRho === 'function' && isFinite(U.Tw) ? anWaterRho(U.Tw) / 1000 : 1,
+    Mb = K.boil * rho,
+    Mcyc = K.hw + K.fwt + K.da + Mb,
+    h = Math.min(dt, 60) / 3600;
+  for (const k in K.pumps) U['ch_' + k] = f[k] ? 1 : 0;
+  const amn = on('amnA', 'amnB'),
+    tsp = on('tspA', 'tspB'),
+    chz = on('chzA', 'chzB');
+  if (!isFinite(U.chC)) U.chC = 1; /* the water of the cycle was conditioned before the fill (PR-OPE-5002 3284) */
+  if (!isFinite(U.chP)) U.chP = tsp ? K.P0 : 0;
+  if (!isFinite(U.chS)) U.chS = chz;
+  for (let t = 0; t < dt; t += 60) {
+    const s = Math.min(60, dt - t) / 3600;
+    U.chC = Math.max(0, U.chC + (s * (amn * K.Fbd0 - U.chC * Fbd)) / Mcyc);
+    U.chP = Math.max(0, U.chP + (s * (tsp * K.Fbd0 * K.P0 - U.chP * Fbd)) / Mb);
+  }
+  /* the feedwater tank residence (h): water mass / feedwater flow; no flow = nothing moves */
+  const res = ffw > 1 ? K.fwt / ffw : Infinity,
+    lag = (x, y) => (res === Infinity ? x : x + ((y - x) * Math.min(1, h / res))),
+    Pda = U.xt && U.xt.dea ? anUnitVal(U.xt.dea) : NaN,
+    o2t = isFinite(Pda) && Pda >= K.Pda ? K.o2da : K.o2air;
+  U.chPda = isFinite(Pda) ? Math.round(Pda * 100) / 100 : null;
+  U.chS = lag(U.chS, chz);
+  if (U.chCold === 2 && isFinite(Pda) && Pda < K.Pda) U.chCold = 1;
+  else if (U.chCold === 1 && isFinite(Pda) && Pda >= K.Pda) U.chCold = 0;
+  U.chO = U.chCold ? K.o2air : isFinite(U.chO) ? lag(U.chO, o2t) : o2t;
+  const pHfw = Math.max(K.pHmu, K.pH0 + 0.5 * Math.log10(Math.max(1e-9, U.chC))),
+    P = U.chP,
+    pc = (() => {
+      const T = K.po4;
+      if (P <= T[1][0]) return null;
+      for (let i = 2; i < T.length; i++) if (P <= T[i][0]) return T[i - 1][1] + ((T[i][1] - T[i - 1][1]) * (P - T[i - 1][0])) / (T[i][0] - T[i - 1][0]);
+      return T[T.length - 1][1];
+    })(),
+    ohP = pc == null ? 0 : Math.pow(10, pc - 14),
+    pHd = pc == null ? pHfw : Math.max(pc, pHfw),
+    L = K.lam,
+    C = P / 1000 / 94.97, /* mol/L of PO4 */
+    oh = Math.pow(10, pHd - 14),
+    x = Math.max(0, Math.min(C, 0.6 * C - ohP)), /* PO4--- */
+    kd = 1000 * (L.na * 2.6 * C + L.hpo4 * (C - x) + L.po4 * x + L.oh * oh),
+    cat = 1000 * (L.h + L.oh) * 1e-7,
+    r = (v, d) => Math.round(v * d) / d;
+  U.sp1001 = U.sp1003 = U.sp1009 = U.sp1016 = r(pHfw, 100);
+  U.sp1002 = U.sp1005 = U.sp1018 = U.sp1019 = U.sp1021 = r(cat, 1000);
+  U.sp1020 = 0;
+  U.sp1004 = r(Math.min(K.o2air, U.chO), 10);
+  U.sp1010 = r(Math.min(K.o2air, U.chO * (1 - Math.max(0, Math.min(1, U.chS)))), 10);
+  U.sp1011 = r(pHd, 100);
+  U.sp1012 = r(kd, 10);
+  U.chPO4 = r(P, 100);
+  if ((U.muFeed || 0) > 0) U.sp1006 = K.pHmu;
+  else if (!isFinite(U.sp1006)) U.sp1006 = K.pHmu;
+  let al = 0;
+  for (const k in K.al) {
+    const v = U[k],
+      [hi, lo] = K.al[k];
+    if (isFinite(v) && ((hi != null && v > hi) || (lo != null && v < lo))) al = 1;
+  }
+  U.spAL2 = al;
+  U.spAL1 = U.spAL3 = U.spALZ = 0;
+}
 function anUnitStep(dt) {
   const M = (typeof globalThis !== 'undefined' ? globalThis : window).LS_SIMM;
   if (M) M.on = ++M.n;
@@ -3042,6 +3176,8 @@ function anUnitStep0(dt) {
   anLphStep(U, dt);
   /* live test #54: motor bearing / winding temperature and vibration (AN_MT) */
   anMotorStep(U, dt);
+  /* 3.2.3 SOHEE: sampling and chemical dosing (AN_CHEM) */
+  anChemStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
   /* ---- 2.2.0-beta.17 (M4 step 4): the turbine black box (see AN_UNIT rollRate ...) ---- */
   const tb = U.tb || (U.tb = { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN }),

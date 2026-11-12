@@ -8,6 +8,7 @@
    - [data-v=TAG]   a value: the logic transmitter when a sheet has it, else the plant model (UNIT.key of def.unit); '-----' = none;
                     "SHEET|ADDRESS" = that address of the sheet (page 00: ABC-001C|SI0230 = the compensated main steam flow);
    - [data-do="DITL-xx|row|on text|off text|run|alarm"] a DITL output row (DUI.outVal): its text and colour;
+   - def.udi[TAG]   a [data-di] input that no sheet reads: the value of the plant model UNIT.key (3.2.3 sampling alarms);
    - [data-ns]      NO-SOURCE in the app (no signal and no plant model): '-----' grey, never a snapshot number;
    - [data-ynr / data-ynt=ID] the permissive Y / N square (LS_FPOP.yn: Y red = complete, N green = not);
    - [data-hit=ID]  click = the CONTROL faceplate (fp-pop.js), [data-yn=ID] click = PERMISSIVE · TREND · MONITOR;
@@ -121,8 +122,12 @@
            switch open (a generator on the grid cannot have its earth switch closed). A sheet that reads the contact wins */
         const FIELD_DI = { 'MIG-52G1-3': 1, 'MIG-52G1-4': 0, 'MIG-52G1-5': 0, 'MIG-52G1-6': 1 },
           fieldDi = () => (tag in FIELD_DI && window.AN && AN.unit && AN.unit.on ? FIELD_DI[tag] : null);
-        let rd = false;
-        api.reg({ t: 'val', tag, v: '' }, X => ((rd = !!(X && isFinite(X.v))), showDi(tag, rd ? (+X.v >= 0.5 ? 1 : 0) : fieldDi())), null);
+        let rd = false,
+          um = null;
+        /* 3.2.3 (SOHEE): def.udi = a DI that no sheet reads, given by the plant model (UNIT key: sampling alarms, dosing agitator) */
+        const ud = def.udi && def.udi[tag];
+        if (ud) api.reg({ t: 'val', tag: 'UNIT.' + ud, v: '' }, X => ((um = X && isFinite(X.v) ? (+X.v >= 0.5 ? 1 : 0) : null), !rd && showDi(tag, um)), null);
+        api.reg({ t: 'val', tag, v: '' }, X => ((rd = !!(X && isFinite(X.v))), showDi(tag, rd ? (+X.v >= 0.5 ? 1 : 0) : ud ? um : fieldDi())), null);
         if (tag in FIELD_DI) setInterval(() => !rd && qa('[data-di]').length && showDi(tag, fieldDi()), 2000);
         showDi(tag, null);
         qa('[data-di]').forEach(t => {
