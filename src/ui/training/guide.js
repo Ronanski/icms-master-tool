@@ -179,7 +179,12 @@ window.LS_GUIDE = (function () {
     btn(
       'MS blow-off PICMS1002 SV +1 (one each 2 minutes, up to 35)',
       () => (md('PICMS1002') !== 'AUTO' ? 'Put PICMS1002 in A first' : ((bovT = simT()), A.auto('PICMS1002', Math.min(35, Math.round(+svOf('PICMS1002') || 0) + 1)))),
-      () => md('PICMS1002') === 'AUTO' && ((+svOf('PICMS1002') || 0) >= 35 || simT() - bovT < 120)
+      /* 3.2.3-beta.100 (Mina B94-1 / beta.99 retest, Do it for me every 700 ms at x10): the ramp went +1 each 2 minutes whatever the
+         pressure did, SV 4 -> 35 in 64 minutes while the drum was only at 24 kg/cm2: the SV stood over the pressure, the blow-off stayed
+         shut (MV 0), the boiler stored its heat closed and at 35 ~ 39 kg/cm2 the blow-off went 0.7 -> 100 % in 14 minutes, 66 T/H of steam
+         on 6 ~ 36 T/H of feed, drum low-low MFT. PR-OPE-5002 "Ensure MS BLOW OFF VALVE (BOV) > 10 % OPEN": the next +1 waits until the
+         blow-off passes steam again (MV >= 10 %), so the set point follows the pressure instead of running ahead of it */
+      () => md('PICMS1002') === 'AUTO' && ((+svOf('PICMS1002') || 0) >= 35 || simT() - bovT < 120 || (+mv('PICMS1002') || 0) < 10)
     );
   const svStep = (l, t, d, lo, hi) => Object.assign(btn(l, () => (md(t) === 'AUTO' ? A.auto(t, Math.max(lo, Math.min(hi, Math.round((+svOf(t) || 0) + d)))) : 'Mode ' + md(t) + ' on ' + t + ': put it in A first')), { tag: t });
   /* 3.2.3 automatic run (beta.52, steps 74 ~ 76): the SV +1 and oil buttons had no done state: the runner pressed them every look, the HP
