@@ -95,6 +95,10 @@ function srcState(t0) {
      the deaerator 5.37, IV to LP heater #3 0.91 kg/cm2; which of them PT-TS1022 reads, I/O list STN102 AI0562 "NO.4 extraction" 0 ~ 5, is open) */
   s.Pext = 4.5 * s.ext * Math.min(1, ms / m0);
   s.Pex3 = 5.3 * s.ext * Math.min(1.05, ms / 474.1);
+  /* 3.2.3 SOHEE: through the extraction no. 3 shut-off MOV MV-TS1003 (DITL-96; flow diagram PD-013 extraction 3 -> deaerator; 02.png ZT-TS1003 100.4 %
+     open at load). DITL-96 closes it on turbine trip, deaerator level HI-HI and house operation: shut = no extraction to the deaerator */
+  s.ts3 = typeof anDitlPos === 'function' ? anDitlPos('DITL-96', 0) : null;
+  if (s.ts3 != null && isFinite(s.ts3)) s.Pex3 *= Math.max(0, Math.min(1, s.ts3 / 100));
   AN_SRC.t = t;
   s.sb1001 = typeof anDitlPos === 'function' ? anDitlPos('DITL-80S', 0) : null;
   return (AN_SRC.st = s);

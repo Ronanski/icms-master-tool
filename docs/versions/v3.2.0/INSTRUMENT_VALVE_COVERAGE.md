@@ -4,7 +4,7 @@
 
 ## 1. Buod (simple)
 
-> **Update 2026-11-12 (SOHEE, 3.2.3-beta.140):** ang listahang ito ay mula sa 3.2.0-beta.39. 29 item na "WALA" ang may model na ngayon at ginawang **MAYROON** (sinuri sa `unit.js`, `boiler.js`, `plant.js`, `source.js`). Ang mga bilang sa ibaba ay ang luma pa. Ang natitirang WALA ay sinuri rin: MV-TS1003 at XV-HR1010-1 ay hindi pa ginagamit ang posisyon; ang 22 SA wall damper MCV-FA1005 ~ 1026 ay NO-SOURCE ang epekto sa proseso.
+> **Update 2026-11-12 (SOHEE, 3.2.3-beta.140):** ang listahang ito ay mula sa 3.2.0-beta.39. 29 item na "WALA" ang may model na ngayon at ginawang **MAYROON** (sinuri sa `unit.js`, `boiler.js`, `plant.js`, `source.js`). Ang mga bilang sa ibaba ay ang luma pa. Ang MV-TS1003 at XV-HR1010-1 ay may model na mula beta.148; ang 22 SA wall damper MCV-FA1005 ~ 1026 ay NO-SOURCE ang epekto sa proseso.
 
 - **2,411 item** ang sinuri: 2,361 mula sa *Over-all Instrument List* ng user + 50 mula sa DCS I/O list na wala sa listahang iyon (AO ng ibang supplier, at valve na may open / close switch lang).
 - **Control valve / damper: 94.** 23 ang tunay na kasama sa physics ng plant model, 43 ang "bahagya" (ang PV ay sumusunod lang sa sariling valve, walang epekto sa ibang bahagi ng planta), **28 ang wala** (karamihan ang 22 furnace wall damper at ang 4 bottom ash cooler speed).
@@ -233,7 +233,7 @@ Hindi kailangang idagdag: ang manual valve, hand valve, local gauge, thermowell,
 | MV-SW1006 | BALL VESSEL T-1115 OUTLET MOV | PD-020 Seawater | — | **WALA** | no logic, no model | ✓ |
 | MV-TS1001 | EXTRACTION STEAM NO.1 SHUT-OFF MOV | PD-013 Extraction steam | DITL-0D, DITL-94, DITL-99 | **MAYROON** | 2026-11-12 SOHEE: unit.js HP heaters: extraction 1 = DITL-94 position (U.hpMov) | ✓ |
 | MV-TS1002 | EXTRACTION STEAM NO.2 SHUT-OFF MOV | PD-013 Extraction steam | DITL-0D, DITL-95, DITL-101 | **MAYROON** | 2026-11-12 SOHEE: unit.js HP heaters: extraction 2 = DITL-95 position (U.hpMov) | ✓ |
-| MV-TS1003 | EXTRACTION STEAM NO.3 SHUT-OFF MOV | PD-013 Extraction steam | DITL-0D, DITL-94, DITL-95 | **WALA** | logic only (DITL / ABC): the plant model does not use its position | ✓ |
+| MV-TS1003 | EXTRACTION STEAM NO.3 SHUT-OFF MOV | PD-013 Extraction steam | DITL-0D, DITL-94, DITL-95 | **MAYROON** | 2026-11-12 SOHEE beta.148: source.js Pex3 x DITL-96 position (extraction 3 to the deaerator) | ✓ |
 | MV-TS1004 | EXTRACTION STEAM NO.4 SHUT-OFF MOV | PD-013 Extraction steam | DITL-0D, DITL-97, DITL-106 | **MAYROON** | 2026-11-12 SOHEE: unit.js LP heaters: extraction to No.3 LPH = DITL-97 position | ✓ |
 | MV-TS1005 | EXTRACTION STEAM NO.5 SHUT-OFF MOV | PD-013 Extraction steam | DITL-0D, DITL-98, DITL-108 | **MAYROON** | 2026-11-12 SOHEE: unit.js LP heaters: extraction to No.2 LPH = DITL-98 position | ✓ |
 | MV-TS1390 | EXTRACTION STEAM NO.4 DRAIN MOV(HEATER SIDE) | PD-013 Extraction steam | DITL-0D, DITL-107 | **WALA** | logic only (DITL / ABC): the plant model does not use its position | ✓ |
@@ -255,7 +255,7 @@ Hindi kailangang idagdag: ang manual valve, hand valve, local gauge, thermowell,
 | XV-FA1055-A3 | FLUIDIZING AIR BLOWER (A) ISOLATING VALVE | PD-054 Fluidizing air | DITL-28B, DITL-28C | **MAYROON** | 2026-11-12 SOHEE: boiler.js fluidizing air: blower outlet SOV (DITL-28C) gates the flow | ✓ |
 | XV-FA1055-B2 | FLUIDIZING AIR BLOWER (B) SURGE VALVE | PD-054 Fluidizing air | — | **WALA** | no logic, no model | ✓ |
 | XV-FA1055-B3 | FLUIDIZING AIR BLOWER (B) ISOLATING VALVE | PD-054 Fluidizing air | — | **WALA** | no logic, no model | ✓ |
-| XV-HR1010-1 | LP TURBINE BYPASS VALVE WARMING VALVE | PD-012 Cold / hot reheat steam | DITL-0D, DITL-83 | **WALA** | logic only (DITL / ABC): the plant model does not use its position | ✓ |
+| XV-HR1010-1 | LP TURBINE BYPASS VALVE WARMING VALVE | PD-012 Cold / hot reheat steam | DITL-0D, DITL-83 | **MAYROON** | 2026-11-12 SOHEE beta.148: unit.js AN_HRW: warming steam heats TT-HR1010, which DITL-83 reads (AUTO < 250 open, > 330 close) | ✓ |
 | XV-HR1021 | ILP TURBINE LINE DRAIN POT DP-HR01 DRAIN VALVE | PD-012 Cold / hot reheat steam | DITL-0C, DITL-80 | **WALA** | logic only (DITL / ABC): the plant model does not use its position | ✓ |
 | XV-HR1022 | ILP TURBINE LINE DRAIN POT DP-HR02 DRAIN VALVE | PD-012 Cold / hot reheat steam | DITL-0D, DITL-81 | **WALA** | logic only (DITL / ABC): the plant model does not use its position | ✓ |
 | XV-MS1011 | MAIN STEAM LINE DRAIN POT DP-MS01 DRAIN VALVE | PD-011 Main steam | DITL-0D, DITL-88 | **WALA** | logic only (DITL / ABC): the plant model does not use its position | ✓ |

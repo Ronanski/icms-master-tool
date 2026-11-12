@@ -44,6 +44,7 @@ function anEngAPI() {
     field: anField,
     tsat: steamTsat,
     fieldState: () => Object.assign({}, AN_SRC.field),
+    srcSt: () => Object.assign({}, AN_SRC.st || {}) /* 3.2.3 SOHEE: the source state of the plant now (tests) */,
     /* 3.2.1 (CW plant model): the manual valves of the seawater system, opening in % (unit.js AN_SW_V0) */
     /* 3.2.1 (IRENE): with the diesel oil line-up of boiler.js (AN_DO.fv0, anDoValve), so the one field valve faceplate serves both */
     /* Mina F57: the value of a MAN station as an engine action. A page write waits for its slot, and the latchMode of the same press brought a patch back

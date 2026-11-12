@@ -813,7 +813,7 @@ function anUnitStart() {
   /* 3.2.3 SOHEE: the dosing pumps A in service, B standby, agitator stopped (PR-OPE-5002 one pump each); the chemistry at its target */
   Object.assign(AN_SRC.field, { tspA: true, tspB: false, amnA: true, amnB: false, chzA: true, chzB: false, agt: false });
   U.chC = U.chP = U.chS = U.chO = U.sp1006 = NaN;
-  U.sbTa = U.sbTb = NaN; /* SOHEE: the sootblower drains start at their rest value (AN_SB.dr) */
+  U.sbTa = U.sbTb = U.hrT10 = NaN; /* SOHEE: the sootblower drains and TT-HR1010 start at their rest value (AN_SB.dr, AN_HRW) */
   U.chCold = 0;
   AN.unit = U;
 }
@@ -872,7 +872,7 @@ function anUnitCold() {
   /* 3.2.3 SOHEE: cold = the dosing pumps stopped (PR-OPE-5002 starts them in the start-up); no phosphate yet, the cycle water conditioned */
   Object.assign(AN_SRC.field, { tspA: false, tspB: false, amnA: false, amnB: false, chzA: false, chzB: false, agt: false });
   U.chC = U.chP = U.chS = U.chO = U.sp1006 = NaN;
-  U.sbTa = U.sbTb = NaN; /* SOHEE: the sootblower drains start at their rest value (AN_SB.dr) */
+  U.sbTa = U.sbTb = U.hrT10 = NaN; /* SOHEE: the sootblower drains and TT-HR1010 start at their rest value (AN_SB.dr, AN_HRW) */
   U.chCold = 2; /* the water filled cold is not deaerated (air-saturated) until the deaerator is first pressurized (2 = until the transmitter reads the cold deaerator) */
   AN_SRC.t = -1;
   /* 3.2.0-beta.68: cold = the air compressors stopped, the air tanks empty (AN_AIR) */
@@ -3191,6 +3191,34 @@ function anSbAph(U, dt, P) {
     U.msb += K.q * Math.min(1, (Ph + 1.033) / (K.head + 1.033));
   }
 }
+/* 3.2.3 (SOHEE): the LP turbine bypass warming valve XV-HR1010-1 (DITL-83, I/O list STN102 O.0846 "LP turbine bypass steam pressure
+   warming solenoid valve open command") and the LP bypass valve outlet temperature TT-HR1010 (STN102 AI0870, 0 ~ 600 C), which DITL-83
+   reads: in AUTO (M.0632) the valve opens after an ON DELAY with TT-HR1010 < 250 C and closes at > 330 C (or the CLOSE PB). Flow
+   diagram PD-012: the warming line passes hot reheat steam around PCV-HR1010 into the LP bypass line to the condenser. TT-HR1010
+   (CALC): the hot reheat steam (PV of TICHR1002, RH outlet; pressure U.Prh) throttled at constant enthalpy to the condenser pressure
+   (steam.js IAPWS-IF97 region 2), the share of it as the existing TICHR1012 rule (full with the warming valve open or with the LP bypass
+   passing 3 % of the MCR flow, source.js). Without steam the line goes to its rest value: snapshot (150 MW, XV-HR1010-1 closed in
+   MANUAL, PCV-HR1010 1.3 %), TT-HR1010 228 C (5.png 005 REHEATER STEAM, 152.5 MW), scaled to the ambient with the boiler water
+   temperature as the sootblower drains (AN_SB.dr).
+   NO-SOURCE: the warming line size (its flow), the warm-up lag tauH 300 s and the cooling lag tauC 1800 s, the rest-value scaling */
+const AN_HRW = { rest: 228, tauH: 300, tauC: 1800 };
+function anHrWarm(U, dt) {
+  const K = AN_HRW,
+    Ta = isFinite(U.Tamb) ? U.Tamb : 30,
+    Prh = Math.max(0, +U.Prh || 0),
+    Trh = typeof srcPv === 'function' ? srcPv('ABC-019', 'TICHR1002') : NaN,
+    op = typeof anDitlRun === 'function' && anDitlRun('DITL-83@22') === 1,
+    m0 = U.m0 > 0 ? U.m0 : 474,
+    f = op ? 1 : Math.max(0, Math.min(1, (+U.qlp || 0) / (0.03 * m0))),
+    Pc = isFinite(U.cdP) ? U.cdP - 1.033 : 0;
+  U.hrW = op ? 1 : 0;
+  const Tw = isFinite(U.Tw) ? U.Tw : Ta,
+    rest = Ta + (K.rest - Ta) * Math.max(0, Math.min(1, (Tw - Ta) / (steamTsat(AN_SB.dr.P0) - Ta)));
+  let tg = rest;
+  if (f > 0 && Prh > 0.5 && isFinite(Trh)) tg = rest + Math.max(0, steamTph(Pc, steamH(Prh, Trh)) - rest) * f;
+  if (!isFinite(U.hrT10)) U.hrT10 = rest;
+  U.hrT10 += (tg - U.hrT10) * Math.min(1, dt / (tg > U.hrT10 ? K.tauH : K.tauC));
+}
 function anChemStep(U, dt) {
   const K = AN_CHEM,
     f = typeof AN_SRC !== 'undefined' && AN_SRC.field ? AN_SRC.field : {},
@@ -3391,6 +3419,7 @@ function anUnitStep0(dt) {
   anChemStep(U, dt);
   /* 3.2.3 SOHEE: the steam of the sootblowers (AN_SB) */
   anSbStep(U, dt);
+  anHrWarm(U, dt); /* 3.2.3 SOHEE: LP bypass warming valve XV-HR1010-1, TT-HR1010 */
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
   /* ---- 2.2.0-beta.17 (M4 step 4): the turbine black box (see AN_UNIT rollRate ...) ---- */
   const tb = U.tb || (U.tb = { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN }),
