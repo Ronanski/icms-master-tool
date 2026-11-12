@@ -364,7 +364,10 @@ window.LS_LIVE = (function () {
     w('HPBMV', g('PICMS1006', mvOf));
     return r;
   };
-  setInterval(() => {
+  /* Mina beta.148 S148-7 (no rows t 1806 ~ 1853 with the browser pane hidden): the 1 s timer of the page is throttled while the page is
+     hidden (and so was her own 60 s log), the Worker plant goes on. A row is also taken when a patch of the Worker comes in (messages
+     are not throttled), so the record follows the plant time, not the page's timers */
+  const recTick = () => {
     try {
       const u = window.AN && AN.unit;
       if (!u || !u.on || AN._loading) return;
@@ -383,7 +386,15 @@ window.LS_LIVE = (function () {
       REC.rows.push(recRow());
       if (REC.rows.length > 6000) REC.rows.shift();
     } catch (e) {}
-  }, 1000);
+  };
+  setInterval(recTick, 1000);
+  if (window.ENG) {
+    const prevP = ENG.onPatch;
+    ENG.onPatch = m => {
+      if (prevP) prevP(m);
+      recTick();
+    };
+  }
   const recCsv = () => {
     const X = ['RHT', 'HW', 'CDQ', 'DA', 'DAMV', 'MUMV', 'MSOMV', 'SP1MV', 'SP2MV', 'RHSMV', 'RHDMV', 'BOSV', 'BOMV', 'HPBSV', 'HPBMV'],
       H = ['t_min'].concat(REC_K, X);
