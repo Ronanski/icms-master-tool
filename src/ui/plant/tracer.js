@@ -453,8 +453,8 @@
         col = i % PER,
         y0 = 26 + row * RH,
         x = 40 + col * (bw + gap),
-        YP = y0 + 50,
-        YM = y0 + 68,
+        YP = y0 + 44,
+        YM = y0 + 74,
         fit = (t, px) => (t.length > Math.floor((bw - 16) / px) ? t.slice(0, Math.floor((bw - 16) / px) - 1) + '…' : t);
       el('rect', { class: 'box' + (/^Generator|^TE-|^PT-|^ZT-/.test(h[0]) ? ' dash' : ''), x, y: y0, width: bw, height: 82, rx: 6 }, us);
       /* name on up to 2 lines, note on the lines left (narrower where the terminals are) */
@@ -473,17 +473,27 @@
         c = CK[L.k][0],
         eth = L.k === 'en' || L.k === 'fo',
         none = last && !h[4];
-      if (h[2] !== '' && h[2] != null) {
-        /* AC (CT / VT) has no + / −: only the terminal numbers */
-        const ac = /AC/.test(L.t) || /RJ/.test(h[2]);
-        [[YP, h[2], '+'], [YM, h[3], '−']].forEach(p => {
-          el('circle', { class: 'term', cx: x1, cy: p[0], r: 5 }, us);
-          tx(us, x1 - 9, p[0] + 4, 'tn', String(p[1]).replace(/[+-]$/, '') + (ac ? '' : ' ' + p[2]), 'end');
-        });
-      }
       /* as many lines as the wires written on the drawing (CT 4 wires, VT 3 wires), else 2 */
       const nw = Math.min(4, Math.max(2, +((L.t.match(/(\d) wires/) || [])[1] || NWIRE[L.k] || 2))),
         WY = Array.from({ length: nw }, (_, k) => YP + ((YM - YP) * k) / (nw - 1));
+      if (h[2] !== '' && h[2] != null) {
+        /* one terminal point per wire (user 2026-11-12 "bkit 3 wire o 4 wire pero ang terminal point dalawa lang"): the drawing
+           gives the first and the last terminal (1 ~ 4, 11 / 22 / 33 / 44); AC (CT / VT) has no + / − */
+        const ac = /AC/.test(L.t),
+          a0 = +h[2],
+          a1 = +h[3];
+        let T = [h[2], h[3]];
+        if (nw > 2 && a0 >= 0 && a1 > a0) {
+          if (a1 - a0 + 1 === nw) T = Array.from({ length: nw }, (_, k) => String(a0 + k));
+          else if (a0 === 11 && a1 === 11 * nw) T = Array.from({ length: nw }, (_, k) => String(11 * (k + 1)));
+        }
+        const TY = T.length === nw ? WY : [YP, YM];
+        el('rect', { class: 'strip', x: x1 - 7, y: TY[0] - 8, width: 14, height: TY[TY.length - 1] - TY[0] + 16, rx: 3 }, us);
+        T.forEach((t, k) => {
+          el('circle', { class: 'term', cx: x1, cy: TY[k], r: nw > 2 ? 3.5 : 5 }, us);
+          tx(us, x1 - 11, TY[k] + 4, nw > 2 ? 'tns' : 'tn', String(t).replace(/[+-]$/, '') + (ac || T.length > 2 ? '' : k ? ' −' : ' +')).setAttribute('style', 'text-anchor:end');
+        });
+      }
       const draw2 = (xa, xb, mid) => {
         if (L.in) {
           el('path', { class: 'w', d: 'M' + xa + ',' + (YP + YM) / 2 + ' H' + (xb - 2), stroke: c, 'stroke-dasharray': '5 4' }, us);
@@ -506,8 +516,8 @@
       if (wrap) {
         /* the same wires come in from the left on the next row */
         const ny = 26 + (row + 1) * RH,
-          nYP = ny + 50,
-          nYM = ny + 68;
+          nYP = ny + 44,
+          nYM = ny + 74;
         if (L.in) el('path', { class: 'w', d: 'M4,' + (nYP + nYM) / 2 + ' H38', stroke: c, 'stroke-dasharray': '5 4' }, us);
         else if (eth)
           [nYP, nYM].forEach(y => {
