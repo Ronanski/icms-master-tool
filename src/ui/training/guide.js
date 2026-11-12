@@ -211,7 +211,7 @@ window.LS_GUIDE = (function () {
      says ("when the HP bypass is in service (MSP >= 48, steam >= 40), raise the HP bypass SV by 1 kg/cm2 per minute up to 61"): the
      boiler is never closed while the SV climbs. (A first try with HP bypass MV >= 5 % was not enough: at 4 ~ 6 % it passed only 4 T/H,
      the SV still reached 61 first and the drum fell to -235 mm.) */
-  const svRamp = (t, hi, sec) => Object.assign(btn(t + ' SV +1 (one each minute, up to ' + hi + ')', () => { if (md(t) !== 'AUTO') return 'Put ' + t + ' in A first'; paceT[t] = simT(); const v = Math.min(hi, Math.round(+svOf(t) || 0) + 1); if (t === 'PICMS1006' && md('PICMS1002') === 'AUTO' && (+svOf('PICMS1002') || 0) < v + 2) A.auto('PICMS1002', v + 2); /* 3.2.3-beta.130 (Worker run of beta.123, drum -127 mm at step 81): while the SV climbs 1 kg/cm2 a minute much of the fire goes into
+  const svRamp = (t, hi, sec) => Object.assign(btn(t + ' SV +1 (one each minute, up to ' + hi + ')', () => { if (md(t) !== 'AUTO') return 'Put ' + t + ' in A first'; paceT[t] = simT(); const v = Math.min(hi, Math.round(+svOf(t) || 0) + 1); if (t === 'PICMS1006' && md('PICMS1002') === 'AUTO' && (+svOf('PICMS1002') || 0) < v + 2) A.auto('PICMS1002', v + 2); /* 3.2.3-beta.131 (Worker run of beta.123, drum -127 mm at step 81): while the SV climbs 1 kg/cm2 a minute much of the fire goes into
    the pressure rise; at the top of the ramp that heat went to steam at once (oil 5.9 T/H, steam 41 -> 110 T/H, pressure 64.4 over the
    SV 61, HP bypass 36 -> 77 %). At the last +1 the oil MV of every lit burner goes to 60 % of itself once (not under the burner
    minimum fire), and the oil ▲ of the band waits 10 minutes. CALC from the same run: the steady oil for 46 T/H at 61 kg/cm2 after
