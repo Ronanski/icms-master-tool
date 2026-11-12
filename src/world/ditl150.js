@@ -265,12 +265,19 @@
      blew 26 T/H then, and loads now with no FA flow (0.03 T/H at 150 MW). Such a blower is put on the line-up of PR-OPE-5002 FAB
      START-UP after the start ("Ensure Surge Valve will CLOSE and FAB Discharge Valve will OPEN"): the CLOSE P.B. of its surge valve
      (row 5, M.1031 / 1041) and the OPEN P.B. of its outlet (row 12, M.1050 / 1060) of its DITL-28C, held for the first scans after
-     Run (dock-eng.js press). A stopped blower is left as saved. One Event log line names it */
+     Run (dock-eng.js press). One Event log line names it.
+     Mina S154-3 (the same b142 save): the STANDBY blower B (stopped, the other one running) had its surge valve closed: DITL-28A #B
+     row 5 FCD READY (M.1043 <- DITL-28C #B surge valve opened AND ABC-014 M.3116 damper demand at its start position) stayed 0, so the
+     AUTO cut-in of B was blocked when A stopped: no FA flow, MFT in 56 s. PR-OPE-5002 FAB START-UP: before the start the surge valve
+     is OPEN and in AUTO, the discharge valve CLOSED and in AUTO ("Set Standby FAB in AUTO Mode"). Such a standby blower gets both SOVs
+     of its DITL-28C in AUTO (rows 2 / 13 AUTO MODE SELECTED, kept) and the OPEN P.B. of its surge valve (row 1) and the CLOSE P.B. of its
+     outlet (row 16); a fresh 150 MW start has blower B so (fa_silencer.js). Two stopped blowers (a cold save) are left as saved */
   D.faLineup = () => {
     const W = window.WORLD,
       L = typeof S !== 'undefined' && S.sheets ? S.sheets.concat((W && W.inst) || []) : [],
       sh = n => L.find(x => x.name.endsWith(n)) || null,
-      done = [];
+      done = [],
+      sby = [];
     if (!W || typeof DUI === 'undefined') return done;
     [
       ['DITL-28A', ')DITL-28C', 'A'],
@@ -281,11 +288,49 @@
       try {
         run = window.AN && AN.ditlRun ? AN.ditlRun(m) : null;
       } catch (e) {}
-      if (!s || run !== 1 || !s.sig) return;
+      if (!s || !s.sig) return;
       const sil = DUI.outVal(s, 1) === 1,
-        out = DUI.outVal(s, 25) === 1;
+        out = DUI.outVal(s, 25) === 1,
+        P = W._press || (W._press = {});
+      if (run === 0) {
+        let other = null;
+        try {
+          other = AN.ditlRun(k === 'A' ? 'DITL-28A #B' : 'DITL-28A');
+        } catch (e) {}
+        /* the inlet damper of the standby blower at its start position: ABC-014 M.3115 / M.3116 = MV > 23 % AND < 27 % (DRAWING_AUDIT
+           v2.5.0 ABC-014); the 25 % of the BU-CMD comes only as a 2 s pulse after a stop, so a blower that never ran kept the 0 % of the
+           Cold state (b142: FICFA1055B M 0 %). Put in MANUAL at 25 % (PR-OPE-5002 "at least 25% OPEN"; HMI snapshot 9.png FCVFA1055B1
+           24.9 % M) */
+        let dmp = false;
+        try {
+          const T0 = AN.sheets ? AN.sheets.find(z => z.name === 'ABC-014') : null,
+            T = T0 && T0.S,
+            c = T && AN.hmiCtrls ? AN.hmiCtrls(T).find(z => z.tag === 'FICFA1055' + k) : null,
+            m = c ? +T.rt.v[c.out] : NaN;
+          if (c && !(m > 23 && m < 27)) {
+            if (c.amt && T.rt.st[c.amt.id]) {
+              T.rt.st[c.amt.id].al = c.autoLeg;
+              T.rt.st[c.amt.id].fm = c.autoLeg === 'A' ? 'B' : 'A';
+            }
+            if (c.manBlk && T.rt.st[c.manBlk.id]) T.rt.st[c.manBlk.id].val = 25;
+            else if (c.manNet != null) T.rt.ext[c.manNet] = 25;
+            if (AN.latchMode) AN.latchMode('FICFA1055' + k, 'MAN');
+            dmp = true;
+          }
+        } catch (e) {}
+        if (other !== 1 || (sil && !out && !dmp)) return;
+        s.sig['1:S'] = true;
+        s.sig['12:S'] = true;
+        for (const r of [sil ? null : 0, out ? 15 : null]) {
+          if (r == null) continue;
+          P[s.name + '|' + r + ':S'] = { nm: s.name, k: r + ':S', tk: W.tk || 0, wait: false, age: 0 };
+          s.sig[r + ':S'] = true;
+        }
+        sby.push([k, dmp, !sil || out]);
+        return;
+      }
+      if (run !== 1) return;
       if (!sil && out) return;
-      const P = W._press || (W._press = {});
       for (const r of [sil ? 4 : null, out ? null : 11]) {
         if (r == null) continue;
         const id = s.name + '|' + r + ':S';
@@ -296,7 +341,16 @@
     });
     if (done.length && typeof lsEventAdd === 'function')
       for (const k of done) lsEventAdd('DITL-28C', 'DCS', 'Save point from an older version: FA blower ' + k + ' running with its surge valve open or its outlet closed; surge valve CLOSE and outlet OPEN pressed (PR-OPE-5002 FAB start-up line-up)');
-    return done;
+    if (sby.length && typeof lsEventAdd === 'function')
+      for (const [k, dmp, sov] of sby)
+        lsEventAdd(
+          'DITL-28C',
+          'DCS',
+          'Save point from an older version: standby FA blower ' + k + ' was not ready to start (FCD READY missing); ' +
+            [sov ? 'its surge and outlet SOVs set to AUTO, surge valve OPEN and outlet CLOSE pressed' : 'its surge and outlet SOVs set to AUTO', dmp ? 'inlet damper FICFA1055' + k + ' MANUAL 25 %' : ''].filter(Boolean).join(', ') +
+            ' (PR-OPE-5002 standby FAB line-up)'
+        );
+    return done.concat(sby.map(x => x[0]));
   };
   /* 2. scans of the whole world (dt seconds each) */
   D.scan = (n, dt) => {

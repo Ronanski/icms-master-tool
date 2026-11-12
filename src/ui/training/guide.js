@@ -322,6 +322,20 @@ window.LS_GUIDE = (function () {
   };
   const bit = a => L().val(a);
   /* Mina F151-2: the FA blower that sets the fluidizing air: B when it runs alone (after a swap), else A */
+  /* the surge / discharge SOVs of the FA blowers (DITL-28C and its instance #B): AUTO (rows 2 and 13 AUTO MODE SELECTED) and the surge valve opened (out 22) */
+  const FAB_SOV = [
+    ['DITL-28C', 'A'],
+    ['DITL-28C #B', 'B']
+  ];
+  const fabSov = () =>
+    FAB_SOV.map(([nm, k]) => {
+      let au = false;
+      try {
+        const s = window.LS_DOCK && LS_DOCK.dOf ? LS_DOCK.dOf(nm) : null;
+        au = !!s && DUI.rowVal(s, 1) === 1 && DUI.rowVal(s, 12) === 1;
+      } catch (e) {}
+      return { k, au, op: dOut(nm, 21) };
+    });
   const fabT = () => (bit('M.3309') > 0.5 && !(bit('M.3308') > 0.5) ? 'FICFA1055B' : 'FICFA1055A');
   /* live test #71: the position transmitters of the flue gas biasing dampers on ABC-020 (I/O list STN104 AI0368 ~ 71 ZT-FG1116-A ~ D RH
      side, AI0372 ~ 75 ZT-FG1117-A ~ D SH side), mean of the four */
@@ -1080,14 +1094,30 @@ window.LS_GUIDE = (function () {
       { st: 2, sec: 22, t: 'ID fan hydraulic coupling: PICFG108 MV 13 %', d: 'Open the coupling to 13 %. The furnace pressure is negative (gas drawn out); target about −15 mmH₂O. If it is too negative, lower the MV by 1 %; if not negative enough, raise it by 1 %.', c: b.ALL(R.IDF, b.MV('PICFG108', 10, 16)), fps: ['PICFG108'], a: [btn('MV 13 %', () => A.man('PICFG108', 13)), btn('MV −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1))), btn('MV +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1)))] },
       /* 3.2.0-beta.23: the FAB start permissive FCD READY (DITL-28A row 5 <- 28B out 77 = ABC-014 M.3115 inlet FCD demand at 25 % AND
          DITL-28C the silencer SOV opened); without the one world the step is done at once (the DITL is not running) */
+      /* Mina S154-3 (standby B never cut in: FCD READY of B missing) and beta.150 (the surge valve is read by the plant model): PR-OPE-5002
+         FAB START-UP "Ensure Fluidizing Air Damper is at least 25% OPEN, Fluidizing Surge Valve is OPEN and Set to Auto Mode and Discharge
+         Valve is CLOSE and Set to AUTO Mode" ... "Set Standby FAB in AUTO Mode": both blowers are prepared. In AUTO the drawing (DITL-28C)
+         keeps the surge valve of a stopped blower open and its discharge closed, and after the start closes the surge valve and opens the
+         discharge ("Ensure Surge Valve will CLOSE and FAB Discharge Valve will OPEN"); a surge valve left open in MANUAL blows the air to
+         the silencer, not to the header. The Cold state has both SOVs of both blowers in MANUAL, closed */
       {
         st: 2,
         sec: 23,
-        t: 'Prepare the fluidizing air blower (FAB): open the silencer SOV, FAB inlet damper FICFA1055A M 25 %',
-        d: 'The blower interlock (DITL-28A row 5 FCD READY) needs the "TO SILENCE SOV" open (DITL-28C, OPEN P.B.) and an inlet damper demand of 25 % (ABC-014).',
-        c: b.ALL(b.MODE('FICFA1055A', 'MAN'), b.MV('FICFA1055A', 20, 30), C('Silencer SOV opened (DITL-28C)', () => dOut('DITL-28C', 21) !== 0, () => 'SOV ' + (dOut('DITL-28C', 21) === 1 ? 'OPENED' : dOut('DITL-28C', 21) === 0 ? 'closed' : '— (one world OFF)'))),
-        fps: ['FICFA1055A'],
-        a: [btn('Silencer SOV OPEN (DITL-28C)', () => dPress('DITL-28C', 0), () => dOut('DITL-28C', 21) !== 0), btn('FICFA1055A M 25 %', () => A.man('FICFA1055A', 25))]
+        t: 'Prepare the fluidizing air blowers (FAB A and B): surge and discharge SOVs in AUTO, surge valves open, inlet dampers 25 %',
+        d: 'PR-OPE-5002 FAB START-UP: the inlet damper at least 25 %, the surge valve OPEN in AUTO, the discharge valve CLOSED in AUTO, for the blower to start and for the standby blower. The blower interlock (DITL-28A row 5 FCD READY) needs the surge ("TO SILENCE") SOV opened (DITL-28C) and an inlet damper demand of 25 % (ABC-014). In AUTO the drawing closes the surge valve and opens the discharge valve after the start.',
+        c: b.ALL(
+          b.MODE('FICFA1055A', 'MAN'),
+          b.MV('FICFA1055A', 23, 27),
+          b.MV('FICFA1055B', 23, 27),
+          C('Surge and discharge SOVs of A and B in AUTO (DITL-28C rows 2 / 13)', () => fabSov().every(x => x.au), () => fabSov().map(x => x.k + (x.au ? ' AUTO' : ' MANUAL')).join(' · ')),
+          C('Surge SOVs of A and B opened (DITL-28C)', () => fabSov().every(x => x.op !== 0), () => fabSov().map(x => x.k + ' surge ' + (x.op === 1 ? 'OPENED' : x.op === 0 ? 'closed' : '—')).join(' · '))
+        ),
+        fps: ['FICFA1055A', 'FICFA1055B'],
+        a: [
+          btn('Surge and discharge SOVs of A and B to AUTO (DITL-28C)', () => (window.LS_DOCK && LS_DOCK.dsel ? FAB_SOV.forEach(([nm, k]) => [1, 12].forEach(r => LS_DOCK.dsel(nm, r, 1, 'FA blower ' + k + (r === 1 ? ' surge' : ' discharge') + ' SOV AUTO MODE SELECTED'))) : 0, ''), () => fabSov().every(x => x.au)),
+          btn('Surge SOVs of A and B OPEN (DITL-28C)', () => (FAB_SOV.forEach(([nm, k]) => !(bit(k === 'A' ? 'M.3308' : 'M.3309') > 0.5) && dPress(nm, 0)), '') /* a running blower's surge valve is not opened (its air would go to the silencer) */, () => fabSov().every(x => x.op !== 0)),
+          btn('FICFA1055A and FICFA1055B M 25 %', () => (A.man('FICFA1055A', 25), A.man('FICFA1055B', 25)))
+        ]
       },
       { st: 2, sec: 23, max: 1, sby: 1, t: 'Start the fluidizing air blower (FAB)', d: 'Do: START FAB-A, put FAB-B in REMOTE + AUTO (PR-OPE-5002: "Set Standby FAB in AUTO Mode"), then raise the inlet damper of the blower that runs (FICFA1055A; FICFA1055B when blower B runs after a swap) until the fluidizing air flow is 26 T/H (PR-OPE-5002; about 41 %). The blower supplies air to the seal pots of the cyclone loop.', c: b.ALL(R.FAB, SBY('FA blower', [['M.3308', 'FAB-A'], ['M.3309', 'FAB-B']], a => bit(a) > 0.5)),
         /* Mina F151-2: after a swap blower B runs alone: its own damper FCV-FA1055-B1 (FICFA1055B) sets the flow, not A's. The standby blower's
@@ -1096,8 +1126,9 @@ window.LS_GUIDE = (function () {
           return [fabT()];
         },
         get a() {
-          const t = fabT();
-          return [mot('M.3308', 'FAB-A'), mot('M.3309', 'FAB-B'), btn(t + ' M 41 % (≈ 26 T/H)', () => A.man(t, 41))];
+          /* Mina S154: the dock keeps the buttons it drew when the step opened, so the label named A after the swap: the press picks
+             the damper of the blower running at that moment */
+          return [mot('M.3308', 'FAB-A'), mot('M.3309', 'FAB-B'), btn('Damper of the running blower (FICFA1055A / B) M 41 % (≈ 26 T/H)', () => A.man(fabT(), 41))];
         },
         field: [22] },
       { st: 2, sec: 24, t: 'Start the secondary air fan (SAF)', d: 'Close the secondary air damper (0 %) before starting the fan.', c: R.SAF, a: [btn('SA damper 0 %', () => A.man('FICFA1081', 0)), mot('M.3303', 'SAF')], fps: ['FICFA1081'], field: [23] },
