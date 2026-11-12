@@ -4,7 +4,7 @@
    the automatic rows (_win), the flow dampers (_fd), the field trip (_ftrip); per netlist the nets (_v) and the forces (fx, ufx); per
    part the flip-flop, counter and timer state; the motors and valves (MST, MS), the DCS registers (DREG), the DITL clock, the outputs of
    the one world (WORLD.out) and the protection switches of the plant (src/world/plantsw.js). Part of ONE script (src/digital/order.list). */
-const DITL_SH = ['sig', 'usw', 'av', 'av150', 'avw', '_win', '_fd', '_ftrip'],
+const DITL_SH = ['sig', 'usw', 'av', 'av150', 'avw', '_win', '_fd', '_ftrip', '_mvWhy'] /* _mvWhy: a MOV moved by its logic, its cause (world.js), for the Event log of the page */,
   DITL_NL = ['_v', 'fx', 'ufx'],
   DITL_G = ['q', 'st', 'N', 'pin', 'rp', 'rq', 'Nn', 'cin'],
   DITL_W = ['out', '_o', 'tk', '_ck', 'busy', 'live', '_press', '_rel', 'seen']; /* live, _press, _rel: the dock press (src/world/dock-eng.js) */

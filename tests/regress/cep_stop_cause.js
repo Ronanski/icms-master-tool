@@ -110,7 +110,8 @@ const html =
   const ln = r.ev.find(e => /STOPPED by its logic|stopped by its logic/.test(e));
   ck(!!ln && /LSLL-CD1110/.test(ln) && /LEVEL LL|LEVEL LOW LOW/.test(ln), 'Event log cause line: ' + (ln || 'none'));
   ck(r.ev.filter(e => /by its logic/i.test(e) && /CONDENSATE PUMP A|CEP-A|CEP A/i.test(e)).length === 1, 'one line only for the stop (not twice)');
-  ck(r.op.ok && r.op.a === 0 && !r.op.ev.some(e => /by its logic/.test(e)), 'operator STOP: no "by its logic" line (' + r.op.ev.join(' / ') + ')');
+  /* beta.157: a MOV that its logic moves after the stop has its own line (MV-CD1007 closed by CONDENSATE WATER FLOW LOW): the check is of the pump's line */
+  ck(r.op.ok && r.op.a === 0 && !r.op.ev.some(e => /by its logic/.test(e) && !/\bMOV\b/.test(e)), 'operator STOP: no "by its logic" line for the pump (' + r.op.ev.join(' / ') + ')');
   ck(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
   await browser.close();
   await o2.browser.close();

@@ -152,9 +152,11 @@ const DREAD = (function () {
     switch (g.t) {
       case 'AND':
         /* FIRST-OUT (ALL): an AND at 1 is held by ALL its inputs (e.g. two of three drum level channels), not the shortest one */
-        return want ? ins.filter(n => !on(n)).flatMap(n => why(s, v, n, 1, seen, d)) : ALL ? ins.flatMap(n => why(s, v, n, 0, seen, d)) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
+        /* ALL: each input with its own copy of the nets seen (DITL-98: the branch of the open command visited "37 must be 0" first, inside a
+           shortest() whose answer was thrown away, and the real branch of the close command then found it seen: no HI-HI in the cause) */
+        return want ? ins.filter(n => !on(n)).flatMap(n => why(s, v, n, 1, seen, d)) : ALL ? ins.flatMap(n => why(s, v, n, 0, new Set(seen), d)) : shortest(ins.map(n => why(s, v, n, 0, seen, d)));
       case 'OR':
-        return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))) : ins.filter(on).flatMap(n => why(s, v, n, 0, seen, d));
+        return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))) : ins.filter(on).flatMap(n => why(s, v, n, 0, ALL ? new Set(seen) : seen, d));
       case 'NOT':
         return want ? ins.filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : shortest(ins.map(n => why(s, v, n, 1, seen, d)));
       case 'FF': {
@@ -164,7 +166,8 @@ const DREAD = (function () {
           const a = R0 && !g.spri ? (g.r || []).filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : [];
           return a.concat(S0 ? [] : shortest((g.s || []).map(n => why(s, v, n, 1, seen, d))), S0 ? [] : one('then the flip-flop is SET (it stays 1 after S goes 0)'));
         }
-        const a = S0 && g.spri ? (g.s || []).filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : [];
+        /* FIRST-OUT (ALL, the cause of a TRIP / of a MOV command): a SET input that is 1 now is the cause too, also without set priority */
+        const a = S0 && (g.spri || ALL) ? (g.s || []).filter(on).flatMap(n => why(s, v, n, 0, seen, d)) : [];
         return a.concat(R0 ? [] : shortest((g.r || []).map(n => why(s, v, n, 1, seen, d))), R0 ? [] : one('then the flip-flop is RESET'));
       }
       case 'TMR': {
@@ -247,11 +250,22 @@ const DREAD = (function () {
      Event log: called by the one world (src/world/world.js) at the scan where a TRIP / MFT output goes 1 */
   D.cause = (s, row) => {
     const o = s.nl && s.nl.outs.find(x => x.row === row);
-    if (!o) return null;
+    return o ? D.causeNet(s, o.n, outName(s, row)) : null;
+  };
+  /* 3.2.3 SOHEE (Sakura beta.150: MV-TS1001 closed by the heater HI-HI with no line): the same for any net of the drawing, the OPEN /
+     CLOSE command of a MOV (nl.mv[].open / .close, the O.xxxx to the valve) */
+  D.netVal = (s, n) => {
+    try {
+      return dRead(s).v[n] ? 1 : 0;
+    } catch (e) {
+      return null;
+    }
+  };
+  D.causeNet = (s, n, name) => {
     ALL = true;
     let L;
     try {
-      L = D.why(s, o.n, 0);
+      L = D.why(s, n, 0);
     } finally {
       ALL = false;
     }
@@ -271,7 +285,8 @@ const DREAD = (function () {
       seen.add(t);
       lines.push({ d: 1, k: r.row !== undefined && !r.want ? 'input' : 'gate', txt: t, sh: s.name, row: r.row !== undefined && !r.want ? r.row : undefined });
     }
-    return { name: outName(s, row), lines: lines.slice(0, 12) };
+    /* the inputs first (a deep AND of the valve's own permissives filled the 12 lines before the HI-HI of DITL-98 came) */
+    return { name, lines: lines.filter(l => l.k === 'input').concat(lines.filter(l => l.k !== 'input')).slice(0, 12) };
   };
   D.rowNets = rowNets;
   /* the TRIP / RUNNING outputs of a motor drawing and its state (moved as they were from src/ui/hmi/events.js) */
