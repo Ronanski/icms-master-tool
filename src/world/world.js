@@ -1276,6 +1276,36 @@
           if (/\bNOT\s+TRIP\b/.test(nm)) lsEventAdd(s.name, 'TRIP', nm.replace(/^Output row \d+ · /, '').replace(/\s*·.*$/, '').replace(/\bNOT\s+TRIP\b/, 'TRIP') + ' (NOT TRIP = 0)');
         }
       }
+    /* 3.2.3 S148-3 (Mina beta.148 normal shutdown: CEP A STOPPED by the logic with no cause in the Event log; DITL-61A: the FF of the
+       pump is reset by CONDENSER WATER LSLL-CD1110 LEVEL LOW LOW AND M.3211 LEVEL LL, 2 s on delay TR259): the scan where the STOPPED
+       output of a motor drawing goes 1, its cause is read NOW (the hotwell rises again once the pump stops and the LL falls back to 0
+       within seconds) and kept on the sheet; the Event log (src/ui/hmi/events.js) writes it on the RUN -> STOP line */
+    if (window.DUI && DUI.cause && W.tk > 25)
+      for (const s of ALL) {
+        const a = prev[s.name],
+          b = out[s.name];
+        if (!a || !b || !s.nl) continue;
+        for (const row of b) {
+          if (typeof row !== 'number' || a.has(row)) continue;
+          let nm = '';
+          try {
+            nm = String((DUI.outs(s).find(o => o.row === row) || {}).name || '');
+          } catch (e) {}
+          if (!/\bSTOPPED\b/.test(nm) || /\b(ANY|ALL|LOCAL)\b/.test(nm)) continue;
+          /* a STOP push button pressed now (CRT or local panel, DITL-61A rows 15 / 24): the operator's stop, not the logic's */
+          const lab = q => ['S', 'T', 'L'].map(k => ((s.cells && s.cells[q + ':' + k]) || []).map(x => x.t).join(' ')).join(' ');
+          if (s.nl.src.some(z => /\bSTOP\b/.test(lab(z.row)) && /\b(PB|P\.B\.?|PUSH)/.test(lab(z.row)) && DUI.rowVal(s, z.row) === 1)) {
+            delete s._stopWhy;
+            break;
+          }
+          let c = null;
+          try {
+            c = DUI.cause(s, row);
+          } catch (e) {}
+          if (c && c.lines.length) s._stopWhy = { tk: W.tk, lines: deeper(s, c.lines, 1) };
+          break;
+        }
+      }
     W.out = out;
     /* 3. DITL -> ABC (not while the one world is OFF: then the DITL 150 MW state is computed for the DITL only) */
     for (const a of opt && opt.noAbc ? [] : ain) {
