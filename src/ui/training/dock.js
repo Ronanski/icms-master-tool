@@ -1830,15 +1830,16 @@
     const n = '(-?\\d+(?:\\.\\d+)?)',
       m1 = new RegExp(n + '\\s*~\\s*' + n).exec(x),
       m2 = new RegExp(n + '\\s*±\\s*' + n).exec(x),
-      m3 = new RegExp('(?:≥|>)\\s*' + n).exec(x),
-      m4 = new RegExp('(?:≤|<)\\s*' + n).exec(x),
+      m3 = new RegExp('(≥|>)\\s*' + n).exec(x),
+      m4 = new RegExp('(≤|<)\\s*' + n).exec(x),
       /* live test #46: an SOP of one number ("Normal 90", "SOP 20 A", "NL -4 m"): ±10 % of it */
       m5 = new RegExp('^(?:SOP|NL|Normal)\\b[^\\d-]*' + n + '(?!\\.PNG)').exec(x.trim());
     /* Mina #M30: a range written high to low ("-20 ~ -50 mmH2O" of the main oil tank vacuum): low first (-35.0 was "!") */
     if (m1) return [Math.min(+m1[1], +m1[2]), Math.max(+m1[1], +m1[2])];
     if (m2) return [+m2[1] - +m2[2], +m2[1] + +m2[2]];
-    if (m3) return [+m3[1], Infinity];
-    if (m4) return [-Infinity, +m4[1]];
+    /* 3.2.3-beta.102 (Mina beta.101 LOW: "MS blow-off opening" 100 % showed ✓ against its band "< 100"): "<" and ">" are strict (rg[2]) */
+    if (m3) return Object.assign([+m3[2], Infinity], { 2: m3[1] === '>' ? 'lo' : '' });
+    if (m4) return Object.assign([-Infinity, +m4[2]], { 2: m4[1] === '<' ? 'hi' : '' });
     if (m5 && +m5[1]) {
       const v = +m5[1],
         d = Math.abs(v) * 0.1;
@@ -1847,7 +1848,7 @@
     return null;
   }
   /* the band of a value as the operator reads it: "205 ~ 215", "≥ 0.4", "≤ 37" */
-  const bandTxt = rg => (!rg ? '' : rg[1] === Infinity ? '≥ ' + rg[0] : rg[0] === -Infinity ? '≤ ' + rg[1] : rg[0] + ' ~ ' + rg[1]);
+  const bandTxt = rg => (!rg ? '' : rg[1] === Infinity ? (rg[2] === 'lo' ? '> ' : '≥ ') + rg[0] : rg[0] === -Infinity ? (rg[2] === 'hi' ? '< ' : '≤ ') + rg[1] : rg[0] + ' ~ ' + rg[1]);
   /* the number a value shows ("9.0", "210 A"): a band check uses it, so what the operator reads and the ✓ / ! agree */
   const shownNum = (t, x) => {
     const p = parseFloat(String(t).replace(/−/g, '-'));
@@ -1858,7 +1859,7 @@
   const bandOf = (t, x, rg, u) => {
     const nums = typeof x === 'number' && isFinite(x) ? [shownNum(t, x)] : !u ? [] : (String(t).replace(/−/g, '-').match(/-?\d+(?:\.\d+)?/g) || []).map(Number),
       has = nums.length > 0 && !(nums.every(n => n === 0) && rg[0] > 0);
-    return { has, ok: has && nums.every(n => n >= rg[0] && n <= rg[1]) };
+    return { has, ok: has && nums.every(n => (rg[2] === 'lo' ? n > rg[0] : n >= rg[0]) && (rg[2] === 'hi' ? n < rg[1] : n <= rg[1])) };
   };
   /* a watch label "SWP-A current (IIP1501A)" or "Lube oil cooler outlet temp · TICLO1002": the name, and the tag apart (small) */
   const splitTag = k => {

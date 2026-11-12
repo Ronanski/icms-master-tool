@@ -145,7 +145,24 @@
       try {
         for (const sh of AN.sheets) AN.ensure(sh);
         if (window.WORLD && WORLD.build) WORLD.build();
-        E.onPatch = () => ((E.patchAt = Date.now()), AN.patchPaint && AN.patchPaint());
+        /* 3.2.3-beta.102 (CHAEWON, Mina live beta.101: heating rate 71 ~ 114 C/h on the Beta site, 52 C/h in the automatic runs of the
+           page engine): this line put a new hook in place of the one the Training guide had set at its load (guide.js: ENG.onPatch =
+           its onStep after each patch, "the coach runs here after each patch"), so with the Worker (the default of the Beta site) the
+           guide never sampled the heating rate (rate() NaN: no oil ▲ / ▼ of the warm-up, heatSeek), never ran its automatic run and
+           never released its timed pushbuttons. The hook of before is kept and called after the paint (once: a restart keeps the
+           first one, f._prev) */
+        {
+          const cur = E.onPatch,
+            prev = cur && cur._page ? cur._prev : cur;
+          const f = m => {
+            E.patchAt = Date.now();
+            if (AN.patchPaint) AN.patchPaint();
+            if (prev) prev(m);
+          };
+          f._page = 1;
+          f._prev = prev;
+          E.onPatch = f;
+        }
         /* the events of the engine into the Event log of the page */
         E.onEvent = a => window.lsEventAdd && lsEventAdd(...a);
         /* the DITL sheets of the page (with the user's fixes), the saved settings of the ABC (Reset applies them) */
