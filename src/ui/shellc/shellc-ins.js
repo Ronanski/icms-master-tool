@@ -180,8 +180,9 @@
     r = row();
     const tt = btn('Turbine trip', 'TURBINE TRIP (TA-1), the same command as the Training dock');
     arm(tt, 'Turbine trip', () => {
-      const t = call(() => AN.turbine('trip'), '');
-      call(() => lsEventAdd('TCS', 'TCS', 'Instructor: TURBINE TRIP (TA-1)' + (t ? ': ' + t : '')));
+      call(() => AN.turbine('trip'), '');
+      /* a trip not taken: the engine writes why (unit.js anTurbine) */
+      call(() => lsEventAdd('TCS', 'TCS', 'Instructor: TURBINE TRIP (TA-1)'));
     }, { q: 'Trip the turbine?', t: 'TURBINE TRIP (TA-1): the turbine trips now and the plant reacts to it.', ok: 'Trip turbine', danger: true });
     tt.classList.add('trip');
     const mft = btn('Boiler trip (MFT): Purge and trip page', 'The master fuel trip push button is the operator’s control: it is on the Purge and trip page', () => {
