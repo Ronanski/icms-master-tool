@@ -596,6 +596,8 @@
     } catch (e) {}
   }, 500);
   window.lsEvents = LOG;
+  /* Mina B96-1: the alarm list (shellc-home.js) stamps its rows with the same plant clock and format as this log */
+  window.lsTfmt = tfmt;
   /* 3.2.0-beta.6: an event from outside the ABC sheet on screen (the DITL first-out of the one world) */
   window.lsEventAdd = (shName, kind, text, why) => {
     const cs = window.AN && AN.sheets && AN.sheets[AN.i];

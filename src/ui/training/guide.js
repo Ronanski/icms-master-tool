@@ -138,7 +138,7 @@ window.LS_GUIDE = (function () {
   /* user 2026-10-29 (#108, no coach): the operator's own trims, one press = one step of the faceplate (the same signal as the sheet) */
   /* .tag: the loop of the button (the dock leaves out a button whose loop has its own control card: the same MV ▲▼ twice) */
   const step = (l, t, d) => Object.assign(btn(l, () => A.man(t, Math.max(0, Math.min(100, Math.round((+mv(t) || 0) * 2) / 2 + d)))), { tag: t });
-  /* 3.2.3-beta.97 (drum LOW-LOW at step 68, automatic run on beta.93): the floor of the oil ▼ is the burner minimum fire, not 20 %.
+  /* 3.2.3-beta.99 (drum LOW-LOW at step 68, automatic run on beta.93): the floor of the oil ▼ is the burner minimum fire, not 20 %.
      PR-OPE-5002 sect 27 "min = 614.4 ... max = 3078" and the M&S load curve 1612 13-4-71 (614.4 kg/h MIN, range 1:5): the MV that gives
      614.4 kg/h at the ring pressure of now, by the burner model of boiler.js (Q = Kb x MV x sqrt(P2 - Q / g)); about 15 % at 10.5
      kg/cm2. Before: 20 % (NO-SOURCE), about 820 kg/h a burner: four burners at 20 % made 68 T/H of steam on the 35 kg/cm2 hold, more than
@@ -1900,7 +1900,7 @@ window.LS_GUIDE = (function () {
     /* 3.2.3-beta.90: the warm-up steps (stage 4 with the heating rate on their card, or once the drum has pressure) hold the heating
        rate as their text says */
     if (s.st === 4 && ((s.w || []).some(r => r[1] === rate) || (+U().Pd || 0) > 0.5)) heatSeek();
-    /* 3.2.3-beta.97 (drum LOW-LOW at step 68, automatic runs on beta.93 / 95): the 35 kg/cm2 hold of step 57 lasts through the field and
+    /* 3.2.3-beta.99 (drum LOW-LOW at step 68, automatic runs on beta.93 / 95): the 35 kg/cm2 hold of step 57 lasts through the field and
        TCS steps 58 ~ 73 (its text: the blow-off "holds the main steam pressure at 35 kg/cm2 while the TCS auxiliaries and the vacuum are
        done ... lower the oil so the blow-off does not stand full open"), but only step 57 lowered the oil. The bed kept heating (441 ->
        468 C), the blow-off stood full open, the pressure rose to 38 ~ 39 and the drum fell to the low-low level. The same oil ▼ (−5 % each
