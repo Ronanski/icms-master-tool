@@ -19,20 +19,23 @@
     MA = '4-20 mA DC, 2 wires';
   const INT = { 1: [1, 2], 2: [5, 6], 3: [9, 10], 4: [13, 14], 5: [21, 22], 6: [25, 26], 7: [29, 30], 8: [33, 34] };
   const OT = ch => [String(2 * ch - 1), String(2 * ch)];
+  /* terminals as a list ('1,2,3,4') = one point per wire; hop[6] = the terminals where the wires come in (tracer v7) */
   const CTH = [
-    ['Generator CT GA016CT4', '10000/5 A, 4 wires (sheet GA126)', '1', '4', 'CT 5 A AC, 4 wires'],
-    ['TCS PLU (TCS-4 rack)', 'CT passes through PLU DEX1, in 1 ~ 4, out 5 ~ 8 (TCS drawing TC0412)', '5', '8', 'CT 5 A AC, 4 wires, GA126C001'],
-    ['GCP terminal block X05', 'GA230, terminals 1 ~ 4', '1', '4', 'CT 5 A AC, 4 wires'],
-    ['GCP test terminal FJ2 (P12)', 'MT-42A, 11 / 22 / 33 / 44', '11', '44', 'CT 5 A AC, 4 wires GA126A04 / B04 / C04 / NE04']
+    ['Generator CT GA016CT4', '10000/5 A (sheet GA126)', '1,2,3,4', '', 'CT 5 A AC, 4 wires, cable GA016C001'],
+    ['TCS PLU (TCS-4 rack)', 'CT passes through PLU DEX1: in 1 ~ 4, out 5 ~ 8 (TCS drawing TC0412)', '5,6,7,8', '', 'CT 5 A AC, 4 wires, cable GA126C001', '', '1,2,3,4'],
+    ['GCP terminal block X05', 'GA230, terminals 1 ~ 4', '1,2,3,4', '', 'CT 5 A AC, 4 wires', '', '1,2,3,4'],
+    ['GCP test terminal FJ2 (P12)', 'MT-42A, test terminal', '11,22,33,44', '', 'CT 5 A AC, 4 wires GA126A04 / B04 / C04 / NE04', '', '11,22,33,44']
   ];
   const VTH = [
-    ['Generator VT2 GA022VT2', '13.8 kV/√3 : 115 V/√3 (sheet GA126)', '1', '3', 'VT 115 V AC, 3 wires'],
-    ['GCP terminal block X04', 'GA229, terminals 1 ~ 3', '1', '3', 'VT 115 V AC, 3 wires'],
-    ['GCP fuses F07 ~ F09', 'EFB-5, 3 A (GCP)', '', '', 'VT 115 V AC, 3 wires'],
-    ['GCP test terminal FJ1 (P11)', 'MT-41A, 11 / 22 / 33', '11', '33', 'VT 115 V AC, 3 wires GA126A03 / B03 / C03']
+    ['Generator VT2 GA022VT2', '13.8 kV/√3 : 115 V/√3, star: 3 phases + neutral (sheet GA126)', '1,2,3,4', '', 'VT 115 V AC, 4 wires (3 phases + neutral), cable GA022V003'],
+    ['GCP terminal block X04', 'GA229, terminals 1 ~ 4 (5 ~ 8 carry the same VT on to the full time recorder)', '1,2,3,4', '', 'VT 115 V AC, 4 wires', '', '1,2,3,4'],
+    ['GCP fuses F09 / F08 / F07', 'EFB-5, 3 A, one fuse per phase; neutral (4) has no fuse', 'F09,F08,F07,N', '', 'VT 115 V AC, 4 wires'],
+    ['GCP test terminal FJ1 (P11)', 'MT-41A. Only the 3 phases (11 / 22 / 33) go on to the transducers; 44 = neutral', '11,22,33,44', '', 'VT 115 V AC, 3 wires GA126A03 / B03 / C03', '', '11,22,33,44']
   ];
   const SRC = { CT: CTH, VT: VTH, CTVT: CTH },
-    VTNOTE = ' + VT2 115 V into P1 / P2 / P3 (path: VT2 → X04 → fuses F07 ~ F09 → test terminal FJ1)';
+    VTNOTE = ' + VT2 115 V into P1 / P2 / P3 (VT path: VT2 → X04 → fuses F09 / F08 / F07 → test terminal FJ1 → GA126A03 / B03 / C03)',
+    CTVTL = 'CT 5 A + VT 115 V AC, 7 wires: CT GA126A04 / B04 / C04 / NE04 from FJ2 + VT GA126A03 / B03 / C03 from FJ1',
+    TIN = { CT: '1S,1L,3S,3L', VT: 'P1,P2,P3', CTVT: '1S,1L,3S,3L,P1,P2,P3' };
   const GX = {
     'I A': ['1', '2', 'GA12801/02', 'X11', '1', '2', 'CT'],
     'I B': ['3', '4', 'GA12804/05', 'X11', '4', '5', 'CT'],
@@ -47,9 +50,11 @@
   const cp = a => a.map(h => h.slice());
   const gcphops = name => {
     const t = GX[name],
-      inp = { CT: 'CT into 1S / 3S', VT: 'VT into P1 / P2 / P3', CTVT: 'CT into 1S / 3S' + VTNOTE }[t[6]];
-    return cp(SRC[t[6]]).concat([
-      ['GCP multi transducer', 'QT2-93A (U01GA101). ' + inp + '. Out ' + t[0] + ' / ' + t[1], t[0], t[1], '4-20 mA DC, wires ' + t[2]],
+      inp = { CT: 'CT into 1S / 1L / 3S / 3L', VT: 'VT into P1 / P2 / P3', CTVT: 'CT into 1S / 1L / 3S / 3L' + VTNOTE }[t[6]],
+      H = cp(SRC[t[6]]);
+    if (t[6] === 'CTVT') H[H.length - 1][4] = CTVTL;
+    return H.concat([
+      ['GCP multi transducer', 'QT2-93A (U01GA101), sheet GA128. ' + inp + '. Out ' + t[0] + ' / ' + t[1], t[0], t[1], '4-20 mA DC, wires ' + t[2], '', TIN[t[6]]],
       ['GCP terminal block ' + t[3], 'to TCS (sheet GA187)', t[4], t[5], MA]
     ]);
   };
@@ -88,10 +93,34 @@
     '1|AI0421': tcs('load up rate (made inside TCS)', 'TC0160', 'AXF3', 2),
     '2|AI0534': tcs('turbine speed (made inside TCS)', 'TC0160', 'AXF3', 6)
   };
+  /* 3.2.3-beta.121: the DCS Ethernet after the I/O card (user 2026-11-12 "asan mga ethernet dyan, bakit kulang"), as read by the
+     control network study (ARIN flnet.json, no IP): K1AU3-E2-0-109 FCS signal schematic CD01 ~ CD05, K1AU3-E2-0-106 sh2 cable
+     list, IPU-III manual 1.2 + 2 (CMCU-01). IOL = station|node -> [node MCU cable, m, I/O LAN switch, ports, switch -> controller
+     cable, m, controller cabinet]; FLH = station -> [controller FL-NET cables, m, cabinet, FL-NET switches, switch cabinet]. */
+  const IOL = {"101|0":["SFTP A1-MON0 / B1-MON0",1.5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 1, controller port 16","A16-101AM0 / B16-101BM0",1.5,"FCS1011 CABINET"],"101|1":["SFTP A2-MON1 / B2-MON1",3,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 2, controller port 16","A16-101AM0 / B16-101BM0",1.5,"FCS1011 CABINET"],"101|2":["SFTP A3-MON2 / B3-MON2",3,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 3, controller port 16","A16-101AM0 / B16-101BM0",1.5,"FCS1011 CABINET"],"101|3":["SFTP A4-MON3 / B4-MON3",3,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 4, controller port 16","A16-101AM0 / B16-101BM0",1.5,"FCS1011 CABINET"],"101|4":["SFTP A5-MON4 / B5-MON4",5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 5, controller port 16","A16-101AM0 / B16-101BM0",1.5,"FCS1011 CABINET"],"101|5":["SFTP A6-MON5 / B6-MON5",5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 6, controller port 16","A16-101AM0 / B16-101BM0",1.5,"FCS1011 CABINET"],"101|6":["SFTP A7-MON6 / B7-MON6",5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 7, controller port 16","A16-101AM0 / B16-101BM0",1.5,"FCS1011 CABINET"],"102|0":["SFTP A1-MON0 / B1-MON0",1.5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 1, controller port 16","A16-102AM0 / B16-102BM0",1.5,"FCS1021 CABINET"],"102|1":["SFTP A2-MON1 / B2-MON1",1.5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 2, controller port 16","A16-102AM0 / B16-102BM0",1.5,"FCS1021 CABINET"],"102|2":["SFTP A3-MON2 / B3-MON2",3,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 3, controller port 16","A16-102AM0 / B16-102BM0",1.5,"FCS1021 CABINET"],"102|3":["SFTP A4-MON3 / B4-MON3",3,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 4, controller port 16","A16-102AM0 / B16-102BM0",1.5,"FCS1021 CABINET"],"102|4":["SFTP A5-MON4 / B5-MON4",3,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 5, controller port 16","A16-102AM0 / B16-102BM0",1.5,"FCS1021 CABINET"],"102|5":["SFTP A6-MON5 / B6-MON5",5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 6, controller port 16","A16-102AM0 / B16-102BM0",1.5,"FCS1021 CABINET"],"102|6":["SFTP A7-MON6 / B7-MON6",5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 7, controller port 16","A16-102AM0 / B16-102BM0",1.5,"FCS1021 CABINET"],"102|7":["SFTP A8-MON7 / B8-MON7",5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 8, controller port 16","A16-102AM0 / B16-102BM0",1.5,"FCS1021 CABINET"],"103|0":["SFTP A1-MON0 / B1-MON0",1.5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 1, controller port 16","A16-103AM0 / B16-103BM0",1.5,"FCS1031 CABINET"],"103|1":["SFTP A2-MON1 / B2-MON1",1.5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 2, controller port 16","A16-103AM0 / B16-103BM0",1.5,"FCS1031 CABINET"],"103|2":["SFTP A3-MON2 / B3-MON2",3,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 3, controller port 16","A16-103AM0 / B16-103BM0",1.5,"FCS1031 CABINET"],"103|3":["SFTP A4-MON3 / B4-MON3",3,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 4, controller port 16","A16-103AM0 / B16-103BM0",1.5,"FCS1031 CABINET"],"103|4":["SFTP A5-MON4 / B5-MON4",3,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 5, controller port 16","A16-103AM0 / B16-103BM0",1.5,"FCS1031 CABINET"],"103|5":["SFTP A6-MON5 / B6-MON5",5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 6, controller port 16","A16-103AM0 / B16-103BM0",1.5,"FCS1031 CABINET"],"103|6":["SFTP A7-MON6 / B7-MON6",5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 7, controller port 16","A16-103AM0 / B16-103BM0",1.5,"FCS1031 CABINET"],"103|7":["SFTP A8-MON7 / B8-MON7",5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 8, controller port 16","A16-103AM0 / B16-103BM0",1.5,"FCS1031 CABINET"],"104|0":["SFTP A1-MON0 / B1-MON0",1.5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 1, controller port 16","A16-104AM0 / B16-104BM0",1.5,"FCS1041 CABINET"],"104|1":["SFTP A2-MON1 / B2-MON1",1.5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 2, controller port 16","A16-104AM0 / B16-104BM0",1.5,"FCS1041 CABINET"],"104|2":["SFTP A3-MON2 / B3-MON2",3,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 3, controller port 16","A16-104AM0 / B16-104BM0",1.5,"FCS1041 CABINET"],"104|3":["SFTP A4-MON3 / B4-MON3",3,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 4, controller port 16","A16-104AM0 / B16-104BM0",1.5,"FCS1041 CABINET"],"104|4":["SFTP A5-MON4 / B5-MON4",30,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 5, controller port 16","A16-104AM0 / B16-104BM0",1.5,"FCS1041 CABINET"],"105|0":["SFTP A1-MON0 / B1-MON0",1.5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 1, controller port 16","A16-105AM0 / B16-105BM0",1.5,"FCS1051 CABINET"],"105|1":["SFTP A2-MON1 / B2-MON1",1.5,"I/O LAN switches MBA0-A / MBA0-B (16-port)","node port 2, controller port 16","A16-105AM0 / B16-105BM0",1.5,"FCS1051 CABINET"]};
+  const FLH = {"101":["2A02/2B02 (A ctrl) / 2A03/2B03 (B ctrl)",5,"FCS1011 CABINET","FL-NET switches hub-2A / hub-2B","FCS1013 CABINET"],"102":["2A04/2B04 (A ctrl) / 2A05/2B05 (B ctrl)",3,"FCS1021 CABINET","FL-NET switches hub-2A / hub-2B","FCS1013 CABINET"],"103":["2A06/2B06 (A ctrl) / 2A07/2B07 (B ctrl)",7,"FCS1031 CABINET","FL-NET switches hub-2A / hub-2B","FCS1013 CABINET"],"104":["2A08/2B08 (A ctrl) / 2A09/2B09 (B ctrl)",10,"FCS1041 CABINET","FL-NET switches hub-2A / hub-2B","FCS1013 CABINET"],"105":["3A02/3B02 (A ctrl) / 3A03/3B03 (B ctrl)",1.5,"FCS1051 CABINET","FL-NET switches hub-3A / hub-3B","FCS1051 CABINET"]};
+  const netHops = r => {
+    const st = '10' + r.s,
+      I = IOL[st + '|' + r.node],
+      F = FLH[st];
+    if (!I || !F) return null;
+    const E = 'Ethernet',
+      hub1 = st === '105' ? '1A15-H-3A15 / 1B15-H-3B15, 40 m' : '1A16-H-2A16 / 1B16-H-2B16, 50 m';
+    return [
+      ['I/O card, node ' + r.node + ' slot ' + r.slot, r.ch + ' · terminal board ' + (r.brd || '') + ' · ' + r.fcs + ' cabinet', '', '', 'inside the node: base unit bus (no cable)'],
+      ['Node ' + r.node + ' MCU A / B', 'CMCU-01, RJ-45 · ' + r.fcs + ' cabinet', '', '', E + ' I/O LAN (two-way), cable ' + I[0] + ', ' + I[1] + ' m'],
+      [I[2], I[3] + ' · ' + I[6], '', '', E + ' I/O LAN (two-way), cable ' + I[4] + ', ' + I[5] + ' m'],
+      ['Controller FCS' + st + '-A / B', stnOf(r) + ' · ' + F[2] + ' · FL-NET A + B ports', '', '', E + ' FL-NET A + B (two-way), cables ' + F[0] + ', ' + F[1] + ' m'],
+      ['FL-NET switches ' + F[3].replace('FL-NET switches ', ''), 'MOXA EDS-316 · ' + F[4], '', '', E + ' FL-NET A + B (two-way), cables ' + hub1],
+      ['FL-NET switches hub-1A / hub-1B', 'MOXA EDS-316 in the COS1 / COS2 desks, control room', '', '', E + ' FL-NET A + B (two-way), cables 1A5 / 1B5 (COS1), 1A6 / 1B6 (COS2), 1A7 / 1B7 (COS3), 1A8 / 1B8 (COS4), 1A10 / 1B10 (COS5), 1.5 ~ 20 m'],
+      ['Operator stations COS1 ~ COS5', 'control room. Also on hub-1A / 1B: CDS-A (1A3 / 1B3), CDS-B (1A4 / 1B4), OPC server (1A9 / 1B9)', '', '', '']
+    ];
+  };
+  const NETSRC = 'K1AU3-E2-0-109 FCS signal schematic CD01 ~ CD05, K1AU3-E2-0-106 sh2 cable list, IPU-III manual 1.2 + 2 (CMCU-01), as read by the control network study';
   /* the generator MW to the DCS (direct cables GCP -> DCS), the watt-hour / var-hour pulses and the ready-to-synchronize contacts */
   const MWH = () =>
-    cp(CTH).concat([
-      ['GCP MW transducer', 'W T/D U03GA101 (out A / B) or multi meter P40GA101 (out 16 / 17). CT into 1S / 3S' + VTNOTE, '', '', MA],
+    cp(CTH.slice(0, -1)).concat([CTH[CTH.length - 1].slice(0, 4).concat([CTVTL, '', '11,22,33,44'])], [
+      ['GCP MW transducer', 'W T/D U03GA101 (WTT2-92A-33, sheet GA129, out A / B) or multi meter P40GA101 (out 16 / 17). CT into 1S / 1L / 3S / 3L' + VTNOTE, 'A', 'B', MA, '', '1S,1L,3S,3L,P1,P2,P3'],
       ['GCP terminal block X12', '10 / 11 = power(3), 13 / 14 = power(4)', '', '', MA]
     ]);
   const MWR = G + ' sh52-53, GA190. The drawing labels the two DCS MW outputs power(3) and power(4); it does not say which one is DCS MW (C) or MW (D)';
@@ -459,10 +488,11 @@
       el('rect', { class: 'box' + (/^Generator|^TE-|^PT-|^ZT-/.test(h[0]) ? ' dash' : ''), x, y: y0, width: bw, height: 82, rx: 6 }, us);
       /* name on up to 2 lines, note on the lines left (narrower where the terminals are) */
       const hasT = h[2] !== '' && h[2] != null,
-        nm = wrapT(h[0], 24).slice(0, 2),
-        nl = wrapT(h[1], hasT ? 22 : 30);
-      nm.forEach((t, k) => tx(us, x + 10, y0 + 18 + k * 14, 'bt2', k === 1 && wrapT(h[0], 24).length > 2 ? fit(t + '…', 7.4) : t));
-      nl.slice(0, 5 - nm.length).forEach((t, k, A) => tx(us, x + 10, y0 + 18 + nm.length * 14 + 2 + k * 12, 'bs', k === A.length - 1 && nl.length > A.length ? t + ' …' : t));
+        nm = wrapT(h[0], h[6] ? 20 : 24).slice(0, 2),
+        tX = x + (h[6] ? 40 : 10),
+        nl = wrapT(h[1], (hasT ? 22 : 30) - (h[6] ? 5 : 0));
+      nm.forEach((t, k) => tx(us, tX, y0 + 18 + k * 14, 'bt2', k === 1 && wrapT(h[0], h[6] ? 20 : 24).length > 2 ? fit(t + '…', 7.4) : t));
+      nl.slice(0, 5 - nm.length).forEach((t, k, A) => tx(us, tX, y0 + 18 + nm.length * 14 + 2 + k * 12, 'bs', k === A.length - 1 && nl.length > A.length ? t + ' …' : t));
       el('title', {}, el('rect', { x, y: y0, width: bw, height: 82, fill: 'transparent' }, us)).textContent = h[0] + ' · ' + h[1] + (h[2] ? ' · terminal ' + h[2] + ' / ' + h[3] : '');
       const L = LINK(h, hops[i + 1], i, r.og),
         x1 = x + bw,
@@ -473,27 +503,24 @@
         c = CK[L.k][0],
         eth = L.k === 'en' || L.k === 'fo',
         none = last && !h[4];
-      /* as many lines as the wires written on the drawing (CT 4 wires, VT 3 wires), else 2 */
-      const nw = Math.min(4, Math.max(2, +((L.t.match(/(\d) wires/) || [])[1] || NWIRE[L.k] || 2))),
+      /* as many lines as the wires written on the drawing (CT 4, VT 4 then 3, CT + VT 7), else by kind */
+      const nw = Math.min(7, Math.max(2, +((L.t.match(/(\d) wires/) || [])[1] || NWIRE[L.k] || 2))),
         WY = Array.from({ length: nw }, (_, k) => YP + ((YM - YP) * k) / (nw - 1));
-      if (h[2] !== '' && h[2] != null) {
-        /* one terminal point per wire (user 2026-11-12 "bkit 3 wire o 4 wire pero ang terminal point dalawa lang"): the drawing
-           gives the first and the last terminal (1 ~ 4, 11 / 22 / 33 / 44); AC (CT / VT) has no + / − */
-        const ac = /AC/.test(L.t),
-          a0 = +h[2],
-          a1 = +h[3];
-        let T = [h[2], h[3]];
-        if (nw > 2 && a0 >= 0 && a1 > a0) {
-          if (a1 - a0 + 1 === nw) T = Array.from({ length: nw }, (_, k) => String(a0 + k));
-          else if (a0 === 11 && a1 === 11 * nw) T = Array.from({ length: nw }, (_, k) => String(11 * (k + 1)));
-        }
-        const TY = T.length === nw ? WY : [YP, YM];
-        el('rect', { class: 'strip', x: x1 - 7, y: TY[0] - 8, width: 14, height: TY[TY.length - 1] - TY[0] + 16, rx: 3 }, us);
+      /* terminal points: one per wire (user 2026-11-12 "bkit 3 wire o 4 wire pero ang terminal point dalawa lang") */
+      const termCol = (xc, list, side) => {
+        const T = list,
+          n = T.length,
+          TY = Array.from({ length: n }, (_, k) => (n === 1 ? (YP + YM) / 2 : YP + ((YM - YP) * k) / (n - 1))),
+          small = n > 2,
+          ac = /AC/.test(L.t) || side > 0;
+        el('rect', { class: 'strip', x: xc - 6, y: TY[0] - 7, width: 12, height: TY[n - 1] - TY[0] + 14, rx: 3 }, us);
         T.forEach((t, k) => {
-          el('circle', { class: 'term', cx: x1, cy: TY[k], r: nw > 2 ? 3.5 : 5 }, us);
-          tx(us, x1 - 11, TY[k] + 4, nw > 2 ? 'tns' : 'tn', String(t).replace(/[+-]$/, '') + (ac || T.length > 2 ? '' : k ? ' −' : ' +')).setAttribute('style', 'text-anchor:end');
+          el('circle', { class: 'term', cx: xc, cy: TY[k], r: n > 4 ? 2.4 : small ? 3.3 : 5 }, us);
+          if (n <= 4 || k % 1 === 0) tx(us, xc + side * 10, TY[k] + (n > 4 ? 2.5 : 3.5), n > 4 ? 'tnx' : small ? 'tns' : 'tn', String(t).replace(/[+-]$/, '') + (ac || small ? '' : k ? ' −' : ' +')).setAttribute('style', 'text-anchor:' + (side < 0 ? 'end' : 'start'));
         });
-      }
+      };
+      if (h[2] !== '' && h[2] != null) termCol(x1, String(h[2]).includes(',') ? String(h[2]).split(',') : [h[2], h[3]], -1);
+      if (h[6]) termCol(x, String(h[6]).split(','), 1);
       const draw2 = (xa, xb, mid) => {
         if (L.in) {
           el('path', { class: 'w', d: 'M' + xa + ',' + (YP + YM) / 2 + ' H' + (xb - 2), stroke: c, 'stroke-dasharray': '5 4' }, us);
@@ -530,9 +557,9 @@
       const lx = edge ? x1 + 52 : x1 + gap / 2,
         lab = L.in || mb ? [L.t] : [L.t, last ? 'cable to the rack room:' : '', last ? 'no. not in the documents' : ''];
       (none ? '' : L.t)
-        .replace(/,? (?=wires G|GA\d|SFTP|cables)/, '\n')
+        .replace(/,? (?=wires G|GA\d|SFTP|cables? )/, '\n')
         .split('\n')
-        .reduce((A, t, k) => A.concat(k ? wrapT(t, 26) : [t]), [])
+        .reduce((A, t, k) => A.concat(wrapT(t, k ? 26 : 32)), [])
         .concat(lab.slice(1))
         .filter(Boolean)
         .forEach((t, k) => tx(us, edge ? 1232 : lx, YM + 22 + k * 12, k ? 'tl' : 'll', t, edge ? 'end' : 'middle').setAttribute('fill', k && /cable|no\./.test(t) ? 'var(--c-dim)' : c));
@@ -544,7 +571,7 @@
         }
       }
     });
-    const yEnd = srcLines(us, 40 + rows * RH, 'Source: ' + r.ref + '. – = not in the documents.');
+    const yEnd = srcLines(us, 58 + rows * RH, 'Source: ' + r.ref + '. – = not in the documents.');
     us.setAttribute('viewBox', '0 0 1240 ' + (yEnd + 2));
   }
   /* the wiring in the rack room: other panel / field -> (junction box) -> marshalling panel -> FCS -> address */
@@ -651,6 +678,13 @@
       tx(svg, 780, T + 222, 'tl', WIREL(r.sig));
     }
   }
+  /* the DCS Ethernet of an address: I/O card -> node MCU -> I/O LAN -> controller -> FL-NET -> control room operator stations */
+  function netSec(r, k) {
+    const H = netHops(r);
+    if (!H) return;
+    const hp = host.querySelector('#trcpath');
+    upstream(Object.assign({}, r, { og: 'NET', ref: NETSRC }), H, hp, (k ? k + ' · ' : '') + 'DCS NETWORK OF ' + stnOf(r) + ' ' + r.a + ': I/O card → controller → operator stations (Ethernet, two-way)', 1);
+  }
   function draw(r) {
     const hp = host.querySelector('#trcpath'),
       cap = host.querySelector('#trccap');
@@ -689,8 +723,29 @@
       const b = r.pair;
       if (b.up && b.up.length) upstream(b, b.up, hp, '1 · WHERE THE VALUE STARTS (before the rack room)');
       wiring(b, hp, (b.up && b.up.length ? '2' : '1') + ' · INTO THE DCS: ' + stnOf(b) + ' ' + b.a + ' (' + b.tag + ')');
-      const k = b.up && b.up.length ? 3 : 2,
-        sv = el('svg', { viewBox: '0 0 1240 96', role: 'img', 'aria-label': 'Inside the DCS' }, hp),
+      const k = b.up && b.up.length ? 3 : 2;
+      if (stnOf(b) !== stnOf(r)) {
+        /* two stations: controller -> FL-NET -> switches -> FL-NET -> controller */
+        const fb = FLH['10' + b.s],
+          fa = FLH['10' + r.s];
+        if (fb && fa) {
+          upstream(
+            Object.assign({}, r, { og: 'NET', ref: NETSRC + '. The block that copies ' + b.a + ' to ' + r.a + ' is not in the ABC / DITL drawings; the pair is the same signal name and range in the I/O list' }),
+            [
+              ['Controller FCS10' + b.s + '-A / B', stnOf(b) + ' ' + b.a + ' (' + b.tag + ') · ' + fb[2], '', '', 'Ethernet FL-NET A + B (two-way), cables ' + fb[0] + ', ' + fb[1] + ' m'],
+              ['FL-NET switches ' + fb[3].replace('FL-NET switches ', ''), 'MOXA EDS-316 · ' + fb[4], '', '', 'Ethernet FL-NET A + B (two-way), cables ' + fa[0] + ', ' + fa[1] + ' m'],
+              ['Controller FCS10' + r.s + '-A / B', stnOf(r) + ' ' + r.a + ' (' + r.tag + ') · ' + fa[2], '', '', '']
+            ],
+            hp,
+            k + ' · BETWEEN THE TWO DCS STATIONS (FL-NET Ethernet)',
+            1
+          );
+          wiring(r, hp, k + 1 + ' · OUT OF THE DCS: ' + stnOf(r) + ' ' + r.a + ' to ' + r.sys);
+          netSec(r, k + 2);
+          return;
+        }
+      }
+      const sv = el('svg', { viewBox: '0 0 1240 96', role: 'img', 'aria-label': 'Inside the DCS' }, hp),
         two = stnOf(b) !== stnOf(r),
         c = two ? CK.en[0] : CK.in[0];
       tx(sv, 16, 16, 'tl', k + ' · INSIDE THE DCS');
@@ -707,10 +762,12 @@
       tx(sv, 840, 46, 'tl', 'The copy block is not in the ABC / DITL drawings; the pair is the');
       tx(sv, 840, 60, 'tl', 'same signal name and range in the I/O list.');
       wiring(r, hp, k + 1 + ' · OUT OF THE DCS: ' + stnOf(r) + ' ' + r.a + ' to ' + r.sys);
+      netSec(r, k + 2);
       return;
     }
     if (r.up && r.up.length) upstream(r, r.up, hp, 'BEFORE THE RACK ROOM: where the signal starts');
     wiring(r, hp, r.up && r.up.length ? 'IN THE RACK ROOM' : '');
+    netSec(r, 0);
   }
 
   /* a Modbus point: the package PLC (A and B) and the DCS talk both ways on Ethernet; the value of this point goes one way */
