@@ -1058,7 +1058,20 @@ function tcsState() {
   return {
     mode: (TCS.modes.find(m => m[0] === c.mode) || [])[2],
     /* 3.2.0-beta.78: the numbers of the ATS mode in use (pages 19 / 20 / 22 / 25), for the CHECK of a start-up from any mode */
-    ats: c.mode && TCS.rate[c.mode] != null ? { rate: TCS.rate[c.mode], s1800: TCS.soak1800[c.mode], s3600: TCS.soak3600[c.mode], init: TCS.init[c.mode] } : null,
+    ats:
+      c.mode && TCS.rate[c.mode] != null
+        ? {
+            rate: TCS.rate[c.mode],
+            s1800: TCS.soak1800[c.mode],
+            s3600: TCS.soak3600[c.mode],
+            init: TCS.init[c.mode],
+            /* Sakura (Hot restart review): the rolling steam of the mode (criteria 1.3 ~ 1.6, TCS.steam) and the initial load hold (page 25
+               Fig. 3), for the Training guide of a Warm / Hot restart */
+            steam: TCS.steam[c.mode].slice(),
+            hold: TCS.hold(c.mode),
+            key: c.mode
+          }
+        : null,
     step: c.step,
     /* page 13 step 9 SHUT-DOWN: done once the ATS shut-down has tripped the turbine (the trip resets the ATS steps); a TURBINE RESET clears it */
     st9: c.sdDone || c.step >= 8 ? 1 : 0,
