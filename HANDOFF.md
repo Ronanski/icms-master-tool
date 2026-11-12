@@ -1,6 +1,6 @@
 # HANDOFF — iisang file ng estado (para sa kahit sinong Claude o account)
 
-Huling update: **2026-11-12 9:50 PM PHT** (SOHEE: beta.127 steam ng sootblowers at ng header mula sa MV-SB1001).
+Huling update: **2026-11-12 9:55 PM PHT** (SOHEE: beta.129 loop_source.js PICAS1005 test ayon sa BU-CMD ng drawing).
 
 Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md` at git log.
 
@@ -15,7 +15,8 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 ## 2. Kasalukuyang estado (2026-11-10 PHT)
 - **BUOD NG HANDOVER (basahin muna):** `docs/handoff/HANDOVER_2026-11-10.md` — lahat mula 2026-11-07, gawain ng bawat team member, at ang hindi pa tapos (re-shell at plant plan).
 - **Stable:** v3.2.2 (2026-11-10, user "Ok go sa 1"; = 3.2.1 + Worker bilang default ng Stable site). Ang 3.2.1 (GO STABLE ng user) = 3.2.1-beta.281, re-shell layout C. GitHub Release: apk, Windows exe, html, report pdf. Hindi nasubok: tingnan ang `docs/versions/v3.2.1/Release-Report-v3.2.1.pdf`.
-- **Beta sa `main`:** 3.2.3-beta.127 (SOHEE): ang sootblower ay kumukuha na ng steam habang naka-extend ang lance (Diamond Power N11639 steam data, L10-2 p93: 1.2 / 0.6 / 0.9 kg/s bawat blower); nawawala ito sa drum (pressure at level) pero hindi nakikita ng FT-MS1031. Walang header pressure kapag sarado ang MV-SB1001. Walang sootblowing sa Cold at 150 MW maliban kung sinadya. Hindi pa live-tested.
+- **Beta sa `main`:** 3.2.3-beta.129 (SOHEE): bagsak na test na loop_source.js "Cold PICAS1005": tama ang app (BU-CMD M.0129 ng ABC-030 ay nagsasara ng aux steam valve mula sa cold reheat habang malamig), ang test ang inayos. Walang binago sa app.
+- **Bago nito:** 3.2.3-beta.127 (SOHEE): ang sootblower ay kumukuha na ng steam habang naka-extend ang lance (Diamond Power N11639 steam data, L10-2 p93: 1.2 / 0.6 / 0.9 kg/s bawat blower); nawawala ito sa drum (pressure at level) pero hindi nakikita ng FT-MS1031. Walang header pressure kapag sarado ang MV-SB1001. Walang sootblowing sa Cold at 150 MW maliban kung sinadya. Hindi pa live-tested.
 - **Bago nito:** 3.2.3-beta.126 (SOHEE): ang winding at motor bearing temperature ng PAF / SAF / IDF ay mula na sa TECO motor data (Fan Instruction Manual 6.5) at sa current ng fan; ang fan bearing ay NO-SOURCE pa.
 - **Bago nito:** 3.2.3-beta.125 (JENNIE): ang coal na hindi nasusunog sa malamig na bed ay naiipon sa bed at nasusunog kapag mainit na (plan b5 fuel; tingnan ang `docs/versions/v3.2.3/UPDATE_REPORT.md`).
 - **Bago nito:** 3.2.3-beta.124 (SOHEE): ang ID fan damper PCD-FG1056-1 ay nananatili sa lugar kapag nawala ang instrument air (Fan Instruction Manual 4.1: double acting, airlock 2.5, air failure in place); ang biasing dampers TCV-FG1116 / 1117 ay NO-SOURCE pa (`docs/versions/v3.2.1/AIR_VALVES_PLANT_MODEL.md`).
