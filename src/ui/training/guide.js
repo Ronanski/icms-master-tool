@@ -224,13 +224,20 @@ window.LS_GUIDE = (function () {
       m = +mv('EIC-TM');
     paceP[k] = p;
     const nm = md('EIC-TM') === 'MAN' && isFinite(m) && m > tgt && p < 126 ? Math.max(tgt, Math.round((m - rate / 2) * 10) / 10) : m;
-    if (md('HIC-BM') === 'MAN' && isFinite(b)) {
-      let nb = nm < m && m > 0 ? (b * nm) / m : b;
+    /* Mina S155-1 (beta.155, 45 -> 30 MW): after the "Bed 750 C" step the coal master FIC-CM is MANUAL (ABC-004A M.0130), so HIC-BM no
+       longer moves the coal: the coal stayed 26.8 T/H for 38 min, the boiler made 209 T/H for a 30 MW turbine (118 T/H), the main steam
+       pressure sat on the MS blow-off set point (128.4 ~ 128.5 kg/cm2) and the blow-off vented the rest: the hotwell fell with the make-up
+       at 100 %, condensate pump A stopped on the hotwell LL, the deaerator emptied and the feed pumps tripped (MFT). With FIC-CM in
+       MANUAL the same trim goes to FIC-CM */
+    const ft = md('FIC-CM') === 'MAN' ? 'FIC-CM' : 'HIC-BM',
+      fb = ft === 'HIC-BM' ? b : +mv('FIC-CM');
+    if (md(ft) === 'MAN' && isFinite(fb)) {
+      let nb = nm < m && m > 0 ? (fb * nm) / m : fb;
       const pf = p + 4 * dp;
       if (pf > 123) nb -= 0.5;
       else if (pf < 118) nb += 0.5;
       nb = Math.max(0, Math.min(100, Math.round(nb * 10) / 10));
-      if (nb !== b) A.man('HIC-BM', nb);
+      if (nb !== fb) A.man(ft, nb);
     }
     if (nm < m) A.man('EIC-TM', nm);
   };
@@ -1654,7 +1661,7 @@ window.LS_GUIDE = (function () {
          0301 / 0311 / 0331), row 11 FULLY CLOSED (I.0011 / 0016 / 001B / 005B / 0336). Before, the step said "TCS and field, confirm".
          PCVAS1030 = the deaerator pegging steam valve PCV-AS1030 of PICCD1104 (ABC-056, IO list STN102 AO0403; uat/check.js) */
       { st: 11, sec: 49, t: 'At 40 MW: extractions 3, 2, 1 out; deaerator PICCD1104 (PCV-AS1030) SV 2.5 kg/cm²', d: 'PR-OPE-5003: take out the extractions 3, 2 and 1 in this order and set the deaerator pressure control to 2.5 kg/cm². The extraction shut-off MOVs are DCS valves (DITL-94 ~ 98): put each one in MANUAL, then CLOSE. In AUTO the drawing closes them only on a turbine trip, house operation or a heater level HI-HI.', c: b.ALL(...EXT.filter(e => e[2] <= 3).map(extC), b.MODE('PICCD1104', 'AUTO'), b.SV('PICCD1104', 2.4, 2.6)), fps: ['PICCD1104'], get a() { return [...EXT.filter(e => e[2] <= 3).flatMap(extA), btn('PICCD1104 A, SV 2.5 kg/cm²', () => A.auto('PICCD1104', 2.5), () => md('PICCD1104') === 'AUTO' && Math.abs((+svOf('PICCD1104') || 0) - 2.5) < 0.05)]; } },
-      { st: 11, sec: 49, t: 'By hand: EIC-TM to 30 MW, HIC-BM with it', d: 'PR-OPE-5003: 45 to 30 MW at 0.4 MW per minute, the main steam pressure 115 ~ 126 kg/cm² (under the MS blow-off set point 128). Below 120 T/H of steam the drum level goes to the start-up level control (PR-OPE-5003): LICBR1001B on the start-up valve FCV-FW1130-2.', c: b.X5[9][1], seek: byHand(30, 0.4, 's30'), a: byHandA, fps: ['EIC-TM', 'HIC-BM', 'LICBR1001B'] },
+      { st: 11, sec: 49, t: 'By hand: EIC-TM to 30 MW, the coal FIC-CM with it', d: 'PR-OPE-5003: 45 to 30 MW at 0.4 MW per minute, the main steam pressure 115 ~ 126 kg/cm² (under the MS blow-off set point 128). The coal master FIC-CM is MANUAL since the bed 750 °C step, so HIC-BM no longer moves the coal: lower FIC-CM with EIC-TM. If the pressure reaches 128 the MS blow-off opens and its steam leaves the cycle: the hotwell falls even with the make-up full open, and at −300 mm the condensate pump stops (hotwell LL). Below 120 T/H of steam the drum level goes to the start-up level control (PR-OPE-5003): LICBR1001B on the start-up valve FCV-FW1130-2.', c: b.X5[9][1], seek: byHand(30, 0.4, 's30'), a: [step('EIC-TM ▼ −0.5 MW', 'EIC-TM', -0.5), step('FIC-CM ▼ −1 %', 'FIC-CM', -1), step('FIC-CM ▲ +1 %', 'FIC-CM', 1)], fps: ['EIC-TM', 'FIC-CM', 'PICMS1002', 'LICBR1001B'] },
       {
         st: 11,
         sec: 49,
