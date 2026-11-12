@@ -238,6 +238,9 @@
       const o = {
         t, s, a, tag, desc,
         sig: (rec && rec.t) || g('sig'),
+        lo: rec && rec.lo != null ? +rec.lo : null,
+        hi: rec && rec.hi != null ? +rec.hi : null,
+        u: (rec && rec.u) || '',
         mpl: g('mpl2') || g('mpl'),
         jb: g('jb'),
         jt1: sp(g('tb'), 0),
@@ -449,7 +452,9 @@
     E(
       'div',
       { cls: 'trcleg' },
-      keys.map(k => E('span', {}, [E('i', { cls: k === 'in' ? 'dash' : '', style: 'background:' + CK[k][0] }), CK[k][1]]))
+      keys
+        .map(k => E('span', {}, [E('i', { cls: k === 'in' ? 'dash' : '', style: 'background:' + CK[k][0] }), CK[k][1]]))
+        .concat([E('span', {}, [E('i', { style: 'background:var(--trc-fa)' }), 'FL-NET A cable = red, ', E('i', { style: 'background:var(--trc-fb)' }), 'FL-NET B cable = yellow (real cable colours, K1AU3-E2-0-106 sh2 cable list); the other cables have no colour in the documents, so the colour shows what travels on them'])])
     );
   const arrowHead = (p, x, y, d, c) =>
     el('path', { d: d > 0 ? 'M' + (x - 5) + ',' + (y - 5) + 'L' + (x + 5) + ',' + y + 'L' + (x - 5) + ',' + (y + 5) + 'z' : 'M' + (x + 5) + ',' + (y - 5) + 'L' + (x - 5) + ',' + y + 'L' + (x + 5) + ',' + (y + 5) + 'z', fill: c }, p);
@@ -467,12 +472,104 @@
     return y0 + lines.length * 14;
   };
   /* the hops before the rack room (GCP / field -> TCS input -> TCS output) */
+
+  /* 3.2.3-beta.122 (user 2026-11-12 "Bkt box p rin ang network switches? Hmi screen? Media converter? Bakit walang standard cable
+     color sa diagram?"), as the control network study tracer v9 (ARIN): a picture of the device above each box, and the real
+     cable colour where the documents give one: FL-NET A cable = red, FL-NET B cable = yellow (K1AU3-E2-0-106 sh2 cable list,
+     headers "(R)" and "(Y)"). The other cables have no colour in the documents and keep the colour of what travels on them. No
+     media converter lies on these routes (fiber with OSD370N converters is only on the CTCS, fly ash, ESP and GCS10D packages,
+     K1AU3-E2-0-115). */
+  const FLC = (t, ab) => (/FL-NET/.test(t || '') ? (ab === 'A' ? 'var(--trc-fa)' : 'var(--trc-fb)') : null);
+  const ikind = h => {
+    const t = h[0] || '',
+      s = h[1] || '';
+    if (/^DCS address/.test(t)) return '';
+    if (/switch|hub/i.test(t)) return 'sw';
+    if (/Operator station/i.test(t)) return 'hmi';
+    if (/^Controller/.test(t)) return 'ctl';
+    if (/^I\/O card|TCS input|TCS output|PLU|MCU/.test(t)) return 'card';
+    if (/PLC/.test(t)) return 'plc';
+    if (/^Gateway/.test(t)) return 'gw';
+    if (/transducer/i.test(t)) return 'td';
+    if (/multi meter/i.test(t)) return 'mtr';
+    if (/CT GA/.test(t)) return 'ct';
+    if (/VT2/.test(t)) return 'vt';
+    if (/terminal block|test terminal|fuses/i.test(t)) return 'tb';
+    if (/relay/i.test(t)) return 'rly';
+    if (/field sensor/.test(s)) return 'tx';
+    if (/TCS controller/.test(t)) return 'ctl1';
+    return '';
+  };
+  function icon(g, x, y, k) {
+    if (!k) return;
+    const G = el('g', { class: 'ic', transform: 'translate(' + x + ',' + y + ') scale(1.2)' }, g),
+      R = (a, b, w, h, f) => el('rect', { x: a, y: b, width: w, height: h, rx: 2, fill: f || 'var(--c-pane)' }, G),
+      C = (a, b, r, f) => el('circle', { cx: a, cy: b, r, fill: f || 'none' }, G),
+      L = d => el('path', { d, fill: 'none' }, G),
+      T = (a, b, s) => tx(G, a, b, 'ict', s, 'middle');
+    if (k === 'sw') {
+      R(0, 6, 46, 18);
+      for (let i = 0; i < 8; i++) R(3 + i * 5.2, 15, 3.6, 4, 'var(--c-well)');
+      C(6, 10, 1.4, 'var(--trc-ma)');
+      C(11, 10, 1.4, 'var(--trc-ma)');
+      T(33, 13, 'SW');
+    } else if (k === 'hmi') {
+      R(6, 0, 34, 21);
+      R(9, 3, 28, 15, 'var(--c-well)');
+      L('M23,21 V26 M15,27 H31');
+    } else if (k === 'ctl') {
+      R(4, 0, 38, 28);
+      R(7, 3, 15, 22, 'var(--c-well)');
+      R(24, 3, 15, 22, 'var(--c-well)');
+      T(14.5, 18, 'A');
+      T(31.5, 18, 'B');
+    } else if (k === 'ctl1') {
+      R(4, 0, 38, 28);
+      R(7, 3, 32, 22, 'var(--c-well)');
+      T(23, 18, 'CPU');
+    } else if (k === 'card') {
+      R(6, 2, 34, 20);
+      for (let i = 0; i < 7; i++) L('M' + (9 + i * 4.5) + ',22 V27');
+      R(10, 6, 10, 6, 'var(--c-well)');
+    } else if (k === 'plc') {
+      R(0, 3, 46, 22);
+      for (let i = 0; i < 5; i++) R(3 + i * 8.6, 6, 7, 16, 'var(--c-well)');
+    } else if (k === 'gw') {
+      R(4, 4, 38, 20);
+      L('M10,11 H36 M32,8 L36,11 L32,14 M36,18 H10 M14,15 L10,18 L14,21');
+    } else if (k === 'td' || k === 'mtr') {
+      R(6, 1, 34, 26);
+      C(23, 12, 7);
+      L('M23,12 L27,8');
+      T(23, 25, k === 'td' ? 'mA' : 'kWh');
+    } else if (k === 'ct') {
+      L('M0,14 H46');
+      C(23, 14, 9);
+      C(23, 14, 6);
+    } else if (k === 'vt') {
+      C(18, 14, 8);
+      C(28, 14, 8);
+      L('M2,14 H10 M36,14 H44');
+    } else if (k === 'tb') {
+      R(4, 6, 38, 16);
+      for (let i = 0; i < 5; i++) C(10 + i * 6.5, 14, 1.8, 'var(--c-tx)');
+    } else if (k === 'rly') {
+      R(8, 2, 30, 24);
+      L('M14,18 L22,10 M26,18 H32 M14,18 H10');
+      C(23, 9, 1.5, 'var(--c-tx)');
+    } else if (k === 'tx') {
+      C(23, 9, 8);
+      L('M23,17 V24 M14,26 H32');
+      L('M23,9 L27,5');
+    }
+  }
   function upstream(r, hops, hp, head, mb) {
     /* rows of up to 4 hops; a row that goes on draws its wires to the right edge and the next row starts from the left edge */
     const n = hops.length,
       PER = 4,
       rows = Math.ceil(n / PER),
-      RH = 150,
+      RH = 186,
+      OFF = 34,
       gap = 104,
       bw = 196,
       us = el('svg', { viewBox: '0 0 1240 ' + (40 + rows * RH), role: 'img', 'aria-label': 'Where ' + r.tag + ' starts' }, hp);
@@ -480,12 +577,13 @@
     hops.forEach((h, i) => {
       const row = Math.floor(i / PER),
         col = i % PER,
-        y0 = 26 + row * RH,
+        y0 = 26 + OFF + row * RH,
         x = 40 + col * (bw + gap),
         YP = y0 + 44,
         YM = y0 + 74,
         fit = (t, px) => (t.length > Math.floor((bw - 16) / px) ? t.slice(0, Math.floor((bw - 16) / px) - 1) + '…' : t);
       el('rect', { class: 'box' + (/^Generator|^TE-|^PT-|^ZT-/.test(h[0]) ? ' dash' : ''), x, y: y0, width: bw, height: 82, rx: 6 }, us);
+      icon(us, x + bw / 2 - 28, y0 - 33, ikind(h));
       /* name on up to 2 lines, note on the lines left (narrower where the terminals are) */
       const hasT = h[2] !== '' && h[2] != null,
         nm = wrapT(h[0], h[6] ? 20 : 24).slice(0, 2),
@@ -528,9 +626,10 @@
         } else if (eth) {
           /* Ethernet / fiber: one line per cable (A and B), the link talks both ways */
           [[YP, 'A'], [YM, 'B']].forEach(([y, ab]) => {
-            el('path', { class: 'w', d: 'M' + (xa + 10) + ',' + y + ' H' + (xb - 8), stroke: c }, us);
-            arrowHead(us, xa + 10, y, -1, c);
-            if (xb < 1230) arrowHead(us, xb - 8, y, 1, c);
+            const cc = FLC(L.t, ab) || c;
+            el('path', { class: 'w', d: 'M' + (xa + 10) + ',' + y + ' H' + (xb - 8), stroke: cc }, us);
+            arrowHead(us, xa + 10, y, -1, cc);
+            if (xb < 1230) arrowHead(us, xb - 8, y, 1, cc);
             tx(us, xa + 16, y - 4, 'tl', ab);
           });
         } else {
@@ -542,14 +641,15 @@
       if (!none) draw2(x1, x2, edge ? x1 + 50 : x1 + gap / 2);
       if (wrap) {
         /* the same wires come in from the left on the next row */
-        const ny = 26 + (row + 1) * RH,
+        const ny = 26 + OFF + (row + 1) * RH,
           nYP = ny + 44,
           nYM = ny + 74;
         if (L.in) el('path', { class: 'w', d: 'M4,' + (nYP + nYM) / 2 + ' H38', stroke: c, 'stroke-dasharray': '5 4' }, us);
         else if (eth)
-          [nYP, nYM].forEach(y => {
-            el('path', { class: 'w', d: 'M4,' + y + ' H30', stroke: c }, us);
-            arrowHead(us, 32, y, 1, c);
+          [nYP, nYM].forEach((y, k) => {
+            const cc = FLC(L.t, k ? 'B' : 'A') || c;
+            el('path', { class: 'w', d: 'M4,' + y + ' H30', stroke: cc }, us);
+            arrowHead(us, 32, y, 1, cc);
           });
         else WY.forEach(y => el('path', { class: 'w' + (nw > 2 ? ' thin' : ''), d: 'M4,' + (y - YP + nYP) + ' H38', stroke: c }, us));
         tx(us, 1232, YP - 12, 'tl', 'next row ↓', 'end');
@@ -686,6 +786,12 @@
     upstream(Object.assign({}, r, { og: 'NET', ref: NETSRC }), H, hp, (k ? k + ' · ' : '') + 'DCS NETWORK OF ' + stnOf(r) + ' ' + r.a + ': I/O card → controller → operator stations (Ethernet, two-way)', 1);
   }
   function draw(r) {
+    draw0(r);
+    try {
+      if (r) rangeSec(r);
+    } catch (e) {}
+  }
+  function draw0(r) {
     const hp = host.querySelector('#trcpath'),
       cap = host.querySelector('#trccap');
     hp.innerHTML = '';
@@ -768,6 +874,167 @@
     if (r.up && r.up.length) upstream(r, r.up, hp, 'BEFORE THE RACK ROOM: where the signal starts');
     wiring(r, hp, r.up && r.up.length ? 'IN THE RACK ROOM' : '');
     netSec(r, 0);
+  }
+
+
+  /* 3.2.3-beta.122 RANGE CHECK (user 2026-11-12: the generator voltage reads 13.8 kV on the DCS and TCS HMI but 18 kV on the
+     SCADA HMI, "hnd malaman saan ito aayusin ... Dpt applicable s lahat"): every point of an analog chain where the value is
+     shown or scaled, with its range from the documents, and the mA that each terminal must carry. The operator writes what
+     each HMI shows (or the mA measured at a terminal) and the first point that does not agree with the one before it shows
+     where the fault is: between those two points. Ranges: the I/O list (dcs-io-list.xls, range low / high / unit of each
+     address); RX = ranges before and after the DCS that the I/O list does not give (GCP transducer, TCS, SCADA), as read by the
+     control network study; a point without a source says "not in the documents". */
+  const GS = 'GSE-2013-0083 (7X7SKB1104)',
+    TE = 'TCS Elementary 331DM07733',
+    rg = (lo, hi, u, ref) => ({ lo, hi, u, ref });
+  const RXg = (lo, hi, u, sec, tin, tout, note) => ({
+    sec,
+    tr: rg(lo, hi, u, GS + ' sh51 GA128, multi transducer QT2-93A output 4 ~ 20 mA'),
+    tin: rg(lo, hi, u, TE + ' ' + tin + ', TCS input card 1 ~ 5 V' + (note || '')),
+    tout: rg(lo, hi, u, TE + ' ' + tout + ', TCS output to the DCS')
+  });
+  const VSEC = rg(0, 150, 'V AC', GS + ' sh50 GA126 VT2 13.8 kV : 115 V (ratio 120) and sh51 GA128 QT2-93A input 0 ~ 150 V AC = 0 ~ 18 kV'),
+    ISEC = rg(0, 5, 'A AC', GS + ' sh50 GA126 CT 10000 / 5 A (ratio 2000): 0 ~ 10 kA = 0 ~ 5 A'),
+    KAN = '; the drawing writes 0~10kV, meaning kA';
+  const RX = {
+    '2|AI0807': RXg(0, 18, 'kV', VSEC, 'TC0651', 'TC0691'),
+    '2|AI0871': RXg(0, 18, 'kV', VSEC, 'TC0655', 'TC0692'),
+    '2|AI0903': RXg(0, 18, 'kV', VSEC, 'TC0656', 'TC0693'),
+    '2|AI0791': RXg(0, 10, 'kA', ISEC, 'TC0651', 'TC0691', KAN),
+    '2|AI0855': RXg(0, 10, 'kA', ISEC, 'TC0655', 'TC0692', KAN),
+    '2|AI0887': RXg(0, 10, 'kA', ISEC, 'TC0656', 'TC0693', KAN),
+    '2|AI0775': RXg(-240, 240, 'Mvar', null, 'TC0659', 'TC0692', '; written LEAD 240 ~ 0 ~ LAG 240'),
+    '2|AI0823': RXg(-0.5, 0.5, '', null, 'TC0659', 'TC0692', '; written LEAD 0.5 ~ 1 ~ LAG 0.5'),
+    '2|AI0839': RXg(55, 65, 'Hz', null, 'TC0659', 'TC0692'),
+    '1|AI0774': { tr: rg(0, 240, 'MW', GS + ' sh52 GA129, watt transducer U03GA101 output 4 ~ 20 mA') },
+    '1|AI0419': { tr: rg(0, 240, 'MW', GS + ' sh52 GA129, watt transducer U03GA101 output 4 ~ 20 mA') }
+  };
+  const pct = (v, lo, hi) => (100 * (v - lo)) / (hi - lo);
+  const fx = (v, n) => (Math.abs(v) >= 100 ? v.toFixed(1) : v.toFixed(n == null ? 2 : n)).replace(/\.?0+$/, m => (m.includes('.') ? '' : m));
+  const rngT = g => (g && g.lo != null && g.hi != null ? fx(g.lo) + ' ~ ' + fx(g.hi) + ' ' + (g.u || '') : 'not in the documents');
+  const unitN = u => String(u || '').toLowerCase();
+  function rangePts(r) {
+    const P = [];
+    const io = (x, kind) => ({ lo: x.lo, hi: x.hi, u: x.u, ref: 'I/O list ' + stnOf(x) + ' ' + x.a + ' (' + x.tag + ')', kind });
+    const b = r.pair || (r.t === 'AI' ? r : null);
+    if (b) {
+      const ups = b.up || [],
+        X = RX[b.s + '|' + b.a] || {};
+      if (X.sec) P.push({ n: X.sec.u === 'V AC' ? 'VT2 secondary' : 'CT secondary', w: 'GCP test terminal ' + (X.sec.u === 'V AC' ? 'FJ1 11 / 22 / 33 (V AC, between phases)' : 'FJ2 (A AC, clamp meter)'), g: X.sec, phys: 1 });
+      ups.forEach(h => {
+        if (/transducer/.test(h[0])) P.push({ n: h[0], w: 'output terminals ' + h[2] + ' / ' + h[3] + ' (mA)', g: X.tr, term: 1 });
+        else if (/^TCS input/.test(h[0])) P.push({ n: 'TCS: ' + h[0], w: 'TCS HMI (value the TCS reads; card input 1 ~ 5 V)', g: X.tin, hmi: 'TCS HMI' });
+        else if (/^TCS output/.test(h[0])) P.push({ n: 'TCS: ' + h[0], w: 'output terminals ' + h[2] + ' / ' + h[3] + ' (mA, to the DCS)', g: X.tout, term: 1 });
+        else if (/field sensor/.test(h[1])) P.push({ n: h[0], w: 'transmitter output (mA)', g: X.tr, term: 1 });
+      });
+      P.push({ n: 'DCS ' + stnOf(b) + ' ' + b.a + ' (' + b.tag + ')', w: 'marshalling ' + b.mpl + ' ' + b.ms + ' ' + b.mt1 + ' / ' + b.mt2 + ' (mA)', g: io(b), term: 1 });
+      P.push({ n: 'DCS ' + stnOf(b) + ' ' + b.a, w: 'DCS HMI (value the DCS reads)', g: io(b), hmi: 'DCS HMI' });
+    }
+    if (r.t === 'AO') {
+      const X = RX[r.s + '|' + r.a] || {};
+      P.push({ n: 'DCS ' + stnOf(r) + ' ' + r.a + ' (' + r.tag + ')', w: 'marshalling ' + r.mpl + ' ' + r.ms + ' ' + r.mt1 + ' / ' + r.mt2 + ' (mA, out to ' + r.sys + ')', g: io(r), term: 1 });
+      P.push({ n: r.sys + ' input', w: r.sys + ' HMI (value the ' + r.sys + ' shows)', g: X.rcv, hmi: r.sys + ' HMI' });
+    }
+    return P;
+  }
+  function rangeSec(r) {
+    if (r.t === 'MB' || r.t === 'DI' || r.t === 'DO' || /PI/.test(r.sig || '')) return;
+    const P = rangePts(r);
+    if (!P.length) return;
+    const hp = host.querySelector('#trcpath');
+    const box = E('div', { cls: 'trcrng' });
+    box.append(
+      E('div', { cls: 'trcl', txt: 'RANGE CHECK: where is the value wrong?' }),
+      E('p', { cls: 'trcrh', txt: 'Write what each HMI shows, or the mA you measure at a terminal. The app turns each one into % of its range. The first point that does not agree with the point before it shows where the fault is: between those two points. With one value, the app shows the mA each terminal must carry.' })
+    );
+    /* range differences in the documents themselves */
+    const D = [];
+    for (let i = 1; i < P.length; i++) {
+      const a = P[i - 1].g,
+        c = P[i].g;
+      if (a && c && !P[i - 1].phys && a.lo != null && c.lo != null && (a.lo !== c.lo || a.hi !== c.hi || unitN(a.u) !== unitN(c.u))) D.push([P[i - 1], P[i]]);
+    }
+    const tb = E('tbody');
+    const ins = [];
+    P.forEach((p, i) => {
+      const inp = E('input', { type: 'number', step: 'any', cls: 'trci trcrv', placeholder: p.term ? 'mA' : (p.g && p.g.u) || 'value', 'aria-label': 'Value at ' + p.w });
+      const exp = E('div', { cls: 'm' }),
+        res = E('div', {});
+      ins.push({ p, inp, exp, res });
+      tb.append(E('tr', {}, [E('td', { txt: String(i + 1) }), E('td', { txt: p.n }), E('td', { txt: p.w }), E('td', {}, [E('div', { cls: 'm', txt: rngT(p.g) }), p.g && p.g.ref ? E('div', { cls: 'trcrs', txt: p.g.ref }) : null]), E('td', {}, [inp]), E('td', {}, [exp, res])]));
+      inp.oninput = calc;
+    });
+    const out = E('p', { cls: 'trcrr' });
+    function calc() {
+      let ref = null,
+        bad = null;
+      ins.forEach(o => {
+        o.res.textContent = '';
+        o.res.className = '';
+        o.exp.textContent = '';
+      });
+      for (const o of ins) {
+        const v = parseFloat(o.inp.value),
+          g = o.p.g;
+        if (isNaN(v)) continue;
+        let pc = o.p.term ? pct(v, 4, 20) : g && g.lo != null ? pct(v, g.lo, g.hi) : null,
+          via = '';
+        if (pc == null) {
+          /* no range in the documents (the SCADA input): read the value with the range of the point before it */
+          const k = ins.indexOf(o);
+          const pr = ins.slice(0, k).reverse().find(q => !q.p.term && q.p.g && q.p.g.lo != null) || ins.slice(0, k).reverse().find(q => q.p.g && q.p.g.lo != null);
+          if (!pr) {
+            o.res.textContent = 'range not in the documents';
+            continue;
+          }
+          pc = pct(v, pr.p.g.lo, pr.p.g.hi);
+          via = ' (its range is not in the documents; read with ' + rngT(pr.p.g) + ' of point ' + (ins.indexOf(pr) + 1) + ')';
+        }
+        if (ref && !bad && Math.abs(pc - ref.pc) > 1) {
+          bad = [ref, o];
+          o.res.textContent = 'DOES NOT AGREE: ' + fx(pc, 1) + ' %' + (pc >= 99.5 ? ' = full scale (20 mA)' : pc <= 0.5 ? ' = bottom of the range (4 mA or less)' : '') + via;
+          o.res.className = 'bad';
+        } else {
+          o.res.textContent = fx(pc, 1) + ' %' + (ref ? ' (agrees)' : '') + via;
+          o.res.className = ref ? 'ok' : '';
+        }
+        if (!ref) ref = { o, pc };
+        else if (!bad) ref = { o, pc };
+      }
+      if (ref) {
+        const base = (bad ? bad[0] : ref).pc;
+        ins.forEach((o, i) => {
+          const pg = i > 0 ? ins[i - 1].p.g : null,
+            g = o.p.g,
+            diff = pg && g && !ins[i - 1].p.phys && pg.lo != null && g.lo != null && (pg.lo !== g.lo || pg.hi !== g.hi || unitN(pg.u) !== unitN(g.u));
+          if (o.p.term && diff) {
+            /* two ranges in the documents: the copy block may scale, or may pass the number as it is */
+            const val = pg.lo + ((pg.hi - pg.lo) * base) / 100,
+              raw = Math.max(0, Math.min(100, pct(val, g.lo, g.hi)));
+            o.exp.textContent = fx(4 + (16 * base) / 100) + ' mA if the DCS scales the range; ' + fx(4 + (16 * raw) / 100) + ' mA if it passes ' + fx(val) + ' as ' + fx(val) + ' ' + g.u;
+          } else if (o.p.term) o.exp.textContent = 'must be ' + fx(4 + (16 * base) / 100) + ' mA';
+          else if (o.p.g && o.p.g.lo != null) o.exp.textContent = 'must show ' + fx(o.p.g.lo + ((o.p.g.hi - o.p.g.lo) * base) / 100) + ' ' + o.p.g.u;
+          else {
+            const pr = ins.slice(0, i).reverse().find(q => !q.p.term && q.p.g && q.p.g.lo != null);
+            if (pr) o.exp.textContent = 'should show ' + fx(pr.p.g.lo + ((pr.p.g.hi - pr.p.g.lo) * base) / 100) + ' ' + pr.p.g.u + ' if it uses the range of point ' + (ins.indexOf(pr) + 1);
+          }
+        });
+      }
+      out.textContent = bad
+        ? 'The fault is between point ' + (ins.indexOf(bad[0].o) + 1) + ' (' + bad[0].o.p.w + ') and point ' + (ins.indexOf(bad[1]) + 1) + ' (' + bad[1].p.w + '). Check what lies between them on the path above: the wiring and terminals, the card, and the range set in each system.'
+        : ref
+          ? 'All the values you wrote agree. Write the next point, or measure the mA at the next terminal.'
+          : '';
+    }
+    box.append(E('div', { cls: 'trctw' }, [E('table', { cls: 'trct trcrt' }, [E('thead', {}, [E('tr', {}, ['#', 'Point', 'Where to read it', 'Range (documents)', 'Value you see', 'Expected and result'].map(h => E('th', { txt: h })))]), tb])]), out);
+    if (D.length)
+      D.forEach(([a, c]) => {
+        const k = a.g.hi - a.g.lo,
+          msg = 'The documents give two different ranges: ' + a.n + ' ' + rngT(a.g) + ' (' + (a.g.ref || '') + '), ' + c.n + ' ' + rngT(c.g) + ' (' + (c.g.ref || '') + '). The block that copies the value is not in the ABC / DITL drawings, so the documents do not say how it scales. Check the range set in the DCS for both addresses.';
+        box.append(E('p', { cls: 'trcrd', txt: msg }));
+      });
+    box.append(E('p', { cls: 'trcsrc', txt: 'Ranges: I/O list (dcs-io-list.xls column Range) for the DCS addresses; GCP and TCS ranges from the drawings named under each range, as read by the control network study. The SCADA input scaling is not in the documents (SCADA manual LM-S1-O-001 has no point list). 4 ~ 20 mA and 1 ~ 5 V = 0 ~ 100 % of the range.' }));
+    hp.append(box);
   }
 
   /* a Modbus point: the package PLC (A and B) and the DCS talk both ways on Ethernet; the value of this point goes one way */
