@@ -1,6 +1,6 @@
 # HANDOFF — iisang file ng estado (para sa kahit sinong Claude o account)
 
-Huling update: **2026-11-12 10:00 PM PHT** (CHAEYOUNG: beta.130 B124-AS1: Show sa info card papuntang Logic tab).
+Huling update: **2026-11-12 10:10 PM PHT** (SOHEE: beta.132 air heater blowers N-1040 / 1042 kumukuha ng steam).
 
 Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md` at git log.
 
@@ -15,7 +15,9 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 ## 2. Kasalukuyang estado (2026-11-10 PHT)
 - **BUOD NG HANDOVER (basahin muna):** `docs/handoff/HANDOVER_2026-11-10.md` — lahat mula 2026-11-07, gawain ng bawat team member, at ang hindi pa tapos (re-shell at plant plan).
 - **Stable:** v3.2.2 (2026-11-10, user "Ok go sa 1"; = 3.2.1 + Worker bilang default ng Stable site). Ang 3.2.1 (GO STABLE ng user) = 3.2.1-beta.281, re-shell layout C. GitHub Release: apk, Windows exe, html, report pdf. Hindi nasubok: tingnan ang `docs/versions/v3.2.1/Release-Report-v3.2.1.pdf`.
-- **Beta sa `main`:** 3.2.3-beta.130 (CHAEYOUNG): B124-AS1 (MINA): ang "Show" sa info card na binuksan mula sa Library ay lumilipat na sa Logic tab (dati: naiiwan sa Library, blangko ang logic). Naka-hold ang paglipat ng buong tracer ni ARIN sa app (user "Hmm wag"): nasa project files signal-masterlist-2026-11-12/held/. Bago nito (3.2.3-beta.129): 3.2.3-beta.129 (SOHEE): bagsak na test na loop_source.js "Cold PICAS1005": tama ang app (BU-CMD M.0129 ng ABC-030 ay nagsasara ng aux steam valve mula sa cold reheat habang malamig), ang test ang inayos. Walang binago sa app.
+- **Beta sa `main`:** 3.2.3-beta.132 (SOHEE): ang air heater blowers N-1040 / 1042 ay kumukuha na ng steam (L20 APH manual: 3900 kg/h bawat lance, 19 min 40 s, hot end muna saka cold end; PD-015 sa parehong sootblower header). Hindi pa live-tested.
+- **Bago nito:** 3.2.3-beta.130 (CHAEYOUNG): B124-AS1 (MINA): ang "Show" sa info card na binuksan mula sa Library ay lumilipat na sa Logic tab (dati: naiiwan sa Library, blangko ang logic). Naka-hold ang paglipat ng buong tracer ni ARIN sa app (user "Hmm wag"): nasa project files signal-masterlist-2026-11-12/held/. Bago nito (3.2.3-beta.129): 3.2.3-beta.129 (SOHEE): bagsak na test na loop_source.js "Cold PICAS1005": tama ang app (BU-CMD M.0129 ng ABC-030 ay nagsasara ng aux steam valve mula sa cold reheat habang malamig), ang test ang inayos. Walang binago sa app.
+- **Bago nito:** 3.2.3-beta.129 (SOHEE): bagsak na test na loop_source.js "Cold PICAS1005": tama ang app (BU-CMD M.0129 ng ABC-030 ay nagsasara ng aux steam valve mula sa cold reheat habang malamig), ang test ang inayos. Walang binago sa app.
 - **Bago nito:** 3.2.3-beta.127 (SOHEE): ang sootblower ay kumukuha na ng steam habang naka-extend ang lance (Diamond Power N11639 steam data, L10-2 p93: 1.2 / 0.6 / 0.9 kg/s bawat blower); nawawala ito sa drum (pressure at level) pero hindi nakikita ng FT-MS1031. Walang header pressure kapag sarado ang MV-SB1001. Walang sootblowing sa Cold at 150 MW maliban kung sinadya. Hindi pa live-tested.
 - **Bago nito:** 3.2.3-beta.126 (SOHEE): ang winding at motor bearing temperature ng PAF / SAF / IDF ay mula na sa TECO motor data (Fan Instruction Manual 6.5) at sa current ng fan; ang fan bearing ay NO-SOURCE pa.
 - **Bago nito:** 3.2.3-beta.125 (JENNIE): ang coal na hindi nasusunog sa malamig na bed ay naiipon sa bed at nasusunog kapag mainit na (plan b5 fuel; tingnan ang `docs/versions/v3.2.3/UPDATE_REPORT.md`).
@@ -42,7 +44,7 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 - Ikabit sa model ang drum 32 t (DATA_ANSWERS item 7); ikumpara sa app ang BFP motor, generator at compressor data (`document-references/INDEX.md`).
 - Live loop check at function test ng natitirang equipment (`docs/versions/v3.2.1/MOTOR_LOOP_CHECK.md` pagkatapos ng CW; lahat ng MOV / control valve at analog instrument gamit ang split view); page 07 test; debris filters, hypochlorite, manual valves.
 - Gaps: ID fan cold start; Sampling page: silica, make-up conductivity at tank levels NO-SOURCE pa (SOHEE beta.113); per-signal ABC / DITL tracing; AI range / alarm / IO checks; DITL 9 sa 31 hindi pa na-verify.
-- Plant model: transmitter root valves; APH sootblower (N-1040 / 1042, walang data sa steam table); ESP; header pressure drop ng sootblower sa flow (PCV-SB1053 Cv NO-SOURCE). Ang LP heater isolation / bypass ay nasa `anHtrPath` na (DITL-69 / 70 / 71). Hatian 2026-11-12 (SOHEE): SOHEE = sampling / dosing (tapos), pneumatic dampers sa instrument air loss, motor temperature mula sa closed cooling; JENNIE = fuel, ESP, ID fan; CHAEWON = boiler / Training.
+- Plant model: transmitter root valves; ESP; header pressure drop ng sootblower sa flow (PCV-SB1053 Cv NO-SOURCE). Ang LP heater isolation / bypass ay nasa `anHtrPath` na (DITL-69 / 70 / 71). Hatian 2026-11-12 (SOHEE): SOHEE = sampling / dosing (tapos), pneumatic dampers sa instrument air loss, motor temperature mula sa closed cooling; JENNIE = fuel, ESP, ID fan; CHAEWON = boiler / Training.
 - Cold commissioning at ISANG integrated Cold → 150 MW start, saka shutdown / trip.
 - Full HMI art (pagkatapos ng lahat ng loop check; mockup muna). DCS library (goal 3). Stable v3.2.1 (GO STABLE lang).
 

@@ -7,6 +7,8 @@
 //     the EXTEND COMMAND of DITL-80G does: this test does not run the sequence of DITL-80): N-1011 (IK4M above the RH upper) takes
 //     1.2 kg/s = 4.32 T/H for about 230 s, 276 kg in one operation (the table); N-1035 (common economizer, IK4M-PT) 0.9 kg/s for
 //     about 98 s, 88 kg; the water that leaves the drum (AN_CYC.dl) grows by that steam; nothing after the lance is back.
+//   - the air heater blowers (L20 Gas air heater O&M manual: 3900 kg/hour per lance, 19 min 40 s per lance, hot & cold end sequential):
+//     the start command of DITL-80F row 25 runs N-1040 (hot end, PT-SB1040 = header, off its reset position) then N-1042, 2 x 1278 kg.
 // Usage: node tests/regress/sootblower_steam.js [html]
 const { open } = require('./lib.js');
 const fs = require('fs');
@@ -105,6 +107,26 @@ const html =
     };
     o.b1011 = await blow(1011);
     o.b1035 = await blow(1035);
+    /* 4. the air heater blowers: the start command of the program (DITL-80F row 25 input, from DITL-80 out 87) */
+    const opRow = v => ((WORLD.live = true), WORLD.dset('DITL-80F', 25, v));
+    const A = () => Object.assign({}, U.sbA);
+    /* the reset position inputs of DITL-80K (row 22 N-1042, row 24 N-1040) as the plant switches give them (plantsw.js) */
+    const rsp = re => {
+      const row = re.source.indexOf('1040') >= 0 ? 24 : 22,
+        m = WORLD.plantSw().find(x => /\)DITL-80K$/.test(x.sheet) && x.row === row);
+      return m ? !!m.on : null;
+    };
+    const dl1 = AN_CYC.dl;
+    opRow(true);
+    await run(10);
+    o.a0 = { A: A(), op: AN.ditlRun('DITL-80F@25'), msb: r1(U.msb), dl: r1(AN_CYC.dl - dl1), r40: rsp(/N-1040.*RESET/), r42: rsp(/N-1042.*RESET/) };
+    opRow(false);
+    let kgA = 0, tA = 0;
+    await run(2400, () => {
+      kgA += (U.msb / 3.6) * 0.5;
+      if (U.msb > 0) tA += 0.5;
+    });
+    o.a1 = { A: A(), kg: r1(kgA + (o.a0.msb / 3.6) * 10), t: tA + 10, msb: U.msb, r40: rsp(/N-1040.*RESET/), r42: rsp(/N-1042.*RESET/) };
     hold = null;
     return o;
   });
@@ -124,6 +146,11 @@ const html =
   const c = r.b1035;
   ck(Math.abs(c.pk - 3.24) < 0.01 && Math.abs(c.tOn - 98) <= 2 && Math.abs(c.kg - 88) < 3, `N-1035 0.9 kg/s: ${c.pk} T/H, ${c.tOn} s, ${c.kg} kg (table 98 s, 88 kg)`);
   ck(c.back === 0 && c.after === 0, `N-1035 back, steam ${c.after}`);
+  const a0 = r.a0, a1 = r.a1;
+  ck(a0.A.ph === 1 && a0.A.p40 > 10 && a0.A.p42 === 0 && Math.abs(a0.msb - 3.9) < 0.01 && Math.abs(a0.dl - 3.9) < 0.3 && a0.r40 === false && a0.r42 === true,
+    `air heater blowers started: hot end N-1040 blows 3900 kg/h (${a0.msb} T/H, drum outflow +${a0.dl}), PT-SB1040 ${a0.A.p40} kg/cm2, N-1040 off its reset position (reset 1040 / 1042 = ${a0.r40} / ${a0.r42}, ph ${a0.A.ph}, op ${a0.op})`);
+  ck(a1.A.ph === 0 && a1.msb === 0 && a1.r40 === true && a1.r42 === true && Math.abs(a1.t - 2360) <= 2 && Math.abs(a1.kg - 2556) < 10,
+    `hot end then cold end, 19 min 40 s each (L20 manual): ${a1.t} s, ${a1.kg} kg (2 x 1278), both back to their reset position (${a1.r40} / ${a1.r42}, ph ${a1.A.ph}, steam ${a1.msb})`);
   ck(errs.length === 0, 'no page error' + (errs.length ? ': ' + errs.join(' | ') : ''));
   console.log(fail ? 'FAILED ' + fail : 'ALL PASS');
   await browser.close();

@@ -3051,15 +3051,26 @@ const AN_SB = {
   head: { a: 12.9, b: 8.0, c: 8.7 },
   q: { a: 1.2, b: 0.6, c: 0.9 },
   open: { a: (50.8 * (244 - 230)) / 2, b: (50.8 * (244 - 230)) / 2, c: (50.8 * (120 - 116)) / 2 },
-  kind: n => (n >= 1011 && n <= 1014 ? 'a' : (n >= 1015 && n <= 1022) || n === 1025 || n === 1026 ? 'b' : 'c')
+  kind: n => (n >= 1011 && n <= 1014 ? 'a' : (n >= 1015 && n <= 1022) || n === 1025 || n === 1026 ? 'b' : 'c'),
+  /* 3.2.3 (SOHEE): the air heater blowers N-1040 (hot end) / N-1042 (cold end). L20 Gas air heater O&M manual (o&m-package-phase-1
+     L20, OMM Rev0, 2.x data sheet "Sootblowers"): semi-retractable lance, hot & cold end SEQUENTIAL operation, steam (compressed air on
+     boiler start-up), operating condition 10.5 kg/cm2, supply 16 kg/cm2 / 305 C, quantity per lance 3900 kg/hour, blowing time per lance
+     19 minutes 40 seconds (total sootblowing time 40 minutes); the local panel moves the lance (3.2.16). Flow diagram K1AU3-PD-015: both
+     on the sootblower header (SB-1-034 / SB-1-036). The DCS starts them: DITL-80F row 25 AIR PREHEATER SOOTBLOWER OPERATING (the start
+     command of the DITL-80 program); a rise of it runs one cycle: hot end, then cold end. The medium: DITL-80K row 19 PLANT AIR / STEAM
+     SELECT (M.4212, 1 = plant air: no steam taken). While a lance blows: its RESET POSITION is 0 (plantsw.js) and its pressure PT-SB1040 /
+     PT-SB1042 (I/O list STN102 AI0549 / AI0550, 0 ~ 16) is the header pressure (at most 16). NO-SOURCE: the steps of the lance (one
+     rotor turn each), the plant air pressure at the blower */
+  aph: { q: 3.9, head: 10.5, tB: 19 * 60 + 40, rng: 16 }
 };
-function anSbStep(U) {
+function anSbStep(U, dt) {
   U.msb = 0;
   U.sbN = 0;
   const W = typeof window !== 'undefined' ? window.WORLD : null,
     L = W && W.sbLances ? W.sbLances() : [];
-  if (!L.length) return;
   const P = typeof srcPv === 'function' ? srcPv('ABC-017', 'PICSB1052') : NaN;
+  anSbAph(U, dt, P);
+  if (!L.length) return;
   if (!(P > 0)) return;
   for (const s of L) {
     const x = s._lance,
@@ -3067,6 +3078,36 @@ function anSbStep(U) {
     if (!(x.x > AN_SB.open[k])) continue;
     U.sbN++;
     U.msb += AN_SB.q[k] * 3.6 * Math.min(1, (P + 1.033) / (AN_SB.head[k] + 1.033));
+  }
+}
+/* the air heater blowers (AN_SB.aph): U.sbA = { op: last OPERATING, ph: 0 rest / 1 hot end / 2 cold end, t: s in the phase, p40, p42 } */
+function anSbAph(U, dt, P) {
+  const K = AN_SB.aph,
+    A = U.sbA || (U.sbA = { op: 0, ph: 0, t: 0, p40: 0, p42: 0 }),
+    op = typeof anDitlRun === 'function' ? anDitlRun('DITL-80F@25') : null;
+  if (op === 1 && !A.op && !A.ph) {
+    A.ph = 1;
+    A.t = 0;
+  }
+  A.op = op === 1 ? 1 : 0;
+  if (A.ph && dt > 0) {
+    A.t += dt;
+    if (A.t >= K.tB) {
+      A.ph = A.ph === 1 ? 2 : 0;
+      A.t = 0;
+    }
+  }
+  let air = false;
+  try {
+    const k = typeof S !== 'undefined' && S.sheets ? S.sheets.find(x => /\)DITL-80K$/.test(x.name)) : null;
+    air = !!(k && k.sig && k.sig['19:S']);
+  } catch (e) {}
+  const Ph = isFinite(P) && P > 0 ? Math.min(K.rng, P) : 0;
+  A.p40 = A.ph === 1 && !air ? Ph : 0;
+  A.p42 = A.ph === 2 && !air ? Ph : 0;
+  if (A.ph && !air && Ph > 0) {
+    U.sbN++;
+    U.msb += K.q * Math.min(1, (Ph + 1.033) / (K.head + 1.033));
   }
 }
 function anChemStep(U, dt) {
@@ -3268,7 +3309,7 @@ function anUnitStep0(dt) {
   /* 3.2.3 SOHEE: sampling and chemical dosing (AN_CHEM) */
   anChemStep(U, dt);
   /* 3.2.3 SOHEE: the steam of the sootblowers (AN_SB) */
-  anSbStep(U);
+  anSbStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
   /* ---- 2.2.0-beta.17 (M4 step 4): the turbine black box (see AN_UNIT rollRate ...) ---- */
   const tb = U.tb || (U.tb = { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN }),
