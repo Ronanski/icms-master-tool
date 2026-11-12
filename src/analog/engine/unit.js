@@ -159,6 +159,17 @@ const AN_UNIT = {
      The DITL consequences (fan trip -> MFT, drum level L.L. -> MFT, MFT -> turbine trip) are the DITL's: with the one world OFF the
      operator forces them (CLAUDE.md 7, user 2026-10-16) */
   tauTrip: 1,
+  /* 3.2.3 house load speed (SAKURA): TCE 331DM09784 p.140 TCE206 FLOW CONTROL: rated 3600.0 rpm, droop 6.0 %, flow span 87.3 (read:
+     6 % speed = 87.3 % flow demand); the FG*1 table of the same sheet gives 0.0 % at -7.2 / 0.0 / 7.2 rpm: dead band +-7.2 rpm (the
+     table points beyond it not read: linear outside the band). Hgen = inertia constant of the whole machine (turbine + generator +
+     exciter): GAE-2013-0136 R2 GENERATOR DATA SHEET (as built) p.2 "Inertia constant @ rated kVA, H (kW sec/kVA) 4.01" (GD2 turbine /
+     generator + exciter 23,700 / 16,200 kgm2: CALC J = 39,900 / 4 = 9,975 kgm2, 0.5 J (377 rad/s)^2 = 709 MJ / 176.5 MVA = 4.0 s).
+     Check: full load rejection "about 106 percent in about one second" (TG operator manual tg-2-1-1 p.137, STIE-14788); the EOS
+     110.5 % (IBD SC90794 sheet 35) is the IBD logic of the app (tcs-ibd-data.js) */
+  droop: 0.06,
+  flowSpan: 0.873,
+  Hgen: 4.01,
+  dbRpm: 7.2,
   kfp: 150 /* fallback; the authority of the ID fan of the anchored loop model is used when known (anUnitStart) */,
   /* 2.2.0-beta.14 (M4 step 1, PR-OPE-5002 / boiler manual SECT_7 Fig 1 / 2): COLD START. "Start cold" (hmi-op.js anPlantCold) keeps
      the anchors of "Start at 150 MW" (the gains of every loop model) and puts the plant cold: drum 0 kg/cm2, water and bed at the
@@ -2912,6 +2923,22 @@ function anUnitOwnsPv(S, n) {
    factor of the snapshot (0.977) while synchronised; current = MVA / (1.732 x 13.8 kV); the exciter field follows the internal
    voltage E = |1 + j Xd I| (calculated with the data sheet Xd, no saturation), scaled to the snapshot point (E = 2.19 pu at 151.1 MW
    / 33.1 MVar), so 1.0 pu at no load = 4.0 A / 21 VDC. The field breaker = the TCS excitation on (tc.exc, ATS step 4 EXCITATION). */
+/* 3.2.3 house load (52L1 open, 52G1 closed): the turbine generator speed from the swing equation 2 H w dw/dt = Pm - Pe (per unit on
+   AN_GEN.S): Pm = the turbine steam power MWss (no tauMW lag: the CV / ICV cut the steam at once, the lag of U.MW stands for the reheater
+   and the 60 s averages of the plant trends), Pe = the house load (elec.js). On the grid (52L1 closed) the grid holds 3600 rpm (the
+   sync check relay 25 closes 52L1 at once in the model, elec.js) */
+function anDb(x, b) {
+  return x > b ? x - b : x < -b ? x + b : 0;
+}
+function anTbSpeed(U, tb, dt, on, Pm, Pe) {
+  if (!(U.el && U.el.l52 === false)) {
+    if (tb.st === 'sync' || tb.st === 'load') tb.rpm = 3600;
+    return;
+  }
+  if (!on || !isFinite(Pe) || !(U.Hgen > 0)) return;
+  const w = Math.max(0.5, (tb.rpm || 3600) / 3600);
+  tb.rpm = Math.max(0, (w + (dt * (Pm - Pe)) / (2 * U.Hgen * AN_GEN.S * w)) * 3600);
+}
 const AN_GEN = { kV: 13.8, Hz: 60, S: 176.5, xd: 1.99, pf: 0.977, If: 8.7, Vf: 46.0, E0: 0, MWh: 7266257, MVArh: 882996 };
 AN_GEN.E0 = Math.hypot(1 + (AN_GEN.xd * 151.1 * Math.tan(Math.acos(AN_GEN.pf))) / AN_GEN.S, (AN_GEN.xd * 151.1) / AN_GEN.S);
 function anGenEl() {
@@ -2931,7 +2958,7 @@ function anGenEl() {
   return {
     fcb: fcb ? 1 : 0,
     kV: fcb ? (AN_GEN.kV * Math.min(tb.rpm || 0, 3600)) / 3600 : 0,
-    Hz: syn ? AN_GEN.Hz : ((tb.rpm || 0) / 3600) * AN_GEN.Hz,
+    Hz: syn && !(U.el && U.el.l52 === false) ? AN_GEN.Hz : ((tb.rpm || 0) / 3600) * AN_GEN.Hz,
     MVAr: Q,
     pf: syn && P > 0 ? AN_GEN.pf : null,
     kA,
@@ -3458,14 +3485,31 @@ function anUnitStep0(dt) {
        fast acting dump; NO-SOURCE: the PLU closing time) until the unbalance is under 40 %, then the speed control opens them again.
        Not modelled: the speed peak, the 2 out of 3 voting (one value) */
     const ld = U.el && U.el.l52 === false ? D : U.MW,
-      plu = U.el && U.el.l52 === false && (U.MW - ld) / U.MW0 > 0.4;
+      /* 3.2.3 house load speed: the power side is the steam power of the last step (U.Pm, no tauMW lag: the reheat bowl pressure falls
+         as soon as the ICV closes); before, the lagged U.MW kept the valves shut about 7 s and the speed fell to 95.8 % */
+      plu = U.el && U.el.l52 === false && ((isFinite(U.Pm) ? U.Pm : U.MW) - ld) / U.MW0 > 0.4;
     if (plu && !tb.plu && typeof window !== 'undefined' && window.lsEventAdd && !(window.ENG && ENG.mode === 'mirror'))
       lsEventAdd('TCS', 'TCS', 'PLU (power load unbalance): CV and ICV fast closing, turbine ' + Math.round(U.MW) + ' MW against ' + Math.round(ld) + ' MW load');
     tb.plu = plu;
     if (plu) {
       U.gv = Math.max(0.02, U.gv - dt / U.tauTrip);
       tb.icv = Math.max(0, tb.icv - dt / U.tauTrip);
+      tb.gs = NaN;
+    } else if (U.el && U.el.l52 === false) {
+      /* 3.2.3 house load: the speed governor (TCE p.140 TCE206): flow demand = GOV.SET - flow span x (rpm - 3600) / (droop x 3600), the
+         HP CV opening U.gv taken as the flow demand (1 = the anchor flow). GOV.SET (tb.gs) starts at the CV opening after the PLU and is
+         trimmed by the TCS load loop toward the house load (elec.js, as before). The CV moves at the trip rate (U.tauTrip, NO-SOURCE).
+         Not yet: the GOVERNOR RUNBACK (TCE p.128 / 136: GOV.SET 24.3 % HP / 4.2 % IP start for 60 s), the low droop 16 % */
+      if (!isFinite(tb.gs)) tb.gs = U.gv;
+      tb.gs = Math.max(0, Math.min(1.4, tb.gs + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
+      const dem = Math.max(0.02, Math.min(1.4, tb.gs - (U.flowSpan * anDb((tb.rpm || 3600) - 3600, U.dbRpm || 0)) / ((U.droop || 0.06) * 3600))),
+        r = dt / U.tauTrip;
+      U.gv += Math.max(-r, Math.min(r, dem - U.gv));
+      /* the ICV takes the same flow demand (TCE p.141 TCE207: the CV and ICV demands come from the one flow demand; the ICV curve itself
+         is NO-SOURCE, here ICV = flow demand): with the HP bypass open the reheater feeds the IP turbine (75 % of the shaft, cIP) */
+      tb.icv = Math.max(0, Math.min(1, (tb.icv == null ? 1 : tb.icv) + Math.max(-r, Math.min(r, Math.min(1, dem) - (tb.icv == null ? 1 : tb.icv)))));
     } else {
+      tb.gs = NaN;
       tb.icv = Math.min(1, (tb.icv == null ? 1 : tb.icv) + dt / U.tcs);
       U.gv = Math.max(0.02, Math.min(1.4, U.gv + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
     }
@@ -3576,6 +3620,8 @@ function anUnitStep0(dt) {
         )
       : 0;
   U.MW += ((MWss - U.MW) * dt) / U.tauMW;
+  U.Pm = MWss;
+  anTbSpeed(U, tb, dt, onGrid && !trip && tb.xfer, MWss, D);
   /* 52G open: no load on the machine */
   if (U.tc && (tb.st === 'off' || tb.st === 'roll')) U.MW = 0;
   U.rpm = tb.rpm;
