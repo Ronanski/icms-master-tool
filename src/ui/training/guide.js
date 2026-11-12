@@ -543,6 +543,24 @@ window.LS_GUIDE = (function () {
       btn(tag + (open ? ' OPEN' : ' CLOSE') + ' (' + nm + ')', () => (WL() ? dPress(nm, open ? ro : rc) : ''), () => !WL() || (open ? movPos(nm) >= 100 : movPos(nm) <= 0)),
       { dg: [nm, open ? ro : rc], ad: nm }
     );
+  /* the extraction shut-off MOVs of the normal shutdown, in the order PR-OPE-5003 takes them out (3, 2, 1 at 40 MW; 5, 4 at 30 MW):
+     [DITL sheet, tag, extraction no.]; rows (index from 0): 0 AUTO PB (maintained AUTO MODE SELECTED), 4 OPEN PB, 13 CLOSE PB, 20 AUTO
+     MODE SELECTED (DITL-94 ~ 98) */
+  const EXT = [
+    ['DITL-96', 'MV-TS1003', 3],
+    ['DITL-95', 'MV-TS1002', 2],
+    ['DITL-94', 'MV-TS1001', 1],
+    ['DITL-98', 'MV-TS1005', 5],
+    ['DITL-97', 'MV-TS1004', 4]
+  ];
+  const extA = ([nm, tg]) => [
+    Object.assign(
+      btn(tg + ' MANUAL (' + nm + ')', () => (WL() && window.LS_DOCK && LS_DOCK.dset ? (LS_DOCK.dset(nm, 0, false), '') : ''), () => !WL() || !dInG(nm, 20)),
+      { ad: nm }
+    ),
+    movB(nm, tg, 0, 4, 13)
+  ];
+  const extC = ([nm, tg]) => C(tg + ' closed', () => !WL() || movPos(nm) <= 0, () => tg + ' ' + f0(movPos(nm)) + ' %' + (dInG(nm, 20) ? ' AUTO' : ' MAN'));
   /* PR-OPE-5002 18 HOTWELL FILLING: "use hotwell level control valve LCV-MU1110 and hotwell filling motorized valve MV-MU1001" (DITL-60,
      row 3 OPEN / row 12 CLOSE P.B.). On the hold at 35 kg/cm2 the MS blow-off sends 60 ~ 70 T/H to the air, more than LCV-MU1110 alone
      (58 T/H, valve sheet p90): the hotwell falls. The operator opens MV-MU1001 when the hotwell is low and closes it when it is back high */
@@ -1610,7 +1628,11 @@ window.LS_GUIDE = (function () {
         }
       },
       { st: 11, sec: 49, t: 'Hold 45 MW with the burners in', d: 'PR-OPE-5003: hold at 45 MW. Drum level ±150 mm. Keep moving the coal from FIC-CM (MANUAL) to the oil; the bed falls toward 700 °C as the coal comes down.', fps: ['FIC-CM', 'HIC-BM'], a: [step('FIC-CM ▼ −1 %', 'FIC-CM', -1), step('FIC-CM ▲ +1 %', 'FIC-CM', 1)], c: b.X5[7][1], wait: 1 },
-      { st: 11, sec: 49, need: 1, t: 'At 40 MW: extractions 3, 2, 1 out; deaerator PCVAS1030 2.5 kg/cm²', d: 'PR-OPE-5003: done at the TCS and in the field. Confirm when done.' },
+      /* Sakura review 2026-11-13 (DITL-94 ~ 98): the extraction shut-off MOVs MV-TS1001 ~ 1005 are DCS valves (CRT): row 1 AUTO PB = the
+         maintained AUTO MODE SELECTED (M.0283 / 0293 / 0303 / 0313 / 0333, its NOT = MANUAL), row 5 OPEN PB, row 14 CLOSE PB (M.0281 / 0291 /
+         0301 / 0311 / 0331), row 11 FULLY CLOSED (I.0011 / 0016 / 001B / 005B / 0336). Before, the step said "TCS and field, confirm".
+         PCVAS1030 = the deaerator pegging steam valve PCV-AS1030 of PICCD1104 (ABC-056, IO list STN102 AO0403; uat/check.js) */
+      { st: 11, sec: 49, t: 'At 40 MW: extractions 3, 2, 1 out; deaerator PICCD1104 (PCV-AS1030) SV 2.5 kg/cm²', d: 'PR-OPE-5003: take out the extractions 3, 2 and 1 in this order and set the deaerator pressure control to 2.5 kg/cm². The extraction shut-off MOVs are DCS valves (DITL-94 ~ 98): put each one in MANUAL, then CLOSE. In AUTO the drawing closes them only on a turbine trip, house operation or a heater level HI-HI.', c: b.ALL(...EXT.filter(e => e[2] <= 3).map(extC), b.MODE('PICCD1104', 'AUTO'), b.SV('PICCD1104', 2.4, 2.6)), fps: ['PICCD1104'], get a() { return [...EXT.filter(e => e[2] <= 3).flatMap(extA), btn('PICCD1104 A, SV 2.5 kg/cm²', () => A.auto('PICCD1104', 2.5), () => md('PICCD1104') === 'AUTO' && Math.abs((+svOf('PICCD1104') || 0) - 2.5) < 0.05)]; } },
       { st: 11, sec: 49, t: 'By hand: EIC-TM to 30 MW, HIC-BM with it', d: 'PR-OPE-5003: 45 to 30 MW at 0.4 MW per minute, the main steam pressure 115 ~ 126 kg/cm² (under the MS blow-off set point 128). Below 120 T/H of steam the drum level goes to the start-up level control (PR-OPE-5003): LICBR1001B on the start-up valve FCV-FW1130-2.', c: b.X5[9][1], seek: byHand(30, 0.4, 's30'), a: byHandA, fps: ['EIC-TM', 'HIC-BM', 'LICBR1001B'] },
       {
         st: 11,
@@ -1628,7 +1650,9 @@ window.LS_GUIDE = (function () {
         c: b.X5[11][1],
         /* S149-3 (Mina beta.149): a plant from the cold start-up whose ATS stood at step 6 (NORMAL OPERATION never pressed) had SHUT-DOWN
            refused ("Finish step 7 NORMAL OPERATION", 310SC90-775: step 8 follows step 7) and this step had no way to press it */
-        a: [btn('NORMAL OPERATION (ATS step 7)', () => A.tcs('normal'), () => TC().step >= 7), btn('Turbine SHUT-DOWN (ATS step 8)', () => A.tcs('shutdown')), btn('Turbine trip (TA-1)', () => A.tcs('trip'))]
+        get a() {
+          return [...EXT.filter(e => e[2] >= 4).flatMap(extA), btn('NORMAL OPERATION (ATS step 7)', () => A.tcs('normal'), () => TC().step >= 7), btn('Turbine SHUT-DOWN (ATS step 8)', () => A.tcs('shutdown')), btn('Turbine trip (TA-1)', () => A.tcs('trip'))];
+        }
       },
       /* ---- 12 bottle-up (plan e4, PR-OPE-5004-01; the checks are live.js X6) ---- */
       { st: 12, sec: 50, need: 1, t: 'Steam lines isolated, drain pots open', d: 'PR-OPE-5004: close MV-MS1391, PCV-MS1001 (blow off), the HP bypass isolation and the auxiliary steam isolation; open the TG drain pots (upstream valve first); open hot reheat blow off MV-HR1391 to release the line, then close it. Field and TCS: confirm when done.' },
