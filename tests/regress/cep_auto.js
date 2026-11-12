@@ -28,15 +28,17 @@ const r1=await page.evaluate(()=>[LS_DOCK.mst('M.3350'),LS_DOCK.mst('M.3351')]);
 ck(r1[0]!=='RUN'&&r1[1]==='RUN','after CEP-A trip ('+tr+'): CEP-B started by itself ('+r1+')');
 // MV-MU1001 (DITL-60) on 028 CONDENSATE: LOCAL at Cold, the faceplate FIELD SELECTOR -> REMOTE, then OPEN (real clicks)
 await page.setViewportSize({width:1600,height:900});
-await page.evaluate(()=>lsPlant(true));await wait(1500);
-await page.evaluate(()=>document.querySelector('#pllist button[data-id="MK05"]').click());await wait(2000);
+// 3.2.3-beta.152: the start screen of layout C (3.2.1) covers the app: close it the way the operator does, then open the page as the layout does
+await page.evaluate(()=>{const k=document.querySelector('#scstart .scskip');if(k&&k.offsetParent)k.click()});await wait(1000);
+await page.evaluate(()=>window.lsShellC&&lsShellC.openPage?lsShellC.openPage('MK05'):(lsPlant(true),document.querySelector('#pllist button[data-id="MK05"]').click()));await wait(2000);
 const clk=async sel=>{const b=await page.evaluate(sel=>{const e=[...document.querySelectorAll(sel)].find(x=>x.getBoundingClientRect().width>0);if(!e)return null;const r=e.getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]},sel);if(b)await page.mouse.click(b[0],b[1]);return !!b};
 const btn=async t=>{const b=await page.evaluate(t=>{const p=document.getElementById('fpop');if(!p)return null;const e=[...p.querySelectorAll('button')].find(x=>x.textContent.trim()===t&&x.offsetParent);if(!e)return null;const r=e.getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2,e.disabled]},t);if(b&&!b[2])await page.mouse.click(b[0],b[1]);return b?(b[2]?'disabled':'ok'):'none'};
 ck(await clk('[data-hit="V60"]'),'MV-MU1001 on the page');await wait(700);
 {const r0=await btn('OPEN');const tx=await page.evaluate(()=>(document.getElementById('fpop')||{}).innerText);ck(r0==='disabled','LOCAL: OPEN disabled ('+r0+') '+String(tx).split(String.fromCharCode(10)).join(' · ').slice(0,300));}
 ck(await btn('REMOTE')==='ok','FIELD SELECTOR REMOTE');await wait(300);await btn('EXECUTE');await wait(2500);
 ck(await page.evaluate(()=>{const s=LS_DOCK.dOf('DITL-60');return DUI.rowVal(s,9)})===1,'DITL-60 row 10 REMOTE SELECTED = 1');
-ck(await btn('OPEN')==='ok','REMOTE: OPEN enabled');await wait(300);await btn('EXECUTE');await wait(12000);
+// 3.2.3: MV-MU1001 strokes in 41 s (Limitorque confirmation sheet, K1AU3-E2-0-122 RA, 03b-sim.js MV_CLOSE_S; was 10 s NO-SOURCE when this test waited 12 s)
+ck(await btn('OPEN')==='ok','REMOTE: OPEN enabled');await wait(300);await btn('EXECUTE');await wait(45000);
 const lp=await page.evaluate(()=>{const s=LS_DOCK.dOf('DITL-60');const o=DUI.outs(s);const v=re=>{const q=o.find(q=>re.test(q.name));return q?DUI.outVal(s,q.row):null};return [v(/FULLY CLOSED/),v(/FULLY OPEN/)]});
 ck(lp[0]===0&&lp[1]===1,'after OPEN: FULLY CLOSED 0, FULLY OPEN 1 ('+lp+')');
 ck(errs.length===0,'no page errors'+(errs.length?': '+errs.slice(0,3).join(' | '):''));
