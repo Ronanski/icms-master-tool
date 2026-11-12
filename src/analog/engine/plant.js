@@ -804,6 +804,14 @@ function anProcStep(S, dt) {
             if (raw > 1) pr.integ.kc = c / raw;
           } else fst = raw * (pr.integ.kc > 0 ? pr.integ.kc : 1);
         } else fst = raw;
+        /* 3.2.3 (Mina beta.148 S148-5 check): FT-MS1031 has a top of range. The raw transmitter stops at 500 T/H (the span of its AI);
+           at a lower pressure the same steam gives a bigger DP, so with the blow-off or the bypass open and the pressure falling the
+           reading tops out and its compensated flow FALLS (150 MW, blow-off 60 %: steam 490 T/H, compensated reading 290). The balance
+           then took 200 T/H less steam out of the drum than the boiler made, and the cycle gained that water (hotwell to its top).
+           The steam that leaves the drum is the plant (as for the failed transmitter above): the turbine plus the bypass and the
+           blow-off of the unit model (unit.js U.ms + U.mb, the flow FT-MS1031 is written from). The drawing still reads the
+           transmitter, so the 3-element feedwater sees the capped reading as in the plant */
+        if (typeof AN_UNIT !== 'undefined' && AN_UNIT.on && isFinite(AN_UNIT.ms) && isFinite(AN_UNIT.mb)) fst = Math.max(0, AN_UNIT.ms + AN_UNIT.mb);
       }
       let ffw = +v[pr.integ.fw] || 0;
       const fwp = pr.integ.fwp,
