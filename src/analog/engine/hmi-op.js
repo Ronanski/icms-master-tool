@@ -1284,6 +1284,8 @@ function anLoadStart(kind, on) {
       }
       AN.startState = cold ? 'plantCold' : 'plantLoad150';
       AN.restartKind = rs;
+      /* the drum pressure of the restart (unit.js AN_RESTART, FHI Fig. 3 / 4): the Training reads it for the MS blow-off hold (guide.js holdP) */
+      AN.restartPd = rs && AN_RESTART[rs] ? +AN_RESTART[rs].Pd : 0;
       /* Mina beta.92 B92-3: a count of the loads, so a Cold loaded over a Cold is seen as new (guide.js: the Training back to step 1) */
       AN.startN = (AN.startN || 0) + 1;
       return n;
