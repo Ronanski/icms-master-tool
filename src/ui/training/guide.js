@@ -596,9 +596,18 @@ window.LS_GUIDE = (function () {
          opened to 100 % and the drum fell to -136 mm, then rose to +187 at step 73 while it closed): ▲ only under 30 kg/cm2, 5 under
          the hold; the run showed about 5 kg/cm2 of rise after the last ▲ (the lag of the furnace and the bed) */
       up = r < 45 && (+U().Pd || 0) < 30;
-    if (!(dn || up)) return;
+    /* 3.2.3-beta.133 (Mina beta.125 Cold run: steps 52 ~ 57 heating rate peaks 66 ~ 83 C/h, average 49 ~ 59, against the PR-OPE-5002
+       gradient 1 C/min = 60 C/h). The rate is a 5-minute window and the bed lags the oil, so a ▲ +5 at 44 C/h showed up as 70+ a few
+       minutes later. The trend (rate now against the rate at the last check, 2 minutes of the plant before) now counts: ▼ also at
+       over 50 C/h when it still rises, no ▲ while it rises, and the ▲ is +2 (Training pace, not a plant value) */
+    const r0 = paceT.hsR;
+    paceT.hsR = r;
+    const rising = isFinite(r0) && r > r0 + 1;
+    const dn2 = dn || (r > 50 && rising),
+      up2 = up && !rising;
+    if (!(dn2 || up2)) return;
     paceT.hs = simT();
-    oilStep('', ['A', 'B', 'C', 'D'], dn ? -5 : 5).f();
+    oilStep('', ['A', 'B', 'C', 'D'], dn2 ? -5 : 2).f();
   };
   const f1w = x => (typeof x === 'number' ? f1(x) : x);
   const WARM = [
