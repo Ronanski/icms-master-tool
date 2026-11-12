@@ -96,7 +96,7 @@
 
 /* SIGNAL PATH tab (tracer.js): chips, the path picture, the table */
 #libws.trace .libst,#libws.trace .libf,#libws.trace #libcnt,#libws.trace .libhd{display:none!important}
-#libws .trc{--trc-ai:#16a34a;--trc-ao:#0d9488;--trc-di:var(--c-tx);--trc-do:#c2410c;--trc-mb:#7c3aed;--trc-fc:#16a34a;--trc-xw:#ca8a04;--trc-pf:#2563eb;--trc-ic:#0891b2;--trc-in:#6b7280;--trc-en:#7c3aed;--trc-fo:#ea580c;--trc-nw:#db2777;display:flex;flex-direction:column;gap:10px;padding:10px 12px 20px;font:13px var(--uf,sans-serif)}
+#libws .trc{--trc-ai:#16a34a;--trc-ao:#0d9488;--trc-di:var(--c-tx);--trc-do:#c2410c;--trc-mb:#7c3aed;--trc-ma:#16a34a;--trc-pl:#7c3aed;--trc-ct:#1f2937;--trc-cta:#ea580c;--trc-vt:#dc2626;--trc-rtd:#a16207;--trc-fc:#16a34a;--trc-xw:#ca8a04;--trc-pf:#2563eb;--trc-ic:#0891b2;--trc-in:#6b7280;--trc-en:#2563eb;--trc-fo:#ca8a04;--trc-nw:#db2777;display:flex;flex-direction:column;gap:10px;padding:10px 12px 20px;font:13px var(--uf,sans-serif)}
 #libws .trcl{font:700 11px var(--uf,sans-serif);letter-spacing:.08em;color:var(--c-dim);text-transform:uppercase;margin-bottom:5px}
 #libws .trcc{display:flex;flex-wrap:wrap;gap:5px}
 #libws .trcb{font:600 12px var(--uf,sans-serif);color:var(--c-tx);background:var(--c-pane);border:1px solid var(--c-line);border-radius:6px;padding:4px 9px;min-height:30px;cursor:pointer}

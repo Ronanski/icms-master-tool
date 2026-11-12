@@ -9,7 +9,7 @@
    TC0763, TC0791 ~ 0793; dcs-io-list.xls From / To remark). GCP-AI1004 / 1005: the wiring list writes GCP->DCS, the TCS
    drawing shows them through TCS GXF6 / GXF1; the drawing is followed (as in the study). Read only. */
 (function () {
-  /* 3.2.3-beta.118: the whole chain before the rack room, with terminals and what travels on each line, as read by the control
+  /* 3.2.3-beta.118 ~ 119: the whole chain before the rack room, with terminals and what travels on each line, as read by the control
      network study (ARIN, add_origin.py v2): GCP side from GSE-2013-0083 (7X7SKB1104) sheets 50 ~ 53 (GA126 ~ GA130) and 70 ~ 73
      (GA187 / GA188 / GA190); TCS side from TCS Elementary Diagram 331DM07733 (input SD-AI-L GXF ch1..8 = 1/2, 5/6, 9/10, 13/14,
      21/22, 25/26, 29/30, 33/34, TC0751; output SD-AO GXF / AXF chN = 2N-1 / 2N, TC0791 / TC0160).
@@ -132,16 +132,16 @@
        output, DCS AO card, and the GCP terminal block that passes that loop on; not for a field sensor (who powers it is not
        in the documents), an AC CT / VT circuit, a pulse or a contact (one arrow = direction of the signal) */
     const loop = /^4-20 mA/.test(t) && !(og === 'Field' && i === 0);
-    if (kind === 'in' && /^DCS .*AI/.test(h[0])) return { t: 'inside the DCS (copy block not drawn)', in: 1 };
-    return { t, in: kind === 'in' ? 1 : 0, loop };
+    if (kind === 'in' && /^DCS .*AI/.test(h[0])) return { t: 'inside the DCS (copy block not drawn)', in: 1, k: 'in' };
+    return { t, in: kind === 'in' ? 1 : 0, loop, k: KIND(t) };
   };
   /* Modbus over Ethernet (two-way link) with the package PLC: LMYP-1 #1-Communication list between DCS and package.xls (sheets
      #1 GCS10F and Common GCS10E: PLC-A / PLC-B, Modbus connection, "RJ-45 Only") and Memory for Sub_System PLC MODBUS.xls
      (SI Address: turbine area SI1000 ~ / SI1300 ~ of STN102, SCADA SI8600 ~ / SI8800 ~ of STN105; BC send / receive of the
      GCS to the station). Points: the Modbus communication lists (src/ui/plant/dcslists.js). */
   const MBS = {
-    tcs: { sys: 'TCS', pkg: 'Turbine system PLC', gcs: 'GCS10F', con: 'Modbus connection 1 (PLC-A) / 2 (PLC-B)', stn: 'STN102' },
-    sca: { sys: 'SCADA', pkg: 'SCADA PLC', gcs: 'GCS10E', con: 'Modbus connection 7 (PLC-A) / 8 (PLC-B)', stn: 'STN105' }
+    tcs: { sys: 'TCS', pkg: 'Turbine PLC', pan: 'TCS panel', gcs: 'GCS10F', con: 'Modbus connection 1 (PLC-A) / 2 (PLC-B)', stn: 'STN102', ctl: 'FCS102', sftp: ['1H09', '2H09'], hub: 'SCADA LAN hub-1H port 9 / hub-2H port 9', hubup: '1H02 / 2H02', fl: '2A10 / 2B10 / 2A11 / 2B11', fllen: '20 m', fhubs: 'hub-2A / hub-2B', fhub: 'FCS1013', fcs: '2A04 / 2B04 (A ctrl), 2A05 / 2B05 (B ctrl)', fcslen: '3 m UTP', dwg: 'K1AU3-E2-0-115 sh5 (GCS10F), K1AU3-E2-0-106 sh2 + cable list (FL-NET)' },
+    sca: { sys: 'SCADA', pkg: 'SCADA PLC', pan: 'SCADA panel', gcs: 'GCS10E', con: 'Modbus connection 7 (PLC-A) / 8 (PLC-B)', stn: 'STN105', ctl: 'FCS105', sftp: ['3H11', '4H11'], hub: 'SCADA LAN hub-3H port 11 / hub-4H port 11', hubup: '3H02 / 4H02', fl: '3A04 / 3B04 / 3A05 / 3B05', fllen: '10 m', fhubs: 'hub-3A / hub-3B', fhub: 'FCS1051', fcs: '3A02 / 3B02 (A ctrl), 3A03 / 3B03 (B ctrl)', fcslen: '1.5 m UTP', dwg: 'K1AU3-E2-0-115 sh12 (GCS10E), K1AU3-E2-0-106 sh2 + cable list (FL-NET)' }
   };
   window.LS_ORIG = ORIG;
   const SY = [
@@ -400,18 +400,22 @@
     tb.append(frag);
     draw(st.sel);
   }
-  /* colour = the kind of cable or link (user 2026-11-12 "magcolor coding ka. Ipakita mo anong cable ang gamit"); the text on
-     each line says what travels on it (4-20 mA, contact, RTD, Modbus) */
+  /* colour = what travels on the line, one line per wire, the same colours as the control network study tracer (ARIN v6;
+     user 2026-11-12 "magcolor coding ka ... kung ethernet, ethernet, kung fiber fiber"); the cable names are written on the lines */
   const CK = {
-    fc: ['var(--trc-fc)', 'field / panel cable (copper)'],
-    xw: ['var(--trc-xw)', 'cross wiring inside the marshalling panel'],
-    pf: ['var(--trc-pf)', 'prefab cable, marshalling panel → FCS'],
-    ic: ['var(--trc-ic)', 'internal cable, terminal board → I/O card'],
-    in: ['var(--trc-in)', 'inside a controller (no cable)'],
-    en: ['var(--trc-en)', 'Ethernet copper (RJ-45)'],
-    fo: ['var(--trc-fo)', 'fiber optic'],
-    nw: ['var(--trc-nw)', 'DCS control network']
+    ma: ['var(--trc-ma)', '4-20 mA DC (2 wires)'],
+    pl: ['var(--trc-pl)', 'pulse (2 wires)'],
+    ct: ['var(--trc-ct)', 'contact on / off (2 wires)'],
+    cta: ['var(--trc-cta)', 'CT 5 A AC (4 wires)'],
+    vt: ['var(--trc-vt)', 'VT 115 V AC (3 wires)'],
+    rtd: ['var(--trc-rtd)', 'RTD (resistance)'],
+    en: ['var(--trc-en)', 'Ethernet (one line per cable, two-way)'],
+    fo: ['var(--trc-fo)', 'fiber optic (one line per cable, two-way)'],
+    in: ['var(--trc-in)', 'inside a controller (no cable)']
   };
+  const KIND = t => (/inside/i.test(t) ? 'in' : /fiber/i.test(t) ? 'fo' : /Ethernet/i.test(t) ? 'en' : /^CT/.test(t) ? 'cta' : /^VT/.test(t) ? 'vt' : /pulse/i.test(t) ? 'pl' : /contact/i.test(t) ? 'ct' : /RTD/.test(t) ? 'rtd' : 'ma');
+  const LEG = ['ma', 'pl', 'ct', 'cta', 'vt', 'rtd', 'en', 'fo', 'in'];
+  const NWIRE = { ma: 2, pl: 2, ct: 2, cta: 4, vt: 3, rtd: 3, en: 2, fo: 2, in: 1 };
   const legend = keys =>
     E(
       'div',
@@ -420,6 +424,12 @@
     );
   const arrowHead = (p, x, y, d, c) =>
     el('path', { d: d > 0 ? 'M' + (x - 5) + ',' + (y - 5) + 'L' + (x + 5) + ',' + y + 'L' + (x - 5) + ',' + (y + 5) + 'z' : 'M' + (x + 5) + ',' + (y - 5) + 'L' + (x - 5) + ',' + y + 'L' + (x + 5) + ',' + (y + 5) + 'z', fill: c }, p);
+  /* split a text into lines of at most n characters (at spaces) */
+  const wrapT = (t, n) => {
+    const L = [''];
+    for (const w of String(t).split(' ')) (L[L.length - 1] + ' ' + w).trim().length > n && L[L.length - 1] ? L.push(w) : (L[L.length - 1] = (L[L.length - 1] + ' ' + w).trim());
+    return L;
+  };
   const srcLines = (p, y0, text) => {
     const words = text.split(' '),
       lines = [''];
@@ -428,7 +438,7 @@
     return y0 + lines.length * 14;
   };
   /* the hops before the rack room (GCP / field -> TCS input -> TCS output) */
-  function upstream(r, hops, hp, head) {
+  function upstream(r, hops, hp, head, mb) {
     /* rows of up to 4 hops; a row that goes on draws its wires to the right edge and the next row starts from the left edge */
     const n = hops.length,
       PER = 4,
@@ -447,8 +457,12 @@
         YM = y0 + 68,
         fit = (t, px) => (t.length > Math.floor((bw - 16) / px) ? t.slice(0, Math.floor((bw - 16) / px) - 1) + '…' : t);
       el('rect', { class: 'box' + (/^Generator|^TE-|^PT-|^ZT-/.test(h[0]) ? ' dash' : ''), x, y: y0, width: bw, height: 82, rx: 6 }, us);
-      tx(us, x + 10, y0 + 19, 'bt2', fit(h[0], 7.4));
-      tx(us, x + 10, y0 + 34, 'bs', fit(h[1], 6.3));
+      /* name on up to 2 lines, note on the lines left (narrower where the terminals are) */
+      const hasT = h[2] !== '' && h[2] != null,
+        nm = wrapT(h[0], 24).slice(0, 2),
+        nl = wrapT(h[1], hasT ? 22 : 30);
+      nm.forEach((t, k) => tx(us, x + 10, y0 + 18 + k * 14, 'bt2', k === 1 && wrapT(h[0], 24).length > 2 ? fit(t + '…', 7.4) : t));
+      nl.slice(0, 5 - nm.length).forEach((t, k, A) => tx(us, x + 10, y0 + 18 + nm.length * 14 + 2 + k * 12, 'bs', k === A.length - 1 && nl.length > A.length ? t + ' …' : t));
       el('title', {}, el('rect', { x, y: y0, width: bw, height: 82, fill: 'transparent' }, us)).textContent = h[0] + ' · ' + h[1] + (h[2] ? ' · terminal ' + h[2] + ' / ' + h[3] : '');
       const L = LINK(h, hops[i + 1], i, r.og),
         x1 = x + bw,
@@ -456,47 +470,63 @@
         last = i === n - 1,
         edge = wrap || (last && col === PER - 1),
         x2 = edge ? 1236 : x1 + gap,
-        c = CK[L.in ? 'in' : 'fc'][0];
+        c = CK[L.k][0],
+        eth = L.k === 'en' || L.k === 'fo',
+        none = last && !h[4];
       if (h[2] !== '' && h[2] != null) {
         /* AC (CT / VT) has no + / −: only the terminal numbers */
-        const ac = /AC/.test(L.t);
+        const ac = /AC/.test(L.t) || /RJ/.test(h[2]);
         [[YP, h[2], '+'], [YM, h[3], '−']].forEach(p => {
           el('circle', { class: 'term', cx: x1, cy: p[0], r: 5 }, us);
           tx(us, x1 - 9, p[0] + 4, 'tn', String(p[1]).replace(/[+-]$/, '') + (ac ? '' : ' ' + p[2]), 'end');
         });
       }
       /* as many lines as the wires written on the drawing (CT 4 wires, VT 3 wires), else 2 */
-      const nw = Math.min(4, Math.max(2, +((L.t.match(/(\d) wires/) || [])[1] || 2))),
+      const nw = Math.min(4, Math.max(2, +((L.t.match(/(\d) wires/) || [])[1] || NWIRE[L.k] || 2))),
         WY = Array.from({ length: nw }, (_, k) => YP + ((YM - YP) * k) / (nw - 1));
       const draw2 = (xa, xb, mid) => {
         if (L.in) {
           el('path', { class: 'w', d: 'M' + xa + ',' + (YP + YM) / 2 + ' H' + (xb - 2), stroke: c, 'stroke-dasharray': '5 4' }, us);
           arrowHead(us, xb - 6, (YP + YM) / 2, 1, c);
+        } else if (eth) {
+          /* Ethernet / fiber: one line per cable (A and B), the link talks both ways */
+          [[YP, 'A'], [YM, 'B']].forEach(([y, ab]) => {
+            el('path', { class: 'w', d: 'M' + (xa + 10) + ',' + y + ' H' + (xb - 8), stroke: c }, us);
+            arrowHead(us, xa + 10, y, -1, c);
+            if (xb < 1230) arrowHead(us, xb - 8, y, 1, c);
+            tx(us, xa + 16, y - 4, 'tl', ab);
+          });
         } else {
           WY.forEach(y => el('path', { class: 'w' + (nw > 2 ? ' thin' : ''), d: 'M' + (xa + 5) + ',' + y + ' H' + xb, stroke: c }, us));
           arrowHead(us, mid, YP, 1, c);
           if (L.loop) arrowHead(us, mid, YM, -1, c);
         }
       };
-      draw2(x1, x2, edge ? x1 + 50 : x1 + gap / 2);
+      if (!none) draw2(x1, x2, edge ? x1 + 50 : x1 + gap / 2);
       if (wrap) {
         /* the same wires come in from the left on the next row */
         const ny = 26 + (row + 1) * RH,
           nYP = ny + 50,
           nYM = ny + 68;
         if (L.in) el('path', { class: 'w', d: 'M4,' + (nYP + nYM) / 2 + ' H38', stroke: c, 'stroke-dasharray': '5 4' }, us);
+        else if (eth)
+          [nYP, nYM].forEach(y => {
+            el('path', { class: 'w', d: 'M4,' + y + ' H30', stroke: c }, us);
+            arrowHead(us, 32, y, 1, c);
+          });
         else WY.forEach(y => el('path', { class: 'w' + (nw > 2 ? ' thin' : ''), d: 'M4,' + (y - YP + nYP) + ' H38', stroke: c }, us));
         tx(us, 1232, YP - 12, 'tl', 'next row ↓', 'end');
       }
       const lx = edge ? x1 + 52 : x1 + gap / 2,
-        lab = L.in ? [L.t] : [L.t, last ? 'cable to the rack room:' : '', last ? 'no. not in the documents' : ''];
-      L.t
-        .replace(/,? (?=wires G|GA\d)/, '\n')
+        lab = L.in || mb ? [L.t] : [L.t, last ? 'cable to the rack room:' : '', last ? 'no. not in the documents' : ''];
+      (none ? '' : L.t)
+        .replace(/,? (?=wires G|GA\d|SFTP|cables)/, '\n')
         .split('\n')
+        .reduce((A, t, k) => A.concat(k ? wrapT(t, 26) : [t]), [])
         .concat(lab.slice(1))
         .filter(Boolean)
         .forEach((t, k) => tx(us, edge ? 1232 : lx, YM + 22 + k * 12, k ? 'tl' : 'll', t, edge ? 'end' : 'middle').setAttribute('fill', k && /cable|no\./.test(t) ? 'var(--c-dim)' : c));
-      if (last) {
+      if (last && !mb) {
         if (edge) tx(us, 1232, YP - 12, 'tl', 'to the rack room ↓', 'end');
         else {
           tx(us, x1 + gap + 4, YP + 2, 'bt2', 'rack room ↓');
@@ -514,6 +544,7 @@
       upL = r.up && r.up.length && !out ? r.up[r.up.length - 1][0] : '',
       who = /^(TCS|GCP)/.test(upL) ? upL.slice(0, 3) : sys === 'Field' ? 'field' : sys,
       S = srcOf(r),
+      MK = r.t === 'DI' || r.t === 'DO' ? 'ct' : /PI/.test(r.sig || '') ? 'pl' : 'ma',
       svg = el('svg', { viewBox: '0 0 1240 300', role: 'img', 'aria-label': 'Wiring path of ' + r.tag }, hp),
       Y1 = 168,
       Y2 = 200,
@@ -547,7 +578,7 @@
       segs.splice(1, 0, [210, 350, 'fc', '', '']);
     }
     segs.forEach(sg => {
-      const c = CK[sg[2]][0];
+      const c = CK[MK][0];
       [Y1, Y2].forEach(y => el('path', { class: 'w', d: 'M' + sg[0] + ',' + y + ' H' + sg[1], stroke: c }, svg));
       const cx = (sg[0] + sg[1]) / 2;
       if (sg[3]) tx(svg, cx, Y2 + 30, 'cl', sg[3]).setAttribute('fill', c);
@@ -582,8 +613,8 @@
     tx(svg, 16, 36, 'll', leg).setAttribute('fill', 'var(--c-tx)');
     [[188, 'fc'], [385, 'fc'], [520, 'xw'], [715, 'pf'], [905, 'ic'], [1040, 'ic']].forEach(([x, k]) => {
       if (S.k !== 'jb' && x === 188) return;
-      if (d1) arrowHead(svg, x, Y1, d1, CK[k][0]);
-      if (d2) arrowHead(svg, x, Y2, d2, CK[k][0]);
+      if (d1) arrowHead(svg, x, Y1, d1, CK[MK][0]);
+      if (d2) arrowHead(svg, x, Y2, d2, CK[MK][0]);
     });
     const strip = (x, label, t1, t2) => {
       el('rect', { class: 'strip', x: x - 20, y: Y1 - 26, width: 40, height: Y2 - Y1 + 44, rx: 3 }, svg);
@@ -641,7 +672,7 @@
       })
     );
     const ups = r.pair ? r.pair.up : r.up || [];
-    hp.append(legend((ups.length && ups.some(h => /^TCS/.test(h[0])) ? ['fc', 'in'] : ['fc']).concat(['xw', 'pf', 'ic'], r.pair && stnOf(r.pair) !== stnOf(r) ? ['nw'] : r.pair ? ['in'] : []).filter((k, i, A) => A.indexOf(k) === i)));
+    hp.append(legend(LEG));
     if (r.pair) {
       /* an AO that repeats an AI: the whole chain, without a cut: where the AI starts, the wiring of the AI, the copy inside the
          DCS, the wiring of the AO */
@@ -651,7 +682,7 @@
       const k = b.up && b.up.length ? 3 : 2,
         sv = el('svg', { viewBox: '0 0 1240 96', role: 'img', 'aria-label': 'Inside the DCS' }, hp),
         two = stnOf(b) !== stnOf(r),
-        c = two ? CK.nw[0] : CK.in[0];
+        c = two ? CK.en[0] : CK.in[0];
       tx(sv, 16, 16, 'tl', k + ' · INSIDE THE DCS');
       [[16, stnOf(b) + ' ' + b.a, b.tag + ' (input)'], [520, stnOf(r) + ' ' + r.a, r.tag + ' (output)']].forEach(([x, t, s2]) => {
         el('rect', { class: 'box', x, y: 26, width: 300, height: 52, rx: 6 }, sv);
@@ -660,7 +691,9 @@
       });
       el('path', { class: 'w', d: 'M316,52 H514', stroke: c, 'stroke-dasharray': two ? '' : '5 4' }, sv);
       arrowHead(sv, 510, 52, 1, c);
-      tx(sv, 418, 44, 'll', two ? 'DCS control network, ' + stnOf(b) + ' → ' + stnOf(r) : 'value copied inside the DCS', 'middle').setAttribute('fill', c);
+      if (two) arrowHead(sv, 322, 52, -1, c);
+      tx(sv, 418, 44, 'll', two ? 'DCS control network (FL-NET)' : 'value copied inside the DCS', 'middle').setAttribute('fill', c);
+      if (two) tx(sv, 418, 70, 'tl', stnOf(b) + ' → ' + stnOf(r), 'middle');
       tx(sv, 840, 46, 'tl', 'The copy block is not in the ABC / DITL drawings; the pair is the');
       tx(sv, 840, 60, 'tl', 'same signal name and range in the I/O list.');
       wiring(r, hp, k + 1 + ' · OUT OF THE DCS: ' + stnOf(r) + ' ' + r.a + ' to ' + r.sys);
@@ -673,41 +706,41 @@
   /* a Modbus point: the package PLC (A and B) and the DCS talk both ways on Ethernet; the value of this point goes one way */
   function drawMB(r, hp, cap) {
     const S = r.mb,
-      col = CK.en[0],
       toDcs = r.to === 'DCS';
-    hp.append(legend(['en', 'nw']));
     cap.textContent = (r.tag ? r.tag + '  ·  ' : '') + r.desc + '  ·  Modbus ' + r.maddr + '  ·  ' + (toDcs ? S.pkg + ' sends to DCS' : 'DCS sends to ' + S.pkg);
-    const svg = el('svg', { viewBox: '0 0 1240 250', role: 'img', 'aria-label': 'Modbus path of ' + (r.tag || r.desc) }, hp);
-    tx(svg, 16, 22, 'll', 'Signal: Modbus data. Each link talks both ways (⇄). The value of this point goes one way: ' + (toDcs ? S.pkg + ' → DCS' : 'DCS → ' + S.pkg) + ' (the dashed arrow below).').setAttribute('fill', 'var(--c-tx)');
-    const B = [
-      { x: 16, w: 230, t: S.pkg, s: 'PLC-A and PLC-B (redundant)', l: ['Modbus ' + r.maddr, r.mt === 'AI' ? 'analog value (register)' : r.mt === 'DI' ? 'status bit' : 'command bit'] },
-      { x: 440, w: 280, t: S.gcs, s: 'DCS station with the Modbus links', l: ['', S.con, 'area 1 = PLC-A, area 2 = PLC-B'] },
-      { x: 900, w: 324, t: S.stn, s: 'DCS address', l: [r.a, r.word2 ? 'PLC-B copy: ' + r.word2 + (r.mt === 'DI' ? ' bit ' + r.a.split(' bit ')[1] : '') : '', r.ind ? 'operator display: ' + r.ind : ''] }
-    ];
-    B.forEach(b => {
-      el('rect', { class: 'box', x: b.x, y: 40, width: b.w, height: 150, rx: 6 }, svg);
-      tx(svg, b.x + 10, 62, 'bt', b.t);
-      tx(svg, b.x + 10, 79, 'bs', b.s);
-      b.l.forEach((t, i) => t && tx(svg, b.x + 10, 116 + i * 20, i ? 'bs' : 'addr', t));
-    });
-    const link = (x1, x2, y, c, t1, t2) => {
-      el('path', { class: 'w', d: 'M' + (x1 + 8) + ',' + y + ' H' + (x2 - 8), stroke: c }, svg);
-      arrowHead(svg, x1 + 6, y, -1, c);
-      arrowHead(svg, x2 - 6, y, 1, c);
-      tx(svg, (x1 + x2) / 2, y - 10, 'll', t1, 'middle').setAttribute('fill', c);
-      tx(svg, (x1 + x2) / 2, y + 20, 'tl', t2, 'middle');
-    };
-    link(246, 440, 100, CK.en[0], 'Ethernet copper, Modbus', 'RJ-45 only (no fiber)');
-    link(720, 900, 100, CK.nw[0], 'DCS control network', 'BC send / receive');
-    const y = 214;
-    el('path', { class: 'w', d: 'M60,' + y + ' H1180', stroke: 'var(--c-tx)', 'stroke-dasharray': '7 4' }, svg);
-    arrowHead(svg, toDcs ? 1176 : 64, y, toDcs ? 1 : -1, 'var(--c-tx)');
-    tx(svg, 620, y + 22, 'tl', 'value of this point: ' + (toDcs ? S.pkg + ' → ' + S.gcs + ' → ' + S.stn : S.stn + ' → ' + S.gcs + ' → ' + S.pkg), 'middle');
-    hp.append(
-      E('p', {
-        cls: 'trcsrc',
-        txt: 'Source: LMYP-1 #1 Modbus communication list between DCS and ' + (S.sys === 'TCS' ? 'turbine system' : 'SCADA') + ' (point, Modbus address, SI word); Communication list between DCS and package (' + S.gcs + ', ' + S.con + ', RJ-45); Memory for Sub_System PLC MODBUS.xls (SI address areas, BC send / receive). DI bit = position of the point in its 16-bit word, counted from the row that names the word. Not in the documents: the switch / cable numbers of the Ethernet link.'
-      })
+    hp.append(legend(LEG));
+    const E1 = 'Ethernet (two-way)',
+      addr = S.stn + ' ' + r.a,
+      hops = [
+        [S.pkg + ' A / B', S.pan + ', RJ-45 port. Modbus address ' + r.maddr, '', '', E1 + ', SFTP cable ' + S.sftp[0] + ' (A) / ' + S.sftp[1] + ' (B)'],
+        ['MOXA EDS-316 switch', S.hub, '', '', E1 + ', SFTP cable ' + S.hubup],
+        ['Gateway ' + S.gcs + '-A / B', S.gcs + ' cabinet, Modbus to FL-NET', '', '', 'Ethernet FL-NET A + B (two-way), cables ' + S.fl + ', ' + S.fllen],
+        ['FL-NET switches ' + S.fhubs, 'MOXA EDS-316 in ' + S.fhub, '', '', 'Ethernet FL-NET A + B (two-way), cables ' + S.fcs + ', ' + S.fcslen],
+        ['Controller ' + S.ctl + '-A / B', toDcs ? 'receives into ' + r.a + (r.word2 ? ' (area 1) / ' + r.word2 + (r.mt === 'DI' ? ' bit ' + r.a.split(' bit ')[1] : '') + ' (area 2)' : '') : 'sends ' + r.a, '', '', toDcs ? 'inside the DCS controller (selects area 1 or 2)' : ''],
+        ['DCS address ' + addr, r.ind ? 'operator display: ' + r.ind : r.mt + ' point', '', '', '']
+      ];
+    if (!toDcs) {
+      /* DCS to PLC: the same route the other way */
+      const rev = hops.slice(0, 5).reverse().map((h, i, A) => [h[0], h[1], h[2], h[3], i < A.length - 1 ? A[i + 1][4] : '']);
+      rev[0][4] = 'Ethernet FL-NET A + B (two-way), cables ' + S.fcs + ', ' + S.fcslen;
+      rev[1][4] = 'Ethernet FL-NET A + B (two-way), cables ' + S.fl + ', ' + S.fllen;
+      rev[2][4] = E1 + ', SFTP cable ' + S.hubup;
+      rev[3][4] = E1 + ', SFTP cable ' + S.sftp[0] + ' (A) / ' + S.sftp[1] + ' (B)';
+      rev[4][4] = '';
+      hops.length = 0;
+      hops.push(['DCS address ' + addr, 'DCS logic memory to the Modbus area', '', '', 'inside the DCS controller']);
+      rev.forEach(h => hops.push(h));
+    }
+    upstream(
+      Object.assign({}, r, {
+        og: 'MB',
+        ref:
+          'Modbus communication list between DCS and ' + (S.sys === 'TCS' ? 'turbine system' : 'SCADA') + ' (point, Modbus address, SI word); communication list between DCS and package (' + S.gcs + ' connection, RJ-45); ' + S.dwg + ' (as read by the control network study). DI bit = position of the point in its 16-bit word, counted from the row that names the word. The list does not say which PLC (A or B) fills area 1 or area 2'
+      }),
+      hops,
+      hp,
+      'MODBUS OVER ETHERNET: every device and cable from the package PLC to the DCS address · value of this point: ' + (toDcs ? S.pkg + ' → DCS' : 'DCS → ' + S.pkg),
+      1
     );
   }
   window.LS_TRACER = { render };
