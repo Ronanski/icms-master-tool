@@ -9,37 +9,101 @@
    TC0763, TC0791 ~ 0793; dcs-io-list.xls From / To remark). GCP-AI1004 / 1005: the wiring list writes GCP->DCS, the TCS
    drawing shows them through TCS GXF6 / GXF1; the drawing is followed (as in the study). Read only. */
 (function () {
-  const T = 'TCS Elementary Diagram 331DM07733';
-  const gcp = (insh, inb, inch, outsh, outb, outch) => ['GCP', [['GCP', 'generator meter transducer, 4-20 mA'], ['TCS input ' + inb + ' ch' + inch, 'sheet ' + insh + ' (TCS-7 rack)'], ['TCS output ' + outb + ' ch' + outch, 'sheet ' + outsh + ' (TCS-7 rack)']], T + ' ' + insh + ' + ' + outsh + '; I/O list remark "From TCS"'];
-  const fld = (dev, insh, inname, outsh, outb, outch) => ['Field', [[dev, 'field sensor'], ['TCS input ' + inname, 'sheet ' + insh], ['TCS output ' + outb + ' ch' + outch, 'sheet ' + outsh]], T + ' ' + insh + ' + ' + outsh];
-  const tcs = (what, outsh, outb, outch) => ['TCS', [['TCS', what], ['TCS output ' + outb + ' ch' + outch, 'sheet ' + outsh]], T + ' ' + outsh];
+  /* 3.2.3-beta.118: the whole chain before the rack room, with terminals and what travels on each line, as read by the control
+     network study (ARIN, add_origin.py v2): GCP side from GSE-2013-0083 (7X7SKB1104) sheets 50 ~ 53 (GA126 ~ GA130) and 70 ~ 73
+     (GA187 / GA188 / GA190); TCS side from TCS Elementary Diagram 331DM07733 (input SD-AI-L GXF ch1..8 = 1/2, 5/6, 9/10, 13/14,
+     21/22, 25/26, 29/30, 33/34, TC0751; output SD-AO GXF / AXF chN = 2N-1 / 2N, TC0791 / TC0160).
+     Hop = [name, note, terminal +, terminal −, what travels on the line to the next hop]. '–' = not in the documents; '' = no wire. */
+  const T = 'TCS Elementary Diagram 331DM07733',
+    G = 'GSE-2013-0083 (7X7SKB1104) sh50-53 GA126 ~ GA130 + sh70-73 GA187 / GA188 / GA190',
+    MA = '4-20 mA DC, 2 wires';
+  const INT = { 1: [1, 2], 2: [5, 6], 3: [9, 10], 4: [13, 14], 5: [21, 22], 6: [25, 26], 7: [29, 30], 8: [33, 34] };
+  const OT = ch => [String(2 * ch - 1), String(2 * ch)];
+  const CTH = [
+    ['Generator CT GA016CT4', '10000/5 A, 4 wires (sheet GA126)', '1', '4', 'CT 5 A AC, 4 wires'],
+    ['TCS PLU (TCS-4 rack)', 'CT passes through PLU DEX1, in 1 ~ 4, out 5 ~ 8 (TCS drawing TC0412)', '5', '8', 'CT 5 A AC, 4 wires, GA126C001'],
+    ['GCP terminal block X05', 'GA230, terminals 1 ~ 4', '1', '4', 'CT 5 A AC, 4 wires'],
+    ['GCP test terminal FJ2 (P12)', 'MT-42A, 11 / 22 / 33 / 44', '11', '44', 'CT 5 A AC, 4 wires GA126A04 / B04 / C04 / NE04']
+  ];
+  const VTH = [
+    ['Generator VT2 GA022VT2', '13.8 kV/√3 : 115 V/√3 (sheet GA126)', '1', '3', 'VT 115 V AC, 3 wires'],
+    ['GCP terminal block X04', 'GA229, terminals 1 ~ 3', '1', '3', 'VT 115 V AC, 3 wires'],
+    ['GCP fuses F07 ~ F09', 'EFB-5, 3 A (GCP)', '', '', 'VT 115 V AC, 3 wires'],
+    ['GCP test terminal FJ1 (P11)', 'MT-41A, 11 / 22 / 33', '11', '33', 'VT 115 V AC, 3 wires GA126A03 / B03 / C03']
+  ];
+  const SRC = { CT: CTH, VT: VTH, CTVT: CTH },
+    VTNOTE = ' + VT2 115 V into P1 / P2 / P3 (path: VT2 → X04 → fuses F07 ~ F09 → test terminal FJ1)';
+  const GX = {
+    'I A': ['1', '2', 'GA12801/02', 'X11', '1', '2', 'CT'],
+    'I B': ['3', '4', 'GA12804/05', 'X11', '4', '5', 'CT'],
+    'I C': ['5', '6', 'GA12807/08', 'X11', '7', '8', 'CT'],
+    'V A-B': ['7', '8', 'GA12810/11', 'X11', '10', '11', 'VT'],
+    'V B-C': ['9', '10', 'GA12813/14', 'X11', '13', '14', 'VT'],
+    'V C-A': ['11', '12', 'GA12816/17', 'X11', '16', '17', 'VT'],
+    MVAR: ['15', '16', 'GA12822/23', 'X11', '22', '23', 'CTVT'],
+    PF: ['17', '18', 'GA12825/26', 'X12', '1', '2', 'CTVT'],
+    Hz: ['19', '20', 'GA12828/29', 'X12', '4', '5', 'VT']
+  };
+  const cp = a => a.map(h => h.slice());
+  const gcphops = name => {
+    const t = GX[name],
+      inp = { CT: 'CT into 1S / 3S', VT: 'VT into P1 / P2 / P3', CTVT: 'CT into 1S / 3S' + VTNOTE }[t[6]];
+    return cp(SRC[t[6]]).concat([
+      ['GCP multi transducer', 'QT2-93A (U01GA101). ' + inp + '. Out ' + t[0] + ' / ' + t[1], t[0], t[1], '4-20 mA DC, wires ' + t[2]],
+      ['GCP terminal block ' + t[3], 'to TCS (sheet GA187)', t[4], t[5], MA]
+    ]);
+  };
+  const gcp = (name, insh, inb, inch, outsh, outb, outch) => {
+    const i = INT[inch],
+      o = OT(outch);
+    return ['GCP', gcphops(name).concat([['TCS input ' + inb + ' ch' + inch, 'sheet ' + insh + ' (TCS-7 rack)', String(i[0]), String(i[1]), 'inside the TCS controller'], ['TCS output ' + outb + ' ch' + outch, 'sheet ' + outsh + ' (TCS-7 rack)', o[0], o[1], MA]]), G + '; ' + T + ' ' + insh + ' + ' + outsh + ' (GSE labels the TCS strips GXF2 ~ 4, the TCS drawing GXF1 ~ 3, same terminal numbers); I/O list remark "From TCS"'];
+  };
+  const fld = (dev, insh, inname, outsh, outb, outch, media) => {
+    const o = OT(outch);
+    return ['Field', [[dev, 'field sensor', '–', '–', media || '4-20 mA DC'], ['TCS input ' + inname, 'sheet ' + insh, '–', '–', 'inside the TCS controller'], ['TCS output ' + outb + ' ch' + outch, 'sheet ' + outsh, o[0], o[1], MA]], T + ' ' + insh + ' + ' + outsh];
+  };
+  const tcs = (what, outsh, outb, outch) => {
+    const o = OT(outch);
+    return ['TCS', [['TCS controller', what, '', '', 'inside the TCS controller'], ['TCS output ' + outb + ' ch' + outch, 'sheet ' + outsh, o[0], o[1], MA]], T + ' ' + outsh];
+  };
   /* station|address -> [origin, hops, source] */
   const ORIG = {
-    '2|AI0791': gcp('TC0751', 'GXF1', '3', 'TC0791', 'GXF11', '5'),
-    '2|AI0807': gcp('TC0751', 'GXF1', '2', 'TC0791', 'GXF11', '6'),
-    '2|AI0855': gcp('TC0751A', 'GXF2', '3', 'TC0792', 'GXF12', '4'),
-    '2|AI0871': gcp('TC0751A', 'GXF2', '2', 'TC0792', 'GXF12', '5'),
-    '2|AI0887': gcp('TC0751B', 'GXF3', '2', 'TC0793', 'GXF10', '1'),
-    '2|AI0903': gcp('TC0751B', 'GXF3', '1', 'TC0793', 'GXF10', '2'),
-    '2|AI0775': gcp('TC0751E', 'GXF6', '1', 'TC0792', 'GXF12', '3'),
-    '2|AI0823': gcp('TC0751E', 'GXF6', '2', 'TC0792', 'GXF12', '6'),
-    '2|AI0839': gcp('TC0751E', 'GXF6', '5', 'TC0792', 'GXF12', '7'),
-    '2|AI0452': fld('TE-LO1002-1', 'TC0763', 'RTD AI(9)', 'TC0791', 'GXF11', '1'),
-    '2|AI0516': fld('TE-LO1002-2', 'TC0763', 'RTD AI(9)', 'TC0792', 'GXF12', '1'),
-    '2|AI0757': fld('ZT-AS1011', 'TC0751F', 'COM AI(7)', 'TC0791', 'GXF11', '3'),
-    '2|AI0883': fld('PT-ST1001-1', 'TC0532', 'TPC AI(1)', 'TC0160', 'AXF3', '3'),
-    '2|AI0884': fld('PT-ST1001-2', 'TC0534', 'TPC AI(3)', 'TC0160', 'AXF3', '4'),
-    '2|AI0885': fld('PT-ST1001-3', 'TC0536', 'TPC AI(5)', 'TC0160', 'AXF3', '5'),
-    '2|AI0886': tcs('steam seal valve output (made inside TCS)', 'TC0791', 'GXF11', '4'),
-    '1|AI0420': tcs('target MW setpoint (made inside TCS)', 'TC0160', 'AXF3', '1'),
-    '1|AI0421': tcs('load up rate (made inside TCS)', 'TC0160', 'AXF3', '2'),
-    '2|AI0534': tcs('turbine speed (made inside TCS)', 'TC0160', 'AXF3', '6'),
-    /* I/O list remark "FROM GCP" (wiring list: TCS-DI2 / TCS->DCS) */
-    '2|I.041B': ['GCP', [], 'dcs-io-list.xls remark "FROM GCP"'],
-    '2|I.041C': ['GCP', [], 'dcs-io-list.xls remark "FROM GCP"']
+    '2|AI0791': gcp('I A', 'TC0751', 'GXF1', 3, 'TC0791', 'GXF11', 5),
+    '2|AI0807': gcp('V A-B', 'TC0751', 'GXF1', 2, 'TC0791', 'GXF11', 6),
+    '2|AI0855': gcp('I B', 'TC0751A', 'GXF2', 3, 'TC0792', 'GXF12', 4),
+    '2|AI0871': gcp('V B-C', 'TC0751A', 'GXF2', 2, 'TC0792', 'GXF12', 5),
+    '2|AI0887': gcp('I C', 'TC0751B', 'GXF3', 2, 'TC0793', 'GXF10', 1),
+    '2|AI0903': gcp('V C-A', 'TC0751B', 'GXF3', 1, 'TC0793', 'GXF10', 2),
+    '2|AI0775': gcp('MVAR', 'TC0751E', 'GXF6', 1, 'TC0792', 'GXF12', 3),
+    '2|AI0823': gcp('PF', 'TC0751E', 'GXF6', 2, 'TC0792', 'GXF12', 6),
+    '2|AI0839': gcp('Hz', 'TC0751E', 'GXF6', 5, 'TC0792', 'GXF12', 7),
+    '2|AI0452': fld('TE-LO1002-1', 'TC0763', 'RTD AI(9)', 'TC0791', 'GXF11', 1, 'RTD (resistance)'),
+    '2|AI0516': fld('TE-LO1002-2', 'TC0763', 'RTD AI(9)', 'TC0792', 'GXF12', 1, 'RTD (resistance)'),
+    '2|AI0757': fld('ZT-AS1011', 'TC0751F', 'COM AI(7)', 'TC0791', 'GXF11', 3),
+    '2|AI0883': fld('PT-ST1001-1', 'TC0532', 'TPC AI(1)', 'TC0160', 'AXF3', 3),
+    '2|AI0884': fld('PT-ST1001-2', 'TC0534', 'TPC AI(3)', 'TC0160', 'AXF3', 4),
+    '2|AI0885': fld('PT-ST1001-3', 'TC0536', 'TPC AI(5)', 'TC0160', 'AXF3', 5),
+    '2|AI0886': tcs('steam seal valve output (made inside TCS)', 'TC0791', 'GXF11', 4),
+    '1|AI0420': tcs('target MW setpoint (made inside TCS)', 'TC0160', 'AXF3', 1),
+    '1|AI0421': tcs('load up rate (made inside TCS)', 'TC0160', 'AXF3', 2),
+    '2|AI0534': tcs('turbine speed (made inside TCS)', 'TC0160', 'AXF3', 6)
   };
-  /* STN101 AI0774 GCP-AI1002 #1 Generator MW (D): a direct cable GCP -> DCS (WIRING.xls GCP-->DCS) */
-  ORIG['1|AI0774'] = ['GCP', [['GCP', 'generator MW transducer, 4-20 mA']], 'direct cable GCP to DCS (WIRING.xls)'];
+  /* the generator MW to the DCS (direct cables GCP -> DCS), the watt-hour / var-hour pulses and the ready-to-synchronize contacts */
+  const MWH = () =>
+    cp(CTH).concat([
+      ['GCP MW transducer', 'W T/D U03GA101 (out A / B) or multi meter P40GA101 (out 16 / 17). CT into 1S / 3S' + VTNOTE, '', '', MA],
+      ['GCP terminal block X12', '10 / 11 = power(3), 13 / 14 = power(4)', '', '', MA]
+    ]);
+  const MWR = G + ' sh52-53, GA190. The drawing labels the two DCS MW outputs power(3) and power(4); it does not say which one is DCS MW (C) or MW (D)';
+  const PM = (out, t1, t2, w, x1, x2, what) => ['GCP', cp(CTH).concat([['GCP digital multi meter', 'P40GA101 (SQLC-110L). CT into 12 / 3 / 14, commons 13 / 4 / 15 (CT runs in series after the transducers, sheets GA128 ~ GA130)' + VTNOTE + '. Out ' + out, t1, t2, 'pulse, wires ' + w], ['GCP terminal block X12', 'to DCS (sheet GA188)', x1, x2, what]]), G + ' sh53 GA130 + sh71 GA188'];
+  const RS = (k, what, x1, x2) => ['GCP', [['GCP relay ' + k + ' (GA113)', what + ' ready to synchronizing, contact 11-7', '11', '7', 'contact (on / off)'], ['GCP terminal block X10', 'to DCS (sheet GA190)', x1, x2, 'contact (on / off), 2 wires']], G + ' sh73 GA190'];
+  ORIG['1|AI0774'] = ['GCP', MWH(), MWR];
+  ORIG['1|AI0419'] = ['GCP', MWH(), MWR];
+  ORIG['1|AI0694'] = PM('24 / 25', '24', '25', 'GA13004 / 05', '19', '20', 'pulse 1000 kWh, 2 wires');
+  ORIG['1|AI0696'] = PM('26 / 27', '26', '27', 'GA13007 / 08', '22', '23', 'pulse 1000 kvarh, 2 wires');
+  ORIG['2|I.041B'] = RS('K33', '52G', '23', '24');
+  ORIG['2|I.041C'] = RS('K34', '52L', '25', '26');
+  ['2|I.041B', '2|I.041C'].forEach(k => (ORIG[k][2] += '. WIRING.xls names the cable side of these two inputs TCS-DI2; the GCP drawing GA190 sends them from X10 to the DCS'));
   /* 3.2.3-beta.115 (user: "Scada agad? Gcp pero walang GCP?", "Buo dapat ang chain at ang address na mga associated nito"): the
      DCS analog outputs to the SCADA repeat a generator value that the DCS reads on an AI. Pair = the same signal in the I/O list
      (dcs-io-list.xls, e.g. AO0406 TCS-AO1007 #1 Generator current (B) <- AI0855 TCS-AI1007 #1 GEN. current (B)), as in the control
@@ -60,23 +124,16 @@
   /* AI-Wet / AI-Dry of the I/O list (K1AU3-E2-0-118 sheet "DCS Numbering" rows 13-14; WIRING.xls sheet AIO 2W / 4W) */
   const WIRE = t => (/Wet/i.test(t) ? '2-wire' : /Dry/i.test(t) ? '4-wire' : '');
   const WIREL = t => (/Wet/i.test(t) ? '2-wire (AI-Wet: the DCS card powers the loop)' : /Dry/i.test(t) ? '4-wire (AI-Dry: the transmitter has its own power)' : '');
-  /* 3.2.3-beta.117 (user: "Bakit wala na terminal point. Tapos bakit puro 1 way. Tapos ano b ung arrow, 4 to 20 mA ba, ethernet,
-     contact ba"): terminal + / - of each hop before the rack room, read by the control network study (ARIN) from TCS Elementary
-     Diagram 331DM07733: input card SD-AI-L GXF ch1..8 = 1/2, 5/6, 9/10, 13/14, 21/22, 25/26, 29/30, 33/34 (TC0751); output card
-     SD-AO GXF / AXF chN = 2N-1 / 2N (TC0791, TC0160). '–' = not in the documents (GCP side, field sensor side, TCS RTD / TPC / COM
-     inputs); '' = no wire (value made inside the TCS). */
-  const TERM = {"1|AI0420":[["",""],["1","2"]],"1|AI0421":[["",""],["3","4"]],"1|AI0774":[["–","–"]],"2|AI0452":[["–","–"],["–","–"],["1","2"]],"2|AI0516":[["–","–"],["–","–"],["1","2"]],"2|AI0534":[["",""],["11","12"]],"2|AI0757":[["–","–"],["–","–"],["5","6"]],"2|AI0775":[["–","–"],["1","2"],["5","6"]],"2|AI0791":[["–","–"],["9","10"],["9","10"]],"2|AI0807":[["–","–"],["5","6"],["11","12"]],"2|AI0823":[["–","–"],["5","6"],["11","12"]],"2|AI0839":[["–","–"],["21","22"],["13","14"]],"2|AI0855":[["–","–"],["9","10"],["7","8"]],"2|AI0871":[["–","–"],["5","6"],["9","10"]],"2|AI0883":[["–","–"],["–","–"],["5","6"]],"2|AI0884":[["–","–"],["–","–"],["7","8"]],"2|AI0885":[["–","–"],["–","–"],["9","10"]],"2|AI0886":[["",""],["7","8"]],"2|AI0887":[["–","–"],["5","6"],["1","2"]],"2|AI0903":[["–","–"],["1","2"],["3","4"]]};
-  for (const k in TERM) if (ORIG[k]) ORIG[k][1] = ORIG[k][1].map((h, i) => h.concat(TERM[k][i] || ['–', '–']));
   /* what travels on the line from one hop to the next (label of the arrow) */
-  const LINK = (h, nx) => {
-    const a = h[0],
-      b = nx ? nx[0] : '';
-    if (/^TCS input/.test(a) || /^TCS$/.test(a)) return { t: 'inside the TCS controller', in: 1 };
-    if (/^DCS .*AI/.test(a) && /^DCS .*AO/.test(b)) return { t: 'inside the DCS (copy block not drawn)', in: 1 };
-    if (/^TE-/.test(a)) return { t: 'RTD (resistance)' };
-    /* the sender gives the loop current (GCP transducer, TCS analog output, DCS analog output card): out on +, back on − */
-    if (/^GCP|^TCS output|^DCS .*AO/.test(a)) return { t: '4-20 mA DC (+ out, − back)', loop: 1 };
-    return { t: '4-20 mA DC' };
+  const LINK = (h, nx, i, og) => {
+    const t = h[4] || '',
+      kind = /inside/.test(t) ? 'in' : 'fc';
+    /* both wires get an arrow (loop current out on +, back on −) when a sender drives a 4-20 mA loop: GCP transducer, TCS
+       output, DCS AO card, and the GCP terminal block that passes that loop on; not for a field sensor (who powers it is not
+       in the documents), an AC CT / VT circuit, a pulse or a contact (one arrow = direction of the signal) */
+    const loop = /^4-20 mA/.test(t) && !(og === 'Field' && i === 0);
+    if (kind === 'in' && /^DCS .*AI/.test(h[0])) return { t: 'inside the DCS (copy block not drawn)', in: 1 };
+    return { t, in: kind === 'in' ? 1 : 0, loop };
   };
   /* Modbus over Ethernet (two-way link) with the package PLC: LMYP-1 #1-Communication list between DCS and package.xls (sheets
      #1 GCS10F and Common GCS10E: PLC-A / PLC-B, Modbus connection, "RJ-45 Only") and Memory for Sub_System PLC MODBUS.xls
@@ -194,8 +251,8 @@
         sa = 'STN10' + k.split('|')[0];
       a.og = b.og || 'GCP';
       a.up = b.up.concat([
-        ['DCS ' + sb + ' ' + b.a, b.tag + ' ' + (b.wire ? b.wire + ' ' : '') + 'input (value inside the DCS)', b.e1 || '–', b.e2 || '–'],
-        ['DCS ' + sa + ' ' + a.a, 'sent out to ' + a.sys + ' on this AO', a.e1 || '–', a.e2 || '–']
+        ['DCS ' + sb + ' ' + b.a, b.tag + ' ' + (b.wire ? b.wire + ' ' : '') + 'input (value inside the DCS)', b.e1 || '–', b.e2 || '–', 'inside the DCS (copy block not drawn)'],
+        ['DCS ' + sa + ' ' + a.a, 'sent out to ' + a.sys + ' on this AO', a.e1 || '–', a.e2 || '–', MA]
       ]);
       a.pair = b;
       a.ref = (b.ref ? b.ref + '. ' : '') + 'AO paired with ' + sb + ' ' + b.a + ' (' + b.tag + ') by the same signal in the I/O list; the DCS block that copies the AI to this AO is not in the ABC / DITL drawings';
@@ -312,7 +369,7 @@
     rows.slice(0, MAX).forEach(r => {
       const S = srcOf(r);
       const out = r.t === 'AO' || r.t === 'DO',
-        ft = r.up && r.up.length ? [...new Set(r.up.map(h => h[0].split(' ')[0]).concat(out ? ['DCS'] : []))].join(' → ') + (out ? ' → ' + r.sys : r.up.some(h => /^DCS/.test(h[0])) ? '' : ' → DCS') : r.og === 'GCP' && S.n.indexOf('GCP') < 0 ? 'GCP value · ' + S.n : S.n;
+        ft = r.up && r.up.length ? r.up.map(h => h[0].split(' ')[0]).concat(out ? ['DCS'] : []).filter((w, i, A) => w !== A[i - 1]).join(' → ') + (out ? ' → ' + r.sys : r.up.some(h => /^DCS/.test(h[0])) ? '' : ' → DCS') : r.og === 'GCP' && S.n.indexOf('GCP') < 0 ? 'GCP value · ' + S.n : S.n;
       const tr = r.t === 'MB' ? E('tr', { cls: r === st.sel ? 'on' : '' }, [
         E('td', {}, [E('span', { cls: 'trcty MB', txt: 'MB ' + r.mt })]),
         E('td', { cls: 'm', txt: r.tag }),
@@ -372,54 +429,90 @@
   };
   /* the hops before the rack room (GCP / field -> TCS input -> TCS output) */
   function upstream(r, hops, hp, head) {
+    /* rows of up to 4 hops; a row that goes on draws its wires to the right edge and the next row starts from the left edge */
     const n = hops.length,
-      us = el('svg', { viewBox: '0 0 1240 160', role: 'img', 'aria-label': 'Where ' + r.tag + ' starts' }, hp);
+      PER = 4,
+      rows = Math.ceil(n / PER),
+      RH = 150,
+      gap = 104,
+      bw = 196,
+      us = el('svg', { viewBox: '0 0 1240 ' + (40 + rows * RH), role: 'img', 'aria-label': 'Where ' + r.tag + ' starts' }, hp);
     tx(us, 16, 16, 'tl', head);
-    const gap = n > 2 ? 110 : 150,
-      bw = Math.min(260, Math.floor((1240 - 16 - 150 - n * gap) / n)),
-      YP = 74,
-      YM = 92;
     hops.forEach((h, i) => {
-      const x = 16 + i * (bw + gap),
+      const row = Math.floor(i / PER),
+        col = i % PER,
+        y0 = 26 + row * RH,
+        x = 40 + col * (bw + gap),
+        YP = y0 + 50,
+        YM = y0 + 68,
         fit = (t, px) => (t.length > Math.floor((bw - 16) / px) ? t.slice(0, Math.floor((bw - 16) / px) - 1) + '…' : t);
-      el('rect', { class: 'box' + (/^GCP$|^TE-|^PT-|^ZT-/.test(h[0]) ? ' dash' : ''), x, y: 26, width: bw, height: 80, rx: 6 }, us);
-      tx(us, x + 10, 45, 'bt', fit(h[0], 8.4));
-      tx(us, x + 10, 61, 'bs', fit(h[1], 6.3));
-      el('title', {}, el('rect', { x, y: 26, width: bw, height: 80, fill: 'transparent' }, us)).textContent = h[0] + ' · ' + h[1] + (h[2] ? ' · terminal ' + h[2] + ' / ' + h[3] : '');
-      const L = LINK(h, hops[i + 1]),
+      el('rect', { class: 'box' + (/^Generator|^TE-|^PT-|^ZT-/.test(h[0]) ? ' dash' : ''), x, y: y0, width: bw, height: 82, rx: 6 }, us);
+      tx(us, x + 10, y0 + 19, 'bt2', fit(h[0], 7.4));
+      tx(us, x + 10, y0 + 34, 'bs', fit(h[1], 6.3));
+      el('title', {}, el('rect', { x, y: y0, width: bw, height: 82, fill: 'transparent' }, us)).textContent = h[0] + ' · ' + h[1] + (h[2] ? ' · terminal ' + h[2] + ' / ' + h[3] : '');
+      const L = LINK(h, hops[i + 1], i, r.og),
         x1 = x + bw,
-        x2 = x1 + gap,
+        wrap = col === PER - 1 && i < n - 1,
+        last = i === n - 1,
+        edge = wrap || (last && col === PER - 1),
+        x2 = edge ? 1236 : x1 + gap,
         c = CK[L.in ? 'in' : 'fc'][0];
       if (h[2] !== '' && h[2] != null) {
+        /* AC (CT / VT) has no + / −: only the terminal numbers */
+        const ac = /AC/.test(L.t);
         [[YP, h[2], '+'], [YM, h[3], '−']].forEach(p => {
           el('circle', { class: 'term', cx: x1, cy: p[0], r: 5 }, us);
-          tx(us, x1 - 9, p[0] + 4, 'tn', String(p[1]).replace(/[+-]$/, '') + ' ' + p[2], 'end');
+          tx(us, x1 - 9, p[0] + 4, 'tn', String(p[1]).replace(/[+-]$/, '') + (ac ? '' : ' ' + p[2]), 'end');
         });
       }
-      const last = i === n - 1;
-      if (L.in) {
-        el('path', { class: 'w', d: 'M' + x1 + ',' + (YP + YM) / 2 + ' H' + (x2 - 2), stroke: c, 'stroke-dasharray': '5 4' }, us);
-        arrowHead(us, x2 - 6, (YP + YM) / 2, 1, c);
-      } else {
-        el('path', { class: 'w', d: 'M' + (x1 + 5) + ',' + YP + ' H' + (x2 - 2), stroke: c }, us);
-        el('path', { class: 'w', d: 'M' + (x1 + 5) + ',' + YM + ' H' + (x2 - 2), stroke: c }, us);
-        arrowHead(us, x1 + gap / 2, YP, 1, c);
-        if (L.loop) arrowHead(us, x1 + gap / 2, YM, -1, c);
+      /* as many lines as the wires written on the drawing (CT 4 wires, VT 3 wires), else 2 */
+      const nw = Math.min(4, Math.max(2, +((L.t.match(/(\d) wires/) || [])[1] || 2))),
+        WY = Array.from({ length: nw }, (_, k) => YP + ((YM - YP) * k) / (nw - 1));
+      const draw2 = (xa, xb, mid) => {
+        if (L.in) {
+          el('path', { class: 'w', d: 'M' + xa + ',' + (YP + YM) / 2 + ' H' + (xb - 2), stroke: c, 'stroke-dasharray': '5 4' }, us);
+          arrowHead(us, xb - 6, (YP + YM) / 2, 1, c);
+        } else {
+          WY.forEach(y => el('path', { class: 'w' + (nw > 2 ? ' thin' : ''), d: 'M' + (xa + 5) + ',' + y + ' H' + xb, stroke: c }, us));
+          arrowHead(us, mid, YP, 1, c);
+          if (L.loop) arrowHead(us, mid, YM, -1, c);
+        }
+      };
+      draw2(x1, x2, edge ? x1 + 50 : x1 + gap / 2);
+      if (wrap) {
+        /* the same wires come in from the left on the next row */
+        const ny = 26 + (row + 1) * RH,
+          nYP = ny + 50,
+          nYM = ny + 68;
+        if (L.in) el('path', { class: 'w', d: 'M4,' + (nYP + nYM) / 2 + ' H38', stroke: c, 'stroke-dasharray': '5 4' }, us);
+        else WY.forEach(y => el('path', { class: 'w' + (nw > 2 ? ' thin' : ''), d: 'M4,' + (y - YP + nYP) + ' H38', stroke: c }, us));
+        tx(us, 1232, YP - 12, 'tl', 'next row ↓', 'end');
       }
-      const lab = (L.in ? [L.t] : [L.t, last ? 'cable to the rack room:' : 'cable:', 'no. not in the documents']).filter(Boolean);
-      lab.forEach((t, k) => tx(us, x1 + gap / 2, 120 + k * 13, k ? 'tl' : 'll', t, 'middle').setAttribute('fill', k ? 'var(--c-dim)' : c));
+      const lx = edge ? x1 + 52 : x1 + gap / 2,
+        lab = L.in ? [L.t] : [L.t, last ? 'cable to the rack room:' : '', last ? 'no. not in the documents' : ''];
+      L.t
+        .replace(/,? (?=wires G|GA\d)/, '\n')
+        .split('\n')
+        .concat(lab.slice(1))
+        .filter(Boolean)
+        .forEach((t, k) => tx(us, edge ? 1232 : lx, YM + 22 + k * 12, k ? 'tl' : 'll', t, edge ? 'end' : 'middle').setAttribute('fill', k && /cable|no\./.test(t) ? 'var(--c-dim)' : c));
+      if (last) {
+        if (edge) tx(us, 1232, YP - 12, 'tl', 'to the rack room ↓', 'end');
+        else {
+          tx(us, x1 + gap + 4, YP + 2, 'bt2', 'rack room ↓');
+          tx(us, x1 + gap + 4, YP + 18, 'bs', 'wiring below');
+        }
+      }
     });
-    const lx = 16 + n * (bw + gap) + 4;
-    tx(us, lx, 80, 'bt', 'rack room ↓');
-    tx(us, lx, 96, 'bs', 'wiring below');
-    const yEnd = srcLines(us, 166, 'Source: ' + r.ref + '. Terminals: TCS Elementary Diagram 331DM07733 (read by the control network study); – = not in the documents.');
+    const yEnd = srcLines(us, 40 + rows * RH, 'Source: ' + r.ref + '. – = not in the documents.');
     us.setAttribute('viewBox', '0 0 1240 ' + (yEnd + 2));
   }
   /* the wiring in the rack room: other panel / field -> (junction box) -> marshalling panel -> FCS -> address */
   function wiring(r, hp, head) {
     const out = r.t === 'AO' || r.t === 'DO',
       sys = r.sys,
-      who = sys === 'Field' ? 'field' : sys,
+      upL = r.up && r.up.length && !out ? r.up[r.up.length - 1][0] : '',
+      who = /^(TCS|GCP)/.test(upL) ? upL.slice(0, 3) : sys === 'Field' ? 'field' : sys,
       S = srcOf(r),
       svg = el('svg', { viewBox: '0 0 1240 300', role: 'img', 'aria-label': 'Wiring path of ' + r.tag }, hp),
       Y1 = 168,
@@ -427,7 +520,7 @@
       T = 58;
     if (head) tx(svg, 16, 16, 'tl', head);
     const B = [
-      { x: 16, w: 150, t: r.up && r.up.length && !out ? 'TCS' : S.k === 'pan' ? (sys === 'Local panels' ? S.n.split('→')[0] : sys) : r.tag, s: S.k === 'pan' ? 'other panel' : 'field device', d: S.k !== 'pan' },
+      { x: 16, w: 150, t: upL ? who : S.k === 'pan' ? (sys === 'Local panels' ? S.n.split('→')[0] : sys) : r.tag, s: S.k === 'pan' ? 'other panel' : 'field device', d: S.k !== 'pan' },
       { x: 210, w: 140, t: S.k === 'jb' ? S.n : S.k === 'pan' ? 'Cable from ' + S.n.split('→')[0] : 'Direct', s: S.k === 'jb' ? 'junction box (field)' : S.k === 'pan' ? 'cable no. not in the list' : 'field cable', d: true },
       { x: 390, w: 330, t: r.mpl, s: 'marshalling panel, rack room' },
       { x: 770, w: 290, t: r.fcs, s: 'FCS cabinet, rack room' },
@@ -528,7 +621,8 @@
     }
     if (r.t === 'MB') return drawMB(r, hp, cap);
     const out = r.t === 'AO' || r.t === 'DO',
-      who = r.sys === 'Field' ? 'field' : r.sys;
+      upL = r.up && r.up.length && !out ? r.up[r.up.length - 1][0] : '',
+      who = /^(TCS|GCP)/.test(upL) ? upL.slice(0, 3) : r.sys === 'Field' ? 'field' : r.sys;
     const org = r.up && r.up.length ? 'chain: ' + r.up.map(h => h[0]).join(' → ') + (out ? ' → ' + r.sys : r.up.some(h => /^DCS/.test(h[0])) ? '' : ' → DCS') + '  ·  ' : r.og === 'GCP' && out ? 'value comes from GCP  ·  ' : '';
     cap.textContent = '';
     cap.append(
@@ -547,7 +641,7 @@
       })
     );
     const ups = r.pair ? r.pair.up : r.up || [];
-    hp.append(legend(ups.length && ups.some(h => /^TCS/.test(h[0])) ? ['fc', 'in', 'xw', 'pf', 'ic'] : ['fc', 'xw', 'pf', 'ic']));
+    hp.append(legend((ups.length && ups.some(h => /^TCS/.test(h[0])) ? ['fc', 'in'] : ['fc']).concat(['xw', 'pf', 'ic'], r.pair && stnOf(r.pair) !== stnOf(r) ? ['nw'] : r.pair ? ['in'] : []).filter((k, i, A) => A.indexOf(k) === i)));
     if (r.pair) {
       /* an AO that repeats an AI: the whole chain, without a cut: where the AI starts, the wiring of the AI, the copy inside the
          DCS, the wiring of the AO */
@@ -556,16 +650,17 @@
       wiring(b, hp, (b.up && b.up.length ? '2' : '1') + ' · INTO THE DCS: ' + stnOf(b) + ' ' + b.a + ' (' + b.tag + ')');
       const k = b.up && b.up.length ? 3 : 2,
         sv = el('svg', { viewBox: '0 0 1240 96', role: 'img', 'aria-label': 'Inside the DCS' }, hp),
-        c = CK.in[0];
+        two = stnOf(b) !== stnOf(r),
+        c = two ? CK.nw[0] : CK.in[0];
       tx(sv, 16, 16, 'tl', k + ' · INSIDE THE DCS');
       [[16, stnOf(b) + ' ' + b.a, b.tag + ' (input)'], [520, stnOf(r) + ' ' + r.a, r.tag + ' (output)']].forEach(([x, t, s2]) => {
         el('rect', { class: 'box', x, y: 26, width: 300, height: 52, rx: 6 }, sv);
         tx(sv, x + 10, 46, 'bt', t);
         tx(sv, x + 10, 64, 'bs', s2);
       });
-      el('path', { class: 'w', d: 'M316,52 H514', stroke: c, 'stroke-dasharray': '5 4' }, sv);
+      el('path', { class: 'w', d: 'M316,52 H514', stroke: c, 'stroke-dasharray': two ? '' : '5 4' }, sv);
       arrowHead(sv, 510, 52, 1, c);
-      tx(sv, 418, 44, 'll', 'value copied inside the DCS', 'middle').setAttribute('fill', c);
+      tx(sv, 418, 44, 'll', two ? 'DCS control network, ' + stnOf(b) + ' → ' + stnOf(r) : 'value copied inside the DCS', 'middle').setAttribute('fill', c);
       tx(sv, 840, 46, 'tl', 'The copy block is not in the ABC / DITL drawings; the pair is the');
       tx(sv, 840, 60, 'tl', 'same signal name and range in the I/O list.');
       wiring(r, hp, k + 1 + ' · OUT OF THE DCS: ' + stnOf(r) + ' ' + r.a + ' to ' + r.sys);
