@@ -200,6 +200,32 @@
      is logged, so a stop never goes unseen */
   const MOT = { 'M.3304': 'IDF', 'M.3302': 'PAF', 'M.3303': 'SAF', 'M.3308': 'FAB-A', 'M.3309': 'FAB-B', 'M.3343': 'BFWP-A', 'M.3344': 'BFWP-B', 'M.3350': 'CEP-A', 'M.3351': 'CEP-B' },
     MOTP = new Map();
+  /* 3.2.3 S148-3 (Mina beta.148 normal shutdown, 45 -> 30 MW: CEP A STOPPED by the logic, no cause in the Event log): the cause of a
+     motor stop that the one world read at the scan where the STOPPED output went 1 (src/world/world.js s._stopWhy): the input rows that
+     are 1, without "Input row n" and the addresses ("CONDENSER WATER LSLL-CD1110 LEVEL LOW LOW AND CONDENSER WATER LEVEL LL"). Not a
+     stop push button (the operator's own line says it) and not a cause older than about 2 min of scans */
+  function stopWhy(s) {
+    const w = s && s._stopWhy;
+    if (!w || w.done || (window.WORLD && (WORLD.tk || 0) - w.tk > 400)) return null;
+    const ins = w.lines.filter(l => l.d === 1 && l.k === 'input');
+    const txt = (ins.length ? ins : w.lines.slice(0, 1))
+      .slice(0, 3)
+      .map(l =>
+        words(
+          String(l.txt || '')
+            .replace(/^Input row \d+ · /, '')
+            .replace(/\s*·\s*from the equipment.*$/, '')
+            .replace(/\b[IMBO]\.[0-9A-F]{4}(\/[0-9A-F]{3,4})?\b/g, '')
+            .replace(/\s*·\s*/g, ' ')
+            .replace(/\s*=\s*1\s*$/, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+        )
+      )
+      .join(' AND ');
+    if (!txt || /\bSTOP\s*(PB|P\.B\.?|PUSH)/i.test(txt)) return null;
+    return { txt, lines: w.lines, src: w };
+  }
   function motScan(t) {
     const LV = window.LS_LIVE;
     if (!LV || !LV.val) return;
@@ -215,6 +241,17 @@
       const nm = MOT[a],
         op = LOG.slice(0, 12).some(e => /^Operator: STOP /.test(e.text || '') && ((e.text || '').includes(nm) || (e.text || '').includes(words(nm))));
       if (op) continue;
+      /* S148-3: the cause the one world read at the scan of the stop (src/world/world.js s._stopWhy) */
+      let ds = null;
+      try {
+        ds = window.LS_DOCK && LS_DOCK.dOf ? LS_DOCK.dOf(a) : null;
+      } catch (e) {}
+      const w = stopWhy(ds);
+      if (w) {
+        w.src.done = true;
+        add({ rt: { t } }, { name: 'DCS' }, 'DCS', words(nm) + ' STOPPED by its logic: ' + w.txt + ' (' + a + ' = 0)', w.lines);
+        continue;
+      }
       add({ rt: { t } }, { name: 'DCS' }, 'DCS', words(nm) + ' STOPPED (' + a + ' = 0; not by the STOP button of the Training)');
     }
   }
@@ -338,6 +375,14 @@
         MSEEN.set(s.name, ms);
         if (seen0 && ms0 === 'STOP' && ms === 'RUN' && !LOG.slice(0, 12).some(e => e.sh === dnm(s) && /START/.test(e.text || '')))
           add({ rt: { t } }, { name: dnm(s) }, 'DCS', eqName(s, o) + ' started by its logic (auto start)');
+        /* S148-3: a motor of any drawing stopped by its logic (not the ones of motScan above, they wrote it already) */
+        if (seen0 && ms0 === 'RUN' && ms === 'STOP' && !LOG.slice(0, 12).some(e => e.sh === dnm(s) && /STOP/.test(e.text || ''))) {
+          const w = stopWhy(s);
+          if (w) {
+            w.src.done = true;
+            add({ rt: { t } }, { name: dnm(s) }, 'DCS', eqName(s, o) + ' stopped by its logic: ' + w.txt, w.lines);
+          }
+        }
         if (motState(s) === 'TRIP')
           now.set('D|' + s.name, {
             sh: dnm(s),

@@ -607,7 +607,8 @@
       for (const e of L) {
         const r = E('div', 'scrow ev');
         r.append(E('span', 'sct', e.t || ''), E('span', 'sck2', e.kind || ''), E('span', 'scn', (e.sh && e.sh !== 'DCS' ? e.sh + ': ' : '') + (e.text || '')));
-        if (e.why) r.title = e.why;
+        /* S148-3: the cause lines of a first-out / logic stop (an array of {txt}) as the tooltip, not "[object Object]" */
+        if (e.why) r.title = Array.isArray(e.why) ? e.why.map(l => '  '.repeat(Math.max(0, (l.d || 1) - 1)) + (l.txt || '')).join('\n') : String(e.why);
         body.append(r);
       }
     }
