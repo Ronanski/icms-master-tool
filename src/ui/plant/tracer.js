@@ -452,7 +452,9 @@
     E(
       'div',
       { cls: 'trcleg' },
-      keys.map(k => E('span', {}, [E('i', { cls: k === 'in' ? 'dash' : '', style: 'background:' + CK[k][0] }), CK[k][1]]))
+      keys
+        .map(k => E('span', {}, [E('i', { cls: k === 'in' ? 'dash' : '', style: 'background:' + CK[k][0] }), CK[k][1]]))
+        .concat([E('span', {}, [E('i', { style: 'background:var(--trc-fa)' }), 'FL-NET A cable = red, ', E('i', { style: 'background:var(--trc-fb)' }), 'FL-NET B cable = yellow (real cable colours, K1AU3-E2-0-106 sh2 cable list); the other cables have no colour in the documents, so the colour shows what travels on them'])])
     );
   const arrowHead = (p, x, y, d, c) =>
     el('path', { d: d > 0 ? 'M' + (x - 5) + ',' + (y - 5) + 'L' + (x + 5) + ',' + y + 'L' + (x - 5) + ',' + (y + 5) + 'z' : 'M' + (x + 5) + ',' + (y - 5) + 'L' + (x - 5) + ',' + y + 'L' + (x + 5) + ',' + (y + 5) + 'z', fill: c }, p);
@@ -470,12 +472,104 @@
     return y0 + lines.length * 14;
   };
   /* the hops before the rack room (GCP / field -> TCS input -> TCS output) */
+
+  /* 3.2.3-beta.122 (user 2026-11-12 "Bkt box p rin ang network switches? Hmi screen? Media converter? Bakit walang standard cable
+     color sa diagram?"), as the control network study tracer v9 (ARIN): a picture of the device above each box, and the real
+     cable colour where the documents give one: FL-NET A cable = red, FL-NET B cable = yellow (K1AU3-E2-0-106 sh2 cable list,
+     headers "(R)" and "(Y)"). The other cables have no colour in the documents and keep the colour of what travels on them. No
+     media converter lies on these routes (fiber with OSD370N converters is only on the CTCS, fly ash, ESP and GCS10D packages,
+     K1AU3-E2-0-115). */
+  const FLC = (t, ab) => (/FL-NET/.test(t || '') ? (ab === 'A' ? 'var(--trc-fa)' : 'var(--trc-fb)') : null);
+  const ikind = h => {
+    const t = h[0] || '',
+      s = h[1] || '';
+    if (/^DCS address/.test(t)) return '';
+    if (/switch|hub/i.test(t)) return 'sw';
+    if (/Operator station/i.test(t)) return 'hmi';
+    if (/^Controller/.test(t)) return 'ctl';
+    if (/^I\/O card|TCS input|TCS output|PLU|MCU/.test(t)) return 'card';
+    if (/PLC/.test(t)) return 'plc';
+    if (/^Gateway/.test(t)) return 'gw';
+    if (/transducer/i.test(t)) return 'td';
+    if (/multi meter/i.test(t)) return 'mtr';
+    if (/CT GA/.test(t)) return 'ct';
+    if (/VT2/.test(t)) return 'vt';
+    if (/terminal block|test terminal|fuses/i.test(t)) return 'tb';
+    if (/relay/i.test(t)) return 'rly';
+    if (/field sensor/.test(s)) return 'tx';
+    if (/TCS controller/.test(t)) return 'ctl1';
+    return '';
+  };
+  function icon(g, x, y, k) {
+    if (!k) return;
+    const G = el('g', { class: 'ic', transform: 'translate(' + x + ',' + y + ') scale(1.2)' }, g),
+      R = (a, b, w, h, f) => el('rect', { x: a, y: b, width: w, height: h, rx: 2, fill: f || 'var(--c-pane)' }, G),
+      C = (a, b, r, f) => el('circle', { cx: a, cy: b, r, fill: f || 'none' }, G),
+      L = d => el('path', { d, fill: 'none' }, G),
+      T = (a, b, s) => tx(G, a, b, 'ict', s, 'middle');
+    if (k === 'sw') {
+      R(0, 6, 46, 18);
+      for (let i = 0; i < 8; i++) R(3 + i * 5.2, 15, 3.6, 4, 'var(--c-well)');
+      C(6, 10, 1.4, 'var(--trc-ma)');
+      C(11, 10, 1.4, 'var(--trc-ma)');
+      T(33, 13, 'SW');
+    } else if (k === 'hmi') {
+      R(6, 0, 34, 21);
+      R(9, 3, 28, 15, 'var(--c-well)');
+      L('M23,21 V26 M15,27 H31');
+    } else if (k === 'ctl') {
+      R(4, 0, 38, 28);
+      R(7, 3, 15, 22, 'var(--c-well)');
+      R(24, 3, 15, 22, 'var(--c-well)');
+      T(14.5, 18, 'A');
+      T(31.5, 18, 'B');
+    } else if (k === 'ctl1') {
+      R(4, 0, 38, 28);
+      R(7, 3, 32, 22, 'var(--c-well)');
+      T(23, 18, 'CPU');
+    } else if (k === 'card') {
+      R(6, 2, 34, 20);
+      for (let i = 0; i < 7; i++) L('M' + (9 + i * 4.5) + ',22 V27');
+      R(10, 6, 10, 6, 'var(--c-well)');
+    } else if (k === 'plc') {
+      R(0, 3, 46, 22);
+      for (let i = 0; i < 5; i++) R(3 + i * 8.6, 6, 7, 16, 'var(--c-well)');
+    } else if (k === 'gw') {
+      R(4, 4, 38, 20);
+      L('M10,11 H36 M32,8 L36,11 L32,14 M36,18 H10 M14,15 L10,18 L14,21');
+    } else if (k === 'td' || k === 'mtr') {
+      R(6, 1, 34, 26);
+      C(23, 12, 7);
+      L('M23,12 L27,8');
+      T(23, 25, k === 'td' ? 'mA' : 'kWh');
+    } else if (k === 'ct') {
+      L('M0,14 H46');
+      C(23, 14, 9);
+      C(23, 14, 6);
+    } else if (k === 'vt') {
+      C(18, 14, 8);
+      C(28, 14, 8);
+      L('M2,14 H10 M36,14 H44');
+    } else if (k === 'tb') {
+      R(4, 6, 38, 16);
+      for (let i = 0; i < 5; i++) C(10 + i * 6.5, 14, 1.8, 'var(--c-tx)');
+    } else if (k === 'rly') {
+      R(8, 2, 30, 24);
+      L('M14,18 L22,10 M26,18 H32 M14,18 H10');
+      C(23, 9, 1.5, 'var(--c-tx)');
+    } else if (k === 'tx') {
+      C(23, 9, 8);
+      L('M23,17 V24 M14,26 H32');
+      L('M23,9 L27,5');
+    }
+  }
   function upstream(r, hops, hp, head, mb) {
     /* rows of up to 4 hops; a row that goes on draws its wires to the right edge and the next row starts from the left edge */
     const n = hops.length,
       PER = 4,
       rows = Math.ceil(n / PER),
-      RH = 150,
+      RH = 186,
+      OFF = 34,
       gap = 104,
       bw = 196,
       us = el('svg', { viewBox: '0 0 1240 ' + (40 + rows * RH), role: 'img', 'aria-label': 'Where ' + r.tag + ' starts' }, hp);
@@ -483,12 +577,13 @@
     hops.forEach((h, i) => {
       const row = Math.floor(i / PER),
         col = i % PER,
-        y0 = 26 + row * RH,
+        y0 = 26 + OFF + row * RH,
         x = 40 + col * (bw + gap),
         YP = y0 + 44,
         YM = y0 + 74,
         fit = (t, px) => (t.length > Math.floor((bw - 16) / px) ? t.slice(0, Math.floor((bw - 16) / px) - 1) + '…' : t);
       el('rect', { class: 'box' + (/^Generator|^TE-|^PT-|^ZT-/.test(h[0]) ? ' dash' : ''), x, y: y0, width: bw, height: 82, rx: 6 }, us);
+      icon(us, x + bw / 2 - 28, y0 - 33, ikind(h));
       /* name on up to 2 lines, note on the lines left (narrower where the terminals are) */
       const hasT = h[2] !== '' && h[2] != null,
         nm = wrapT(h[0], h[6] ? 20 : 24).slice(0, 2),
@@ -531,9 +626,10 @@
         } else if (eth) {
           /* Ethernet / fiber: one line per cable (A and B), the link talks both ways */
           [[YP, 'A'], [YM, 'B']].forEach(([y, ab]) => {
-            el('path', { class: 'w', d: 'M' + (xa + 10) + ',' + y + ' H' + (xb - 8), stroke: c }, us);
-            arrowHead(us, xa + 10, y, -1, c);
-            if (xb < 1230) arrowHead(us, xb - 8, y, 1, c);
+            const cc = FLC(L.t, ab) || c;
+            el('path', { class: 'w', d: 'M' + (xa + 10) + ',' + y + ' H' + (xb - 8), stroke: cc }, us);
+            arrowHead(us, xa + 10, y, -1, cc);
+            if (xb < 1230) arrowHead(us, xb - 8, y, 1, cc);
             tx(us, xa + 16, y - 4, 'tl', ab);
           });
         } else {
@@ -545,14 +641,15 @@
       if (!none) draw2(x1, x2, edge ? x1 + 50 : x1 + gap / 2);
       if (wrap) {
         /* the same wires come in from the left on the next row */
-        const ny = 26 + (row + 1) * RH,
+        const ny = 26 + OFF + (row + 1) * RH,
           nYP = ny + 44,
           nYM = ny + 74;
         if (L.in) el('path', { class: 'w', d: 'M4,' + (nYP + nYM) / 2 + ' H38', stroke: c, 'stroke-dasharray': '5 4' }, us);
         else if (eth)
-          [nYP, nYM].forEach(y => {
-            el('path', { class: 'w', d: 'M4,' + y + ' H30', stroke: c }, us);
-            arrowHead(us, 32, y, 1, c);
+          [nYP, nYM].forEach((y, k) => {
+            const cc = FLC(L.t, k ? 'B' : 'A') || c;
+            el('path', { class: 'w', d: 'M4,' + y + ' H30', stroke: cc }, us);
+            arrowHead(us, 32, y, 1, cc);
           });
         else WY.forEach(y => el('path', { class: 'w' + (nw > 2 ? ' thin' : ''), d: 'M4,' + (y - YP + nYP) + ' H38', stroke: c }, us));
         tx(us, 1232, YP - 12, 'tl', 'next row ↓', 'end');
