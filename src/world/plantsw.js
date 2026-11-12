@@ -247,9 +247,12 @@
     };
   L.push(['SOOTBLOWER', m => (m && m.s._lance ? (m.s._lance.x <= 0 ? 1 : 0) : 1), 0.5, 'hi', 0, 0, /SOOTBLOWER RETRACT POSITION/, /\)DITL-80G( #N-\d+)?$/]);
   L.push(['M.4232', () => (sbL().some(x => x._lance.x >= x._lance.len) ? 1 : 0), 0.5, 'hi', 0, 0, /ANY ON EXTEND/, /\)DITL-80G( #N-\d+)?$/]);
-  L.push(['AIR', () => 1, 0.5, 'hi', 0, 0, /S\/B RESET POSITION/, /\)DITL-80K$/]);
+  /* 3.2.3 SOHEE: the air heater blowers leave their reset position while they blow (unit.js AN_SB.aph: hot end N-1040, then cold end N-1042) */
+  const aphPh = () => (window.AN && AN.unit && AN.unit.sbA ? AN.unit.sbA.ph : 0);
+  L.push(['AIR', () => (aphPh() === 1 ? 0 : 1), 0.5, 'hi', 0, 0, /N-1040.*S\/B RESET POSITION/, /\)DITL-80K$/]);
+  L.push(['AIR', () => (aphPh() === 2 ? 0 : 1), 0.5, 'hi', 0, 0, /N-1042.*S\/B RESET POSITION/, /\)DITL-80K$/]);
   /* DITL-80S row 17 reads M.4008 too (S/B STEAM SUPPLY MOTOR VALVE CLOSE COMMAND; DITL-80L PDF sheet 15: "TO: 80-5, 80A-14, 80S-17, 80K-5") */
-  for (const k in sbGrp) L.push([k, () => (sbL().every(x => !sbGrp[k](x._lance) || x._lance.x <= 0) ? 1 : 0), 0.5, 'hi', 0, 0, /ALL ON RETRACT/, /\)DITL-80[AGKOS]?( #N-\d+)?$/]);
+  for (const k in sbGrp) L.push([k, () => (sbL().every(x => !sbGrp[k](x._lance) || x._lance.x <= 0) && (k !== 'M.4008' || !aphPh()) ? 1 : 0), 0.5, 'hi', 0, 0, /ALL ON RETRACT/, /\)DITL-80[AGKOS]?( #N-\d+)?$/]);
   const sdSilo = () => (window.AN && AN.unit && AN.unit.sd && isFinite(AN.unit.sd.silo) ? AN.unit.sd.silo : NaN);
   L.push(['LISD1800.PV', sdSilo, 60, 'lo', 0, 0, /< ?60 ?%/, /\)DITL-BA6[35]$/]);
   L.push(['LISD1800.PV', sdSilo, 80, 'hi', 0, 0, /> ?80 ?%/, /\)DITL-BA65$/]);
