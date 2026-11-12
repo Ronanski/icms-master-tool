@@ -296,6 +296,28 @@
      motor stop that the one world read at the scan where the STOPPED output went 1 (src/world/world.js s._stopWhy): the input rows that
      are 1, without "Input row n" and the addresses ("CONDENSER WATER LSLL-CD1110 LEVEL LOW LOW AND CONDENSER WATER LEVEL LL"). Not a
      stop push button (the operator's own line says it) and not a cause older than about 2 min of scans */
+  /* an input line of a cause as the operator reads it (as stopWhy) */
+  const cleanIn = x =>
+    words(
+      String(x || '')
+        .replace(/^Input row \d+ · /, '')
+        .replace(/\s*·\s*from the equipment.*$/, '')
+        .replace(/\b[IMBO]\.[0-9A-F]{4}(\/[0-9A-F]{3,4})?\b/g, '')
+        .replace(/\s*·\s*/g, ' ')
+        .replace(/\s*=\s*1\s*$/, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+    );
+  const MVLOG = new Set();
+  /* the valve of a MOV drawing by its FULLY CLOSED output ("EXTRACTION STM NO.1 SHUT-OFF MOV FULLY CLOSED") and its tag (MV-TS1001) */
+  const movName = (s, m) => {
+    let nm = '';
+    try {
+      const o = (DUI.outs(s) || []).find(x => /FULLY CLOSED/.test(String(x.name || '')));
+      nm = o ? String(o.name).replace(/^Output row \d+ · /, '').replace(/\s*·.*$/, '').replace(/\s+[IO]\.\S+/g, '').replace(/\s*FULLY CLOSED\s*/, ' ').trim() : '';
+    } catch (e) {}
+    return words(nm || dnm(s)) + (m && m.tag ? (/\bMOV\b/.test(nm) ? ' MV-' : ' ') + m.tag : '');
+  };
   function stopWhy(s) {
     const w = s && s._stopWhy;
     if (!w || w.done || (window.WORLD && (WORLD.tk || 0) - w.tk > 400)) return null;
@@ -458,6 +480,24 @@
         /* seen only once the world has scanned it twice since the load (Mina #M1, Worker: the page scans the alarms before the first
            patch of the engine brings the cold DITL-777 trip, so the sheet was "seen" without it and its standing trip came as NEW) */
         if (((WORLD.tk || 0) - (almScan.tk0 || 0)) >= 2 || (WORLD.tk || 0) < (almScan.tk0 || 0)) DSEEN.add(s.name);
+        /* Sakura beta.150 (Jennie's list): a MOV of a drawing moved by its logic had no line (MV-TS1001 closed by ABC-036 M.0203 No.2 HPH
+           level HI-HI). The one world reads the cause at the scan where the OPEN / CLOSE command of the valve rises (src/world/world.js
+           s._mvWhy, no push button in it); one line each, by its scan (the engine sends the list again with each patch) */
+        for (const w of s._mvWhy || []) {
+          const id = s.name + '|' + w.tk + '|' + w.i + '|' + w.k;
+          if (MVLOG.has(id) || (window.WORLD && (WORLD.tk || 0) - w.tk > 1200)) continue;
+          MVLOG.add(id);
+          const ins = (w.lines || []).filter(l => l.d === 1 && l.k === 'input');
+          const txt = ins
+            .filter(l => !/\b(REMOTE|AUTO MODE|MANUAL MODE|FULLY (OPEN|CLOSED))\b/.test(String(l.txt || '')) || ins.length < 2)
+            .sort((a, b) => +/HI-HI|HIGH-HIGH|LOW-LOW|\bHH\b|\bLL\b|TRIP/.test(String(b.txt)) - +/HI-HI|HIGH-HIGH|LOW-LOW|\bHH\b|\bLL\b|TRIP/.test(String(a.txt)))
+            .slice(0, 3)
+            .map(l => cleanIn(l.txt))
+            .join(' AND ');
+          /* MOVs only: a solenoid valve of a sequence (sootblower drain SOV XV-SB1054) opens and closes by its own command at each step */
+          const vn = movName(s, (s.nl.mv || [])[w.i]);
+          if (txt && /\bMOV\b/.test(vn)) add({ rt: { t } }, { name: dnm(s) }, 'DCS', vn + ' ' + (w.k === 'close' ? 'CLOSE' : 'OPEN') + ' by its logic: ' + txt, w.lines);
+        }
         const o = motOuts(s);
         if (!o.trip && !s._ftrip) continue;
         /* Mina F12: a motor that starts by its logic (the auto cut-in of a standby, a low header) has its own line: no press of the operator or the
