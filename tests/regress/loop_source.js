@@ -18,13 +18,16 @@ const html =
   };
   /* the loop in MANUAL at mv (the station output, as the operator's MV), step ABC-001C (unit model) and the loop sheet for sec
      seconds, read the PV */
-  const pvAt = (shn, tag, mv, sec) =>
+  /* rel: memories of the loop sheet held at 0 while the MV is put (the back-up command of the drawing, below) */
+  const pvAt = (shn, tag, mv, sec, rel) =>
     page.evaluate(
-      ([shn, tag, mv, sec]) => {
+      ([shn, tag, mv, sec, rel]) => {
         const sh = AN.sheets.find(s => s.name === shn),
           S = sh.S,
           c = AN.hmiCtrls(S).find(q => q.tag === tag),
           u = AN.sheets.find(s => s.name === 'ABC-001C');
+        const relN = (rel || []).map(a => S.lab.findIndex(l => l && String(l.t).trim() === a)).filter(n => n >= 0);
+        for (const n of relN) S.rt.force[n] = 0;
         /* MANUAL, as Start cold puts every controller (hmi-op.js anPlantCold) */
         if (c.amt && S.rt.st[c.amt.id]) {
           const st = S.rt.st[c.amt.id];
@@ -41,10 +44,12 @@ const html =
           AN.stepSet(u, 0.5);
           if (sh !== u) AN.stepSet(sh, 0.5);
         }
-        const pr = c.b.proc;
-        return { pv: +S.rt.v[pr.pv], out: +S.rt.v[c.out], msp: AN.unit ? AN.unit.Pms : NaN };
+        const pr = c.b.proc,
+          r = { pv: +S.rt.v[pr.pv], out: +S.rt.v[c.out], msp: AN.unit ? AN.unit.Pms : NaN, rel: relN.length };
+        for (const n of relN) delete S.rt.force[n];
+        return r;
       },
-      [shn, tag, mv, sec]
+      [shn, tag, mv, sec, rel]
     );
   const state = (fn, arg) =>
     page.evaluate(
@@ -61,21 +66,31 @@ const html =
   /* 3.2.0-beta.22: Cold has the BFWP stopped now (it stayed running from the snapshot); the HP bypass spray TICMS1022 takes its water
      from the BFWP (ABC-050 M.0702 ALL BFWP STOPPED shuts it): start BFWP-A so the MV can open and the "no medium" check means steam */
   await page.evaluate(() => CHECK.H().setx(null, 'M.3343', 1));
-  for (const [shn, tag, top] of [
+  /* 3.2.3 SOHEE: ABC-030 PICAS1005 (cold reheat to aux steam, PCV-AS1020-1 / -2) has a BU-CMD from M.0129 (the FF of TICR1004.PV < 230 /
+     > 235 C and PICR1003.PV < 9.5 / > 11.5 kg/cm2, CLAUDE.md item 3): while the cold reheat is not hot, the drawing selects the constant
+     A (0 %) after the station and the station's manual value tracks it (interlock tracking), so the operator cannot open the valve at
+     Cold: right as drawn (failing since beta.81 at least, MV stayed 0 %). To test the SOURCE (no steam = no PV) the BU-CMD is held
+     released (M.0129 = 0) while the MV is put; the expected result is the same */
+  for (const [shn, tag, top, rel] of [
     ['ABC-017', 'PICSB1052', 0.5],
     ['ABC-028', 'PICDO0005', 0.5],
-    ['ABC-030', 'PICAS1005', 0.5],
+    ['ABC-030', 'PICAS1005', 0.5, ['M.0129']],
     ['ABC-032', 'FICCD1120', 1],
     ['ABC-053', 'TICLO1002', 31],
     ['ABC-051', 'TICMS1022', 31],
     ['ABC-034', 'TICAS1017', 31]
   ]) {
-    const a = await pvAt(shn, tag, 0, 20),
-      b = await pvAt(shn, tag, 100, 120);
+    const a = await pvAt(shn, tag, 0, 20, rel),
+      b = await pvAt(shn, tag, 100, 120, rel);
     ck(
       a.pv <= top && b.pv <= top && b.out > 50,
       `Cold ${shn} ${tag}: MV 0 % -> PV ${a.pv.toFixed(1)}, MV ${b.out.toFixed(0)} % -> PV ${b.pv.toFixed(1)} (no medium: <= ${top})`
     );
+  }
+  /* the drawing's protection itself: at Cold, BU-CMD M.0129 on, the operator's MV 100 % does not open PCV-AS1020 */
+  {
+    const h = await pvAt('ABC-030', 'PICAS1005', 100, 30);
+    ck(h.out < 0.5, `Cold ABC-030 PICAS1005: BU-CMD M.0129 (cold reheat not hot) holds the valve shut: operator MV 100 % -> out ${h.out.toFixed(1)} %`);
   }
   /* 2. At 150 MW: the snapshot */
   await state('plantLoad150');
