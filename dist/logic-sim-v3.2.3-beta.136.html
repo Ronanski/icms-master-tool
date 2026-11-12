@@ -23219,15 +23219,18 @@ const AN_UNIT = {
      TRANSFER COMPLETE I.0418 = 1, "transfer at 20 MW or HP bypass closed"). While the generator is on the grid the MW is the HP
      steam (1 - cIP) + the IP / LP steam cIP (cIP below: 75 %, CALC from HEAT_BALANCE.md) less the anchor losses
      (c x m0 - MW0, fading out with a small IP flow). Before the transfer the IP / LP steam comes from the HP bypass through the
-     reheater (U.rr integrator of beta.16, with the ICV flow out). DCS CONTROL MODE PERMISSIVE I.0081 = 1 above MWperm (NORMAL
-     OPERATION, 30 % load, PR-OPE-5002 4.6 / SU 9396; the TCS logic of I.0081 itself is a PC-only scan), DCS CONTROL MODE ON I.0082 set by the
-     pulse O.0178 of ABC-001C while I.0081, reset by O.0179. These inputs are written only in a start-up (U.cold); the snapshot of
+     reheater (U.rr integrator of beta.16, with the ICV flow out). DCS CONTROL MODE PERMISSIVE I.0081 (3.2.3-beta.135, TCS soft logic
+     TCE 331DM09784 p.127 TCE180, read 2026-11-12 on the PC): the NOT of the reset group of DCS CONTROL MODE = 52G closed, no TURBINE
+     TRIP, no FORCED CLOSE (HOUSE LOAD OPERATION), and in IP START the TRANSFER REGION COMPLETE(IP); was MWperm 45 MW (the NORMAL
+     OPERATION select of PR-OPE-5002, an operator step of the ATS, not this permissive). Not modelled from that group: GOV. MANUAL, LLM
+     MANUAL, GEN. MW ABN., TARGET MW DEMAND ABN., IP LIMITING (the operator does not select them here). DCS CONTROL MODE ON I.0082 set by
+     the pulse O.0178 of ABC-001C while I.0081, reset by O.0179 or by the reset group (permissive lost); while ON the TCS target load
+     tracks GEN. MW (TCE p.134), so at OFF the TCS holds the load it has. These inputs are written only in a start-up (U.cold); the snapshot of
      "Start at 150 MW" keeps its own. */
   rollRate: 120 /* rpm/min, PR-OPE-5002 cold start (the holds at 1800 / 3600 rpm of the procedure are the operator's; not modelled) */,
   icvRoll: 0.13 /* ICV opening for the roll steam (about 14 T/H at 7.6 kg/cm2 reheat, NO-SOURCE: the SOP gives CV 10 / 3 % at 400 rpm, no ICV opening) */,
   cIP: 0.75 /* calculated: HP 38 MW, IP / LP 113 MW of the shaft, HEAT_BALANCE.md */,
   MWxf: 20,
-  MWperm: 45,
   MWinit: 4.5 /* PR-OPE-5002: initial load 4.5 MW */,
   rateUp: 7.5 /* MW/min = 5 % / min (PR-OPE-5002 LOAD UP), AI0421 max load-up rate 0 ~ 5 %/min */,
   /* 3.2.3 (b4, MST 547 on the load up): the heat of the SH / RH banks follows the load with the lag of the CFB loop (bed, refractory,
@@ -26550,8 +26553,11 @@ function anUnitStep0(dt) {
   const on = U.dcs < 0 || +v[U.dcs] > 0.5,
     tmo = U.tm && U.tm.o && U.tm.o[0] != null ? +v[U.tm.o[0]] : NaN,
     ds = U.dem >= 0 ? +v[U.dem] : NaN;
-  if (on) U.tcsT = isFinite(tmo) ? tmo : isFinite(ds) ? ds : U.MW;
-  else if (onGrid && isFinite(tb.aim)) {
+  if (on) {
+    U.tcsT = isFinite(tmo) ? tmo : isFinite(ds) ? ds : U.MW;
+    /* TCE p.134: while DCS CONTROL MODE is ON the TCS target load tracks GEN. MW */
+    if (onGrid && isFinite(U.MW)) tb.tgt = tb.aim = U.MW;
+  } else if (onGrid && isFinite(tb.aim)) {
     if (!isFinite(tb.tgt)) tb.tgt = U.MW;
     tb.tgt += Math.max(-(U.rateUp * dt) / 60, Math.min((U.rateUp * dt) / 60, tb.aim - tb.tgt));
     U.tcsT = tb.tgt;
@@ -26714,11 +26720,12 @@ function anUnitStep0(dt) {
   U.tbn = { off: 0, roll: 1, sync: 2, load: 3 }[tb.st];
   /* the TCS inputs of the DCS in a start-up (the snapshot of "Start at 150 MW" keeps its own) */
   if (U.cold) {
-    /* with a 2 MW hysteresis: the TCS permissive does not flicker at the load it is given at (45.0 MW) */
-    tb.perm = onGrid && (tb.perm ? U.MW >= U.MWperm - 2 : U.MW >= U.MWperm);
+    /* TCE p.127 TCE180: permissive = NOT (52G not closed, TURBINE TRIP, FORCED CLOSE by HOUSE LOAD OPERATION, IP START before the
+       TRANSFER REGION COMPLETE(IP)); the reset group also resets DCS CONTROL MODE ON */
+    tb.perm = onGrid && !trip && tb.xfer && !(U.el && U.el.l52 === false);
     dirt(U.di.perm, tb.perm ? 1 : 0);
-    if (U.di.onCmd >= 0 && +v[U.di.onCmd] > 0.5 && U.di.perm && +v[U.di.perm.n] > 0.5) dirt(U.di.on, 1);
-    if (U.di.offCmd >= 0 && +v[U.di.offCmd] > 0.5) dirt(U.di.on, 0);
+    if (U.di.onCmd >= 0 && +v[U.di.onCmd] > 0.5 && tb.perm) dirt(U.di.on, 1);
+    if ((U.di.offCmd >= 0 && +v[U.di.offCmd] > 0.5) || !tb.perm) dirt(U.di.on, 0);
   }
   if (U.spd && U.spd.length) anUnitWrite(U.spd, tb.rpm);
   U.t += dt;
@@ -37385,7 +37392,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.3-beta.136';
-      c3.textContent += ' · build 4423b1e'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build e4d78de'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -74989,15 +74996,18 @@ const AN_UNIT = {
      TRANSFER COMPLETE I.0418 = 1, "transfer at 20 MW or HP bypass closed"). While the generator is on the grid the MW is the HP
      steam (1 - cIP) + the IP / LP steam cIP (cIP below: 75 %, CALC from HEAT_BALANCE.md) less the anchor losses
      (c x m0 - MW0, fading out with a small IP flow). Before the transfer the IP / LP steam comes from the HP bypass through the
-     reheater (U.rr integrator of beta.16, with the ICV flow out). DCS CONTROL MODE PERMISSIVE I.0081 = 1 above MWperm (NORMAL
-     OPERATION, 30 % load, PR-OPE-5002 4.6 / SU 9396; the TCS logic of I.0081 itself is a PC-only scan), DCS CONTROL MODE ON I.0082 set by the
-     pulse O.0178 of ABC-001C while I.0081, reset by O.0179. These inputs are written only in a start-up (U.cold); the snapshot of
+     reheater (U.rr integrator of beta.16, with the ICV flow out). DCS CONTROL MODE PERMISSIVE I.0081 (3.2.3-beta.135, TCS soft logic
+     TCE 331DM09784 p.127 TCE180, read 2026-11-12 on the PC): the NOT of the reset group of DCS CONTROL MODE = 52G closed, no TURBINE
+     TRIP, no FORCED CLOSE (HOUSE LOAD OPERATION), and in IP START the TRANSFER REGION COMPLETE(IP); was MWperm 45 MW (the NORMAL
+     OPERATION select of PR-OPE-5002, an operator step of the ATS, not this permissive). Not modelled from that group: GOV. MANUAL, LLM
+     MANUAL, GEN. MW ABN., TARGET MW DEMAND ABN., IP LIMITING (the operator does not select them here). DCS CONTROL MODE ON I.0082 set by
+     the pulse O.0178 of ABC-001C while I.0081, reset by O.0179 or by the reset group (permissive lost); while ON the TCS target load
+     tracks GEN. MW (TCE p.134), so at OFF the TCS holds the load it has. These inputs are written only in a start-up (U.cold); the snapshot of
      "Start at 150 MW" keeps its own. */
   rollRate: 120 /* rpm/min, PR-OPE-5002 cold start (the holds at 1800 / 3600 rpm of the procedure are the operator's; not modelled) */,
   icvRoll: 0.13 /* ICV opening for the roll steam (about 14 T/H at 7.6 kg/cm2 reheat, NO-SOURCE: the SOP gives CV 10 / 3 % at 400 rpm, no ICV opening) */,
   cIP: 0.75 /* calculated: HP 38 MW, IP / LP 113 MW of the shaft, HEAT_BALANCE.md */,
   MWxf: 20,
-  MWperm: 45,
   MWinit: 4.5 /* PR-OPE-5002: initial load 4.5 MW */,
   rateUp: 7.5 /* MW/min = 5 % / min (PR-OPE-5002 LOAD UP), AI0421 max load-up rate 0 ~ 5 %/min */,
   /* 3.2.3 (b4, MST 547 on the load up): the heat of the SH / RH banks follows the load with the lag of the CFB loop (bed, refractory,
@@ -78320,8 +78330,11 @@ function anUnitStep0(dt) {
   const on = U.dcs < 0 || +v[U.dcs] > 0.5,
     tmo = U.tm && U.tm.o && U.tm.o[0] != null ? +v[U.tm.o[0]] : NaN,
     ds = U.dem >= 0 ? +v[U.dem] : NaN;
-  if (on) U.tcsT = isFinite(tmo) ? tmo : isFinite(ds) ? ds : U.MW;
-  else if (onGrid && isFinite(tb.aim)) {
+  if (on) {
+    U.tcsT = isFinite(tmo) ? tmo : isFinite(ds) ? ds : U.MW;
+    /* TCE p.134: while DCS CONTROL MODE is ON the TCS target load tracks GEN. MW */
+    if (onGrid && isFinite(U.MW)) tb.tgt = tb.aim = U.MW;
+  } else if (onGrid && isFinite(tb.aim)) {
     if (!isFinite(tb.tgt)) tb.tgt = U.MW;
     tb.tgt += Math.max(-(U.rateUp * dt) / 60, Math.min((U.rateUp * dt) / 60, tb.aim - tb.tgt));
     U.tcsT = tb.tgt;
@@ -78484,11 +78497,12 @@ function anUnitStep0(dt) {
   U.tbn = { off: 0, roll: 1, sync: 2, load: 3 }[tb.st];
   /* the TCS inputs of the DCS in a start-up (the snapshot of "Start at 150 MW" keeps its own) */
   if (U.cold) {
-    /* with a 2 MW hysteresis: the TCS permissive does not flicker at the load it is given at (45.0 MW) */
-    tb.perm = onGrid && (tb.perm ? U.MW >= U.MWperm - 2 : U.MW >= U.MWperm);
+    /* TCE p.127 TCE180: permissive = NOT (52G not closed, TURBINE TRIP, FORCED CLOSE by HOUSE LOAD OPERATION, IP START before the
+       TRANSFER REGION COMPLETE(IP)); the reset group also resets DCS CONTROL MODE ON */
+    tb.perm = onGrid && !trip && tb.xfer && !(U.el && U.el.l52 === false);
     dirt(U.di.perm, tb.perm ? 1 : 0);
-    if (U.di.onCmd >= 0 && +v[U.di.onCmd] > 0.5 && U.di.perm && +v[U.di.perm.n] > 0.5) dirt(U.di.on, 1);
-    if (U.di.offCmd >= 0 && +v[U.di.offCmd] > 0.5) dirt(U.di.on, 0);
+    if (U.di.onCmd >= 0 && +v[U.di.onCmd] > 0.5 && tb.perm) dirt(U.di.on, 1);
+    if ((U.di.offCmd >= 0 && +v[U.di.offCmd] > 0.5) || !tb.perm) dirt(U.di.on, 0);
   }
   if (U.spd && U.spd.length) anUnitWrite(U.spd, tb.rpm);
   U.t += dt;
@@ -114136,7 +114150,7 @@ window.LS_GUIDE = (function () {
         'Engineering = white symbols, only wires, values and valves coloured'
       );
     const ver = (document.title.match(/v\d[\w.-]*/) || [''])[0];
-    row('Version', E('span', 'scsver', ver + ' · build 4423b1e'));
+    row('Version', E('span', 'scsver', ver + ' · build e4d78de'));
   }
   function openSet(near) {
     if (!set) {
