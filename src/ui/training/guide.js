@@ -1167,7 +1167,7 @@ window.LS_GUIDE = (function () {
           btn('FICFA1055A and FICFA1055B M 25 %', () => (A.man('FICFA1055A', 25), A.man('FICFA1055B', 25)))
         ]
       },
-      { st: 2, sec: 23, max: 1, sby: 1, t: 'Start the fluidizing air blower (FAB)', d: 'Do: START FAB-A, put FAB-B in REMOTE + AUTO (PR-OPE-5002: "Set Standby FAB in AUTO Mode"), then raise the inlet damper of the blower that runs (FICFA1055A; FICFA1055B when blower B runs after a swap) until the fluidizing air flow is 26 T/H (PR-OPE-5002; about 41 %). The blower supplies air to the seal pots of the cyclone loop.', c: b.ALL(R.FAB, SBY('FA blower', [['M.3308', 'FAB-A'], ['M.3309', 'FAB-B']], a => bit(a) > 0.5)),
+      { st: 2, sec: 23, max: 1, sby: 1, t: 'Start the fluidizing air blower (FAB)', d: 'Do: START FAB-A, raise the inlet damper of the blower that runs (FICFA1055A; FICFA1055B when blower B runs after a swap) until the fluidizing air flow is 26 T/H (PR-OPE-5002; about 41 %), then put FAB-B in REMOTE + AUTO (PR-OPE-5002: "Set Standby FAB in AUTO Mode"). Raise the damper first: at its 25 % start position one blower gives about 14 T/H, under the 20 T/H low-low (ABC-006 M.3114), and the drawing starts the standby in AUTO on that low-low (DITL-28A row 20), not only when the running blower trips. The blower supplies air to the seal pots of the cyclone loop.', c: b.ALL(R.FAB, SBY('FA blower', [['M.3308', 'FAB-A'], ['M.3309', 'FAB-B']], a => bit(a) > 0.5)),
         /* Mina F151-2: after a swap blower B runs alone: its own damper FCV-FA1055-B1 (FICFA1055B) sets the flow, not A's. The standby blower's
            damper stays at its 25 % start position (its FCD READY, DITL-28A row 5) */
         get fps() {
@@ -1176,7 +1176,8 @@ window.LS_GUIDE = (function () {
         get a() {
           /* Mina S154: the dock keeps the buttons it drew when the step opened, so the label named A after the swap: the press picks
              the damper of the blower running at that moment */
-          return [mot('M.3308', 'FAB-A'), mot('M.3309', 'FAB-B'), btn('Damper of the running blower (FICFA1055A / B) M 41 % (≈ 26 T/H)', () => A.man(fabT(), 41))];
+          /* Mina S160-1: the damper before the standby goes AUTO (the 14 T/H of the 25 % damper is under the low-low that starts the standby) */
+          return [mot('M.3308', 'FAB-A'), btn('Damper of the running blower (FICFA1055A / B) M 41 % (≈ 26 T/H)', () => A.man(fabT(), 41)), mot('M.3309', 'FAB-B')];
         },
         field: [22] },
       { st: 2, sec: 24, t: 'Start the secondary air fan (SAF)', d: 'Close the secondary air damper (0 %) before starting the fan.', c: R.SAF, a: [btn('SA damper 0 %', () => A.man('FICFA1081', 0)), mot('M.3303', 'SAF')], fps: ['FICFA1081'], field: [23] },

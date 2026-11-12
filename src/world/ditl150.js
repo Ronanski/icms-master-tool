@@ -256,6 +256,10 @@
     if (!sv || !sv.kf || !sv.kd) return 0;
     AN.engState.apply(sv.kf);
     (typeof ditlApply === 'function' ? ditlApply : window.DITL.ditlApply)(sv.kd);
+    /* the MOV commands seen before the load (world.js s._mvc) are not the saved plant's: no "by its logic" line for that jump */
+    try {
+      for (const s of S.sheets.concat((window.WORLD && WORLD.inst) || [])) delete s._mvc;
+    } catch (e) {}
     if (!sv.ver) D.faLineup();
     return 1;
   };
