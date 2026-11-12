@@ -208,17 +208,29 @@ window.LS_GUIDE = (function () {
      about 150 T/H went to the air and the hotwell fell 0 -> -273 mm. The step band was 115 ~ 131 (NO-SOURCE), over the blow-off set point.
      Now 115 ~ 126, and the Do it moves both masters as the text says: every 30 s of the plant EIC-TM down by half the minute rate
      (held while the pressure is 126 or more), HIC-BM -1 % over 124 kg/cm2 and +1 % under 117 */
+  /* 3.2.3-beta.144 (S131-2, Jennie headless 150 -> 30 MW on beta.142): the +-1 % trim alone ran a slow loop: the bed holds heat for
+     minutes, so HIC-BM kept falling after the pressure had turned and the pressure swung 113 ~ 136 kg/cm2 (blow-off 51 %, drum -81 / +135,
+     hotwell -181 mm). Now HIC-BM first follows EIC-TM in proportion (the boiler master tracks the turbine master, as the CCS does), and
+     the pressure trim looks 2 min ahead (pressure + 4 x its change of the last 30 s): the bed delay is about that long */
+  const paceP = {};
   const byHand = (tgt, rate, k) => () => {
     if (simT() - (paceT[k] || -1e9) < 30) return;
     paceT[k] = simT();
     const p = +h().MSP() || 0,
+      dp = paceP[k] == null ? 0 : p - paceP[k],
       b = +mv('HIC-BM'),
       m = +mv('EIC-TM');
+    paceP[k] = p;
+    const nm = md('EIC-TM') === 'MAN' && isFinite(m) && m > tgt && p < 126 ? Math.max(tgt, Math.round((m - rate / 2) * 10) / 10) : m;
     if (md('HIC-BM') === 'MAN' && isFinite(b)) {
-      if (p > 124) A.man('HIC-BM', Math.max(0, b - 1));
-      else if (p < 117) A.man('HIC-BM', Math.min(100, b + 1));
+      let nb = nm < m && m > 0 ? (b * nm) / m : b;
+      const pf = p + 4 * dp;
+      if (pf > 123) nb -= 0.5;
+      else if (pf < 118) nb += 0.5;
+      nb = Math.max(0, Math.min(100, Math.round(nb * 10) / 10));
+      if (nb !== b) A.man('HIC-BM', nb);
     }
-    if (md('EIC-TM') === 'MAN' && isFinite(m) && m > tgt && p < 126) A.man('EIC-TM', Math.max(tgt, Math.round((m - rate / 2) * 10) / 10));
+    if (nm < m) A.man('EIC-TM', nm);
   };
   /* 3.2.3-beta.101 (Mina live beta.100, drum -248 mm at the bypass; automatic run from step 75: -243 mm): the HP bypass SV went +1 each
      minute up to 61 while the pressure was still 44 kg/cm2, the HP bypass and the blow-off stayed shut (steam flow 0), then the pressure
