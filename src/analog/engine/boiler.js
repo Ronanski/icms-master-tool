@@ -403,7 +403,15 @@ function anFanStep(U, dt) {
   const cur = anFanI;
   U.fnI = U.fnI || [0, 0, 0, 0, 0];
   /* air power over the snapshot one; a blower on its silencer: its own flow on the system curve (P ~ Q^2), as if into the header */
-  const pw = i => (sil[i] && g0[i] > 0 ? Math.pow(qi[i] / K.fa.Q0, 3) : (qi[i] * pfa) / (K.fa.Q0 * K.fa.P0[0]));
+  /* S160-2 (Mina beta.160: FA blower B STOPPED while it ran on its own at the 25 % line-up damper, then started again): the air power
+     was its flow x the HEADER pressure (P ~ Q^2), so one blower at about 14 T/H drew 21.5 A, under the L.L. 24.6 A of DITL-28B row 12,
+     and the drawing tripped it (DITL-28A #B row 17 M.2549 FAB B CURRENT L.L.). The FA blower is a constant speed multistage centrifugal
+     blower with an inlet damper (equipment list K1AU3-L1-0-002 R0 item 46.1: Continental 500.04, 1 x A211 + 3 x A202, 3,570 rpm,
+     BHP 440.4 kW, motor 480 kW 2P; FCV-FA1055-A1 / B1): throttled at its inlet it still makes the head of its curve, the damper takes
+     the rest, so its air power follows its own flow at the head of the snapshot (9.png 37.3 A at 26.3 T/H). The blower curve is not in
+     the docs (NO-SOURCE: head kept constant). The drawing itself bounds it: a running blower at the PR-OPE-5002 line-up damper (23 ~ 27 %,
+     ABC-014 M.3115 / M.3116) is not tripped by its own current L.L. (now about 28 A at 14 T/H) */
+  const pw = i => (sil[i] && g0[i] > 0 ? Math.pow(qi[i] / K.fa.Q0, 3) : qi[i] / K.fa.Q0);
   U.fnIa = lagI('ia', cur(K.I0.fa, fr[0], pw(0)), 2);
   U.fnIb = lagI('ib', cur(K.I0.fa, fr[1], pw(1)), 2);
   /* PAF / SAF: flow of the loop model, outlet pressure on the system curve */
