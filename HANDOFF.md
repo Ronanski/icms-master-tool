@@ -1,6 +1,6 @@
 # HANDOFF — iisang file ng estado (para sa kahit sinong Claude o account)
 
-Huling update: **2026-11-13 2:25 AM PHT** (SOHEE: beta.148 MV-TS1003 at XV-HR1010-1 sa plant model).
+Huling update: **2026-11-13 2:46 AM PHT** (SOHEE: beta.149 condensate polisher sa plant model).
 
 Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md` at git log.
 
@@ -15,7 +15,7 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 ## 2. Kasalukuyang estado (2026-11-10 PHT)
 - **BUOD NG HANDOVER (basahin muna):** `docs/handoff/HANDOVER_2026-11-10.md` — lahat mula 2026-11-07, gawain ng bawat team member, at ang hindi pa tapos (re-shell at plant plan).
 - **Stable:** v3.2.2 (2026-11-10, user "Ok go sa 1"; = 3.2.1 + Worker bilang default ng Stable site). Ang 3.2.1 (GO STABLE ng user) = 3.2.1-beta.281, re-shell layout C. GitHub Release: apk, Windows exe, html, report pdf. Hindi nasubok: tingnan ang `docs/versions/v3.2.1/Release-Report-v3.2.1.pdf`.
-- **Beta sa `main`:** 3.2.3-beta.148 (SOHEE): ang MV-TS1003 (extraction 3 papunta sa deaerator) at XV-HR1010-1 (warming ng LP bypass, kasama ang TT-HR1010) ay nasa plant model na. Sa AUTO, bumubukas ang warming valve sa < 250 °C at sumasara sa > 330 °C (DITL-83). NO-SOURCE: laki ng warming line, lags. Hindi pa live-tested.
+- **Beta sa `main`:** 3.2.3-beta.149 (SOHEE): ang condensate polisher (MV-CD1007 inlet, MV-CD1008 outlet, bypass FCV-CD1121) ay nasa plant model na: ang FT-CD1121 ay ang daloy na dumadaan sa polisher; kapag sarado ang polisher at ang bypass, walang condensate sa deaerator. NO-SOURCE: hati ng daloy ayon sa bukas. Hindi pa live-tested. (beta.148: MV-TS1003 at XV-HR1010-1.)
 - **Bago nito:** 3.2.3-beta.143 (SAKURA): GOVERNOR RUNBACK sa house load: GOV.SET = 4.2 % (IP START, TCE p.136) habang PLU at sa unang 60 s ng house load (TCE p.128), saka nagpapatuloy ang trim papunta sa house load (NO-SOURCE ang input ng integral pagkatapos). Probe 10 min: peak 3671 rpm, steady 3535 rpm, walang trip; hotwell / drum / deaerator halos pareho ng beta.141. Hindi pa: HP START 24.3 % (walang HP start sa model), live test.
 - **Bago nito:** 3.2.3-beta.141 (SAKURA): sa house load (52L1 open) may turbine speed na: swing equation na may H 4.01 s (GAE-2013-0136 R2 p.2) at speed governor droop 6 %, flow span 87.3, dead band +-7.2 rpm (TCE p.140); ang ICV ay sumusunod din sa flow demand; ang PLU ay sa steam power na (walang 10 s lag). Probe 150 MW -> house load 10 min: peak 3691 rpm (102.5 %), steady 3547 rpm, walang trip; hotwell min -286 mm (dati -299), CEP flow min 74 T/H (dati 10). Hindi pa: GOVERNOR RUNBACK (GOV.SET 24.3 / 4.2 %, TCE p.128 / 136), low droop 16 %, ICV curve (NO-SOURCE), live test.
 - **Bago nito:** 3.2.3-beta.140 (SOHEE, docs lang): tama ang kusang pagsara ng sootblower drain valve (sa AUTO lang, DITL-80A M.4005); NO-SOURCE ang epekto ng SA wall dampers MCV-FA1005 ~ 1026; na-refresh ang INSTRUMENT_VALVE_COVERAGE (29 WALA → MAYROON).

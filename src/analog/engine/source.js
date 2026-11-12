@@ -141,7 +141,14 @@ const SRC_RULES = (() => {
   R.TICAS1001 = s => ({ mul: srcCl(s.Paux / 3), base: s.Tamb });
   R.TICAS1017 = s => ({ mul: srcCl(s.Paux / 3), base: s.Tamb });
   /* loop 13, condensate and deaerator: the condensate pump moves the water; the deaerator is heated by aux steam or extraction */
-  R.FICCD1121 = s => ({ mul: s.cep });
+  /* 3.2.3 SOHEE: FT-CD1121 is the flow through the polisher: the condensate (FT-CD1120: to the deaerator + recirculation) x the
+     polisher share of unit.js (MV-CD1007 / 1008 against the bypass FCV-CD1121); before the plant model has run, as before */
+  R.FICCD1121 = s => {
+    const U = AN_UNIT;
+    if (!U.on || !isFinite(U.polS) || typeof anCycFlows !== 'function') return { mul: s.cep };
+    const f = anCycFlows('pol');
+    return { mul: 0, base: (f.fda + f.frec) * U.polS };
+  };
   R.FICCD1120 = s => ({ mul: s.cep });
   R.LICCD1104 = s => ({ hold: !s.cep });
   R.LICCD1110A = s => ({ hold: !s.cep });

@@ -4,7 +4,7 @@
 
 ## 1. Buod (simple)
 
-> **Update 2026-11-12 (SOHEE, 3.2.3-beta.140):** ang listahang ito ay mula sa 3.2.0-beta.39. 29 item na "WALA" ang may model na ngayon at ginawang **MAYROON** (sinuri sa `unit.js`, `boiler.js`, `plant.js`, `source.js`). Ang mga bilang sa ibaba ay ang luma pa. Ang MV-TS1003 at XV-HR1010-1 ay may model na mula beta.148; ang 22 SA wall damper MCV-FA1005 ~ 1026 ay NO-SOURCE ang epekto sa proseso.
+> **Update 2026-11-12 (SOHEE, 3.2.3-beta.140):** ang listahang ito ay mula sa 3.2.0-beta.39. 29 item na "WALA" ang may model na ngayon at ginawang **MAYROON** (sinuri sa `unit.js`, `boiler.js`, `plant.js`, `source.js`). Ang mga bilang sa ibaba ay ang luma pa. Ang MV-TS1003 at XV-HR1010-1 ay may model na mula beta.148, ang MV-CD1007 / 1008 (polisher) mula beta.149; ang 22 SA wall damper MCV-FA1005 ~ 1026 ay NO-SOURCE ang epekto sa proseso.
 
 - **2,411 item** ang sinuri: 2,361 mula sa *Over-all Instrument List* ng user + 50 mula sa DCS I/O list na wala sa listahang iyon (AO ng ibang supplier, at valve na may open / close switch lang).
 - **Control valve / damper: 94.** 23 ang tunay na kasama sa physics ng plant model, 43 ang "bahagya" (ang PV ay sumusunod lang sa sariling valve, walang epekto sa ibang bahagi ng planta), **28 ang wala** (karamihan ang 22 furnace wall damper at ang 4 bottom ash cooler speed).
@@ -219,8 +219,8 @@ Hindi kailangang idagdag: ang manual valve, hand valve, local gauge, thermowell,
 | MV-AS1394 | TURBINE WARMING VALVE INLET DRAIN MOV | PD-011 Main steam | DITL-0C, DITL-75 | **WALA** | logic only (DITL / ABC): the plant model does not use its position | ✓ |
 | MV-AS1395 | START-UP EJECTOR STEAM INLET SHUT-OFF MOV | PD-014 Aux steam, packing steam, condenser air removal | DITL-0C, DITL-54 | **MAYROON** | 2026-11-12 SOHEE: unit.js vacuum: start-up ejector = DITL-54 position (anDitlPos) | ✓ |
 | MV-AS1396 | STEAM JET AIR EJECTOR STEAM INLET SHUT-OFF MOV | PD-014 Aux steam, packing steam, condenser air removal | DITL-0C, DITL-55 | **MAYROON** | 2026-11-12 SOHEE: unit.js vacuum: steam jet air ejector = DITL-55 position | ✓ |
-| MV-CD1007 | CONDENSATE TO POLISHER SHUT-OFF MOV | PD-016 Condensate | DITL-0C, DITL-64 | **WALA** | logic only (DITL / ABC): the plant model does not use its position | ✓ |
-| MV-CD1008 | POLISHER TO CONDENSATE SHUT-OFF MOV | PD-016 Condensate | DITL-0C, DITL-65 | **WALA** | logic only (DITL / ABC): the plant model does not use its position | ✓ |
+| MV-CD1007 | CONDENSATE TO POLISHER SHUT-OFF MOV | PD-016 Condensate | DITL-0C, DITL-64 | **MAYROON** | SOHEE beta.149: with the bypass FCV-CD1121 it sets the condensate path and the polisher flow FT-CD1121 (unit.js U.polS / polP, plant.js anCycFlows) | ✓ |
+| MV-CD1008 | POLISHER TO CONDENSATE SHUT-OFF MOV | PD-016 Condensate | DITL-0C, DITL-65 | **MAYROON** | SOHEE beta.149: with the bypass FCV-CD1121 it sets the condensate path and the polisher flow FT-CD1121 (unit.js U.polS / polP, plant.js anCycFlows) | ✓ |
 | MV-FW1001 | BFP(A) MAIN DISCHARGE SHUT-OFF MOV | PD-017 Feedwater | DITL-38 | **MAYROON** | 2026-11-12 SOHEE: unit.js feedwater: BFP A discharge path (U.mul dis, DITL-38 #MV-FW1001) | ✓ |
 | MV-FW1002 | BFP(B) MAIN DISCHARGE SHUT-OFF MOV | PD-017 Feedwater | DITL-38 | **MAYROON** | 2026-11-12 SOHEE: unit.js feedwater: BFP B discharge path (DITL-38 #MV-FW1002) | ✓ |
 | MV-FW1391 | BFP(A) MAIN DISCHARGE SHUT-OFF VALVE BYPASS MOV | PD-017 Feedwater | DITL-38 | **MAYROON** | 2026-11-12 SOHEE: unit.js feedwater: discharge bypass (filling line) of BFP A | ✓ |
@@ -426,7 +426,7 @@ Hindi kailangang idagdag: ang manual valve, hand valve, local gauge, thermowell,
 | DPT-FG1081 | OVERALL FURNACE DIFFERENTIAL PRESSURE TRANSMITTER (A) | **BAHAGYA** | DPICFG108 (ABC-009A): loop model only + source rule |
 | DPT-FG1082 | OVERALL FURNACE DIFFERENTIAL PRESSURE TRANSMITTER (B) | **BAHAGYA** | DPICFG108 (ABC-009A): loop model only + source rule |
 | FT-CD1120 | CONDENSATE WATER FLOW TRANSMITTER | **BAHAGYA** | FICCD1120 (ABC-032): loop model only + source rule |
-| FT-CD1121 | CONDESATE POLISHER SYSTEM INLET FLOW TRANSMITTER | **BAHAGYA** | FICCD1121 (ABC-032): loop model only + source rule |
+| FT-CD1121 | CONDESATE POLISHER SYSTEM INLET FLOW TRANSMITTER | **KASAMA** | FICCD1121 (ABC-032): SOHEE beta.149: the condensate flow x the polisher share (source.js R.FICCD1121) |
 | FT-FA1043-A | START-UP BURNER(A) HOT SECONDARY AIR FLOW TRANSMITTER | **BAHAGYA** | FICFA1043A (ABC-003A): loop model only + source rule |
 | FT-FA1043-B | START-UP BURNER(B) HOT SECONDARY AIR FLOW TRANSMITTER | **BAHAGYA** | FICFA1043B (ABC-003B): loop model only + source rule |
 | FT-FA1043-C | START-UP BURNER(C) HOT SECONDARY AIR FLOW TRANSMITTER | **BAHAGYA** | FICFA1043C (ABC-003C): loop model only + source rule |

@@ -2205,6 +2205,15 @@ function anLphStep(U, dt) {
     };
   U.lpS = { H1: wL.H1.s, H2: wL.H2.s, H3: wL.H3.s };
   U.cdPath = Math.min(wL.H1.p, wL.H2.p, wL.H3.p); /* both the tubes and the bypass of a heater shut = no condensate */
+  /* 3.2.3 SOHEE: the condensate polisher (PD-016; MK05 page): inlet MOV MV-CD1007 (DITL-64), outlet MOV MV-CD1008 (DITL-65) and the
+     polisher bypass FCV-CD1121 (ABC-032 FICCD1121, airlock item 11) in parallel on the condensate line after FT-CD1120 and before the
+     min-flow recirculation take-off. 28.png (150 MW): both MOVs 0.0 %, FCV-CD1121 100.6 % M, FIQCD1121 0.0 T/H (polisher bypassed).
+     The split by opening is that of the heaters (anHtrPath, bypass hydraulics NO-SOURCE); the polisher and the bypass both shut = no
+     condensate (plant.js anCycFlows), the polisher flow FT-CD1121 = the condensate flow x the polisher share (source.js) */
+  const pmv = typeof doOut === 'function' ? doOut('ABC-032', 'FICCD1121') : null,
+    pol = anHtrPath(dp('DITL-64', 0), dp('DITL-65', 0), typeof doX === 'function' ? doX(pmv, 1) * 100 : 100);
+  U.polS = pol.s;
+  U.polP = pol.p;
   let tin = lag('in', hw + K.rise * Math.max(0, Math.min(1, ld)));
   const t = { in1: tin };
   for (const [k, P0, ttd, dca, mov] of K.h) {
