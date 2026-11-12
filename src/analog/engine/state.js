@@ -134,8 +134,11 @@ function anStateDec(x, keep) {
   return dec(x, keep);
 }
 /* one object of this side takes the decoded content in place (its identity stays: other objects hold it) */
-function anStateInto(dst, src) {
-  for (const k of Object.keys(dst)) if (!(k in src)) delete dst[k];
+/* 3.2.3 (CHAEWON, Worker run from a save of beta.125: "Cannot read properties of undefined (reading 'SWP-A')" in anMotorStep, the
+   engine stopped). A save made before a version that added a key to a model (beta.126 AN_MT.mot) has no such key, and the key was
+   deleted on load. A key the script defines (ini, the models as loaded) now takes its loaded value; only a key the run made goes */
+function anStateInto(dst, src, ini) {
+  for (const k of Object.keys(dst)) if (!(k in src)) ini && k in ini ? (dst[k] = ini[k]) : delete dst[k];
   for (const k of Object.keys(src)) if (src[k] !== undefined || !(k in dst) || typeof dst[k] !== 'function') dst[k] = src[k];
 }
 /* the unit / source / cycle models as the script loaded them (Reset takes them again: sheets.js anResetAll) */
@@ -203,7 +206,11 @@ function anStateApply(kf) {
     for (const [j, p] of r.procs) S.blk[j].proc = p;
     for (const [j, m] of r.mn) S.blk[j]._mn = m;
   });
-  for (const k in objs) if (st.obj[k]) anStateInto(objs[k], st.obj[k]);
+  let ini = null;
+  try {
+    ini = anStateDec(AN_STATE_INIT, objs);
+  } catch (e) {}
+  for (const k in objs) if (st.obj[k]) anStateInto(objs[k], st.obj[k], ini && ini[k]);
   for (const k of AN_STATE_FLAGS) AN[k] = st.flags[k];
   for (const k of AN_STATE_SETS) AN[k] = st.sets[k];
   if (st.u) AN.unit = AN_UNIT;
