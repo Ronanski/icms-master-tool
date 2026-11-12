@@ -64,6 +64,36 @@ const html =
     await run(10);
     o.cur = st();
     o.curEv = evs() - e1;
+    /* Mina S154-3: an old save with the STANDBY blower B's surge valve closed (its SOVs in MANUAL): FCD READY of B missing. Loaded as an
+       old save: B's SOVs to AUTO, surge OPEN, outlet CLOSE; then A stops and B starts by itself */
+    AN.reset();
+    ditlStates();
+    AN.plantLoad150();
+    DITL150.apply();
+    await run(30);
+    WORLD.dset('DITL-28C #B', 1, false);
+    WORLD.dset('DITL-28C #B', 12, false);
+    await run(2);
+    WORLD.dpress('DITL-28C #B', 4);
+    /* b142: B never ran, its inlet damper kept the 0 % of the Cold state (FICFA1055B M 0 %) */
+    CHECK.H().man('ABC-014', 'FICFA1055B', 0);
+    await run(30);
+    const sb = sh('DITL-28C #B'),
+      fcd = () => DUI.rowVal(sh('DITL-28A #B'), 4);
+    o.sbCut = { silB: DUI.outVal(sb, 1), fcd: fcd(), runB: AN.ditlRun('DITL-28A #B') };
+    const sv2 = { kf: AN.engState.capture(), kd: ditlCapture() };
+    const stopA = async () => {
+      if (window.LS_DOCK && LS_DOCK.dmotor) LS_DOCK.dmotor('M.3308', false);
+      await run(60);
+      return { runA: AN.ditlRun('DITL-28A'), runB: AN.ditlRun('DITL-28A #B'), fa: r1(U().fnFaQ), silB: DUI.outVal(sh('DITL-28C #B'), 1), outB: DUI.outVal(sh('DITL-28C #B'), 25) };
+    };
+    DITL150.savePut({ kf: sv2.kf, kd: sv2.kd, ver: '3.2.3-beta.155' });
+    await run(4);
+    o.sbCur = { fcd: fcd(), ...(await stopA()) };
+    DITL150.savePut({ kf: sv2.kf, kd: sv2.kd, ver: '' });
+    await run(20);
+    o.sbOld = { fcd: fcd(), silB: DUI.outVal(sh('DITL-28C #B'), 1), dB: r1(+(() => { const S2 = AN.sheets.find(s => s.name === 'ABC-014').S; return S2.rt.v[AN.hmiCtrls(S2).find(q => q.tag === 'FICFA1055B').out]; })()), ev: evs() };
+    o.sbOldStop = await stopA();
     /* the swap: the low-low started B; A stopped by hand: the FAB step names B's damper */
     await run(30);
     if (window.LS_DOCK && LS_DOCK.dmotor) LS_DOCK.dmotor('M.3308', false);
@@ -73,6 +103,11 @@ const html =
     const stp = LS_GUIDE.steps().find(x => /^Start the fluidizing air blower/.test(x.t));
     o.fps = stp ? stp.fps.join(',') : 'no step';
     o.btn = stp ? stp.a.map(b => b.l).join(' | ') : '';
+    /* the damper button sets the damper of the blower that runs: B */
+    const db = stp ? stp.a.find(b => /running blower/.test(b.l)) : null;
+    if (db) db.f();
+    await run(2);
+    o.pressB = Math.round(LS_GUIDE.h().ctl ? +((() => { const k = 'ABC-014', S2 = AN.sheets.find(s => s.name === k).S, c = AN.hmiCtrls(S2).find(q => q.tag === 'FICFA1055B'); return S2.rt.v[c.out]; })()) : NaN);
     /* the Air and flue gas page: the damper faceplates and B's current */
     const m = (window.LS_MOCK && LS_MOCK.defs.find(d => d.id === 'MK09')) || null;
     o.page = m ? { mach: Object.keys(m.mach || {}).join(','), ib: (m.unit || {})['IT-F1055B'] || '', art: /data-ctl="FICFA1055B\|mv/.test(m.art || '') } : null;
@@ -86,7 +121,10 @@ const html =
      AUTO before A's surge valve shuts; both blowers then feed the header. A save made at rest (the b142 save of Mina) keeps 25.6 T/H on A */
   ck(old.runA === 1 && old.silA === 0 && old.outA === 1 && old.fa > 20 && r.oldEv === 1, `old save (no version) loaded: A's surge valve closed, outlet open, FA ${old.fa} T/H (blower B ${old.runB ? 'started by the low-low' : 'standby'}), header ${old.P} mmH2O, one Event log line (${r.oldEv})`);
   ck(cur.silA === 1 && cur.fa < 20 && r.curEv === 0, `a save with a version loads as saved: surge valve open, FA ${cur.fa} T/H, no line`);
-  ck(swap.runB === 1 && swap.runA === 0 && r.fps === 'FICFA1055B' && /FICFA1055B M 41/.test(r.btn), `after the swap (B alone, ${swap.Ib} A) the FAB step names FICFA1055B: ${r.fps} · ${r.btn}`);
+  ck(swap.runB === 1 && swap.runA === 0 && r.fps === 'FICFA1055B' && /running blower \(FICFA1055A \/ B\) M 41/.test(r.btn) && r.pressB === 41, `after the swap (B alone, ${swap.Ib} A) the FAB step names FICFA1055B: ${r.fps} · ${r.btn}`);
+  ck(r.sbCut.silB === 0 && r.sbCut.fcd === 0 && r.sbCut.runB === 0, `S154-3 state: standby B with its surge valve closed, FCD READY ${r.sbCut.fcd}`);
+  ck(r.sbCur.fcd === 0 && r.sbCur.runB === 0 && r.sbCur.fa < 5, `a save with a version as saved: A stopped, B does not start (FCD READY missing), FA ${r.sbCur.fa} T/H (Mina's S154-3, by the drawing)`);
+  ck(r.sbOld.silB === 1 && r.sbOld.fcd === 1 && r.sbOld.dB === 25 && r.sbOldStop.runB === 1 && r.sbOldStop.silB === 0 && r.sbOldStop.outB === 1 && r.sbOldStop.fa > 10, `old save: standby B lined up (surge open, damper ${r.sbOld.dB} %, FCD READY ${r.sbOld.fcd}); A stopped: B starts, surge shut, outlet open, FA ${r.sbOldStop.fa} T/H`);
   ck(r.page && /FCA/.test(r.page.mach) && /FCB/.test(r.page.mach) && r.page.ib === 'fnIb' && r.page.art, `Air and flue gas page: damper faceplates FICFA1055A / B and IT-F1055B (${JSON.stringify(r.page)})`);
   ck(errs.length === 0, 'no page error' + (errs.length ? ': ' + errs.join(' | ') : ''));
   console.log(fail ? 'FAILED ' + fail : 'ALL PASS');
