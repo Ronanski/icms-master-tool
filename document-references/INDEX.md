@@ -53,6 +53,7 @@ Folder: `C:\Users\Ronanski\Downloads\app-projects-ai-collections\projects\icms-m
   - `Turbine Generator/`: generator data sheet GAE-2013-0136, site test procedures, wiring diagrams.
   - Hiwa-hiwalay: BFP motor data sheet, MV-BD1001 at MV-BD1002 valve drawings, Chimney K1AU3-D1-0-058, Plant Air Compressor manual.
   - Maraming scan ang mga ito at may password-free encryption: basahin gamit ang pdf.js sa Chrome.
+- PC drive D (2026-11-12, nakita ni ARIN): `D:\LPDSI Documents\LMYP-1 DCS TCS\`. `LMYP1 LOOP&USERTAG(new)\STN101~105_LOOP,USERTAG.xls` (LOOP_AX = loop list 1,165 loop: tag, pangalan, loop type, PV / remote SV / MV, range; UserTag_AX = user tag 2,971 na gamit: user tag, data name, system tag WI / AB / MMI, data type, scale, unit). `LMYP-1 #1-DOCUMENT\Subsystem PLC\<package>\IO List\` = Modbus point list bawat package (turbine 230 + 28, SCADA 371, ESP, fly ash, CTCS, coal handling, water treatment, air compressor, air dryer) at ang communication list (IP ng GCS10F / 10D / 10E). Ang loop, user tag at turbine / SCADA Modbus ay nasa app na (`tools/data/dcslists.py` → `src/ui/plant/dcslists.js`, Library > All signals).
 - WALA kahit saan: turbine heat balance diagram, historian / trend data.
 
 Ang mga dobleng zip (`iolist-dcs.zip`, `memorylist-per-station.zip`, `plant-operation-procedure.zip`, `dcs-manuals.zip`, `controller-para.zip`, `fx-drum-flow-calculations.zip`) ay tinanggal 2026-11-06: pareho ang laman (md5) ng mga file sa itaas. Nasa git history kung kailangan.
