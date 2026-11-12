@@ -178,7 +178,7 @@ window.LS_GUIDE = (function () {
   const bovRamp = () =>
     btn(
       'MS blow-off PICMS1002 SV +1 (one each 2 minutes, up to 35)',
-      /* 3.2.3-beta.105 (Mina live beta.102: blow-off 94 ~ 100 % from about t 394 to 421 with the SV 26 ~ 34 behind the drum pressure
+      /* 3.2.3-beta.107 (Mina live beta.102: blow-off 94 ~ 100 % from about t 394 to 421 with the SV 26 ~ 34 behind the drum pressure
          after the B / C light-off): when the pressure has run 2 kg/cm2 or more over the SV, the SV goes back to the drum pressure (the
          set point of step 54, "the MS blow-off PICMS1002 in AUTO with its set point at the drum pressure"), not +1 */
       () => {
@@ -219,13 +219,13 @@ window.LS_GUIDE = (function () {
      (the HP bypass or the blow-off passing, PR-OPE-5002 BYPASS SYSTEM SERVICING: the HP bypass sets the pressure) and never over the
      heating rate (PR-OPE-5002: 60 °C/h; 55 = the top of the 45 ~ 55 band of the step text, as heatSeek) */
   const outOpen = () => (+mv('PICMS1006') || 0) > 0.5 || (+mv('PICMS1002') || 0) > 0.5;
-  /* 3.2.3-beta.105 (Worker run on beta.102, steps 75 ~ 81): while the HP bypass SV climbs (svRamp) the pressure is under the SV, the
+  /* 3.2.3-beta.107 (Worker run on beta.102, steps 75 ~ 81): while the HP bypass SV climbs (svRamp) the pressure is under the SV, the
      heat goes into the pressure (stored) and the steam flow reads under 40 T/H: the oil ▲ for 40 T/H took the oil 2.9 -> 6.1 T/H, and at
      the end of the ramp (SV 61) that firing came out as steam: 47 -> 106 T/H, 64 kg/cm2, drum -116 / +108 mm at step 81 (Mina live
      beta.102: +190 / -172.5). The oil goes up for the steam flow only when the HP bypass holds the pressure (main steam at its SV),
      not while the pressure is still climbing to it */
   const atSv = () => md('PICMS1006') !== 'AUTO' || h().MSP() >= (+svOf('PICMS1006') || 0) - 0.5;
-  /* 3.2.3-beta.105: the 10-minute mean of the main steam flow (first-order filter on plant time) for the stage-7 oil band; null for the
+  /* 3.2.3-beta.107: the 10-minute mean of the main steam flow (first-order filter on plant time) for the stage-7 oil band; null for the
      first 10 minutes and after a gap of more than 20 minutes (a load, a pause of the band) */
   const ms7 = () => {
     const t = simT(),
@@ -1119,7 +1119,7 @@ window.LS_GUIDE = (function () {
              must). Under 15 kg/cm2 the saturation temperature climbs fastest per kg/cm2 (2 -> 15 kg/cm2 = 133 -> 200 C) and the minimum
              fire of four burners (4 x 614.4 kg/h) is over the gradient there; A / D carry the warm-up to 15 */
           const at15 = b => Object.assign({}, b, { on: () => (+U().Pd || 0) < 15 || b.on(), hide: () => (+U().Pd || 0) < 15 && !b.on() });
-          /* 3.2.3-beta.105 (Mina live beta.102: heating 29 ~ 67 C/h on A / D, then 94 ~ 97 C/h after the B / C light-off at step 56, blow-off
+          /* 3.2.3-beta.107 (Mina live beta.102: heating 29 ~ 67 C/h on A / D, then 94 ~ 97 C/h after the B / C light-off at step 56, blow-off
              94 ~ 100 %, drum -192 mm): B / C went in at 20 % on top of A / D, about +40 % of fire at once, and the oil ▼ of the warm-up
              (−5 % each 2 minutes) was too slow for it. PR-OPE-5002: "Light off another burner ... at minimum firing ratio" and "Once all 4
              burners are in service, increase load on all four burners simultaneously to meet start-up curve. Gradient = 1 C/min": A / D go
@@ -1977,7 +1977,7 @@ window.LS_GUIDE = (function () {
        443 C and "Steam for the roll" (MSV inlet <= 420 C, ATS Fig. 2) waited until the diesel tank ran empty. Step 76 says "you control
        the oil for 40 ~ 55 T/H" (PR-OPE-5002 "Steam Flow of 40 T/H above is recommended"): the same oil ▼ (−5 % each 2 minutes, down to the
        burner minimum fire) keeps acting through the turbine-on-oil steps while the HP bypass holds the pressure, before the 52G */
-    /* 3.2.3-beta.105 (Mina live beta.102: drum +190 / -172.5 mm at step 81; Worker run: oil 6.1 T/H at the start of step 81, steam 109
+    /* 3.2.3-beta.107 (Mina live beta.102: drum +190 / -172.5 mm at step 81; Worker run: oil 6.1 T/H at the start of step 81, steam 109
        T/H, then the oil ▼ alone took it down to 14 T/H and the pressure and level swung): the band is both ways, as the oil band of
        step 76 (oilBand: ▲ under 40 T/H only while the steam has a way out and the heating rate is not over 55) */
     /* Worker run of this build: the 2-minute ▼ / ▲ on the steam of the moment chased the swing of the HP bypass loop itself (steam 7 ~ 106
