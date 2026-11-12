@@ -2,7 +2,7 @@
 """SOOTBLOWERS, the approved temporary mockup page 15 (docs/hmi/mockups/temp/15-sootblowers.html) in the app: hooks only
 (tools/hmi-mock/mock.py). Blower N-10xx = its output "N-10xx SOOTBLOWER OPERATING" (DITL-80A row 26, 80B ~ 80E rows 2 / 6 / 10 / 14 /
 18 / 22 / 26), air heater blowers = DITL-80F row 26; DITL-80A: input 2 STEAM SUPPLY MOTOR VALVE OPEN, 24 / 23 -M.423A / -M.4239 DRAIN
-TEMPERATURE > 220 (NOT), 14 M.4008 ALL ON RETRACT, 15 I.073F REMOTE, 13 -I.073E AIR PREHEATER REMOTE, output 21 BLOWING PERMISSIVE,
+TEMPERATURE > 220 (the row state is the temperature above 220 C: shown as it is, 3.2.3 SOHEE; 18.PNG 107 C = false), 14 M.4008 ALL ON RETRACT, 15 I.073F REMOTE, 13 -I.073E AIR PREHEATER REMOTE, output 21 BLOWING PERMISSIVE,
 6 PROGRAM ON, 10 MANUAL MODE; DITL-80S outputs 6 FULL CLOSED, 20 / 25 OPEN / CLOSE OVER TIME; DITL-80Q output 4 WARMING UP FAILURE;
 DITL-80R outputs 21 SOV(L) OPENED (XV-SB1054), 12 SOV(R) OPENED (XV-SB1059, DITL-80P I.0044). Run: python3 tools/hmi-mock/p15.py"""
 import sys, os
@@ -44,7 +44,7 @@ p.inner(1314, 294, V('IT-SB01', 1, ' A'))
 p.inner(1314, 334, 'Forward ' + NS + ' · reverse ' + NS)
 p.inner(1314, 354, 'Steam valve warm-up ' + NS + ' of 10 min')
 p.inner(1314, 398, 'Blowing permissive  ' + DY('DITL-80A|o|20', 'Y', 'N'))
-for y, spec in ((430, 'DITL-80A|i|1'), (470, 'DITL-80A|i|23|neg'), (510, 'DITL-80A|i|22|neg'), (592, 'DITL-80A|i|13'),
+for y, spec in ((430, 'DITL-80A|i|1'), (470, 'DITL-80A|i|23'), (510, 'DITL-80A|i|22'), (592, 'DITL-80A|i|13'),
                 (632, 'DITL-80A|i|14'), (672, 'DITL-80A|i|12'), (754, 'DITL-80S|o|19'), (794, 'DITL-80S|o|24'), (834, 'DITL-80Q|o|3')):
     p.text(1328, y, f'data-dy="{spec}"')
     p.rect(1314, y - 16, f'data-dyr="{spec}"')

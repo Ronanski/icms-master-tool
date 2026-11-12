@@ -61,6 +61,11 @@ const html =
     const pos = () => ((WORLD.live = true), AN.ditlPos('DITL-80S', 0));
     const out = () => lances().filter(s => s._lance.x > 0).length;
     const o = {};
+    /* 5. the drain temperatures TT-SB1056 / 1057 (unit.js AN_SB.dr), the value DITL-80P reads and the BLOWING PERMISSIVE (DITL-80A out 21) */
+    const dr = () => {
+      const p = S.sheets.find(x => /\)DITL-80P$/.test(x.name));
+      return { a: r1(AN.unit.sbTa), b: r1(AN.unit.sbTb), src: r1(AN.unit.sbT), hdrT: r1(AN.unit.sbTh), avw: p && p.avw ? Object.values(p.avw).map(r1) : [], bp: ((WORLD.live = true), AN.ditlRun('DITL-80A@20')) };
+    };
     /* 1. Cold */
     AN.run = false;
     AN.reset();
@@ -68,7 +73,7 @@ const html =
     AN.plantCold();
     await run(300);
     const U = AN.unit;
-    o.cold = { msb: U.msb, n: U.sbN, out: out(), mv: pos(), P: r1(hdr()), L: lances().length };
+    o.cold = { msb: U.msb, n: U.sbN, out: out(), mv: pos(), P: r1(hdr()), L: lances().length, dr: dr() };
     /* 2. Start at 150 MW */
     AN.run = false;
     AN.reset();
@@ -76,7 +81,7 @@ const html =
     AN.plantLoad150();
     DITL150.apply();
     await run(300);
-    o.l150 = { msb: U.msb, n: U.sbN, out: out(), mv: pos(), P: r1(hdr()), L: lances().length };
+    o.l150 = { msb: U.msb, n: U.sbN, out: out(), mv: pos(), P: r1(hdr()), L: lances().length, dr: dr() };
     man('ABC-017', 'PICSB1052', 60);
     await run(120);
     o.shut = { P: r1(hdr()), mv: pos() };
@@ -86,7 +91,7 @@ const html =
       MST[v.name][0].pos = 100;
     };
     await run(120);
-    o.open = { P: r1(hdr()), mv: pos(), msb: U.msb };
+    o.open = { P: r1(hdr()), mv: pos(), msb: U.msb, dr: dr() };
     const blow = async n => {
       const s = lances().find(x => x._lance.n === n);
       const dl0 = AN.cyc ? AN.cyc.dl : AN_CYC.dl;
@@ -127,6 +132,13 @@ const html =
       if (U.msb > 0) tA += 0.5;
     });
     o.a1 = { A: A(), kg: r1(kgA + (o.a0.msb / 3.6) * 10), t: tA + 10, msb: U.msb, r40: rsp(/N-1040.*RESET/), r42: rsp(/N-1042.*RESET/) };
+    o.drHot = dr();
+    /* MV-SB1001 shut again: the drains cool back */
+    hold = () => {
+      MST[v.name][0].pos = 0;
+    };
+    await run(1800);
+    o.drCool = dr();
     hold = null;
     return o;
   });
@@ -151,6 +163,15 @@ const html =
     `air heater blowers started: hot end N-1040 blows 3900 kg/h (${a0.msb} T/H, drum outflow +${a0.dl}), PT-SB1040 ${a0.A.p40} kg/cm2, N-1040 off its reset position (reset 1040 / 1042 = ${a0.r40} / ${a0.r42}, ph ${a0.A.ph}, op ${a0.op})`);
   ck(a1.A.ph === 0 && a1.msb === 0 && a1.r40 === true && a1.r42 === true && Math.abs(a1.t - 2360) <= 2 && Math.abs(a1.kg - 2556) < 10,
     `hot end then cold end, 19 min 40 s each (L20 manual): ${a1.t} s, ${a1.kg} kg (2 x 1278), both back to their reset position (${a1.r40} / ${a1.r42}, ph ${a1.A.ph}, steam ${a1.msb})`);
+  /* 5. drain temperatures */
+  const d0 = r.cold.dr, d1 = r.l150.dr, d2 = r.open.dr, d3 = r.drHot, d4 = r.drCool;
+  ck(Math.abs(d0.a - 30) < 1 && Math.abs(d0.b - 30) < 1 && d0.bp !== 1, `Cold: drain temperatures ${d0.a} / ${d0.b} C (ambient), no blowing permissive`);
+  ck(Math.abs(d1.a - 107) < 3 && Math.abs(d1.b - 105) < 3 && d1.bp !== 1, `150 MW, MV-SB1001 shut: drains ${d1.a} / ${d1.b} C (18.PNG 107 / 105), no blowing permissive`);
+  ck(d1.src > 445 && d1.src < 475, `150 MW: S/H panel #1 outlet steam ${d1.src} C (CALC; 03.png TT-BR1120 458 / 454 C)`);
+  ck(d1.avw.length >= 2 && d1.avw.includes(d1.a) && d1.avw.includes(d1.b), `DITL-80P reads the drain temperatures of the plant model (${d1.avw.join(' / ')})`);
+  ck(d2.hdrT > 370 && d2.hdrT < d1.src && d2.a > d1.a && d2.a < d2.hdrT, `MV-SB1001 open 120 s: header steam ${d2.hdrT} C (throttled), drains warming ${d2.a} / ${d2.b} C`);
+  ck(d3.a > 250 && d3.b > 250 && d3.bp === 1, `after the warm-up: drains ${d3.a} / ${d3.b} C (> 220 and > 250), BLOWING PERMISSIVE on`);
+  ck(d4.a < d3.a - 50 && d4.bp !== 1, `MV-SB1001 shut 30 min: drains cool to ${d4.a} / ${d4.b} C, no blowing permissive`);
   ck(errs.length === 0, 'no page error' + (errs.length ? ': ' + errs.join(' | ') : ''));
   console.log(fail ? 'FAILED ' + fail : 'ALL PASS');
   await browser.close();

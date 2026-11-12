@@ -798,6 +798,7 @@ function anUnitStart() {
   /* 3.2.3 SOHEE: the dosing pumps A in service, B standby, agitator stopped (PR-OPE-5002 one pump each); the chemistry at its target */
   Object.assign(AN_SRC.field, { tspA: true, tspB: false, amnA: true, amnB: false, chzA: true, chzB: false, agt: false });
   U.chC = U.chP = U.chS = U.chO = U.sp1006 = NaN;
+  U.sbTa = U.sbTb = NaN; /* SOHEE: the sootblower drains start at their rest value (AN_SB.dr) */
   U.chCold = 0;
   AN.unit = U;
 }
@@ -856,6 +857,7 @@ function anUnitCold() {
   /* 3.2.3 SOHEE: cold = the dosing pumps stopped (PR-OPE-5002 starts them in the start-up); no phosphate yet, the cycle water conditioned */
   Object.assign(AN_SRC.field, { tspA: false, tspB: false, amnA: false, amnB: false, chzA: false, chzB: false, agt: false });
   U.chC = U.chP = U.chS = U.chO = U.sp1006 = NaN;
+  U.sbTa = U.sbTb = NaN; /* SOHEE: the sootblower drains start at their rest value (AN_SB.dr) */
   U.chCold = 2; /* the water filled cold is not deaerated (air-saturated) until the deaerator is first pressurized (2 = until the transmitter reads the cold deaerator) */
   AN_SRC.t = -1;
   /* 3.2.0-beta.68: cold = the air compressors stopped, the air tanks empty (AN_AIR) */
@@ -3064,8 +3066,52 @@ const AN_SB = {
      SELECT (M.4212, 1 = plant air: no steam taken). While a lance blows: its RESET POSITION is 0 (plantsw.js) and its pressure PT-SB1040 /
      PT-SB1042 (I/O list STN102 AI0549 / AI0550, 0 ~ 16) is the header pressure (at most 16). NO-SOURCE: the steps of the lance (one
      rotor turn each), the plant air pressure at the blower */
-  aph: { q: 3.9, head: 10.5, tB: 19 * 60 + 40, rng: 16 }
+  aph: { q: 3.9, head: 10.5, tB: 19 * 60 + 40, rng: 16 },
+  /* 3.2.3 (SOHEE): the drain temperatures TT-SB1056 (A, middle riser SB-1-046) / TT-SB1057 (B, right riser SB-1-039), I/O list STN102
+     AI0916 / AI0917 0 ~ 600 C; DITL-80P rows 2 / 3 -> DITL-80A rows 22 / 23 (> 220 C = BLOWING PERMISSIVE with MV-SB1001 open 600 s)
+     and rows 18 / 19 (> 250 C = the drain SOVs XV-SB1054 / 1059 close by themselves). Flow diagram PD-015: the steam comes from the
+     S/H panel #1 outlet. Its temperature (CALC): the heat balance of the No.1 spray, steam in = (steam out x h(spray 1 outlet) - spray x
+     h(water)) / (steam out - spray), steam out = main steam - No.2 spray (FT-FW1119), spray FT-FW1109 at TT-FW1011, h(water) = 4.19 x T
+     (liquid, within 2 % of the steam table), pressure = drum - 6.4 x (main steam / 474.1)^2 (03.png PIBR1130). Check at 03.png (150.5 MW:
+     MSF 474.1, spray 37.5 / 28.2 T/H, TICBR1130 394 C, PIBR1130 127.8, TIFW1011 162 C): 460 C against TT-BR1120-1 / -2 458 / 454 C.
+     Through MV-SB1001 and PCV-SB1053 the steam is throttled at constant enthalpy to the header pressure (PICSB1052): steam.js steamTph
+     (IAPWS-IF97 region 2). With steam in the header (above 0.5 kg/cm2: 18.PNG reads 0.4 with MV-SB1001 shut) the drains go to that
+     temperature with the lag tauH; without steam they go back to their rest value with tauC. Rest: 18.PNG (149.8 MW, MV-SB1001 shut)
+     107 / 105 C, scaled down to the ambient with the boiler water temperature (ambient at Cold). NO-SOURCE: tauH, tauC (the warm-up and
+     the cooling of the drain lines) and the scaling of the rest value; the dead leg with its drain SOV shut is not modelled (the trap
+     passes the condensate) */
+  dr: { rest: [107, 105], Pon: 0.5, tauH: 120, tauC: 1800, P0: 134.2 }
 };
+/* U.sbT = S/H panel #1 outlet steam (C), U.sbTh = header steam (C, NaN without steam), U.sbTa / U.sbTb = TT-SB1056 / TT-SB1057 */
+function anSbDrain(U, dt, P) {
+  const K = AN_SB.dr,
+    Ta = isFinite(U.Tamb) ? U.Tamb : 30,
+    Pd = Math.max(0, +U.Pd || 0),
+    tt = U.tt || {},
+    T1 = typeof srcPv === 'function' ? srcPv('ABC-011', 'TICBR1130') : NaN,
+    ms = Math.max(0, +U.ms || 0),
+    w1 = Math.max(0, +tt['FT-FW1109'] || 0),
+    w2 = Math.max(0, +tt['FT-FW1119'] || 0),
+    Tf = tt['TT-FW1011'] != null && isFinite(tt['TT-FW1011']) ? +tt['TT-FW1011'] : Ta;
+  let Ts = NaN;
+  if (isFinite(T1) && Pd > 0) {
+    const P1 = Math.max(0, Pd - 6.4 * (ms / 474.1) * (ms / 474.1)),
+      mo = ms - w2;
+    Ts = Math.max(T1, steamTsat(P1));
+    if (w1 > 0 && mo - w1 > 1) Ts = steamTph(P1, (mo * steamH(P1, Ts) - w1 * 4.19 * Tf) / (mo - w1));
+    U.sbTh = isFinite(P) && P > K.Pon ? steamTph(P, steamH(P1, Ts)) : NaN;
+  } else U.sbTh = NaN;
+  U.sbT = isFinite(Ts) ? Math.round(Ts * 10) / 10 : NaN;
+  const Tw = isFinite(U.Tw) ? U.Tw : Ta,
+    f = Math.max(0, Math.min(1, (Tw - Ta) / (steamTsat(K.P0) - Ta)));
+  ['sbTa', 'sbTb'].forEach((k, i) => {
+    const rest = Ta + (K.rest[i] - Ta) * f,
+      tg = isFinite(U.sbTh) ? Math.max(rest, U.sbTh) : rest;
+    if (!isFinite(U[k])) U[k] = rest;
+    const tau = tg > U[k] ? K.tauH : K.tauC;
+    U[k] += (tg - U[k]) * Math.min(1, dt / tau);
+  });
+}
 function anSbStep(U, dt) {
   U.msb = 0;
   U.sbN = 0;
@@ -3073,6 +3119,7 @@ function anSbStep(U, dt) {
     L = W && W.sbLances ? W.sbLances() : [];
   const P = typeof srcPv === 'function' ? srcPv('ABC-017', 'PICSB1052') : NaN;
   anSbAph(U, dt, P);
+  anSbDrain(U, dt, P);
   if (!L.length) return;
   if (!(P > 0)) return;
   for (const s of L) {
