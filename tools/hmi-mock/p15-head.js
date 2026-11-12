@@ -18,6 +18,6 @@
     mach: {
       PIC: { n: 'PICSB1052', t: 'Sootblower steam pressure PCV-SB1053', ctl: 'PICSB1052', io: 'PICSB1052' }
     },
-    unit: { 'PT-SB1040': 'ux:sbA.p40', 'PT-SB1042': 'ux:sbA.p42' }
+    unit: { 'PT-SB1040': 'ux:sbA.p40', 'PT-SB1042': 'ux:sbA.p42', 'TT-SB1056': 'ux:sbTa', 'TT-SB1057': 'ux:sbTb' }
   });
 })();

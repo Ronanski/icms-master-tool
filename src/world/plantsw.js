@@ -378,7 +378,11 @@
     /* 3.2.1 (IRENE: FEEDWATER): DITL-23B row 25 PT-FW1011 (< 155 kg/cm2 = M.3210, the standby BFWP starts) and row 26 the strainer DP
        DPT-FW1115-A / B (machine instance #B) = the plant model's (unit.js AN_FW) */
     [/(?:^|[^A-Z])PT-FW1011\b/, 'fwPd'],
-    [/DPT-FW1115-?([AB])\b/, t => 'fwDp' + 'AB'.indexOf(/DPT-FW1115-?([AB])/.exec(t)[1])]
+    [/DPT-FW1115-?([AB])\b/, t => 'fwDp' + 'AB'.indexOf(/DPT-FW1115-?([AB])/.exec(t)[1])],
+    /* 3.2.3 (SOHEE): DITL-80P rows 2 / 3 "S/B STEAM DRAIN TEMPERATURE(B) TISB1057.PV" / "(A) TISB1056.PV" (> 250 C drain SOV auto close,
+       > 220 C blowing permissive, DITL-80A rows 18 ~ 23) = the drain temperatures of the plant model (unit.js AN_SB.dr) */
+    [/TT-SB1056\b/, 'sbTa'],
+    [/TT-SB1057\b/, 'sbTb']
   ];
   /* 3.2.0-beta.68 (INSTRUMENT & PLANT AIR HMI): the tank and unit header pressure transmitters of the compressed air systems are analog
      rows of the logic (DITL-113 / 114 rows 1 ~ 3: auto start of the standby compressor < 5 kg/cm2; DITL-03G rows 9 ~ 11: MFT on
