@@ -241,7 +241,11 @@ window.LS_GUIDE = (function () {
     }
     return t - m.t0 >= 600 ? m.v : null;
   };
-  const oilBand = (up, lo, hi) => { const k = up ? 'oilU' : 'oilD', due = () => (up ? h().MSF() < lo && outOpen() && atSv() && !(rate() > 55) : h().MSF() > hi), b0 = oilStep(up ? 'Oil A / D ▲ +5 % (steam flow under ' + lo + ' T/H)' : 'Oil A / D ▼ −5 % (steam flow over ' + hi + ' T/H)', ['A', 'D'], up ? 5 : -5), f0 = b0.f; b0.f = () => ((paceT[k] = simT()), f0()); return Object.assign(b0, { on: () => !due() || simT() - (paceT[k] || -1e9) < 120, hide: () => !due(), band: 1 }); };
+  /* 3.2.3-beta.114 (Worker run of beta.107: drum -168 mm at step 75, the oil ▲ each 2 minutes on the steam of the moment ran ahead of
+     the HP bypass and the blow-off): as the stage-7 band, the bypass-step band reads the 10-minute mean of the steam (ms7, the steam
+     of the moment for its first 10 minutes) and presses once each 5 minutes */
+  const msB = () => { const m = ms7(); return m == null ? h().MSF() : m; };
+  const oilBand = (up, lo, hi) => { const k = up ? 'oilU' : 'oilD', due = () => (up ? msB() < lo && outOpen() && atSv() && !(rate() > 55) : msB() > hi), b0 = oilStep(up ? 'Oil A / D ▲ +5 % (steam flow under ' + lo + ' T/H)' : 'Oil A / D ▼ −5 % (steam flow over ' + hi + ' T/H)', ['A', 'D'], up ? 5 : -5), f0 = b0.f; b0.f = () => ((paceT[k] = simT()), f0()); return Object.assign(b0, { on: () => !due() || simT() - (paceT[k] || -1e9) < 300, hide: () => !due(), band: 1 }); };
   /* 3.2.3-beta.56 (automatic run, load up to 45 MW on oil): the turbine took 96 T/H while the oil stayed at the 40 ~ 55 T/H of the bypass steps; the main steam fell 61 -> 10 kg/cm2 and the drum swelled to HH (MFT). The load-up steps now show oil ▲ (all lit burners +5 %) while the main steam is under 60 kg/cm2 and oil ▼ over 100 (FHI Part 2 Sect 7 Tab 4 Fig. 2: 60 kg/cm2 at 15 % load, 100 at 30 % = 45 MW; FHI Tab 9 p 2-8-TAB_9-11 step 12 and PR-OPE-5002 27.17: all four burners together to meet the start-up curve), one press each 30 s up / 60 s down (pace NO-SOURCE, ASSUMED_sources row 17), and run x10 while the pressure is under 60. */
   const mspOil = up => { const k = up ? 'mspU' : 'mspD', due = () => (up ? h().MSP() < 60 : h().MSP() > 100), b0 = oilStep(up ? 'Oil ▲ +5 % (main steam under 60 kg/cm², each 30 s)' : 'Oil ▼ −5 % (main steam over 100 kg/cm²)', ['A', 'B', 'C', 'D'], up ? 5 : -5), f0 = b0.f; b0.f = () => ((paceT[k] = simT()), f0()); return Object.assign(b0, { on: () => !due() || simT() - (paceT[k] || -1e9) < (up ? 30 : 60), hide: () => !due() }); };
   /* the Do it for me never presses the ▲ / ▼ trims (the trainee's own hand, #108): the seek of the load-up steps moves the oil instead, by the same rule as the buttons */
@@ -580,7 +584,10 @@ window.LS_GUIDE = (function () {
     const r = rate();
     if (!isFinite(r) || simT() - (paceT.hs || -1e9) < 120) return;
     const dn = r > 55,
-      up = r < 45 && (+U().Pd || 0) < 33;
+      /* 3.2.3-beta.114 (Worker run of beta.107: oil ▲ at 31 ~ 32 kg/cm2 took the drum to 37.2 against the blow-off SV 35, the blow-off
+         opened to 100 % and the drum fell to -136 mm, then rose to +187 at step 73 while it closed): ▲ only under 30 kg/cm2, 5 under
+         the hold; the run showed about 5 kg/cm2 of rise after the last ▲ (the lag of the furnace and the bed) */
+      up = r < 45 && (+U().Pd || 0) < 30;
     if (!(dn || up)) return;
     paceT.hs = simT();
     oilStep('', ['A', 'B', 'C', 'D'], dn ? -5 : 5).f();
