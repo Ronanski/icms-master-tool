@@ -96,6 +96,7 @@ function srcState(t0) {
   s.Pext = 4.5 * s.ext * Math.min(1, ms / m0);
   s.Pex3 = 5.3 * s.ext * Math.min(1.05, ms / 474.1);
   AN_SRC.t = t;
+  s.sb1001 = typeof anDitlPos === 'function' ? anDitlPos('DITL-80S', 0) : null;
   return (AN_SRC.st = s);
 }
 /* the rule of each loop: controller tag -> condition of its medium (loop map: loop number) */
@@ -128,7 +129,10 @@ const SRC_RULES = (() => {
   R.TICMS1022 = s => ({ mul: srcCl(Math.max(s.mhp, s.ms) / (0.03 * s.m0)), base: s.Tamb });
   R.TICHR1012 = s => ({ mul: srcCl(Math.max(s.qlp / (0.03 * s.m0), s.Prh / 5)), base: s.Tamb });
   /* loop 12, aux steam and sootblower: reducing stations from the main steam (and the cold reheat for the aux steam) */
-  R.PICSB1052 = s => ({ cap: s.Pms });
+  /* 3.2.3 SOHEE: the sootblower header is fed from the S/H panel #1 outlet through the shut-off MOV MV-SB1001 (DITL-80S, 18.PNG: 0 %,
+     header PISB1052 0.4 kg/cm2 at 150 MW): MV-SB1001 shut = no steam to the reducing station. The stroke curve of the MOV is NO-SOURCE:
+     off its closed seat = the source pressure. Without the one world (no MOV state) as before */
+  R.PICSB1052 = s => ({ cap: s.sb1001 == null || s.sb1001 > 0 ? s.Pms : 0 });
   R.PICAS1005 = s => ({ cap: Math.max(s.Pms, s.Pcrh) });
   R.TICAS1001 = s => ({ mul: srcCl(s.Paux / 3), base: s.Tamb });
   R.TICAS1017 = s => ({ mul: srcCl(s.Paux / 3), base: s.Tamb });
