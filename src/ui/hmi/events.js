@@ -97,6 +97,22 @@
         } catch (e) {}
       if (any) T.set(tag, o);
     }
+    /* S154-5 (b142 save, RH 593 C): the RH spray TICHR1002 was forced MANUAL by the drawing (ABC-019 M.0170) and stayed MANUAL (rule
+       10) while its .LOC stayed 1: the mode status alone missed it. A PID controller's mode is the leg of its A/M station, as on its
+       faceplate (snapshot above): it wins over the status addresses */
+    for (const sh of A.sheets) {
+      if (!sh.S || !sh.S.rt || !/^ABC-/.test(sh.name)) continue;
+      let L = [];
+      try {
+        L = A.hmiCtrls(sh.S) || [];
+      } catch (e) {}
+      for (const c of L) {
+        if (!c.tag || !c.amt) continue;
+        const o = T.get(c.tag) || { MAN: [], LOC: [], REM: [] };
+        if (!o.c) o.c = [sh, c];
+        T.set(c.tag, o);
+      }
+    }
     MW = { key, tags: T, prev: MW.key.split(':')[0] === key.split(':')[0] ? MW.prev : {} };
     return T;
   }
@@ -107,13 +123,27 @@
     if (!T) return;
     const on = L => L.some(([sh, n]) => sh.S && sh.S.rt && +(sh.S.ext.includes(n) && sh.S.rt.ext[n] !== undefined ? sh.S.rt.ext[n] : sh.S.rt.v[n]) > 0.5);
     for (const [tag, o] of T) {
-      const m = on(o.MAN) ? 'MAN' : on(o.REM) ? 'REMOTE' : on(o.LOC) || !o.LOC.length ? 'AUTO' : '';
+      let m = '',
+        cw = null;
+      if (o.c) {
+        const [csh, c] = o.c,
+          rt = csh.S.rt,
+          st = rt.st[c.amt.id],
+          q = c.svSw && rt.st[c.svSw.id];
+        if (st) {
+          m = st.pk !== c.autoLeg ? 'MAN' : c.remote && q && q.pk === 'A' ? 'REMOTE' : 'AUTO';
+          /* forced by the drawing: the cause is the force-manual signal that is on (its 1:B select line) */
+          const z = (c.sigs || []).find(z => z.role === 'MAN' && rt.v[z.n] > 0.5);
+          if (z) cw = [csh, z.n];
+        }
+      }
+      if (!m) m = on(o.MAN) ? 'MAN' : on(o.REM) ? 'REMOTE' : on(o.LOC) || !o.LOC.length ? 'AUTO' : '';
       const a = MW.prev[tag];
       MW.prev[tag] = m;
       if (a === undefined || a === m || !m || !a) continue;
-      const [sh, n] = (m === 'MAN' ? o.MAN : m === 'REMOTE' ? o.REM : o.LOC.length ? o.LOC : o.MAN)[0];
+      const [sh, n] = cw || (m === 'MAN' ? o.MAN : m === 'REMOTE' ? o.REM : o.LOC.length ? o.LOC : o.MAN)[0] || [o.c[0], -1];
       let why = null;
-      if (m === 'MAN')
+      if (m === 'MAN' && n >= 0 && (cw || !o.c))
         try {
           why = AN.why ? AN.why(sh, n).lines.filter(l => l.d > 0) : null;
         } catch (e) {}
