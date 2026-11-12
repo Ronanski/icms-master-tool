@@ -5,12 +5,17 @@ const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist
 (async()=>{const {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
 await page.setViewportSize({width:1600,height:900});await page.waitForTimeout(800);
 const dlg=[];page.on('dialog',d=>{dlg.push(d.message());d.dismiss()});
-// F31 the search box on the Logic page, real click and keys
+// F31 the search box on the Logic page, real click and keys. Layout C (re-shell, 3.2.1-beta.279) has no side list on the Logic page
+// (shellc-eng.css: the sheet picker of the band chooses the sheet); its search is the Search pill of the strip, which opens #ansb
+await page.waitForTimeout(1500);await page.evaluate(()=>{const k=document.querySelector('#scstart .scskip');if(k&&k.offsetParent)k.click()});await page.waitForTimeout(1000); /* the start screen first, as the operator */
 await page.evaluate(()=>{lsSetTab('logic');AN.setCat&&AN.setCat('dig')});await page.waitForTimeout(1500);
-const box=await page.evaluate(()=>{const e=document.getElementById('sidefl');if(!e)return null;const r=e.getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2,r.width]});
-console.log('box',box);
+const rc=s=>page.evaluate(s=>{const e=document.querySelector(s);if(!e)return null;const r=e.getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2,r.width]},s);
+const pill=await rc('#scstrip .scsrp');console.log('pill',pill);
+if(pill&&pill[2]>0){await page.mouse.click(pill[0],pill[1]);await page.waitForTimeout(400);}
+const box=await rc('#ansb');console.log('box',box);
 if(box&&box[2]>0){await page.mouse.click(box[0],box[1]);await page.keyboard.type('MOV');await page.waitForTimeout(600);
- const v=await page.evaluate(()=>{const e=document.getElementById('sidefl'),L=[...document.querySelectorAll('#side a,#side li,#side button,#side .it')].filter(x=>x.offsetParent);return {val:e.value,n:L.length}});ck(v.val==='MOV','the keys reach the box: '+JSON.stringify(v));}
+ const v=await page.evaluate(()=>{const e=document.getElementById('ansb'),f=document.getElementById('anfind');return {val:e.value,list:!!(f&&f.getClientRects().length&&f.textContent.length)}});ck(v.val==='MOV'&&v.list,'the keys reach the box and the result list shows: '+JSON.stringify(v));
+ await page.keyboard.press('Escape');await page.waitForTimeout(300);}
 else ck(false,'search box visible on the Logic page: '+JSON.stringify(box));
 // F36 Practise asks on the button, one press loads nothing
 await page.evaluate(()=>lsSetTab('training'));await page.waitForTimeout(800);

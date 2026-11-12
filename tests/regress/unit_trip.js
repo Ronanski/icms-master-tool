@@ -7,7 +7,7 @@
 //        HP / LP bypass and blow-off open, MW 0, steam through the bypass (FT-MS1031 sees it: no M.2001); TURBINE TRIP is an MFT
 //        first out (STN104 memory list M.053F / B.125F; PR-OPE-5003): the DITL MFT is forced with it, the boiler cools down
 //   mft  I.000F MFT FROM IRP on every station, M.0341 MFT TPs, coal feeders stopped: coal 0, O2 21, spray closed (M.0240 / M.0230),
-//        temperatures fall with the firing, PA / SA masters MANUAL (M.0098), pressure falls to MAIN STEAM PRESSURE LOW LOW (M.310D)
+//        temperatures and pressure fall, PA / SA masters MANUAL then AUTO by house operation (M.0180, M.018C), DITL MFT -> turbine trip (TA-9)
 //   bfwp both BFWP stopped (M.3343 / M.3344): FW 0, FICFW1007 force manual (M.0228), ALL BFWP STOPPED after 15 s (M.0702) blocks the
 //        HP bypass (BU-CMD), the drum level falls to low low (M.0170 / M.0172, -254 mm) -> the DITL trips the boiler (forced here)
 //   idf  IDF stopped (M.3304): PICFG108 force manual and demand 0 held (M.020F pulse, BU-CMD tracking), furnace pressure rises
@@ -44,10 +44,10 @@ for(const sc of SC){
       PRESSURE H.H.; PR-OPE-5003 normal shutdown: "bypass turbine trip alarm at MFT and boiler interlock to maintain boiler operation"
       (so a turbine trip that is NOT bypassed trips the boiler). The DITL is forced: the MFT comes with the turbine trip */
    const n=setx('ABC-050','I.0400',1);C(n===1,'turbine trip input STN102 I.0400 (ABC-050) set');mft();
-   let mspMax=0,hpbMax=0,lpbMax=0,bloMax=0,m2001=0,mw60=null,msf60=null;
+   let mspMax=0,hpbMax=0,lpbMax=0,bloMax=0,m2001=0,mw60=null,msf60=null,ub60=null;
    run(300,t=>{mark('M.0124',bit('ABC-050','M.0124')>0.5);mark('M.0705',bit('ABC-050','M.0705')>0.5);mark('BM',S.rt.st[bmA.id].pk==='B');
     mspMax=Math.max(mspMax,MSP());hpbMax=Math.max(hpbMax,mv('ABC-050','PICMS1006'));lpbMax=Math.max(lpbMax,mv('ABC-052','PICHR1003'));bloMax=Math.max(bloMax,mv('ABC-013','PICMS1002'));if(t-o.t0<=60&&bit('ABC-001C','M.2001')>0.5)m2001++;
-    if(Math.abs(t-o.t0-60)<0.01){mw60=MW();msf60=MSF()}});
+    if(Math.abs(t-o.t0-60)<0.01){mw60=MW();msf60=MSF();ub60=(U.hpb+U.blo)*U.m0*MSP()/U.P0*1.05}});
    C(bit('ABC-001C','M.3200')>0.5&&bit('ABC-010','M.3200')>0.5,'station wiring: STN101 M.3200 T/B TRIP (ABC-001C, ABC-010) follows STN102 I.0400');
    C(seen.BM&&bit('ABC-001C','M.2013')>0.5,'boiler master HIC-BM MANUAL by the BU-CMD M.2013 (turbine trip)');
    C(bit('ABC-001C','M.2016')>0.5,'turbine master EIC-TM MANUAL by M.2016 (turbine trip)');
@@ -55,7 +55,9 @@ for(const sc of SC){
    C(seen['M.0705'],'ABC-050 M.0705 HP bypass BU-CMD pulse');
    C(bit('ABC-010','M.022B')>0.5,'ABC-010 M.022B (turbine trip): feedwater demand from the LAG of the steam flow');
    C(mw60<5,'MW '+mw60.toFixed(1)+' after 60 s (turbine valves closed by the TCS)');
-   C(msf60>46&&msf60<260,'main steam flow '+msf60.toFixed(0)+' T/H after 60 s: the steam of the cooling bed goes through the HP bypass and the blow-off (FT-MS1031 sees it)');
+   /* 3.2.3 (Chaewon): the upper bound is the two outlets wide open, HP bypass PCV-MS1020 (valve sheet L21, hpb 0.48) and blow-off PCV-MS1001
+      (E2-0-123 p5, blo 0.46), at the pressure of the moment, + 5 %; the old 260 had no source. FT-MS1031 range 0 ~ 500 (ABC-001C AI0129) */
+   C(msf60>46&&msf60<=ub60,'main steam flow '+msf60.toFixed(0)+' T/H after 60 s (bypass + blow-off wide open: up to '+ub60.toFixed(0)+'): the steam of the cooling bed goes through the HP bypass and the blow-off (FT-MS1031 sees it)');
    C(m2001===0,'M.2001 BOILER STEAM FLOW < 46 T/H not set in the first 60 s (steam flows through the bypass)');
    C(hpbMax>20,'HP bypass PICMS1006 opened (max '+hpbMax.toFixed(1)+' %)');C(lpbMax>10,'LP bypass PICHR1003 opened (max '+lpbMax.toFixed(1)+' %)');C(bloMax>50,'blow-off PICMS1002 opened (max '+bloMax.toFixed(1)+' %)');
    C(mspMax<=150.5&&MSP()<mspMax-10&&MSP()<135,'main steam pressure max '+mspMax.toFixed(1)+' kg/cm2 (range 150), '+MSP().toFixed(1)+' after 300 s (was '+P0.toFixed(1)+'): the stored steam goes out through the bypass and the blow-off, the pressure comes down');
@@ -63,15 +65,29 @@ for(const sc of SC){
   }
   if(sc==='mft'){
    const n=setx(null,'I.000F',1);C(n>=9,'I.000F MFT FROM IRP set on '+n+' sheets (every station)');mft();
-   let c10=null,sprayMV=null,pa5=null,sa5=null;
-   run(400,t=>{if(Math.abs(t-o.t0-10)<0.01){c10=coal();sprayMV=[mv('ABC-012','TICBR1150'),mv('ABC-011','TICBR1130')]}if(Math.abs(t-o.t0-5)<0.01){pa5=pk('ABC-007','FICFA1071');sa5=pk('ABC-007','FICFA1081')}});
+   /* 3.2.3 (Chaewon, 310SC90-794 rev 2 sheet TA-9 sh 29: BOILER MFT -> TURBINE TRIP of TA-1): the MFT of the DITL too, the BOILER EMERGENCY
+      TRIP P.B. of DITL-03A (row 14) for 3 s; the plant has no state with the MFT on the ABC only and the turbine on load */
+   const DS=(0,eval)('typeof S!=="undefined"?S:null'),d3=DS&&DS.sheets?DS.sheets.find(x=>/DITL-03A$/.test(x.name)):null,r14=d3?d3.rows.findIndex(r=>+r.n===14):-1;
+   C(r14>=0,'DITL-03A BOILER EMERGENCY TRIP P.B. (row 14) pressed');if(r14>=0)d3.sig[r14+':S']=true;
+   let c10=null,sprayMV=null,pa2=null,sa2=null,pa20=null,sa20=null,a18c=0,mw60=null,p60=null,trip=null,mst0=pv('ABC-012','TICMS1004'),hpbMax=0,bloMax=0;
+   run(400,t=>{const d=t-o.t0;if(r14>=0&&Math.abs(d-3)<0.01)d3.sig[r14+':S']=false;hpbMax=Math.max(hpbMax,mv('ABC-050','PICMS1006'));bloMax=Math.max(bloMax,mv('ABC-013','PICMS1002'));
+    if(bit('ABC-007','M.018C')>0.5)a18c=1;if(!trip&&U.tc&&U.tc.trip)trip=U.tc.trip;if(Math.abs(d-60)<0.01){mw60=MW();p60=MSP()}
+    if(Math.abs(d-10)<0.01){c10=coal();sprayMV=[mv('ABC-012','TICBR1150'),mv('ABC-011','TICBR1130')]}
+    if(Math.abs(d-2)<0.01){pa2=pk('ABC-007','FICFA1071');sa2=pk('ABC-007','FICFA1081')}if(Math.abs(d-20)<0.01){pa20=pk('ABC-007','FICFA1071');sa20=pk('ABC-007','FICFA1081')}});
    C(c10<1,'coal '+c10.toFixed(1)+' T/H 10 s after the MFT (feeders stopped)');
    C(sprayMV[0]<0.5&&sprayMV[1]<0.5,'SH spray closed by the MFT: TICBR1150 '+sprayMV[0].toFixed(1)+' %, TICBR1130 '+sprayMV[1].toFixed(1)+' % (M.0240 / M.0230)');
-   C(pa5==='B'&&sa5==='B','PA / SA masters MANUAL after the MFT (M.0098 -> M.0180 / M.0190): '+pa5+' / '+sa5);
+   /* 3.2.3 (Chaewon): ABC-007 M.0180 / M.0190 (MFT pulse M.0182 of I.000F) force the PA / SA masters MANUAL; with the turbine tripped the house
+      operation M.025B is 1 and M.018C (PULSE of NOT M.0188 AND M.018A ON DELAY AND M.025B) puts them back to AUTO by the logic when the pulse ends */
+   C(pa2==='B'&&sa2==='B','PA / SA masters MANUAL by the MFT (M.0182 -> M.0180 / M.0190): '+pa2+' / '+sa2);
+   C(a18c&&pa20==='A'&&sa20==='A','PA / SA masters AUTO again by the logic, house operation after the turbine trip (M.025B -> M.018C): '+pa20+' / '+sa20);
    C(O2()>15,'O2 '+O2().toFixed(1)+' % (no fuel, the fans run)');
-   C(pv('ABC-012','TICMS1004')<500,'main steam temperature '+pv('ABC-012','TICMS1004').toFixed(0)+' C after 400 s without firing (superheat lost)');
-   C(MSP()<P0-30,'main steam pressure '+MSP().toFixed(1)+' kg/cm2 (was '+P0.toFixed(1)+'): the stored steam is used up');
-   C(bit('ABC-001C','M.310D')>0.5,'M.310D MAIN STEAM PRESSURE LOW LOW (< 72.9) reached -> DITL-40');
+   C(trip==='BOILER MFT','turbine trip first out '+trip+' (TA-9: BOILER MFT -> TURBINE TRIP)');
+   C(mw60<5,'MW '+mw60.toFixed(1)+' after 60 s (turbine valves closed by the TCS)');
+   C(hpbMax>20&&bloMax>50,'HP bypass PICMS1006 (max '+hpbMax.toFixed(1)+' %) and blow-off PICMS1002 (max '+bloMax.toFixed(1)+' %) opened: the steam goes out there, not to the turbine');
+   /* the old checks (pressure < P0 - 30, M.310D L.L., temperature < 500 C) were for the turbine still taking steam; with the turbine tripped the
+      bypass and blow-off hold the pressure (tt scenario) and no document gives a temperature after 400 s: the trend is checked */
+   C(MSP()<p60&&MSP()<P0-10,'main steam pressure '+MSP().toFixed(1)+' kg/cm2 after 400 s (60 s: '+p60.toFixed(1)+', was '+P0.toFixed(1)+'): falls without firing');
+   C(pv('ABC-012','TICMS1004')<mst0-20,'main steam temperature '+pv('ABC-012','TICMS1004').toFixed(0)+' C after 400 s (was '+mst0.toFixed(0)+'): falls without firing');
    C(bit('ABC-001C','M.2013')>0.5&&bit('ABC-001C','M.2016')>0.5,'boiler and turbine masters MANUAL (steam flow < 220 T/H, M.0101)');
   }
   if(sc==='bfwp'){
