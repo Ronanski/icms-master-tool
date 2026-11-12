@@ -269,18 +269,19 @@
     [/./, ['IDF', 'SAF', 'PAF', 'FAB']]
   ];
   const grpT = {};
+  const grpOn = g => {
+    try {
+      return window.LS_DOCK && LS_DOCK.grpOn ? GRP[g][1].every(k => LS_DOCK.grpOn(k)) : false;
+    } catch (e) {
+      return false;
+    }
+  };
   function grpRel(shn, t) {
     const A = window.AN,
       sh = A && A.sheets && A.sheets.find(s => s.name === shn);
     if (!sh || !/^ABC-/.test(shn)) return true;
     const g = GRP.findIndex(([re]) => re.test(sh.title || '')),
-      on = (() => {
-        try {
-          return window.LS_DOCK && LS_DOCK.grpOn ? GRP[g][1].every(k => LS_DOCK.grpOn(k)) : false;
-        } catch (e) {
-          return false;
-        }
-      })();
+      on = grpOn(g);
     if (!on) {
       delete grpT[g];
       return false;
@@ -407,6 +408,8 @@
     { tag: 'PIMS1002', d: 'main steam pressure (PT-MS1002, finishing superheater outlet header)', sh: 'ABC-001C', ai: 'AI0131', hh: 134, h: 130, l: 100, ll: 72.9 },
     { tag: 'LICD1110', d: 'condenser hotwell level (LT-CD1110)', sh: 'ABC-031', ai: 'AI0640', hh: 300, h: 150, l: -150, ll: -300 }
   ];
+  /* level switches of the field with no ABC alarm block: tag, DITL sheet, 0-based input row */
+  const SWALM = [{ tag: 'LSLL-CD1104-4', d: 'deaerator storage tank water level low-low switch', sh: 'DITL-23B', row: 3 }];
   function xalmVal(A, p) {
     const sh = A.sheets.find(x => x.name === p.sh),
       S = sh && sh.S;
@@ -439,6 +442,13 @@
       MSEEN.clear();
       LATEK.clear();
       for (const g in grpT) delete grpT[g];
+      /* S160 (deaerator level LOW of the b142 save point at 150 MW logged "suppressed: the equipment of its group is stopped" while
+         both feed pumps ran, released 10 min later): a save point is a plant that was already running. A group whose equipment runs
+         at the load of a save point is released at once (its 10 min of running are behind it); a group stopped there is suppressed
+         as before */
+      if (almScan.svPre) GRP.forEach((x, g) => grpOn(g) && (grpT[g] = t - 600));
+      almScan.svLoad = !!almScan.svPre;
+      almScan.svPre = false;
       almScan.first = true;
       almScan.tk0 = (window.WORLD && WORLD.tk) || 0;
       MOTP.clear();
@@ -471,6 +481,18 @@
       if (!isFinite(x)) continue;
       const lv = x > p.hh ? 'HIGH-HIGH' : x > p.h ? 'HIGH' : x < p.ll ? 'LOW-LOW' : x < p.l ? 'LOW' : null;
       if (lv) now.set('X|' + p.tag, { sh: p.sh, kind: 'ALM', nm: p.tag + ' ' + p.d, lv });
+    }
+    /* S155-1 (deaerator emptied, both feed pumps tripped, no deaerator LOW-LOW line before the trip): the alarm list (Alarm List
+       _20160912, sheet LS) has the switch LSLL-CD1104-4 "DEAERATOR STORAGE TANK WATER LEVEL LOW-LOW SWITCH-4" at 177 mm from the bottom
+       (-2147 mm of the transmitter, plantsw.js), above the transmitter LL -2174 mm of LT-CD1104-1 ~ 3 (ABC-031 ALM): the switch comes
+       first. It is DITL-23B row 4 (the feed pump trip) and the annunciator DITL-40 "LEVEL SWITCH LOW LOW"; its own alarm line from row 4 */
+    for (const p of SWALM) {
+      const s = dSheets().find(z => dnm(z) === p.sh);
+      let v = null;
+      try {
+        v = s ? DUI.rowVal(s, p.row) : null;
+      } catch (e) {}
+      if (v === 1) now.set('W|' + p.tag, { sh: p.sh, kind: 'ALM', nm: p.tag + ' ' + p.d, lv: 'LOW-LOW' });
     }
     if (window.WORLD && WORLD.on && WORLD.idx)
       for (const s of dSheets()) {
@@ -561,7 +583,10 @@
            later or changes level; a HIGH alarm or a TRIP always comes through */
         /* Mina F6: the unit loaded at 150 MW is running: nothing there is a shutdown alarm. What stands at that load is a real standing alarm:
            acknowledged (the operator did not cause it now), counted and listed, a HIGH never hidden */
-        const atLoad = A.startState === 'plantLoad150',
+        /* S160: an alarm standing at the load of a save point in a group that runs there is a real standing alarm (as at the 150 MW
+           load), not a shutdown alarm */
+        const svRel = !!almScan.svLoad && x.kind === 'ALM' && /^ABC-/.test(x.sh) && grpRel(x.sh, t),
+          atLoad = A.startState === 'plantLoad150' || svRel,
           stand = atLoad && (first || !!x.fresh);
         const sd =
           (!atLoad && (first || !!x.fresh)) ||
@@ -795,6 +820,7 @@
     const t = window.AN && AN.plantT ? +AN.plantT() : NaN;
     if (isFinite(t)) ldT = t;
     almScan.reload = true;
+    almScan.svPre = true;
     window.lsEventAdd('DCS', 'DCS', 'Save point loaded: ' + savedAs);
     LOG.unshift(...keep);
   };
