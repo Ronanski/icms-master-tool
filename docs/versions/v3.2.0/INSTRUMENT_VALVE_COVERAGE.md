@@ -277,7 +277,7 @@ Hindi kailangang idagdag: ang manual valve, hand valve, local gauge, thermowell,
 | MV-CD1002 | LOW PRESSURE HEATER NO.1 CONDESATE OUTLET SHUT-OFF MOV | PD-016 Condensate | DITL-0C, DITL-61A, DITL-70 | **WALA** | logic only (DITL / ABC): the plant model does not use its position |  |
 | MV-CD1003 | LOW PRESSURE HEATER NO.1 CONDENSATE BYPASS SHUT-OFF MOV | PD-016 Condensate | DITL-0C, DITL-69, DITL-70 | **WALA** | logic only (DITL / ABC): the plant model does not use its position |  |
 | MV-IW0391 | INDUSTRIAL WATER TANK CONNECTING PIPE MOV | PD-025 Industry water | DITL-0D, DITL-87 | **WALA** | logic only (DITL / ABC): the plant model does not use its position |  |
-| MV-SB1001 | SOOT BLOWING STEAM SHUT-OFF MOV | PD-015 Steam sootblowing | DITL-80S | **WALA** | logic only (DITL / ABC): the plant model does not use its position |  |
+| MV-SB1001 | SOOT BLOWING STEAM SHUT-OFF MOV | PD-015 Steam sootblowing | DITL-80S | **MAYROON** | beta.127: shut = no sootblower header pressure (source.js PICSB1052); the steam of the blowers (unit.js AN_SB) |  |
 | MV-SW1001 | DEBRIS FILTER S-1502 DRAIN MOV | PD-020 Seawater | — | **WALA** | no logic, no model |  |
 | MV-SW1003 | BALL VESSEL T-1116 INLET MOV | PD-020 Seawater | — | **WALA** | no logic, no model |  |
 | MV-SW1005 | BALL VESSEL T-1115 INLET MOV | PD-020 Seawater | — | **WALA** | no logic, no model |  |

@@ -3029,6 +3029,46 @@ const AN_CHEM = {
   /* alarm list "Alarm List _20160912" sheet AT, H / L (dcs) */
   al: { sp1004: [20, null], sp1009: [9.6, 8.8], sp1010: [4.2, null], sp1011: [9.5, 8.8], sp1012: [10, null], sp1016: [null, 7.0], sp1020: [10, null] }
 };
+/* 3.2.3 (SOHEE): the steam the sootblowers take. Diamond Power N11639-SC1 "Sootblower steam data" (IK4M manual N11639 - IK4M-EL-,
+   o&m-package-phase-1 L10-2, page 93), one row per location: head pressure (kg/cm2 g, set by the poppet valve of the blower), blowing
+   time and unit operation time (s), steam flow per unit (kg/s):
+     Above SH Upper, Above RH Upper (IK4M, 2 + 2)                      12.9   230 / 244   1.2
+     the other 5 IK4M locations (2 each)                              8.0    230 / 244   0.6
+     the IK4M-PT locations (#3 Eco, RH Int Lower ~ #2 Eco, 2/2/2/4)    8.7    116 / 120   0.9
+     Above #1 Common Eco (IK4M-PT, 4)                                  8.7     98 / 102   0.9
+   Total 3882 kg of steam for one cycle of the whole set. The tags by location: page MK15 (snapshot 18.PNG) draws N-1011 / 1012 above
+   the RH upper and N-1013 / 1014 above the SH upper (the 4 of 1.2 kg/s); N-1015 ~ 1022, 1025, 1026 are the other IK4M (DITL-80O group
+   M.4246); N-1023, 24, 27 ~ 34 the IK4M-PT and N-1035 ~ 38 the common economizer (M.4240 / M.4242), as the lance travel of world.js.
+   The steam blows while the poppet valve is open: blowing time / unit operation time of the table, so from (oper - blow) / 2 s of
+   travel out (50.8 mm/s) to the same point back: 356 mm (IK4M), 102 mm (IK4M-PT). The source is the sootblower header (S/H panel #1
+   outlet through MV-SB1001 and PCV-SB1053, 18.PNG): no header pressure, no steam. Below its head pressure a blower passes less: critical
+   flow through the nozzles, proportional to the absolute pressure before them (CALC). The steam leaves the boiler between the drum and
+   the main steam flow transmitter FT-MS1031 (boiler outlet), so FT-MS1031 does not see it: the drum (pressure and level) loses it and
+   the cycle needs it back as make-up (plant.js AN_CYC.dl). U.msb (T/H), U.sbN (blowers blowing). No blower moves unless the operator
+   starts it (the lances start retracted, 18.PNG). NO-SOURCE: the header pressure drop under the flow (PCV-SB1053 has no Cv in the docs);
+   the air heater blowers N-1040 / 1042 (no data in the table) */
+const AN_SB = {
+  head: { a: 12.9, b: 8.0, c: 8.7 },
+  q: { a: 1.2, b: 0.6, c: 0.9 },
+  open: { a: (50.8 * (244 - 230)) / 2, b: (50.8 * (244 - 230)) / 2, c: (50.8 * (120 - 116)) / 2 },
+  kind: n => (n >= 1011 && n <= 1014 ? 'a' : (n >= 1015 && n <= 1022) || n === 1025 || n === 1026 ? 'b' : 'c')
+};
+function anSbStep(U) {
+  U.msb = 0;
+  U.sbN = 0;
+  const W = typeof window !== 'undefined' ? window.WORLD : null,
+    L = W && W.sbLances ? W.sbLances() : [];
+  if (!L.length) return;
+  const P = typeof srcPv === 'function' ? srcPv('ABC-017', 'PICSB1052') : NaN;
+  if (!(P > 0)) return;
+  for (const s of L) {
+    const x = s._lance,
+      k = AN_SB.kind(x.n);
+    if (!(x.x > AN_SB.open[k])) continue;
+    U.sbN++;
+    U.msb += AN_SB.q[k] * 3.6 * Math.min(1, (P + 1.033) / (AN_SB.head[k] + 1.033));
+  }
+}
 function anChemStep(U, dt) {
   const K = AN_CHEM,
     f = typeof AN_SRC !== 'undefined' && AN_SRC.field ? AN_SRC.field : {},
@@ -3227,6 +3267,8 @@ function anUnitStep0(dt) {
   anMotorStep(U, dt);
   /* 3.2.3 SOHEE: sampling and chemical dosing (AN_CHEM) */
   anChemStep(U, dt);
+  /* 3.2.3 SOHEE: the steam of the sootblowers (AN_SB) */
+  anSbStep(U);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
   /* ---- 2.2.0-beta.17 (M4 step 4): the turbine black box (see AN_UNIT rollRate ...) ---- */
   const tb = U.tb || (U.tb = { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN }),
@@ -3375,13 +3417,13 @@ function anUnitStep0(dt) {
       qW = Math.min(U.Qs, U.uaW * Math.max(0, U.Tb - U.Tw));
     if (U.Tw < ts - 0.01) {
       U.Tw = Math.max(U.Tamb, Math.min(ts, U.Tw + ((qW - Qloss) * dt) / U.Cw));
-      U.Pd = Math.max(0, U.Pd - ((U.ms + U.mb) * dt) / U.C);
+      U.Pd = Math.max(0, U.Pd - ((U.ms + U.mb + (U.msb || 0)) * dt) / U.C);
     } else {
-      U.Pd = Math.max(0, U.Pd + ((qW - Qloss - U.ms - U.mb) * dt) / (U.C + U.Cw * steamDTsat(U.Pd)));
+      U.Pd = Math.max(0, U.Pd + ((qW - Qloss - U.ms - U.mb - (U.msb || 0)) * dt) / (U.C + U.Cw * steamDTsat(U.Pd)));
       U.Tw = tsatOf(U.Pd);
     }
   } else {
-    U.Pd = Math.max(0, U.Pd + ((U.Qs - U.ms - U.mb) * dt) / U.C);
+    U.Pd = Math.max(0, U.Pd + ((U.Qs - U.ms - U.mb - (U.msb || 0)) * dt) / U.C);
     U.Tw = tsatOf(U.Pd);
   }
   /* bed temperature: firing share over air share, first order */

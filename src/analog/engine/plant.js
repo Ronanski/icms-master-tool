@@ -871,6 +871,9 @@ function anProcStep(S, dt) {
         }
       }
       lhdQ += mbdQ;
+      /* 3.2.3 SOHEE: the steam the sootblowers take between the drum and FT-MS1031 (unit.js AN_SB): it leaves the drum, unseen by the
+         steam flow of the balance */
+      if (typeof AN_UNIT !== 'undefined' && AN_UNIT.on && AN_UNIT.msb > 0) lhdQ += AN_UNIT.msb;
       AN_CYC.mbd = mbdQ;
       /* 3.2.3 CONTINUOUS BLOWDOWN (PR-OPE-5002 5698 "MBD and CBD"; flow diagram K1AU3-PD-019: MV-BD1002, DITL-38 #MV-BD1002, line
          BD-1-003). The water that leaves the drum besides the main steam at 150 MW (pr.integLoss, 15 T/H, MB-019 item 22) is

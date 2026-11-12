@@ -1,6 +1,6 @@
 # HANDOFF — iisang file ng estado (para sa kahit sinong Claude o account)
 
-Huling update: **2026-11-12 8:58 PM PHT** (SOHEE: beta.126 motor temperature ng PAF / SAF / IDF mula sa TECO data).
+Huling update: **2026-11-12 9:50 PM PHT** (SOHEE: beta.127 steam ng sootblowers at ng header mula sa MV-SB1001).
 
 Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md` at git log.
 
@@ -15,7 +15,8 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 ## 2. Kasalukuyang estado (2026-11-10 PHT)
 - **BUOD NG HANDOVER (basahin muna):** `docs/handoff/HANDOVER_2026-11-10.md` — lahat mula 2026-11-07, gawain ng bawat team member, at ang hindi pa tapos (re-shell at plant plan).
 - **Stable:** v3.2.2 (2026-11-10, user "Ok go sa 1"; = 3.2.1 + Worker bilang default ng Stable site). Ang 3.2.1 (GO STABLE ng user) = 3.2.1-beta.281, re-shell layout C. GitHub Release: apk, Windows exe, html, report pdf. Hindi nasubok: tingnan ang `docs/versions/v3.2.1/Release-Report-v3.2.1.pdf`.
-- **Beta sa `main`:** 3.2.3-beta.126 (SOHEE): ang winding at motor bearing temperature ng PAF / SAF / IDF ay mula na sa TECO motor data (Fan Instruction Manual 6.5) at sa current ng fan; ang fan bearing ay NO-SOURCE pa.
+- **Beta sa `main`:** 3.2.3-beta.127 (SOHEE): ang sootblower ay kumukuha na ng steam habang naka-extend ang lance (Diamond Power N11639 steam data, L10-2 p93: 1.2 / 0.6 / 0.9 kg/s bawat blower); nawawala ito sa drum (pressure at level) pero hindi nakikita ng FT-MS1031. Walang header pressure kapag sarado ang MV-SB1001. Walang sootblowing sa Cold at 150 MW maliban kung sinadya. Hindi pa live-tested.
+- **Bago nito:** 3.2.3-beta.126 (SOHEE): ang winding at motor bearing temperature ng PAF / SAF / IDF ay mula na sa TECO motor data (Fan Instruction Manual 6.5) at sa current ng fan; ang fan bearing ay NO-SOURCE pa.
 - **Bago nito:** 3.2.3-beta.125 (JENNIE): ang coal na hindi nasusunog sa malamig na bed ay naiipon sa bed at nasusunog kapag mainit na (plan b5 fuel; tingnan ang `docs/versions/v3.2.3/UPDATE_REPORT.md`).
 - **Bago nito:** 3.2.3-beta.124 (SOHEE): ang ID fan damper PCD-FG1056-1 ay nananatili sa lugar kapag nawala ang instrument air (Fan Instruction Manual 4.1: double acting, airlock 2.5, air failure in place); ang biasing dampers TCV-FG1116 / 1117 ay NO-SOURCE pa (`docs/versions/v3.2.1/AIR_VALVES_PLANT_MODEL.md`).
 - **Bago nito:** 3.2.3-beta.123 (CHAEWON, Mina live beta.108 PASS Cold to 150 MW walang MFT, pero step 52 heating 73.5 avg / 122 peak °C/h, blow-off 100 % sa steps 56 / 68 / 73, drum -181.7 sa step 56). Sanhi ng heating: sinisindihan ang burner A at D sa 60 % (NO-SOURCE); ang PR-OPE-5002 sect 27 ay "Fire at minimum load" at "at minimum firing ratio". Ngayon A at D ay sa burner minimum fire (614.4 kg/h), at ang heat seek ang nagtataas para sa 45 ~ 55 °C/h. Worker run mula step 43 (x300 hanggang step 53, x10 pagkatapos), walang MFT hanggang step 85: step 52 Tw 34 → 128 °C sa 2 oras (28 ~ 62 °C/h kada 30 minuto), B / C 49 °C/h; drum steps 54 ~ 57 -72 / +51, step 73 -134, step 75 -74 / +107, step 81 -127 / +19; blow-off max 22 % (54 ~ 57), 76 % (58 ~ 73). Hindi pa nasubok nang live.
@@ -40,7 +41,7 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 - Ikabit sa model ang drum 32 t (DATA_ANSWERS item 7); ikumpara sa app ang BFP motor, generator at compressor data (`document-references/INDEX.md`).
 - Live loop check at function test ng natitirang equipment (`docs/versions/v3.2.1/MOTOR_LOOP_CHECK.md` pagkatapos ng CW; lahat ng MOV / control valve at analog instrument gamit ang split view); page 07 test; debris filters, hypochlorite, manual valves.
 - Gaps: ID fan cold start; Sampling page: silica, make-up conductivity at tank levels NO-SOURCE pa (SOHEE beta.113); per-signal ABC / DITL tracing; AI range / alarm / IO checks; DITL 9 sa 31 hindi pa na-verify.
-- Plant model: LP heater isolation / bypass; transmitter root valves; APH sootblower; ESP. Hatian 2026-11-12 (SOHEE): SOHEE = sampling / dosing (tapos), pneumatic dampers sa instrument air loss, motor temperature mula sa closed cooling; JENNIE = fuel, ESP, ID fan; CHAEWON = boiler / Training.
+- Plant model: transmitter root valves; APH sootblower (N-1040 / 1042, walang data sa steam table); ESP; header pressure drop ng sootblower sa flow (PCV-SB1053 Cv NO-SOURCE). Ang LP heater isolation / bypass ay nasa `anHtrPath` na (DITL-69 / 70 / 71). Hatian 2026-11-12 (SOHEE): SOHEE = sampling / dosing (tapos), pneumatic dampers sa instrument air loss, motor temperature mula sa closed cooling; JENNIE = fuel, ESP, ID fan; CHAEWON = boiler / Training.
 - Cold commissioning at ISANG integrated Cold → 150 MW start, saka shutdown / trip.
 - Full HMI art (pagkatapos ng lahat ng loop check; mockup muna). DCS library (goal 3). Stable v3.2.1 (GO STABLE lang).
 
