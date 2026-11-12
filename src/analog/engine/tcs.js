@@ -759,16 +759,24 @@ function tcsStep(U, dt) {
         c.hold = U.MW < 0.2 * 150 ? '' : 'Waiting: generator load must be below 20 % to shut down';
         if (U.MW < 0.2 * 150) c.ph = '52g';
       } else if (c.ph === '52g') {
+        /* TCS soft logic TCA 331DM09788 p.146 (TCA587, read 2026-11-12): GEN.CB OPEN, then on GCB OPENED the FIELD SWITCH OPEN, then
+           on FIELD SW OPENED the TURBINE SHUT-DOWN COMMAND, each a pulse of TW 3.0 s: the next command comes 3 s after the one before */
         c.sd52 = true;
         tcsGcb(U, false);
         Object.assign(tb, { st: 'roll', xfer: false, tgt: 0, aim: 0 });
         c.ph = '41';
+        c.sdT = 0;
       } else if (c.ph === '41') {
+        c.sdT = (c.sdT || 0) + dt;
+        if (c.sdT < 3) break;
         c.sd52 = false;
         Object.assign(tcsGen(U), { f41: false, V: 0 });
         c.exc = false;
         c.ph = 'trip';
+        c.sdT = 0;
       } else if (c.ph === 'trip') {
+        c.sdT = (c.sdT || 0) + dt;
+        if (c.sdT < 3) break;
         /* Mina beta.146: the first out read MANUAL TRIP. The ATS trips the turbine by its TURBINE SHUTDOWN COMMAND, IBD TA-9 input 18 */
         c.sdDone = true;
         tcsTripShutdown(U);
