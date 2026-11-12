@@ -64,6 +64,7 @@ body.sceng.scet-lib #plantws,body.sceng.scet-fx #plantws,body.sceng.scet-loop #p
    uses under 820 px (plant.css), so the Range / remark column is no longer past the right edge */
 body.sceng.scet-lib #libws .libhd{display:none}
 body.sceng.scet-lib #libws .libr{grid-template-columns:72px minmax(0,1fr) 48px;grid-template-areas:"ad tg b" "ds ds ds" "rx ty st"}
+body.sceng.scet-lib #libws .libr.pa{grid-template-areas:"ad tg b" "ds ds ds" "rx rx rx" "ty ty st"}
 body.sceng.scet-lib #libws .libr .ad{grid-area:ad}
 body.sceng.scet-lib #libws .libr .tg{grid-area:tg}
 body.sceng.scet-lib #libws .libr .ds{grid-area:ds}
