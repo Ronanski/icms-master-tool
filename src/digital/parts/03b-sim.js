@@ -704,6 +704,22 @@ function mvForced(s) {
         F.set(f.mir, f.ty === 'ZSO' ? rt[j].pos >= 100 : rt[j].pos <= 0);
     })
   );
+  /* 3.2.3 SOHEE (FANS_PLANT_MODEL.md finding, DITL-28C #B): an input row fed only by a limit switch output of the SAME sheet (the one
+     world link, FROM column: row 8 "OUTLET SOV CLOSED" I.0045 / I.008F <- 28C-27 ZSC) is that switch too. The 150 MW field state
+     (ditl150.js plantRows: "an input fed only by an output of its own sheet is a field signal") wrote it as a fixed contact, and the
+     contact OR the link kept CLOSED = 1 after the valve opened: the standby FA blower B's outlet read closed for ever, its AUTO logic
+     never closed its "TO SILENCE" SOV */
+  const m = window.WORLD && WORLD.idx && WORLD.idx.din ? WORLD.idx.din.get(s) : null;
+  if (m)
+    m.forEach((srcs, irow) => {
+      if (F.has(irow) || !srcs.length || !srcs.every(q => q.k === 'd' && q.d === s)) return;
+      for (const q of srcs)
+        mv.forEach((b, j) =>
+          b.fb.forEach(f => {
+            if (f.row === q.row && (f.ty === 'ZSO' || f.ty === 'ZSC')) F.set(irow, f.ty === 'ZSO' ? rt[j].pos >= 100 : rt[j].pos <= 0);
+          })
+        );
+    });
   return F;
 }
 function grpState(s) {

@@ -121,7 +121,9 @@ const SRC_RULES = (() => {
     R['FICFA1043' + x] = s => ({ mul: s.saf * s.sar });
   }
   /* loop 4, fluidizing air: FA blower A / B running (ABC-014 M.3308 / M.3309) */
-  R.FICFA1055A = s => ({ mul: s.fab });
+  /* 3.2.3 SOHEE: the flow of the FA blowers that run with their outlet SOV open and their silencer SOV shut, by their dampers
+     (boiler.js anFanStep U.fnFaT); before the fan model has run, a blower running as before */
+  R.FICFA1055A = s => (AN_UNIT.on && isFinite(AN_UNIT.fnFaT) ? { mul: 0, base: AN_UNIT.fnFaT } : { mul: s.fab });
   /* loop 6, furnace differential pressure: the bed is fluidized by the primary air (PA fan running) */
   R.DPICFG108 = s => ({ mul: s.paf });
   /* loop 7, SOx at the stack: from the coal that burns */
