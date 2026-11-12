@@ -178,7 +178,16 @@ window.LS_GUIDE = (function () {
   const bovRamp = () =>
     btn(
       'MS blow-off PICMS1002 SV +1 (one each 2 minutes, up to 35)',
-      () => (md('PICMS1002') !== 'AUTO' ? 'Put PICMS1002 in A first' : ((bovT = simT()), A.auto('PICMS1002', Math.min(35, Math.round(+svOf('PICMS1002') || 0) + 1)))),
+      /* 3.2.3-beta.103 (Mina live beta.102: blow-off 94 ~ 100 % from about t 394 to 421 with the SV 26 ~ 34 behind the drum pressure
+         after the B / C light-off): when the pressure has run 2 kg/cm2 or more over the SV, the SV goes back to the drum pressure (the
+         set point of step 54, "the MS blow-off PICMS1002 in AUTO with its set point at the drum pressure"), not +1 */
+      () => {
+        if (md('PICMS1002') !== 'AUTO') return 'Put PICMS1002 in A first';
+        bovT = simT();
+        const sv = Math.round(+svOf('PICMS1002') || 0),
+          p = +U().Pd || 0;
+        return A.auto('PICMS1002', Math.min(35, p >= sv + 2 ? Math.round(p) : sv + 1));
+      },
       /* 3.2.3-beta.100 (Mina B94-1 / beta.99 retest, Do it for me every 700 ms at x10): the ramp went +1 each 2 minutes whatever the
          pressure did, SV 4 -> 35 in 64 minutes while the drum was only at 24 kg/cm2: the SV stood over the pressure, the blow-off stayed
          shut (MV 0), the boiler stored its heat closed and at 35 ~ 39 kg/cm2 the blow-off went 0.7 -> 100 % in 14 minutes, 66 T/H of steam
@@ -210,7 +219,29 @@ window.LS_GUIDE = (function () {
      (the HP bypass or the blow-off passing, PR-OPE-5002 BYPASS SYSTEM SERVICING: the HP bypass sets the pressure) and never over the
      heating rate (PR-OPE-5002: 60 °C/h; 55 = the top of the 45 ~ 55 band of the step text, as heatSeek) */
   const outOpen = () => (+mv('PICMS1006') || 0) > 0.5 || (+mv('PICMS1002') || 0) > 0.5;
-  const oilBand = (up, lo, hi) => { const k = up ? 'oilU' : 'oilD', due = () => (up ? h().MSF() < lo && outOpen() && !(rate() > 55) : h().MSF() > hi), b0 = oilStep(up ? 'Oil A / D ▲ +5 % (steam flow under ' + lo + ' T/H)' : 'Oil A / D ▼ −5 % (steam flow over ' + hi + ' T/H)', ['A', 'D'], up ? 5 : -5), f0 = b0.f; b0.f = () => ((paceT[k] = simT()), f0()); return Object.assign(b0, { on: () => !due() || simT() - (paceT[k] || -1e9) < 120, hide: () => !due(), band: 1 }); };
+  /* 3.2.3-beta.103 (Worker run on beta.102, steps 75 ~ 81): while the HP bypass SV climbs (svRamp) the pressure is under the SV, the
+     heat goes into the pressure (stored) and the steam flow reads under 40 T/H: the oil ▲ for 40 T/H took the oil 2.9 -> 6.1 T/H, and at
+     the end of the ramp (SV 61) that firing came out as steam: 47 -> 106 T/H, 64 kg/cm2, drum -116 / +108 mm at step 81 (Mina live
+     beta.102: +190 / -172.5). The oil goes up for the steam flow only when the HP bypass holds the pressure (main steam at its SV),
+     not while the pressure is still climbing to it */
+  const atSv = () => md('PICMS1006') !== 'AUTO' || h().MSP() >= (+svOf('PICMS1006') || 0) - 0.5;
+  /* 3.2.3-beta.103: the 10-minute mean of the main steam flow (first-order filter on plant time) for the stage-7 oil band; null for the
+     first 10 minutes and after a gap of more than 20 minutes (a load, a pause of the band) */
+  const ms7 = () => {
+    const t = simT(),
+      q = +h().MSF() || 0,
+      m = paceT.m7;
+    if (!m || t < m.t || t - m.t > 1200) {
+      paceT.m7 = { t, v: q, t0: t };
+      return null;
+    }
+    if (t > m.t) {
+      m.v += (q - m.v) * Math.min(1, (t - m.t) / 600);
+      m.t = t;
+    }
+    return t - m.t0 >= 600 ? m.v : null;
+  };
+  const oilBand = (up, lo, hi) => { const k = up ? 'oilU' : 'oilD', due = () => (up ? h().MSF() < lo && outOpen() && atSv() && !(rate() > 55) : h().MSF() > hi), b0 = oilStep(up ? 'Oil A / D ▲ +5 % (steam flow under ' + lo + ' T/H)' : 'Oil A / D ▼ −5 % (steam flow over ' + hi + ' T/H)', ['A', 'D'], up ? 5 : -5), f0 = b0.f; b0.f = () => ((paceT[k] = simT()), f0()); return Object.assign(b0, { on: () => !due() || simT() - (paceT[k] || -1e9) < 120, hide: () => !due(), band: 1 }); };
   /* 3.2.3-beta.56 (automatic run, load up to 45 MW on oil): the turbine took 96 T/H while the oil stayed at the 40 ~ 55 T/H of the bypass steps; the main steam fell 61 -> 10 kg/cm2 and the drum swelled to HH (MFT). The load-up steps now show oil ▲ (all lit burners +5 %) while the main steam is under 60 kg/cm2 and oil ▼ over 100 (FHI Part 2 Sect 7 Tab 4 Fig. 2: 60 kg/cm2 at 15 % load, 100 at 30 % = 45 MW; FHI Tab 9 p 2-8-TAB_9-11 step 12 and PR-OPE-5002 27.17: all four burners together to meet the start-up curve), one press each 30 s up / 60 s down (pace NO-SOURCE, ASSUMED_sources row 17), and run x10 while the pressure is under 60. */
   const mspOil = up => { const k = up ? 'mspU' : 'mspD', due = () => (up ? h().MSP() < 60 : h().MSP() > 100), b0 = oilStep(up ? 'Oil ▲ +5 % (main steam under 60 kg/cm², each 30 s)' : 'Oil ▼ −5 % (main steam over 100 kg/cm²)', ['A', 'B', 'C', 'D'], up ? 5 : -5), f0 = b0.f; b0.f = () => ((paceT[k] = simT()), f0()); return Object.assign(b0, { on: () => !due() || simT() - (paceT[k] || -1e9) < (up ? 30 : 60), hide: () => !due() }); };
   /* the Do it for me never presses the ▲ / ▼ trims (the trainee's own hand, #108): the seek of the load-up steps moves the oil instead, by the same rule as the buttons */
@@ -1080,7 +1111,7 @@ window.LS_GUIDE = (function () {
       /* Mina F65 (beta.63): this step lowered the PA and SA flows to 10 % after light-off and the total air fell under 25 % MCR: MFT, burners out. PR-OPE-5002 has no air reduction after light-off; its 10 % is the secondary staging air nozzle dampers at their limit stop in the FURNACE PURGE line-up (section FURNACE PURGE: 'Dampers of secondary staging air nozzles close to limit stop (10% OPEN)', 'Total Air Flow > 25% MCR'). Kept as a confirm step (the step numbers stay), no air reduction */ { st: 4, sec: 28, slow: drnSlow, need: 1, cr: 1, t: 'Air stays above the purge minimum after light-off', d: 'PR-OPE-5002 FURNACE PURGE: total air flow above 25 % MCR, the secondary staging air nozzle dampers at their limit stop (10 % open), the PA fan at its minimum air flow. Do not lower the PA or SA air under that after light-off: total air under 25 % MCR is an MFT condition (DITL-03A row 6). The oil flame adds flue gas and the furnace pressure rises: the ID fan coupling PICFG108 must stay in AUTO (SV −15 mmH₂O). Under 16 % the drawing puts it in MANUAL by itself (ABC-008 M.0206 = PICFG108.MV < 16, M.0205 force manual; parameter list ML 0): then raise the coupling 1 % at a time to 16 % or more and press A, SV −15. A furnace pressure HIGH-HIGH is an MFT. Confirm when checked.', fps: ['FICFA1071', 'FICFA1081', 'PICFG108'], c: b.ALL(b.MODE('PICFG108', 'AUTO'), b.PV('PICFG108', -60, 25, 'mmH₂O')), a: [...DRN, btn('Coupling PICFG108 M +1 % (only while MANUAL under 16 %)', () => (md('PICFG108') !== 'AUTO' && mv('PICFG108') < 16 ? A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1)) : 'Not needed: PICFG108 ' + md('PICFG108') + ' MV ' + f0(mv('PICFG108')) + ' %')), btn('PICFG108 A, SV −15', () => (mv('PICFG108') >= 16 && !(h().bit('ABC-008', 'M.0205') > 0.5) ? A.auto('PICFG108', -15) : 'Wait: PICFG108 MV ' + f0(mv('PICFG108')) + ' % (≥ 16)'), () => md('PICFG108') === 'AUTO')] /* 3.2.3 automatic run: the PID took the coupling to 14 % before light-off (ML 0), M.0206 forced MANUAL, the oil flame took the furnace to +176 mmH2O and HIGH-HIGH = MFT at step 59 */ },
       { st: 4, sec: 28, slow: drnSlow, t: 'Warm-up: wait for the water to boil (100 °C)', d: 'You control the firing: the temperature rise is ≤ 60 °C per hour (PR-OPE-5002: gradient 1 °C a minute). Watch the "Heating rate": below 45 °C/h, oil ▲ +5 %; above 55 °C/h, oil ▼ −5 %. Speed up the simulation if you want.', c: b.VAL('Tw', 100, null), fps: ['FICDO1043A', 'FICDO1043D'], a: [...DRN, oilStep('Oil A / D ▲ +5 %', ['A', 'D'], 5), oilStep('Oil A / D ▼ −5 %', ['A', 'D'], -5)], w: WARM, wait: 1 },
       { st: 4, sec: 28, slow: drnSlow, t: 'Drum pressure 2 kg/cm²: close the vents and drains (field)', d: 'Once there is pressure, the field operator closes the vents and drains of the steam side. The steam now leaves through the MS blow-off (open ≥ 10 % since the drum filling), so the feedwater flow is continuous: put the start-up level LICBR1001B in AUTO SV 0 now (PR-OPE-5002: "Set to AUTO the Feedwater control as soon as possible and practicable after continuous Feedwater flow is established").', c: b.VAL('Pd', 2, null), wait: 1, field: [], fps: ['LICBR1001B'], get a() { return DRN.concat([btn('LICBR1001B A, SV 0', () => A.auto('LICBR1001B', 0), () => md('LICBR1001B') === 'AUTO')]); } } /* 3.2.3-beta.90 (CHAEWON, warm-up drum LEVEL L.L. MFT at steps 55 ~ 57 in about 2 of 9 automatic runs): the drum fill ends near -150 mm (PR-OPE-5002 monitor line "Drum level (-150mm)"), 28 mm over the LSLL -178 mm (alarm list, plantsw.js). The steam left through the blow-off from the first kg/cm2 with the start-up valve shut until the AUTO of step 54; when that step came late in plant time the level fell under -178 = MFT (DITL-03A row 9). PR-OPE-5002 (BOILER AUTOMATIC CONTROL): "Set to AUTO the Feedwater control as soon as possible and practicable after continuous Feedwater flow is established": the feed is continuous once the steam leaves the drum, that is this step */,
-      { st: 4, sec: 28, slow: drnSlow, t: 'Drum pressure 15 kg/cm²: light burners B and C', d: 'At 15 kg/cm² the other two burners are added: SA damper and oil FCV to ignition, BURNER ON (the DITL opens the oil valve), then FICDO1043B / C 20 % (PR-OPE-5002: B / C after 30 minutes). With four burners the pressure rises fast and the steam leaves through the MS blow-off (open ≥ 10 % since the drum filling, PR-OPE-5002): first put the MS blow-off PICMS1002 in AUTO with its set point at the drum pressure and the start-up level LICBR1001B in AUTO SV 0. Then raise the blow-off set point 1 kg/cm² at a time, one every 2 minutes, up to 35: the blow-off stays open and passes steam all the way up (a set point of 35 at once shuts it, the boiler stores the heat and at 35 the blow-off goes from shut to full open, the drum level falls to the low-low and trips the boiler), and the water that leaves as steam is fed back by the start-up valve.', c: b.ALL(b.VAL('Pd', 15, null), b.BURN4, b.MODE('PICMS1002', 'AUTO'), b.MODE('LICBR1001B', 'AUTO')), fps: ['PICMS1002', 'LICBR1001B', 'FICDO1043B', 'FICDO1043C'] /* 3.2.3 automatic run: with the blow-off set only at step 57 the closed boiler on 4 burners went 21 -> 114 kg/cm2 at ≤ 110 C/h, then the blow-off opening dropped the drum to -422 mm = MFT */, get a() {
+      { st: 4, sec: 28, slow: drnSlow, t: 'Drum pressure 15 kg/cm²: light burners B and C', d: 'At 15 kg/cm² the other two burners are added: SA damper and oil FCV to ignition, BURNER ON (the DITL opens the oil valve), first oil A / D down to the burner minimum fire, then B / C held at the minimum fire too (PR-OPE-5002: B / C after 30 minutes, "at minimum firing ratio"; then all four together for the gradient 1 °C a minute). With four burners the pressure rises fast and the steam leaves through the MS blow-off (open ≥ 10 % since the drum filling, PR-OPE-5002): first put the MS blow-off PICMS1002 in AUTO with its set point at the drum pressure and the start-up level LICBR1001B in AUTO SV 0. Then raise the blow-off set point 1 kg/cm² at a time, one every 2 minutes, up to 35: the blow-off stays open and passes steam all the way up (a set point of 35 at once shuts it, the boiler stores the heat and at 35 the blow-off goes from shut to full open, the drum level falls to the low-low and trips the boiler), and the water that leaves as steam is fed back by the start-up valve.', c: b.ALL(b.VAL('Pd', 15, null), b.BURN4, b.MODE('PICMS1002', 'AUTO'), b.MODE('LICBR1001B', 'AUTO')), fps: ['PICMS1002', 'LICBR1001B', 'FICDO1043B', 'FICDO1043C'] /* 3.2.3 automatic run: with the blow-off set only at step 57 the closed boiler on 4 burners went 21 -> 114 kg/cm2 at ≤ 110 C/h, then the blow-off opening dropped the drum to -422 mm = MFT */, get a() {
           const pre = [bovAuto(), btn('LICBR1001B A, SV 0', () => A.auto('LICBR1001B', 0), () => md('LICBR1001B') === 'AUTO'), bovRamp()];
           /* 3.2.3-beta.101 (Mina live beta.100: heating rate 137, 181, 155 C/h with the four burners lit at about 2 kg/cm2, average 113
              against the 55 of the step text and the PR-OPE-5002 gradient 1 C a minute; the blow-off went to 100 % for 50 minutes): B / C
@@ -1088,7 +1119,15 @@ window.LS_GUIDE = (function () {
              must). Under 15 kg/cm2 the saturation temperature climbs fastest per kg/cm2 (2 -> 15 kg/cm2 = 133 -> 200 C) and the minimum
              fire of four burners (4 x 614.4 kg/h) is over the gradient there; A / D carry the warm-up to 15 */
           const at15 = b => Object.assign({}, b, { on: () => (+U().Pd || 0) < 15 || b.on(), hide: () => (+U().Pd || 0) < 15 && !b.on() });
-          return DRN.concat(WL() ? pre.concat([bIgn('B'), bIgn('C'), bOn('B'), bOn('C'), bOil('B', 20), bOil('C', 20)].map(at15)) : pre.concat([btn('Open oil valves B and C', () => (A.oil('M.3411', true), A.oil('M.3416', true))), btn('BURNER B and C ON', () => (A.motor('M.3413', 1), A.motor('M.3418', 1)), () => bit('M.3413') > 0.5 && bit('M.3418') > 0.5), btn('FICDO1043B / C M 20 %', () => (A.man('FICDO1043B', 20), A.man('FICDO1043C', 20)))]));
+          /* 3.2.3-beta.103 (Mina live beta.102: heating 29 ~ 67 C/h on A / D, then 94 ~ 97 C/h after the B / C light-off at step 56, blow-off
+             94 ~ 100 %, drum -192 mm): B / C went in at 20 % on top of A / D, about +40 % of fire at once, and the oil ▼ of the warm-up
+             (−5 % each 2 minutes) was too slow for it. PR-OPE-5002: "Light off another burner ... at minimum firing ratio" and "Once all 4
+             burners are in service, increase load on all four burners simultaneously to meet start-up curve. Gradient = 1 C/min": A / D go
+             to the burner minimum fire first, B / C are lit and held at the minimum fire (614.4 kg/h, oilMin), then the heating rate seek
+             moves all four together */
+          const adMin = btn('Oil A / D to the burner minimum fire (before B / C)', () => { const lo = oilMin(['A', 'D']); A.man('FICDO1043A', lo); A.man('FICDO1043D', lo); return ''; }, () => inSvc('B') || inSvc('C') || ((+mv('FICDO1043A') || 0) <= oilMin(['A', 'D']) + 1 && (+mv('FICDO1043D') || 0) <= oilMin(['A', 'D']) + 1));
+          const bcMin = btn('FICDO1043B / C M burner minimum fire', () => { const lo = oilMin(['A', 'D']); for (const k of ['B', 'C']) if (inSvc(k)) A.man('FICDO1043' + k, lo); if (inSvc('B') && inSvc('C')) paceT.bcMin = simT(); return ''; }, () => inSvc('B') && inSvc('C') && paceT.bcMin != null);
+          return DRN.concat(WL() ? pre.concat([adMin, bIgn('B'), bIgn('C'), bOn('B'), bOn('C'), bcMin].map(at15)) : pre.concat([btn('Open oil valves B and C', () => (A.oil('M.3411', true), A.oil('M.3416', true))), btn('BURNER B and C ON', () => (A.motor('M.3413', 1), A.motor('M.3418', 1)), () => bit('M.3413') > 0.5 && bit('M.3418') > 0.5), btn('FICDO1043B / C M 20 %', () => (A.man('FICDO1043B', 20), A.man('FICDO1043C', 20)))]));
         } },
       /* 3.2.0 P1 #3 (PR-OPE-5002 7259: "Turbine Main Steam Motorized isolation valve (MVMS1391) is necessary to be Equalized and OPENED during
          boiler pressurization at around 20~30 ksc"): no steam reaches the MSV (ATS 1.3) and the turbine with it shut */
@@ -1938,9 +1977,16 @@ window.LS_GUIDE = (function () {
        443 C and "Steam for the roll" (MSV inlet <= 420 C, ATS Fig. 2) waited until the diesel tank ran empty. Step 76 says "you control
        the oil for 40 ~ 55 T/H" (PR-OPE-5002 "Steam Flow of 40 T/H above is recommended"): the same oil ▼ (−5 % each 2 minutes, down to the
        burner minimum fire) keeps acting through the turbine-on-oil steps while the HP bypass holds the pressure, before the 52G */
-    else if (s.st === 7 && md('PICMS1006') === 'AUTO' && !(bit('I.0931') > 0.5) && h().MSF() > 55 && simT() - (paceT.oil7 || -1e9) >= 120) {
+    /* 3.2.3-beta.103 (Mina live beta.102: drum +190 / -172.5 mm at step 81; Worker run: oil 6.1 T/H at the start of step 81, steam 109
+       T/H, then the oil ▼ alone took it down to 14 T/H and the pressure and level swung): the band is both ways, as the oil band of
+       step 76 (oilBand: ▲ under 40 T/H only while the steam has a way out and the heating rate is not over 55) */
+    /* Worker run of this build: the 2-minute ▼ / ▲ on the steam of the moment chased the swing of the HP bypass loop itself (steam 7 ~ 106
+       T/H, oil 2.5 ~ 6.1 T/H, drum -175 / +136 mm, period about 40 minutes); with the oil held the loop settled (drum 0 mm, steam 58 T/H).
+       So the band reads the 10-minute mean of the steam and moves the oil once per 10 minutes */
+    else if (s.st === 7 && md('PICMS1006') === 'AUTO' && !(bit('I.0931') > 0.5) && ms7() != null && simT() - (paceT.oil7 || -1e9) >= 600 && (ms7() > 55 || (ms7() < 40 && outOpen() && atSv() && !(rate() > 55)))) {
       paceT.oil7 = simT();
-      oilStep('', ['A', 'B', 'C', 'D'], -5).f();
+      if (ms7() > 55) oilStep('', ['A', 'B', 'C', 'D'], -5).f();
+      else oilStep('', ['A', 'D'], 5).f();
     }
     /* a trim step: the seek moves the stations toward the band of the SOP; the ▲ / ▼ buttons are never pressed here (below) */
     if (s.seek) s.seek();
