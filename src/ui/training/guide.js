@@ -1929,6 +1929,15 @@ window.LS_GUIDE = (function () {
       paceT.bo57 = simT();
       oilStep('', ['A', 'B', 'C', 'D'], -5).f();
     }
+    /* 3.2.3-beta.101 (automatic runs on the HP bypass ramp of beta.101): the bypass steps raise the oil for 40 T/H while the SV climbs,
+       the steam reached 90 T/H at 61 kg/cm2 (oil 6.1 T/H against 3.3 before) once the ready-to-roll hold ended, the main steam went to
+       443 C and "Steam for the roll" (MSV inlet <= 420 C, ATS Fig. 2) waited until the diesel tank ran empty. Step 76 says "you control
+       the oil for 40 ~ 55 T/H" (PR-OPE-5002 "Steam Flow of 40 T/H above is recommended"): the same oil ▼ (−5 % each 2 minutes, down to the
+       burner minimum fire) keeps acting through the turbine-on-oil steps while the HP bypass holds the pressure, before the 52G */
+    else if (s.st === 7 && md('PICMS1006') === 'AUTO' && !(bit('I.0931') > 0.5) && h().MSF() > 55 && simT() - (paceT.oil7 || -1e9) >= 120) {
+      paceT.oil7 = simT();
+      oilStep('', ['A', 'B', 'C', 'D'], -5).f();
+    }
     /* a trim step: the seek moves the stations toward the band of the SOP; the ▲ / ▼ buttons are never pressed here (below) */
     if (s.seek) s.seek();
     /* max counts the machines of the step (the START / STOP buttons); its valve and field buttons are pressed as before */
