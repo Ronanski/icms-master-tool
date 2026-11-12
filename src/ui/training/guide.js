@@ -2014,6 +2014,29 @@ window.LS_GUIDE = (function () {
     /* only once the machines really run (a pump just started is not the standby) */
     /* automatic run 2026-11-10: the standby set to AUTO in the same second as the start found the common discharge pressure still low
        (DITL-77 row 12) and started too (two ACWPs running, the step never ended): AUTO only after 30 s of the plant with the machines running */
+    /* the PRESSURE LOW / PRESS. L.L. rows of a pump drawing (the standby start of the drawing) */
+    const pLow = (ds, i) => /PRESS(URE|\.)? *(LOW|L\.L\.)/.test((DUI.rowInfo(ds, i) || {}).svc || '') && DUI.rowVal(ds, i) === 1;
+    /* 3.2.3-beta.108 (Mina B102-2): a standby that started on its own (AUTO, pressure low) while the set already has its running pump
+       could not be stopped (its STOP is blocked in AUTO) and the step never ended: once the pressure is back, AUTO off, then STOP; the
+       block below puts it back in AUTO 30 s later as the standby */
+    if (s.sby && s.max && window.LS_DOCK) {
+      const runL = (s.a || []).filter(a => isM(a) && a.ad && a.on && a.on());
+      if (runL.length <= s.max) G.xStop = null;
+      else
+        try {
+          const dsR = a => {
+            const ds = LS_DOCK.dOf(a.ad);
+            return { ds, R: ds && LS_DOCK.amRow(ds) };
+          };
+          const t = runL.find(a => a.ad === G.xStop) || runL.find(a => { const { ds, R } = dsR(a); return R && DUI.rowVal(ds, R.row) === 1; });
+          const { ds, R } = t ? dsR(t) : {};
+          if (t && R && !(ds.rows && ds.rows.some((r, i) => pLow(ds, i)))) {
+            G.xStop = t.ad;
+            if (DUI.rowVal(ds, R.row) === 1) LS_DOCK.dsel(/^DITL-/.test(t.ad) ? t.ad : (String(ds.name).match(/DITL-[^)]*$/) || [t.ad])[0], R.row, 0, R.svc);
+            else t.stop && t.stop.f();
+          }
+        } catch (e) {}
+    }
     const runOk = s.sby && s.max && (s.a || []).filter(a => isM(a) && a.on && a.on()).length >= s.max;
     if (!runOk) G.sbyT = null;
     else if (G.sbyT == null || G.sbyI !== s.i) (G.sbyT = simT()), (G.sbyI = s.i);
@@ -2027,7 +2050,9 @@ window.LS_GUIDE = (function () {
           if (!R) continue;
           /* automatic run 2026-11-10: AUTO with the common discharge pressure still low (ACWP discharge valve not yet open, PT-CW1152 under
              3.5 kg/cm2, DITL-77 row 12) starts the standby at once, as the drawing says: AUTO only once no PRESSURE LOW row of its sheet is made */
-          if (ds && ds.rows && ds.rows.some((r, i) => /PRESSURE LOW/.test((DUI.rowInfo(ds, i) || {}).svc || '') && DUI.rowVal(ds, i) === 1)) continue;
+          /* 3.2.3-beta.108 (Mina B102-2: step 30 waited 320 minutes with both diesel oil pumps running, B in AUTO): DITL-31 row 5 says
+             "DOP OUTLET PRESS. L.L.", not "PRESSURE LOW", so DOP B went to AUTO with the outlet pressure still low and started too */
+          if (ds && ds.rows && ds.rows.some((r, i) => pLow(ds, i))) continue;
           if (m && m.rem === false) LS_DOCK.dremote(a.ad, a.l.replace(/^START /, ''));
           /* plan c5: dsel takes the drawing name; a pump of the ABC memory (CEP M.3351, FAB M.3309, BFWP M.3343) names its drawing
              instance ("DITL-61A #B"), so the standby of those sets was never put in AUTO here */
