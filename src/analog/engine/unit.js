@@ -2537,17 +2537,43 @@ const AN_MT = {
   Tw: 85,
   tauB: 1800,
   tauW: 900,
-  vib0: 0.1
+  vib0: 0.1,
+  /* 3.2.3 (SOHEE): the motors of the PAF / SAF / IDF from their TECO data (o&m-package-phase-1 L16 FANS "LMYP-1 Fan Instruction
+     Manual" 6.5 motor data sheets; fan spec sheets 2 of 5 give the kW of each fan): SAF 1850 kW 4 P 192 A (AECK-S2, spec table p 319 of the manual, sleeve
+     bearings VG32), PAF 3700 kW 4 P 373 A (AEZK-S2, FE14A701B1), IDF 3300 kW 6 P 350 A (AEZK-S2, FE14A702B1, 3A057H186-72068); all Ins.
+     Class F, "Temp. Rise Limit (Res.) Stator 90 C at S.F. 1.15", cooling IC611 (fan cooled, built-in AIR cooler: the winding does not
+     see the closed cooling water). The I/O list names the elements: 1 / 2 = fan non drive / drive end, 3 / 4 = motor drive / non drive
+     end bearing, U / V / W = motor winding.
+       winding        T = ambient + 90 x (I / (I rated x 1.15))^2: the rise limit at the S.F. current, with the square of the current
+                      (the copper loss), as the PA compressor motor (AN_AIR.Tw); I = the fan motor current of boiler.js (U.fnPafI / fnSafI /
+                      fnIdfI); time constant tauW (NO-SOURCE).
+       motor bearing  TECO motor manual 4.2.8 (sleeve, self-lube): a rise of 11 ~ 14 C in the first 10 min and about 22 C at 30 min,
+                      stable below 1 C per half hour: first order through 12.5 C at 10 min and 22 C at 30 min = rise 25.3 C, time constant
+                      14.7 min (CALC).
+       fan bearing    the fan manual gives only the limit (4.9 / 5.4.3: ambient + 40 C; vibration 6 mm/s): the running value Tb stays
+                      NO-SOURCE. */
+  mot: { PAF: [373, 'fnPafI'], SAF: [192, 'fnSafI'], IDF: [350, 'fnIdfI'] },
+  sf: 1.15,
+  rise: 90,
+  rB: 25.3,
+  tauMB: 882
 };
 function anMotorStep(U, dt) {
   const K = AN_MT,
     T0 = isFinite(U.Tamb) ? U.Tamb : 30,
     mt = U.mt || (U.mt = {}),
     lag = (k, x, tau) => (mt[k] = isFinite(mt[k]) ? mt[k] + ((x - mt[k]) * Math.min(dt, tau)) / tau : x);
-  for (const [, ad, base, brg, vib, v1] of K.m) {
-    const run = ad === 'IDF' ? !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5 : /^DITL/.test(ad) ? anDitlRun(ad) === 1 : srcBit([ad]) > 0.5;
-    brg.forEach((e, i) => lag('TT-' + base + e, run ? K.Tb + 1.2 * i : T0, run ? K.tauB : 2 * K.tauB));
-    ['U', 'V', 'W'].forEach((e, i) => lag('TT-' + base + e, run ? K.Tw + 1.0 * i : T0, run ? K.tauW : 2 * K.tauW));
+  for (const [id, ad, base, brg, vib, v1] of K.m) {
+    const run = ad === 'IDF' ? !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5 : /^DITL/.test(ad) ? anDitlRun(ad) === 1 : srcBit([ad]) > 0.5,
+      mo = K.mot[id],
+      I = mo ? +U[mo[1]] : NaN,
+      wT = mo && isFinite(I) ? T0 + K.rise * Math.pow(Math.max(0, I) / (mo[0] * K.sf), 2) : K.Tw;
+    brg.forEach((e, i) =>
+      mo && i >= 2
+        ? lag('TT-' + base + e, run ? T0 + K.rB + 1.2 * (i - 2) : T0, run ? K.tauMB : 2 * K.tauMB)
+        : lag('TT-' + base + e, run ? K.Tb + 1.2 * i : T0, run ? K.tauB : 2 * K.tauB)
+    );
+    ['U', 'V', 'W'].forEach((e, i) => lag('TT-' + base + e, run ? wT + 1.0 * i : T0, run ? K.tauW : 2 * K.tauW));
     vib.forEach((e, i) => (mt['VT-' + base + e] = run ? v1 + 0.1 * i : K.vib0));
   }
 }
