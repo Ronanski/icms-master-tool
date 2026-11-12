@@ -321,6 +321,8 @@ window.LS_GUIDE = (function () {
     return f ? L().modeOf(f) : '?';
   };
   const bit = a => L().val(a);
+  /* Mina F151-2: the FA blower that sets the fluidizing air: B when it runs alone (after a swap), else A */
+  const fabT = () => (bit('M.3309') > 0.5 && !(bit('M.3308') > 0.5) ? 'FICFA1055B' : 'FICFA1055A');
   /* live test #71: the position transmitters of the flue gas biasing dampers on ABC-020 (I/O list STN104 AI0368 ~ 71 ZT-FG1116-A ~ D RH
      side, AI0372 ~ 75 ZT-FG1117-A ~ D SH side), mean of the four */
   const ZTN = {};
@@ -1087,7 +1089,17 @@ window.LS_GUIDE = (function () {
         fps: ['FICFA1055A'],
         a: [btn('Silencer SOV OPEN (DITL-28C)', () => dPress('DITL-28C', 0), () => dOut('DITL-28C', 21) !== 0), btn('FICFA1055A M 25 %', () => A.man('FICFA1055A', 25))]
       },
-      { st: 2, sec: 23, max: 1, sby: 1, t: 'Start the fluidizing air blower (FAB)', d: 'Do: START FAB-A, put FAB-B in REMOTE + AUTO (PR-OPE-5002: "Set Standby FAB in AUTO Mode"), then raise the FAB inlet damper FICFA1055A until the fluidizing air flow is 26 T/H (PR-OPE-5002; about 41 %). The blower supplies air to the seal pots of the cyclone loop.', c: b.ALL(R.FAB, SBY('FA blower', [['M.3308', 'FAB-A'], ['M.3309', 'FAB-B']], a => bit(a) > 0.5)), fps: ['FICFA1055A'], a: [mot('M.3308', 'FAB-A'), mot('M.3309', 'FAB-B'), btn('FICFA1055A M 41 % (≈ 26 T/H)', () => A.man('FICFA1055A', 41))], field: [22] },
+      { st: 2, sec: 23, max: 1, sby: 1, t: 'Start the fluidizing air blower (FAB)', d: 'Do: START FAB-A, put FAB-B in REMOTE + AUTO (PR-OPE-5002: "Set Standby FAB in AUTO Mode"), then raise the inlet damper of the blower that runs (FICFA1055A; FICFA1055B when blower B runs after a swap) until the fluidizing air flow is 26 T/H (PR-OPE-5002; about 41 %). The blower supplies air to the seal pots of the cyclone loop.', c: b.ALL(R.FAB, SBY('FA blower', [['M.3308', 'FAB-A'], ['M.3309', 'FAB-B']], a => bit(a) > 0.5)),
+        /* Mina F151-2: after a swap blower B runs alone: its own damper FCV-FA1055-B1 (FICFA1055B) sets the flow, not A's. The standby blower's
+           damper stays at its 25 % start position (its FCD READY, DITL-28A row 5) */
+        get fps() {
+          return [fabT()];
+        },
+        get a() {
+          const t = fabT();
+          return [mot('M.3308', 'FAB-A'), mot('M.3309', 'FAB-B'), btn(t + ' M 41 % (≈ 26 T/H)', () => A.man(t, 41))];
+        },
+        field: [22] },
       { st: 2, sec: 24, t: 'Start the secondary air fan (SAF)', d: 'Close the secondary air damper (0 %) before starting the fan.', c: R.SAF, a: [btn('SA damper 0 %', () => A.man('FICFA1081', 0)), mot('M.3303', 'SAF')], fps: ['FICFA1081'], field: [23] },
       /* live check #107 (PR-OPE-5002 SAF START-UP: "Adjust SAF Inlet Damper Manually up until combustion air flow increase to 200T/H (You can use
          double arrow but be cautious of the furnace pressure reaction)"): the SA flow by hand to 200 T/H, the IDF coupling with it (-15) */
