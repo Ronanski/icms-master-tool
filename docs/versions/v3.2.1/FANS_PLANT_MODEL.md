@@ -53,7 +53,7 @@ Hook: `plantsw.js` array `bo` (DITL-28B row 12). Test: `tests/regress/fans.js` (
 - Starting current (inrush): hindi ginawa, NO-SOURCE ang oras.
 
 ## Mga nakita (para sa ibang thread)
-- **DITL-28C #B:** pagkatapos ng OPEN COMMAND (output 25) ng outlet SOV ng FA blower B, hindi bumababa ang closed limit (row 9,
+- **DITL-28C #B (NAAYOS, 3.2.3-beta.150 SOHEE):** ang row 8 ay kumukuha na ng limit mula sa valve model (03b-sim.js mvForced). Dati: pagkatapos ng OPEN COMMAND (output 25) ng outlet SOV ng FA blower B, hindi bumababa ang closed limit (row 9,
   I.008F) at hindi tumataas ang open limit I.008E. Kaya FORCE MANUAL pa rin ang FICFA1055B (M.0276), at hindi tumatanggap ng bagong
   MAN value sa test. Pansamantala, ang model ay bumabasa ng OPEN COMMAND. Bug ng valve model ng DITL (hindi akin).
 - **Running bit ng ABC (M.3302 / M.3303 PAF / SAF, at I.0046 FAB A RUNNING):** hindi bumababa sa field trip (`_ftrip`); ang motor drawing

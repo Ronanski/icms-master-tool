@@ -371,25 +371,41 @@ function anFanStep(U, dt) {
   /* FA blowers: running, outlet SOV not closed, inlet damper */
   const fr = K.run.fa.map(fnRun),
     sov = K.run.sov.map(n => fnOut(n, 25) === 1 || fnRow(n, 8) === 0),
+    /* 3.2.3 SOHEE: the "TO SILENCE" SOV XV-FA1055-A2 / B2 (DITL-28C output row 2 "TO SILENCE SOV OPEN COMMAND", 0-based 1):
+       open, the blower blows to the atmosphere through its silencer (PD-054), not into the header. Read by its command: the limits
+       of instance #B do not follow the command (FANS_PLANT_MODEL.md finding). Its AUTO logic opens it while the blower is stopped
+       (unloaded start; 150 MW: A closed, B stopped with it open). The share of the flow that still reaches the header with both
+       SOVs open is NO-SOURCE: the open vent takes it all (the header is at about 3300 mmH2O, the silencer at the atmosphere) */
+    sil = K.run.sov.map(n => fnOut(n, 1) === 1),
     za = doX(F.mvA, 0.428) * 100,
     zb = doX(F.mvB, 0.249) * 100,
-    g = [fr[0] && sov[0] ? za : 0, fr[1] && sov[1] ? zb : 0];
+    g0 = [fr[0] && sov[0] ? za : 0, fr[1] && sov[1] ? zb : 0],
+    g = g0.map((x, i) => (sil[i] ? 0 : x));
+  U.fnSil = sil;
   /* the FA flow is this model's: the target of the loop model of FICFA1055A (plant.js: y = smul * y + (1 - smul) * sbase, its own lag),
      the flow of the snapshot at the damper of the snapshot (9.png 26.3 T/H at 42.8 %), linear in the opening (NO-SOURCE) */
   if (F.fa && F.fa.b && F.fa.b.proc) {
     F.fa.b.proc.smul = 0;
     F.fa.b.proc.sbase = (K.fa.Q0 * (g[0] + g[1])) / K.fa.z0;
   }
+  /* 3.2.3 SOHEE: the source rule of the loop (source.js R.FICFA1055A) set smul / sbase again at each scan (mul = a blower running),
+     so this target was not used: the outlet and silencer SOVs and the damper of the blower that runs did not reach the FA flow.
+     The rule now reads it */
+  U.fnFaT = (K.fa.Q0 * (g[0] + g[1])) / K.fa.z0;
   U.fnG = g;
   const qfa = Math.max(0, val(F.faAI)) || 0,
     pfa = K.fa.P0[0] * Math.pow(qfa / K.fa.Q0, 2);
   U.fnFaP = K.fa.P0.map(p => lag('fp' + p, (p / K.fa.P0[0]) * pfa, 2));
   U.fnFaQ = qfa;
-  const qi = g.map(x => (g[0] + g[1] > 0 ? (qfa * x) / (g[0] + g[1]) : 0));
+  /* a blower blowing through its open silencer: its current as if its damper flow went into the header (the blower curve to the
+     atmosphere is NO-SOURCE; a centrifugal blower takes more flow there, not less, so no current drop is made up) */
+  const qi = g.map((x, i) => (sil[i] && g0[i] > 0 ? (K.fa.Q0 * g0[i]) / K.fa.z0 : g[0] + g[1] > 0 ? (qfa * x) / (g[0] + g[1]) : 0));
   const cur = anFanI;
   U.fnI = U.fnI || [0, 0, 0, 0, 0];
-  U.fnIa = lagI('ia', cur(K.I0.fa, fr[0], (qi[0] * pfa) / (K.fa.Q0 * K.fa.P0[0])), 2);
-  U.fnIb = lagI('ib', cur(K.I0.fa, fr[1], (qi[1] * pfa) / (K.fa.Q0 * K.fa.P0[0])), 2);
+  /* air power over the snapshot one; a blower on its silencer: its own flow on the system curve (P ~ Q^2), as if into the header */
+  const pw = i => (sil[i] && g0[i] > 0 ? Math.pow(qi[i] / K.fa.Q0, 3) : (qi[i] * pfa) / (K.fa.Q0 * K.fa.P0[0]));
+  U.fnIa = lagI('ia', cur(K.I0.fa, fr[0], pw(0)), 2);
+  U.fnIb = lagI('ib', cur(K.I0.fa, fr[1], pw(1)), 2);
   /* PAF / SAF: flow of the loop model, outlet pressure on the system curve */
   const qpa = Math.max(0, val(F.qpa)) || 0,
     qsa = Math.max(0, val(F.qsa)) || 0,
