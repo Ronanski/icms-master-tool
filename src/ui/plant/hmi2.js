@@ -305,7 +305,14 @@
     IIF1055A: E => uv('fnIa', null, () => AN.fanI(37.3, E.fabA, clamp(E.fa, 0, 1.3) ** 3)),
     IIF1055B: E => uv('fnIb', null, () => AN.fanI(37.3, E.fabB, clamp(E.fa, 0, 1.3) ** 3)),
     IIFA1052M1: E => (E.idf ? 4.7 : 0),
-    SILO1756: E => (E.idf ? 872 * clamp(E.scoop / 46.1, 0, 2.2) ** 0.5 : 0),
+    /* 3.2.3-beta.106: the same coupling to speed curve as the plant engine (unit.js U.idfN: 0 % 350 / 46.1 % 872 / 100 % 1140 rpm, fan
+       manual range and 7.PNG). Before: 872 x (MV / 46.1) ^ 0.5, 0 rpm at 0 % with the fan running and 1,280 rpm at 100 % (over the
+       1,140 rpm of the fan) */
+    SILO1756: E => {
+      if (!E.idf) return 0;
+      const m = clamp(E.scoop, 0, 100);
+      return m <= 46.1 ? 350 + ((872 - 350) * m) / 46.1 : 872 + ((1140 - 872) * (m - 46.1)) / 53.9;
+    },
     PISB1040: () => 0,
     PISB1042: () => 0,
     /* APH outlet O2 (7.PNG 19.2 % at 4.3 % inlet: the snapshot analyzer, kept) */
@@ -314,8 +321,10 @@
     AIFG10574: E => (E.idf && E.o2 != null ? E.o2 * (4.0 / 4.3) : 21),
     AIFG10572: E => (E.idf ? 69 * clamp(E.kb, 0, 1.3) ** 2 : 0),
     AIFG10573: E => (E.idf && E.o2 != null && E.kb > 0.3 ? Math.max(0, 2.5 - E.o2) * 150 : 0),
-    /* dust and opacity: with the ESP in service 7.PNG; with it out the inlet dust of the design basis, 31,000 mg/Nm3 (L19-1) passes */
-    AIFG10575: E => (AN.fieldState && AN.fieldState().esp === false ? 31000 : 2.9) * clamp(E.g, 0, 1.3),
+    /* dust and opacity: with the ESP in service 7.PNG; with it out the inlet dust of the design basis, 31,000 mg/Nm3 (L19-1) passes.
+       3.2.3-beta.106: the reading stops at the top of the transmitter, AT-FG1057-5 0 ~ 100 mg/m3 (I/O list STN101 AI0464). Before it
+       showed 31,000 mg/m3, a value the instrument cannot give */
+    AIFG10575: E => Math.min(100, (AN.fieldState && AN.fieldState().esp === false ? 31000 : 2.9) * clamp(E.g, 0, 1.3)),
     AIFG10576: E => (AN.fieldState && AN.fieldState().esp === false ? 100 : 12.5 * clamp(E.g, 0, 1.3)),
     FIFG10577: E => 21.5 * E.g,
     TIFG10578: E => E.T(50, 0)
