@@ -292,8 +292,18 @@
     if (card) card.remove();
     card = null;
   }
+  /* B124-AS1 (live test 2026-11-12, MINA): "Show" from a card opened in the LIBRARY loaded the sheet but stayed on the Library tab
+     (blank logic pane): go to the Logic tab first */
+  const toLogic = () => {
+    try {
+      /* the Engineer mode of the new shell has its own tool tabs (shellc-eng.js); the classic shell has the page tabs */
+      if (document.body.classList.contains('sceng') && window.lsShellC && lsShellC.engTool) lsShellC.engTool('logic');
+      else if (window.lsSetTab) window.lsSetTab('logic');
+    } catch (e) {}
+  };
   function show(o) {
     close();
+    toLogic();
     const i = AN.sheets.indexOf(o.sh);
     if (AN.cat !== 'an') AN.setCat('an');
     AN.go(i);
@@ -444,6 +454,7 @@
                   txt: 'Show',
                   on: () => {
                     close();
+                    toLogic();
                     AN.setCat('dig');
                     if (look) AN.lookOnly();
                     S.cur = d.i;

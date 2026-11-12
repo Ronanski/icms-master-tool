@@ -81,7 +81,7 @@ Mula sa CW live test (MINA beta.18 / 19):
 
 Plant model at logic (iba pa):
 - PR #141 findings: LS10 row 7 ROTOFEEDER FAULT walang NOT sa ENABLE gate (salungat sa drawing, hindi binago); LS212 rows 18 ~ 20 (MFT I.0560, 52G1 M.3224, coal feeders M.050A) hindi nakakabit; BA conveyors RUNNING static.
-- DITL-28C #B SOV limit switches; pneumatic dampers PCD-FG1056-1, TCV-FG1116 / 1117 fail action hindi alam; AN_MT walang PAF / SAF / FA motor temps; PAF / SAF huminto sa isang UI screenshot run (sanhi hindi alam).
+- DITL-28C #B SOV limit switches; pneumatic damper PCD-FG1056-1 = in place (beta.124), TCV-FG1116 / 1117 fail action NO-SOURCE; PAF / SAF / IDF motor winding at motor bearing mula sa TECO data (beta.125), fan bearing at FA blower NO-SOURCE pa; PAF / SAF huminto sa isang UI screenshot run (sanhi hindi alam).
 - Hotwell 36.6 laban sa 40 °C; MWP current ~20.7 / 28 A UNUSUAL; CCWHE UA 7 % ng clean.
 - Lumang isyu: starting point 150 MW nagti-trip sa RUN (MFT DITL-03A row 17, "SAF STOPPED = 1"; sanhi hindi pa na-trace); HP bypass hindi sinasara ng saradong MV-MS1391.
 - Pre-existing regression FAIL (pareho sa `main`): ditl150 "Reset" 1, sop_bawal 10 (Gabay Cold hindi nagsisimula ng world sa cloud), loop_source 1.

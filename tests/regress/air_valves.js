@@ -4,6 +4,9 @@
 //     deaerator level valve LCV-CD1104 (LICCD1104) do not follow their MV in MANUAL (the heater level / deaerator answer the held opening);
 //   - on / off valves go to their spring position: XV-MU1109 (spring opening) OPENS by itself although the DCS keeps it closed,
 //     XV-SB1054 (spring closing) stays closed; part way while the actuator pressure is between precompression and full travel;
+//   - the ID fan damper PCD-FG1056-1 (PICFG108A; Fan Instruction Manual 4.1, STI CMV double acting, airlock 2.5, air failure in
+//     place) is held by its airlock at its own lock pressure 2.5 kg/cm2 (at 150 MW the hydraulic coupling controls and the logic keeps
+//     the damper output at 100 %, so its MV cannot be moved here: a move without air is not checked by this test);
 //   - air back (V-IA1101 open): the valves follow their command again.
 // Usage: node tests/regress/air_valves.js [html]
 const { open } = require('./lib.js');
@@ -71,7 +74,11 @@ const html =
     man('ABC-036', 'LICHD11061', 0);
     man('ABC-036', 'LICHD11062', 0);
     man('ABC-031', 'LICCD1104', 0);
+    o.idf0 = r1(hold0.PICFG108A);
     await run(60);
+    o.mvIdf = mv('ABC-008', 'PICFG108A');
+    o.idf1 = r1(U.avH.PICFG108A);
+    o.idfLk = AN.airValves().lk.PICFG108A;
     o.mvHd = mv('ABC-036', 'LICHD11061');
     o.mvDa = mv('ABC-031', 'LICCD1104');
     o.heldHd = r1(U.avH.LICHD11061);
@@ -96,6 +103,7 @@ const html =
   ck(r.mvHd === 0 && r.heldHd > 5 && Math.abs(r.heldHd - r.hold0Hd) < 0.01, `LCV-HD1106-1 held at ${r.heldHd} % (MV ${r.mvHd} %): airlock`);
   ck(r.mvDa === 0 && r.heldDa > 5 && Math.abs(r.heldDa - r.hold0Da) < 0.01, `LCV-CD1104 held at ${r.heldDa} % (MV ${r.mvDa} %): fail in place`);
   ck(Math.abs(r.h6b - r.h6) < 40, `No.2 HP heater level ${r.h6b} mm (was ${r.h6}): the drain did not close`);
+  ck(r.idfLk === 2.5 && r.idf0 === r.mvIdf && r.idf1 === r.idf0, `PCD-FG1056-1 ID fan damper in the airlock (lock ${r.idfLk} kg/cm2), held at ${r.idf1} % without air (MV ${r.mvIdf} %)`);
   ck(r.P2 > 6.5 && r.mu2 === 0, `air back ${r.P2} kg/cm2: XV-MU1109 closed again (${r.mu2} %)`);
   ck(r.heldHd2 === 0 && r.h6c > r.h6b + 20, `air back: LCV-HD1106-1 follows its MV 0 % (${r.heldHd2}), level rises ${r.h6c} mm`);
   ck(errs.length === 0, 'no page error' + (errs.length ? ': ' + errs.join(' | ') : ''));

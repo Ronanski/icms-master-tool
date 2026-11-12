@@ -390,6 +390,7 @@ function anUnitStart() {
     Tb: U.Tb0,
     Tw: steamTsat(Pd0),
     oilF: 0,
+    cbed: 0,
     /* 3.2.0-beta.14: the sources of the loops at the anchor (source.js), before the first step */
     Pms: P0,
     Fc: F0,
@@ -634,7 +635,6 @@ function anUnitStart() {
      into this build had no U.idfN and the Worker engine stopped at each scan (TypeError U.idfN is not a function, plant frozen) */
   U.idfRpm = [350, 1140];
   U.idfCrv = AN_IDF_CRV;
-  U.idfN = anIdfN;
   /* ---- 3.2.0 roadmap 3 (starting points: Cold = a cold plant, not the 150 MW snapshot) and the P1 fix queue of
      docs/versions/v3.2.0/INSTRUMENT_VALVE_COVERAGE.md ---- */
   /* P2 #14: the second drum pressure transmitter PT-BR1001-2 (ABC-010 AI0385) reads the drum too (it kept 134.1 kg/cm2 in a cold plant) */
@@ -822,6 +822,7 @@ function anUnitCold() {
     oilF: 0,
     burn: 0,
     unb: 0,
+    cbed: 0,
     t: 0
   });
   U.o2v = 21;
@@ -1775,6 +1776,14 @@ const AN_PA_FURN = 328.2 / 354.0;
 /* 3.2.1 b6: plant DCS trends 2026-11-08 (team-files/plant-study/14): TIFG1090 952 to 962 C from 90 to 150 MW with the plant air, 855 C at 40 MW
    against 909 C at 150 MW the same day. The Fig 8 fall (660 to 840) and the extra air cooling are not seen on this plant: t follows the trend ratios,
    the air term has exponent 0 */
+/* 3.2.3 plan b5 (fuel): coal that does not burn stays in the bed (the cyclone sends the fines back) and burns when the bed is hot
+   enough, instead of being lost. Model state U.cbed (t of coal held in the bed). Fed coal burns at the share bf (Tburn0 ~ Tburn1, above);
+   the rest goes into U.cbed; the bed coal burns at bf x U.cbed / tau. tau 60 s: PR-OPE-5002 6.4 batch firing at 400 ~ 450 C is a 10 s
+   burp then a 60 s rest, and the CO, O2 and lower furnace temperature rise of each burp is checked inside that rest, so a batch that
+   lights burns out in about 60 s; "wait 5 min if a batch does not burn" = coal left in the bed can still light later, which this
+   carry-over gives. tau itself is NO-SOURCE inside that bound. At a hot bed (bf = 1) with no coal held, the burn is the fed coal, as
+   before. Module level (never a function on U: SAVE / LOAD). */
+const AN_CBED = { tau: 60 };
 const AN_BED = { s: [0.43, 0.525, 0.626, 0.715, 0.86, 1], t: [798, 819, 840, 840, 840, 840], a: [0.612, 0.557, 0.622, 0.716, 0.861, 1] };
 function anBedSS(U, fs, as) {
   const K = AN_BED,
@@ -1804,7 +1813,7 @@ const AN_BI = { t0: 169.7, tCold: 100, kA: 0.0682, kL: 0.59, kB: 0.2, q: 0.8, fa
 function anBedStep(U, dt, rpm, pa, fa) {
   const K = AN_BI;
   if (!isFinite(U.bedI)) U.bedI = U.cold ? K.tCold : K.t0;
-  const sol = K.kA * (U.Fc || 0) * (U.burn || 0) + K.kL * (U.lmQ || 0);
+  const sol = K.kA * (isFinite(U.cbn) ? U.cbn : (U.Fc || 0) * (U.burn || 0)) + K.kL * (U.lmQ || 0);
   U.bedIn = K.kB * sol + (U.sdQ || 0);
   U.bedOut = K.q * rpm;
   U.bedI = Math.max(0, U.bedI + ((U.bedIn - U.bedOut) * dt) / 3600);
@@ -2528,17 +2537,43 @@ const AN_MT = {
   Tw: 85,
   tauB: 1800,
   tauW: 900,
-  vib0: 0.1
+  vib0: 0.1,
+  /* 3.2.3 (SOHEE): the motors of the PAF / SAF / IDF from their TECO data (o&m-package-phase-1 L16 FANS "LMYP-1 Fan Instruction
+     Manual" 6.5 motor data sheets; fan spec sheets 2 of 5 give the kW of each fan): SAF 1850 kW 4 P 192 A (AECK-S2, spec table p 319 of the manual, sleeve
+     bearings VG32), PAF 3700 kW 4 P 373 A (AEZK-S2, FE14A701B1), IDF 3300 kW 6 P 350 A (AEZK-S2, FE14A702B1, 3A057H186-72068); all Ins.
+     Class F, "Temp. Rise Limit (Res.) Stator 90 C at S.F. 1.15", cooling IC611 (fan cooled, built-in AIR cooler: the winding does not
+     see the closed cooling water). The I/O list names the elements: 1 / 2 = fan non drive / drive end, 3 / 4 = motor drive / non drive
+     end bearing, U / V / W = motor winding.
+       winding        T = ambient + 90 x (I / (I rated x 1.15))^2: the rise limit at the S.F. current, with the square of the current
+                      (the copper loss), as the PA compressor motor (AN_AIR.Tw); I = the fan motor current of boiler.js (U.fnPafI / fnSafI /
+                      fnIdfI); time constant tauW (NO-SOURCE).
+       motor bearing  TECO motor manual 4.2.8 (sleeve, self-lube): a rise of 11 ~ 14 C in the first 10 min and about 22 C at 30 min,
+                      stable below 1 C per half hour: first order through 12.5 C at 10 min and 22 C at 30 min = rise 25.3 C, time constant
+                      14.7 min (CALC).
+       fan bearing    the fan manual gives only the limit (4.9 / 5.4.3: ambient + 40 C; vibration 6 mm/s): the running value Tb stays
+                      NO-SOURCE. */
+  mot: { PAF: [373, 'fnPafI'], SAF: [192, 'fnSafI'], IDF: [350, 'fnIdfI'] },
+  sf: 1.15,
+  rise: 90,
+  rB: 25.3,
+  tauMB: 882
 };
 function anMotorStep(U, dt) {
   const K = AN_MT,
     T0 = isFinite(U.Tamb) ? U.Tamb : 30,
     mt = U.mt || (U.mt = {}),
     lag = (k, x, tau) => (mt[k] = isFinite(mt[k]) ? mt[k] + ((x - mt[k]) * Math.min(dt, tau)) / tau : x);
-  for (const [, ad, base, brg, vib, v1] of K.m) {
-    const run = ad === 'IDF' ? !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5 : /^DITL/.test(ad) ? anDitlRun(ad) === 1 : srcBit([ad]) > 0.5;
-    brg.forEach((e, i) => lag('TT-' + base + e, run ? K.Tb + 1.2 * i : T0, run ? K.tauB : 2 * K.tauB));
-    ['U', 'V', 'W'].forEach((e, i) => lag('TT-' + base + e, run ? K.Tw + 1.0 * i : T0, run ? K.tauW : 2 * K.tauW));
+  for (const [id, ad, base, brg, vib, v1] of K.m) {
+    const run = ad === 'IDF' ? !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5 : /^DITL/.test(ad) ? anDitlRun(ad) === 1 : srcBit([ad]) > 0.5,
+      mo = K.mot[id],
+      I = mo ? +U[mo[1]] : NaN,
+      wT = mo && isFinite(I) ? T0 + K.rise * Math.pow(Math.max(0, I) / (mo[0] * K.sf), 2) : K.Tw;
+    brg.forEach((e, i) =>
+      mo && i >= 2
+        ? lag('TT-' + base + e, run ? T0 + K.rB + 1.2 * (i - 2) : T0, run ? K.tauMB : 2 * K.tauMB)
+        : lag('TT-' + base + e, run ? K.Tb + 1.2 * i : T0, run ? K.tauB : 2 * K.tauB)
+    );
+    ['U', 'V', 'W'].forEach((e, i) => lag('TT-' + base + e, run ? wT + 1.0 * i : T0, run ? K.tauW : 2 * K.tauW));
     vib.forEach((e, i) => (mt['VT-' + base + e] = run ? v1 + 0.1 * i : K.vib0));
   }
 }
@@ -2614,7 +2649,8 @@ const AN_AIR = {
      The DITL netlist agrees with every sheet: the coil is inverted (energised = closed) exactly on the spring opening valves.
      XV-FW1111-1 / XV-FW1121-1 have an airlock (SMC VSA 3-way): they stay in place (3.5, NO-SOURCE set point).
    Not in the package (no sheet: they keep following their command): PCV-MS1020 / PCV-HR1010 bypass, TCV-FW1060 / FW1150,
-   PCV-AS1010, TCV-CD1115 / 1124 / 1126, XV-FW1151, XV-HR1010-1, XV-CR1013, the air dampers. */
+   PCV-AS1010, TCV-CD1115 / 1124 / 1126, XV-FW1151, XV-HR1010-1, XV-CR1013, the flue gas biasing dampers TCV-FG1116 / 1117 (their
+   O&M manual, L16 FANS / L14-7 Promax, covers the Festo DAPS double acting R and spring return RS both and names neither for them). */
 /* 3.2.3 (boiler model thread, drum level swings on the start-up level control): the start-up feedwater valve FCV-FW1130-2 (ABC-010
    LICBR1001B) from its valve sheet, K1AU3-E2-0-123 p147 (plant-study 12-assumptions #10): Cv max 15.58 at 100 % travel, 120,000 kg/h at
    76 % travel (Cv 11.7) with P1 214.5 and P2 64.6 kg/cm2 (dP 149.9), 6,000 kg/h at 10 % travel (Cv 0.585 at the same dP). Between the
@@ -2671,8 +2707,16 @@ const AN_AV = {
     TICLO1002: 'TCV-CW1201 (item 40, airlock RK 2-8)',
     PICDO0005: 'PCV-DO0002 (item 41, airlock RK 2-8)',
     PICDO1008: 'PCV-DO1009 (item 42, airlock RK 2-8)',
-    HICDO1012: 'FCV-DO1012 (item 43, airlock RK 2-8)'
+    HICDO1012: 'FCV-DO1012 (item 43, airlock RK 2-8)',
+    /* 3.2.3 (SOHEE): the ID fan damper PCD-FG1056-1 (I/O list "PNEUMATIC CONTROL DAMPER", PD-051, AO0226 by PICFG108A). Source:
+       o&m-package-phase-1 L16 FANS "LMYP-1 Fan Instruction Manual", 4.1 Pneumatic Actuator Data Sheet For I.D.Fan (RF2-0582-DOC-3,
+       STI CMV datasheet 133486SC01 rev 1): line 18 DOUBLE ACTING, line 58 air lock (lock up + 2 x 3 way valves) set 2.5 bar /
+       kg/cm2, line 29 air failure mode IN PLACE, filter regulator NORGREN B73 set 4, supply 4 / 6; operation table: air FAIL/LOSS =
+       lever IN PLACE; Fan Specification Sheet 4 of 5, 3.3.1: FAILURE = LOCK POSITION */
+    PICFG108A: 'PCD-FG1056-1 (ID fan damper, STI CMV double acting, airlock set 2.5, air failure in place)'
   },
+  /* the lock pressure of a valve whose own sheet gives its set point (kg/cm2); the others AN_AV.lock */
+  lk: { PICFG108A: 2.5 },
   /* on / off valves by the tag of the DITL solenoid: spring position (100 open / 0 closed, or 'hold'), precompression and full
      travel pressures (bar g; the psig of the Siemens sheets x 0.0689) */
   sv: {
@@ -2710,7 +2754,7 @@ function anAv(tag, x) {
   if (!tag || !AN_AV.hold[tag]) return x;
   const P = anAvP(),
     H = AN_UNIT.avH || (AN_UNIT.avH = {});
-  if (!isFinite(P) || P >= AN_AV.lock || !isFinite(x)) {
+  if (!isFinite(P) || P >= (AN_AV.lk[tag] || AN_AV.lock) || !isFinite(x)) {
     H[tag] = x;
     return x;
   }
@@ -2985,6 +3029,87 @@ const AN_CHEM = {
   /* alarm list "Alarm List _20160912" sheet AT, H / L (dcs) */
   al: { sp1004: [20, null], sp1009: [9.6, 8.8], sp1010: [4.2, null], sp1011: [9.5, 8.8], sp1012: [10, null], sp1016: [null, 7.0], sp1020: [10, null] }
 };
+/* 3.2.3 (SOHEE): the steam the sootblowers take. Diamond Power N11639-SC1 "Sootblower steam data" (IK4M manual N11639 - IK4M-EL-,
+   o&m-package-phase-1 L10-2, page 93), one row per location: head pressure (kg/cm2 g, set by the poppet valve of the blower), blowing
+   time and unit operation time (s), steam flow per unit (kg/s):
+     Above SH Upper, Above RH Upper (IK4M, 2 + 2)                      12.9   230 / 244   1.2
+     the other 5 IK4M locations (2 each)                              8.0    230 / 244   0.6
+     the IK4M-PT locations (#3 Eco, RH Int Lower ~ #2 Eco, 2/2/2/4)    8.7    116 / 120   0.9
+     Above #1 Common Eco (IK4M-PT, 4)                                  8.7     98 / 102   0.9
+   Total 3882 kg of steam for one cycle of the whole set. The tags by location: page MK15 (snapshot 18.PNG) draws N-1011 / 1012 above
+   the RH upper and N-1013 / 1014 above the SH upper (the 4 of 1.2 kg/s); N-1015 ~ 1022, 1025, 1026 are the other IK4M (DITL-80O group
+   M.4246); N-1023, 24, 27 ~ 34 the IK4M-PT and N-1035 ~ 38 the common economizer (M.4240 / M.4242), as the lance travel of world.js.
+   The steam blows while the poppet valve is open: blowing time / unit operation time of the table, so from (oper - blow) / 2 s of
+   travel out (50.8 mm/s) to the same point back: 356 mm (IK4M), 102 mm (IK4M-PT). The source is the sootblower header (S/H panel #1
+   outlet through MV-SB1001 and PCV-SB1053, 18.PNG): no header pressure, no steam. Below its head pressure a blower passes less: critical
+   flow through the nozzles, proportional to the absolute pressure before them (CALC). The steam leaves the boiler between the drum and
+   the main steam flow transmitter FT-MS1031 (boiler outlet), so FT-MS1031 does not see it: the drum (pressure and level) loses it and
+   the cycle needs it back as make-up (plant.js AN_CYC.dl). U.msb (T/H), U.sbN (blowers blowing). No blower moves unless the operator
+   starts it (the lances start retracted, 18.PNG). NO-SOURCE: the header pressure drop under the flow (PCV-SB1053 has no Cv in the docs);
+   the air heater blowers N-1040 / 1042 (no data in the table) */
+const AN_SB = {
+  head: { a: 12.9, b: 8.0, c: 8.7 },
+  q: { a: 1.2, b: 0.6, c: 0.9 },
+  open: { a: (50.8 * (244 - 230)) / 2, b: (50.8 * (244 - 230)) / 2, c: (50.8 * (120 - 116)) / 2 },
+  kind: n => (n >= 1011 && n <= 1014 ? 'a' : (n >= 1015 && n <= 1022) || n === 1025 || n === 1026 ? 'b' : 'c'),
+  /* 3.2.3 (SOHEE): the air heater blowers N-1040 (hot end) / N-1042 (cold end). L20 Gas air heater O&M manual (o&m-package-phase-1
+     L20, OMM Rev0, 2.x data sheet "Sootblowers"): semi-retractable lance, hot & cold end SEQUENTIAL operation, steam (compressed air on
+     boiler start-up), operating condition 10.5 kg/cm2, supply 16 kg/cm2 / 305 C, quantity per lance 3900 kg/hour, blowing time per lance
+     19 minutes 40 seconds (total sootblowing time 40 minutes); the local panel moves the lance (3.2.16). Flow diagram K1AU3-PD-015: both
+     on the sootblower header (SB-1-034 / SB-1-036). The DCS starts them: DITL-80F row 25 AIR PREHEATER SOOTBLOWER OPERATING (the start
+     command of the DITL-80 program); a rise of it runs one cycle: hot end, then cold end. The medium: DITL-80K row 19 PLANT AIR / STEAM
+     SELECT (M.4212, 1 = plant air: no steam taken). While a lance blows: its RESET POSITION is 0 (plantsw.js) and its pressure PT-SB1040 /
+     PT-SB1042 (I/O list STN102 AI0549 / AI0550, 0 ~ 16) is the header pressure (at most 16). NO-SOURCE: the steps of the lance (one
+     rotor turn each), the plant air pressure at the blower */
+  aph: { q: 3.9, head: 10.5, tB: 19 * 60 + 40, rng: 16 }
+};
+function anSbStep(U, dt) {
+  U.msb = 0;
+  U.sbN = 0;
+  const W = typeof window !== 'undefined' ? window.WORLD : null,
+    L = W && W.sbLances ? W.sbLances() : [];
+  const P = typeof srcPv === 'function' ? srcPv('ABC-017', 'PICSB1052') : NaN;
+  anSbAph(U, dt, P);
+  if (!L.length) return;
+  if (!(P > 0)) return;
+  for (const s of L) {
+    const x = s._lance,
+      k = AN_SB.kind(x.n);
+    if (!(x.x > AN_SB.open[k])) continue;
+    U.sbN++;
+    U.msb += AN_SB.q[k] * 3.6 * Math.min(1, (P + 1.033) / (AN_SB.head[k] + 1.033));
+  }
+}
+/* the air heater blowers (AN_SB.aph): U.sbA = { op: last OPERATING, ph: 0 rest / 1 hot end / 2 cold end, t: s in the phase, p40, p42 } */
+function anSbAph(U, dt, P) {
+  const K = AN_SB.aph,
+    A = U.sbA || (U.sbA = { op: 0, ph: 0, t: 0, p40: 0, p42: 0 }),
+    op = typeof anDitlRun === 'function' ? anDitlRun('DITL-80F@25') : null;
+  if (op === 1 && !A.op && !A.ph) {
+    A.ph = 1;
+    A.t = 0;
+  }
+  A.op = op === 1 ? 1 : 0;
+  if (A.ph && dt > 0) {
+    A.t += dt;
+    if (A.t >= K.tB) {
+      A.ph = A.ph === 1 ? 2 : 0;
+      A.t = 0;
+    }
+  }
+  let air = false;
+  try {
+    const k = typeof S !== 'undefined' && S.sheets ? S.sheets.find(x => /\)DITL-80K$/.test(x.name)) : null;
+    air = !!(k && k.sig && k.sig['19:S']);
+  } catch (e) {}
+  const Ph = isFinite(P) && P > 0 ? Math.min(K.rng, P) : 0;
+  A.p40 = A.ph === 1 && !air ? Ph : 0;
+  A.p42 = A.ph === 2 && !air ? Ph : 0;
+  if (A.ph && !air && Ph > 0) {
+    U.sbN++;
+    U.msb += K.q * Math.min(1, (Ph + 1.033) / (K.head + 1.033));
+  }
+}
 function anChemStep(U, dt) {
   const K = AN_CHEM,
     f = typeof AN_SRC !== 'undefined' && AN_SRC.field ? AN_SRC.field : {},
@@ -3078,11 +3203,16 @@ function anUnitStep0(dt) {
     }, 0),
     oil = (U.oilN || []).reduce((a, x) => a + Math.max(0, +x.S.rt.v[x.n] || 0), 0),
     bf = Math.max(0, Math.min(1, (U.Tb - U.Tburn0) / (U.Tburn1 - U.Tburn0))),
-    Fe = bf * F + U.ao * oil,
+    cb0 = isFinite(U.cbed) && U.cbed > 0 ? U.cbed : 0,
+    cbB = (bf * cb0 * 3600) / AN_CBED.tau /* T/H of the held coal that burns */,
+    Fb = bf * F + cbB /* coal burnt, T/H */,
+    Fe = Fb + U.ao * oil,
     Qss = Math.max(0, U.a * Fe + (U.m0 - U.a * U.F0) * Math.min(1, Fe / (0.3 * U.F0)));
   U.oilF = oil;
   U.burn = bf;
-  U.unb = F * (1 - bf);
+  U.cbn = Fb;
+  U.cbed = Math.max(0, cb0 + (((1 - bf) * F - cbB) * dt) / 3600);
+  U.unb = F - Fb /* fed minus burnt: negative while held coal burns out */;
   U.Fc = F; /* 3.2.0-beta.14: coal of the feeders (source.js: SOx) */
   U.Qs += ((Qss * (isFinite(U.hpFac) ? U.hpFac : 1) - U.Qs) * dt) / U.tauF;
   /* ---- 2.2.0-beta.12 (M3): station wiring S2 -> S1, turbine trip ---- */
@@ -3178,6 +3308,8 @@ function anUnitStep0(dt) {
   anMotorStep(U, dt);
   /* 3.2.3 SOHEE: sampling and chemical dosing (AN_CHEM) */
   anChemStep(U, dt);
+  /* 3.2.3 SOHEE: the steam of the sootblowers (AN_SB) */
+  anSbStep(U, dt);
   const trip = (U.trip || []).some(t => +t.S.rt.v[t.n] > 0.5);
   /* ---- 2.2.0-beta.17 (M4 step 4): the turbine black box (see AN_UNIT rollRate ...) ---- */
   const tb = U.tb || (U.tb = { st: 'load', rpm: 3600, icv: 1, xfer: true, tgt: NaN, aim: NaN }),
@@ -3326,13 +3458,13 @@ function anUnitStep0(dt) {
       qW = Math.min(U.Qs, U.uaW * Math.max(0, U.Tb - U.Tw));
     if (U.Tw < ts - 0.01) {
       U.Tw = Math.max(U.Tamb, Math.min(ts, U.Tw + ((qW - Qloss) * dt) / U.Cw));
-      U.Pd = Math.max(0, U.Pd - ((U.ms + U.mb) * dt) / U.C);
+      U.Pd = Math.max(0, U.Pd - ((U.ms + U.mb + (U.msb || 0)) * dt) / U.C);
     } else {
-      U.Pd = Math.max(0, U.Pd + ((qW - Qloss - U.ms - U.mb) * dt) / (U.C + U.Cw * steamDTsat(U.Pd)));
+      U.Pd = Math.max(0, U.Pd + ((qW - Qloss - U.ms - U.mb - (U.msb || 0)) * dt) / (U.C + U.Cw * steamDTsat(U.Pd)));
       U.Tw = tsatOf(U.Pd);
     }
   } else {
-    U.Pd = Math.max(0, U.Pd + ((U.Qs - U.ms - U.mb) * dt) / U.C);
+    U.Pd = Math.max(0, U.Pd + ((U.Qs - U.ms - U.mb - (U.msb || 0)) * dt) / U.C);
     U.Tw = tsatOf(U.Pd);
   }
   /* bed temperature: firing share over air share, first order */

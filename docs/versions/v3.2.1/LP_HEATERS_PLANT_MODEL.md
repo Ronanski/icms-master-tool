@@ -33,7 +33,7 @@ IRENE : PLANT MODEL, 2026-11-04 PHT. Code: `src/analog/engine/unit.js` (`AN_LP`,
 
 ## Hindi pa nagawa
 
-- LPH bypass MV-CD1003 at outlet MOV MV-CD1002 (ZT-CD1002 / 1003): hindi pa kasama.
+- ~~LPH bypass MV-CD1003 at outlet MOV MV-CD1002 (ZT-CD1002 / 1003): hindi pa kasama.~~ Nagawa na (2026-11-12 tala ni SOHEE): `unit.js` `anHtrPath`, No.1 LPH MV-CD1001 / 1002 / bypass 1003 = DITL-69 / 70 / 71.
 - Ang deaerator ay hindi pa gumagamit ng TT-CD1122 sa heat balance niya.
 - Live test: hindi pa.
 
