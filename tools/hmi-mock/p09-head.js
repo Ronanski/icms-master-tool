@@ -19,6 +19,8 @@
       IDF: { n: 'IDF', t: 'F-1056', ad: 'DITL-25A', d: 'DITL-25A', io: 'MIR-F1056' },
       FA: { n: 'FA BLOWER-A', t: 'F-1055A', ad: 'DITL-28A', d: 'DITL-28A', io: 'MIR-F1055A' },
       FB: { n: 'FA BLOWER-B', t: 'F-1055B', ad: 'DITL-28A #B', d: 'DITL-28A #B', io: 'MIR-F1055B' },
+      FCA: { n: 'FICFA1055A', t: 'Fluidizing air blower A inlet damper FCV-FA1055-A1', ctl: 'FICFA1055A', io: 'FICFA1055A' },
+      FCB: { n: 'FICFA1055B', t: 'Fluidizing air blower B inlet damper FCV-FA1055-B1', ctl: 'FICFA1055B', io: 'FICFA1055B' },
       APH: { n: 'AIR PREHEATER', t: 'H-1052', ad: 'DITL-43', d: 'DITL-43' },
       CPA: { n: 'FICFA1071', t: 'Primary air flow', ctl: 'FICFA1071', io: 'FICFA1071' },
       CSA: { n: 'FICFA1081', t: 'Secondary air flow', ctl: 'FICFA1081', io: 'FICFA1081' },
@@ -36,6 +38,7 @@
       'IT-F1054': 'fnSafI',
       'IT-F1056': 'fnIdfI',
       'IT-F1055A': 'fnIa',
+      'IT-F1055B': 'fnIb',
       'PT-FA1075': 'fnPaP',
       /* boiler.js AN_FN: FA header PT-FA1055-A / B, ESP outlet PT-FG1141-A / B, IDF outlet PT-FG1151 */
       'PT-FA1055-A': 'ux:fnFaP.0',

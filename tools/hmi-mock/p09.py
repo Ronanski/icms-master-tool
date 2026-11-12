@@ -61,8 +61,13 @@ p.inner(296, 972, C('FICFA1081', 'pv', 1, ' T/H') + ' FT-FA1081 · SV ' + C('FIC
 p.inner(296, 998, 'inlet ' + V('TT-FA1082', 0, ' °C') + ' · out ' + V('PT-FA1085', 0, ' mmH2O') + ' PT-FA1085 · ' + V('TT-FA1083') + ' / ' + V('TT-FA1084', 0, ' °C'))
 p.inner(204, 1014, 'MCV-FA1054-1 ' + C('FICFA1081', 'mv', 1, ' %'))
 # fluidizing air blowers
-p.inner(20, 46, 'A ' + ST('FA') + ' ' + V('IT-F1055A', 1, ' A') + ' · B ' + ST('FB'))
+p.inner(20, 46, 'A ' + ST('FA') + ' ' + V('IT-F1055A', 1, ' A') + ' · B ' + ST('FB') + ' ' + V('IT-F1055B', 1, ' A'))
 p.inner(20, 60, G(V('FT-FA1055', 1, ' T/H') + ' FT-FA1055 · ') + V('PT-FA1055-A') + ' / ' + V('PT-FA1055-B', 0, ' mmH2O'))
+# Mina F151-3: the inlet dampers FCV-FA1055-A1 / B1 of the blowers (ABC-014 FICFA1055A / B) under the FA line, with their faceplates
+_i = p.s.index('<text x="20" y="60"')
+_e = p.s.index('</text>', _i) + len('</text>')
+p.s = (p.s[:_e] + '<text x="20" y="74" font-size="11" fill="#9aa3ab">inlet damper A ' + C('FICFA1055A', 'mv', 1, ' %') + ' ' + MODE('FICFA1055A')
+       + ' · B ' + C('FICFA1055B', 'mv', 1, ' %') + ' ' + MODE('FICFA1055B') + '</text>' + p.s[_e:])
 # combustion controls
 p.inner(1360, 292, C('AICFG112', 'sv', 1, ' %'))
 p.inner(1360, 310, NS)
@@ -71,8 +76,8 @@ p.inner(1360, 346, 'PV ' + C('TICHR1002A', 'pv', 0) + ' · SV ' + C('TICHR1002A'
 p.inner(1360, 364, 'RH ' + C('HICHR1002A', 'mv', 1, ' %') + ' · SH ' + C('HICHR1002B', 'mv', 1, ' %') + ' ' + MODE('HICHR1002A'))
 p.inner(860, 390, '')
 # faceplates (transparent hits over the texts)
-for i, x, y, w, h in (('PAF', 230, 856, 140, 16), ('SAF', 230, 946, 140, 16), ('IDF', 1150, 866, 120, 16), ('FA', 16, 34, 110, 16),
-                      ('FB', 130, 34, 100, 16), ('APH', 700, 708, 100, 16), ('CPA', 200, 870, 260, 16), ('CSA', 200, 960, 260, 16),
+for i, x, y, w, h in (('PAF', 230, 856, 140, 16), ('SAF', 230, 946, 140, 16), ('IDF', 1150, 866, 120, 16), ('FA', 16, 34, 124, 16),
+                      ('FB', 140, 34, 140, 16), ('FCA', 16, 64, 150, 14), ('FCB', 166, 64, 120, 14), ('APH', 700, 708, 100, 16), ('CPA', 200, 870, 260, 16), ('CSA', 200, 960, 260, 16),
                       ('MPA', 200, 912, 140, 16), ('MSA', 200, 1002, 140, 16), ('IDC', 1150, 882, 120, 16), ('IDD', 1110, 898, 200, 16),
                       ('RHD', 540, 454, 90, 16), ('SHD', 690, 454, 90, 16), ('O2', 1300, 280, 70, 16), ('RHT', 1290, 334, 80, 16)):
     p.mach(i, hits=[(x, y, w, h)])

@@ -1688,7 +1688,8 @@
           sv.id = 'sv' + Date.now();
           sv.at = Date.now();
           sv.name = nm;
-          sv.ver = typeof APP_VERSION !== 'undefined' ? APP_VERSION : '';
+          /* Mina F151-1: APP_VERSION never existed, so every save had no version; the build writes it here (tools/build/build.js) */
+          sv.ver = '@@VERSION@@';
           return svDo('readwrite', st => st.put(sv)).then(() => msg('Saved: ' + nm + '. LOAD a save point puts the plant back here.'));
         })
         .catch(e => msg('Could not save: ' + e.message));
@@ -1705,7 +1706,7 @@
     const svLoad = e => {
       if (AN.pauseOn && AN.run) AN.pauseOn();
       msg('Loading save point ' + e.name + '...');
-      return Promise.resolve(DITL150.savePut({ kf: e.kf, kd: e.kd })).then(() => {
+      return Promise.resolve(DITL150.savePut({ kf: e.kf, kd: e.kd, ver: e.ver || '' })).then(() => {
         const G = window.LS_GUIDE,
           Lv = window.LS_LIVE;
         if (e.tr && e.tr.lat && Lv && Lv.load) Lv.load(e.tr.lat);

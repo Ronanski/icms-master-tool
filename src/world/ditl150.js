@@ -256,7 +256,47 @@
     if (!sv || !sv.kf || !sv.kd) return 0;
     AN.engState.apply(sv.kf);
     (typeof ditlApply === 'function' ? ditlApply : window.DITL.ditlApply)(sv.kd);
+    if (!sv.ver) D.faLineup();
     return 1;
+  };
+  /* 3.2.3 SOHEE (Mina F151-1): a save point made before beta.154 (no version in it; every save before that one had none). Before
+     beta.150 the plant model did not read the FA blower surge SOV XV-FA1055-A2 / B2 nor its outlet SOV (DITL-28C), so a save could hold a
+     running blower with its surge valve open and its outlet closed (opened by hand at the FAB step of the Training, never closed): it
+     blew 26 T/H then, and loads now with no FA flow (0.03 T/H at 150 MW). Such a blower is put on the line-up of PR-OPE-5002 FAB
+     START-UP after the start ("Ensure Surge Valve will CLOSE and FAB Discharge Valve will OPEN"): the CLOSE P.B. of its surge valve
+     (row 5, M.1031 / 1041) and the OPEN P.B. of its outlet (row 12, M.1050 / 1060) of its DITL-28C, held for the first scans after
+     Run (dock-eng.js press). A stopped blower is left as saved. One Event log line names it */
+  D.faLineup = () => {
+    const W = window.WORLD,
+      L = typeof S !== 'undefined' && S.sheets ? S.sheets.concat((W && W.inst) || []) : [],
+      sh = n => L.find(x => x.name.endsWith(n)) || null,
+      done = [];
+    if (!W || typeof DUI === 'undefined') return done;
+    [
+      ['DITL-28A', ')DITL-28C', 'A'],
+      ['DITL-28A #B', 'DITL-28C #B', 'B']
+    ].forEach(([m, v, k]) => {
+      const s = sh(v);
+      let run = null;
+      try {
+        run = window.AN && AN.ditlRun ? AN.ditlRun(m) : null;
+      } catch (e) {}
+      if (!s || run !== 1 || !s.sig) return;
+      const sil = DUI.outVal(s, 1) === 1,
+        out = DUI.outVal(s, 25) === 1;
+      if (!sil && out) return;
+      const P = W._press || (W._press = {});
+      for (const r of [sil ? 4 : null, out ? null : 11]) {
+        if (r == null) continue;
+        const id = s.name + '|' + r + ':S';
+        P[id] = { nm: s.name, k: r + ':S', tk: W.tk || 0, wait: false, age: 0 };
+        s.sig[r + ':S'] = true;
+      }
+      done.push(k);
+    });
+    if (done.length && typeof lsEventAdd === 'function')
+      for (const k of done) lsEventAdd('DITL-28C', 'DCS', 'Save point from an older version: FA blower ' + k + ' running with its surge valve open or its outlet closed; surge valve CLOSE and outlet OPEN pressed (PR-OPE-5002 FAB start-up line-up)');
+    return done;
   };
   /* 2. scans of the whole world (dt seconds each) */
   D.scan = (n, dt) => {
