@@ -1671,10 +1671,14 @@ window.LS_GUIDE = (function () {
         /* a new start (Reset, a starting state) or the first patch: no time passed */
         const dt = t0 == null || t < t0 ? 0 : t - t0;
         t0 = t;
+        /* 3.2.3-beta.102: after the patch handler, not inside it (the coach writes to the engine; inside the handler of a patch those
+           writes went out while the page was still taking the patch) */
         if (dt > 0)
-          try {
-            onStep(dt);
-          } catch (e) {}
+          setTimeout(() => {
+            try {
+              onStep(dt);
+            } catch (e) {}
+          }, 0);
       };
   }
   /* check the open step; returns true when it moved on */
