@@ -245,7 +245,13 @@
       const c = IX.ctl.get(it.tag);
       if (c) return { k: 'ctl', sh: c.sh, c: c.c };
       const b = IX.man.get(it.tag);
-      return b ? { k: 'man', sh: b.sh, b: b.b, how: 'MAN station', pv: IX.pv.get(k) || null } : null;
+      if (!b) return null;
+      /* 3.2.3 (Mina F151-4: the Coal page showed feeder A "29.4 T/H SV 29.4" with the feeder at 4 T/H): with no TAG.PV wire the PV was the
+         set input (the AUTO demand). A MAN station that has its transmitter on an input (ABC-004A: MIF-CL1061-A = AI0480 into FICCL1061A)
+         shows that transmitter as its PV */
+      const S0 = shOf(b.sh) && shOf(b.sh).S,
+        ain = S0 ? (b.b.i || []).find(n => (S0.drv[n] || []).some(x => x.k === 'AI')) : undefined;
+      return { k: 'man', sh: b.sh, b: b.b, how: 'MAN station', pv: IX.pv.get(k) || (ain != null ? { sh: b.sh, n: ain } : null) };
     }
     if (it.t === 'val') {
       /* R9 #60: "TIFA1086/7 AVERAGE" = the average of the two transmitters (TIFA1086, TIFA1087), each linked as a value */
