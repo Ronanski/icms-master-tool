@@ -1306,6 +1306,32 @@
           break;
         }
       }
+    /* Sakura beta.150 (Jennie's list): a MOV moved by its logic (MV-TS1001 closed by the No.2 HPH level HI-HI, ABC-036 M.0203 -> DITL-94):
+       the scan where the OPEN / CLOSE command of the valve (nl.mv[].open / .close, the MOR- / MOS- O.xxxx) rises, its cause is read and
+       kept on the sheet (s._mvWhy, the last 1200 scans); a cause with a push button is the operator's own (the operator's line is there). The Event
+       log (src/ui/hmi/events.js) writes it */
+    if (window.DUI && DUI.causeNet && DUI.netVal)
+      for (const s of ALL) {
+        if (!s.nl || !s.nl.mv || !s.nl.mv.length) continue;
+        const pv = s._mvc || (s._mvc = {});
+        s.nl.mv.forEach((m, i) => {
+          for (const k of ['close', 'open']) {
+            const n = m[k] && m[k].n;
+            if (n == null) continue;
+            const v = DUI.netVal(s, n),
+              id = i + k,
+              v0 = pv[id];
+            pv[id] = v;
+            if (!(v === 1 && v0 === 0) || W.tk <= 25) continue;
+            let c = null;
+            try {
+              c = DUI.causeNet(s, n, k);
+            } catch (e) {}
+            if (!c || !c.lines.length || c.lines.some(l => l.k === 'input' && /\b(PB|P\.B\.?|PUSH)\b/.test(String(l.txt || '')))) continue;
+            s._mvWhy = (s._mvWhy || []).filter(x => W.tk - x.tk < 1200).concat({ tk: W.tk, i, k, lines: deeper(s, c.lines, 1) });
+          }
+        });
+      }
     W.out = out;
     /* 3. DITL -> ABC (not while the one world is OFF: then the DITL 150 MW state is computed for the DITL only) */
     for (const a of opt && opt.noAbc ? [] : ain) {
