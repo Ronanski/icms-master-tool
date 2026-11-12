@@ -390,6 +390,7 @@ function anUnitStart() {
     Tb: U.Tb0,
     Tw: steamTsat(Pd0),
     oilF: 0,
+    cbed: 0,
     /* 3.2.0-beta.14: the sources of the loops at the anchor (source.js), before the first step */
     Pms: P0,
     Fc: F0,
@@ -634,7 +635,6 @@ function anUnitStart() {
      into this build had no U.idfN and the Worker engine stopped at each scan (TypeError U.idfN is not a function, plant frozen) */
   U.idfRpm = [350, 1140];
   U.idfCrv = AN_IDF_CRV;
-  U.idfN = anIdfN;
   /* ---- 3.2.0 roadmap 3 (starting points: Cold = a cold plant, not the 150 MW snapshot) and the P1 fix queue of
      docs/versions/v3.2.0/INSTRUMENT_VALVE_COVERAGE.md ---- */
   /* P2 #14: the second drum pressure transmitter PT-BR1001-2 (ABC-010 AI0385) reads the drum too (it kept 134.1 kg/cm2 in a cold plant) */
@@ -822,6 +822,7 @@ function anUnitCold() {
     oilF: 0,
     burn: 0,
     unb: 0,
+    cbed: 0,
     t: 0
   });
   U.o2v = 21;
@@ -1775,6 +1776,14 @@ const AN_PA_FURN = 328.2 / 354.0;
 /* 3.2.1 b6: plant DCS trends 2026-11-08 (team-files/plant-study/14): TIFG1090 952 to 962 C from 90 to 150 MW with the plant air, 855 C at 40 MW
    against 909 C at 150 MW the same day. The Fig 8 fall (660 to 840) and the extra air cooling are not seen on this plant: t follows the trend ratios,
    the air term has exponent 0 */
+/* 3.2.3 plan b5 (fuel): coal that does not burn stays in the bed (the cyclone sends the fines back) and burns when the bed is hot
+   enough, instead of being lost. Model state U.cbed (t of coal held in the bed). Fed coal burns at the share bf (Tburn0 ~ Tburn1, above);
+   the rest goes into U.cbed; the bed coal burns at bf x U.cbed / tau. tau 60 s: PR-OPE-5002 6.4 batch firing at 400 ~ 450 C is a 10 s
+   burp then a 60 s rest, and the CO, O2 and lower furnace temperature rise of each burp is checked inside that rest, so a batch that
+   lights burns out in about 60 s; "wait 5 min if a batch does not burn" = coal left in the bed can still light later, which this
+   carry-over gives. tau itself is NO-SOURCE inside that bound. At a hot bed (bf = 1) with no coal held, the burn is the fed coal, as
+   before. Module level (never a function on U: SAVE / LOAD). */
+const AN_CBED = { tau: 60 };
 const AN_BED = { s: [0.43, 0.525, 0.626, 0.715, 0.86, 1], t: [798, 819, 840, 840, 840, 840], a: [0.612, 0.557, 0.622, 0.716, 0.861, 1] };
 function anBedSS(U, fs, as) {
   const K = AN_BED,
@@ -1804,7 +1813,7 @@ const AN_BI = { t0: 169.7, tCold: 100, kA: 0.0682, kL: 0.59, kB: 0.2, q: 0.8, fa
 function anBedStep(U, dt, rpm, pa, fa) {
   const K = AN_BI;
   if (!isFinite(U.bedI)) U.bedI = U.cold ? K.tCold : K.t0;
-  const sol = K.kA * (U.Fc || 0) * (U.burn || 0) + K.kL * (U.lmQ || 0);
+  const sol = K.kA * (isFinite(U.cbn) ? U.cbn : (U.Fc || 0) * (U.burn || 0)) + K.kL * (U.lmQ || 0);
   U.bedIn = K.kB * sol + (U.sdQ || 0);
   U.bedOut = K.q * rpm;
   U.bedI = Math.max(0, U.bedI + ((U.bedIn - U.bedOut) * dt) / 3600);
@@ -3087,11 +3096,16 @@ function anUnitStep0(dt) {
     }, 0),
     oil = (U.oilN || []).reduce((a, x) => a + Math.max(0, +x.S.rt.v[x.n] || 0), 0),
     bf = Math.max(0, Math.min(1, (U.Tb - U.Tburn0) / (U.Tburn1 - U.Tburn0))),
-    Fe = bf * F + U.ao * oil,
+    cb0 = isFinite(U.cbed) && U.cbed > 0 ? U.cbed : 0,
+    cbB = (bf * cb0 * 3600) / AN_CBED.tau /* T/H of the held coal that burns */,
+    Fb = bf * F + cbB /* coal burnt, T/H */,
+    Fe = Fb + U.ao * oil,
     Qss = Math.max(0, U.a * Fe + (U.m0 - U.a * U.F0) * Math.min(1, Fe / (0.3 * U.F0)));
   U.oilF = oil;
   U.burn = bf;
-  U.unb = F * (1 - bf);
+  U.cbn = Fb;
+  U.cbed = Math.max(0, cb0 + (((1 - bf) * F - cbB) * dt) / 3600);
+  U.unb = F - Fb /* fed minus burnt: negative while held coal burns out */;
   U.Fc = F; /* 3.2.0-beta.14: coal of the feeders (source.js: SOx) */
   U.Qs += ((Qss * (isFinite(U.hpFac) ? U.hpFac : 1) - U.Qs) * dt) / U.tauF;
   /* ---- 2.2.0-beta.12 (M3): station wiring S2 -> S1, turbine trip ---- */
