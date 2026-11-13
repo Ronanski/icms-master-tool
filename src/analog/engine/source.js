@@ -15,6 +15,7 @@
 const AN_SRC = {
   field: { hypo: true, hypoB: false, hypoU: false, pur: true, mu1033: false, esp: true, cw1001: true, lhd: false, tspA: true, tspB: false, amnA: true, amnB: false, chzA: true, chzB: false, agt: false } /* 3.2.0 retest #33: hypochlorite pump (no DCS signal); R9 #77: turbine oil purifier pump P-n941 (local); live test 2026-10-30 #23: V-MU1033 expansion tank bypass (manual valve, PD-021) */,
   Tamb: 30,
+  fanMax: { pa: 354.0 * Math.sqrt(2328 / 1551), sa: 213.0 * Math.sqrt(1922 / 1427) } /* T/H, see SRC_RULES R.FICFA1071 / 1081 */,
   st: null,
   t: -1,
   bits: null,
@@ -120,6 +121,17 @@ const SRC_RULES = (() => {
        so it follows the SA flow (the purge SA 25 % gives less than the full-load SA of the snapshot), not only the SA fan running */
     R['FICFA1043' + x] = s => ({ mul: s.saf * s.sar });
   }
+  /* 3.2.3-beta.194 (e5 fault case, coal feeder A trip at 150 MW): the PA / SA air cannot be more than its fan gives with its inlet vanes
+     fully open. Fan specification sheets (Cheng Chen, LMYP-1, for construction 2015-01-14): SA fan design 4222 ACMM at 40 C, discharge
+     static pressure 1922 mmAQ, 1698 BKW, motor 1850 kW; PA fan 6907 ACMM, discharge 2328 mmAQ, 3341 BKW, motor 3700 kW. The duct system
+     curve goes through the 150 MW snapshot (7.PNG: FIFA1081 213.0 T/H at PIFA1085 1427, FIFA1071 354.0 at PIFA1075 1551) with the square
+     of the flow (boiler.js AN_FN), so the most flow is where that curve meets the design discharge pressure:
+     SA 213 x sqrt(1922 / 1427) = 247.2 T/H, PA 354 x sqrt(2328 / 1551) = 433.7 T/H (CALC; the fan curve taken flat at its design
+     pressure, NO-SOURCE for its slope: the real limit is a little higher, never above the design capacity 281 / 460 T/H at 40 C).
+     Before, a feeder trip at 150 MW (boiler master up, air follows) took the SA to about 350 T/H at 394 A, two times the rated 192 A,
+     and the winding temperature HH tripped the fan, then the MFT */
+  R.FICFA1071 = () => ({ cap: AN_SRC.fanMax.pa });
+  R.FICFA1081 = () => ({ cap: AN_SRC.fanMax.sa });
   /* loop 4, fluidizing air: FA blower A / B running (ABC-014 M.3308 / M.3309) */
   /* 3.2.3 SOHEE: the flow of the FA blowers that run with their outlet SOV open and their silencer SOV shut, by their dampers
      (boiler.js anFanStep U.fnFaT); before the fan model has run, a blower running as before */
