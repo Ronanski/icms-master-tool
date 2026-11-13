@@ -191,10 +191,27 @@ const AN_UNIT = {
      - BED TEMPERATURE (no DCS transmitter: the bed thermocouples are on the DITL / local; model state U.Tb): first order (tauB) to
        Tamb + (Tb0 - Tamb) x (fuel share / air share) ^ 0.45 (Fig 8: furnace about 850 C at full load; two start-up burners at the
        light-off air give about 450 C = the coal batch permissive of PR-OPE-5002, 400 ~ 450 C; 600 C continuous).
-     - STEAM TEMPERATURE while cold: the superheaters cannot give more than the gas (plant.js pr.tcap = ambient + shG x the bed rise, F11) and not
+     - STEAM TEMPERATURE while cold: the superheaters cannot give more than the gas (plant.js pr.tcap = the SH / RH tube metal, F11) and not
        less than saturation (pr.tsat); TAB_9: SH outlet <= 535 C before synchronisation */
   Tamb: 30,
-  shG: 0.85 /* F11: SH outlet rise over furnace rise in a cold start, FHI SECT_7 Fig 2 (0.82 ~ 0.87) */,
+  /* F11 (user 2026-11-13: the ratio of beta.206 / 207 was a curve fit, not a model). Superheater and reheater tube metal, heated by the flue
+     gas, cooled by the steam that flows (anUnitStep0, U.cold only):
+     - metal mass: GA p6 K1AU3A-201 rev 1 "PRESSURE PARTS EMPTY WEIGHT" (13-thermal-masses): SH = backpass walls 121.01 + in-furnace SH
+       80.58 + finishing SH 151.67 = 353.26 t; RH = 243.10 t. Steel specific heat 0.5 kJ/kg K (textbook carbon / low-alloy steel).
+     - gas side UA at MCR, CALC from the design heat balance (T1 / T3 / Fig 8): SH 460 T/H, drum 145 kg/cm2 g saturated vapour (h about
+       2,625 kJ/kg) to 541 C at 129 kg/cm2 g (h about 3,443): 104.5 MW; gas = furnace outlet 840 C (Fig 8, 100 %), metal about the mean
+       steam (340 + 541) / 2 = 440 C: UA = 104.5 MW / 400 K = 261 kW/K. RH 401 T/H (MB-012), 370 C / 36.6 (h about 3,145) to 541 C / 35.1
+       (h about 3,545): 44.6 MW, metal about 455 C: UA = 44.6 MW / 385 K = 116 kW/K.
+     - UA moves with the gas flow ^ 0.6 (forced convection over tube banks, Colburn / Grimison exponent, textbook); gas flow = the total
+       air (the fuel is under 10 % of the gas mass). The gas cannot give more than it carries: Q <= gas x 1.15 kJ/kg K (flue gas, textbook)
+       x (gas - metal).
+     - steam side: the steam leaves at the metal temperature (film coefficient far above the gas side); it takes steam x 2.2 kJ/kg K x
+       (metal - inlet), inlet = saturation (SH) / the steam from the HP bypass or the HP exhaust, taken at saturation (RH, simplified).
+       No steam flow: the metal and the stagnant steam heat from the gas alone. */
+  shM: 353.26e3 * 0.5 /* kJ/K */,
+  rhM: 243.1e3 * 0.5 /* kJ/K */,
+  shUA: 261 /* kW/K at the anchor air, CALC above */,
+  rhUA: 116 /* kW/K at the anchor air, CALC above */,
   ao: 2.55 /* PR-OPE-5002 4.3.x: "Approximately: 2.55 TPH coal = 1 TPH diesel" (2.2.0-beta.15; beta.14 had 2 ASSUMED) */,
   /* 2.2.0-beta.15 (M4 step 2, coal transfer): the coal burns only in a hot bed: burnt share 0 at 350 C, 1 at 600 C; the rest leaves
      unburnt. 3.2.3-beta.91 sources: Tburn1 600 = PR-OPE-5002 continuous feeding above 600 C. Tburn0 is bounded, not given: below 400 C,
@@ -3883,16 +3900,35 @@ function anUnitStep0(dt) {
        cold boiler (water 30 C, no steam) the saturation temperature of 0 kg/cm2 is 99.97 C: the SH / RH steam temperatures
        (TICBR1130 / 1140 / 1150, TICMS1004, TICHR1002) read 99.97 C instead of the ambient. Once the water boils Tw = saturation */
     tsat = Math.min(tsatOf(U.Pd), isFinite(U.Tw) ? U.Tw : 1e9);
+  /* F11: superheater / reheater tube metal (see AN_UNIT.shM). Gas into the backpass = the bed / furnace temperature U.Tb */
+  if (U.cold) {
+    const tw0 = Math.max(U.Tamb, isFinite(U.Tw) ? U.Tw : U.Tamb);
+    if (!isFinite(U.TmS)) U.TmS = tw0;
+    if (!isFinite(U.TmR)) U.TmR = tw0;
+    const gr = U.taf0 > 0 ? Math.max(0, taf / U.taf0) : 0,
+      kg = Math.pow(gr, 0.6),
+      gcp = (taf / 3.6) * 1.15 /* kW/K */;
+    let qS = (U.shUA || 261) * kg * Math.max(0, U.Tb - U.TmS),
+      qR = (U.rhUA || 116) * kg * Math.max(0, U.Tb - U.TmR);
+    const qMax = gcp * Math.max(0, U.Tb - Math.min(U.TmS, U.TmR));
+    if (qS + qR > qMax) {
+      const k = qMax / (qS + qR);
+      qS *= k;
+      qR *= k;
+    }
+    const sS = ((U.ms + U.mb + (U.msb || 0)) / 3.6) * 2.2 * Math.max(0, U.TmS - tsat),
+      sR = (((U.mhp || 0) + U.ms) / 3.6) * 2.2 * Math.max(0, U.TmR - tsat);
+    U.TmS = Math.max(U.Tamb, U.TmS + ((qS - sS) * dt) / (U.shM || 176630));
+    U.TmR = Math.max(U.Tamb, U.TmR + ((qR - sR) * dt) / (U.rhM || 121550));
+  } else U.TmS = U.TmR = undefined;
   for (const e of U.ld) {
     const pr = e.pr,
       p = e.b.p || {};
     pr.fr = fr;
     pr.tsat = tsat;
-    /* live Cold start F11 (user 2026-11-13 "Bkt same si bed temp at ms temp?"): the cap was the bed itself, so with no steam flow the
-       main steam read the bed temperature exactly. The superheaters sit in the back pass after the cyclone and see a cooler gas: FHI
-       SECT_7 Fig 2 COLD STARTUP printed points, SH outlet over furnace rise above the ambient 35 C: 1 h 110 / 100 C = 0.87, 6 h 483 /
-       414 C = 0.85, 8.6 h 551 / 460 C = 0.82. The cap is ambient + 0.85 x (bed - ambient) */
-    pr.tcap = U.cold ? U.Tamb + (U.shG || 0.85) * (U.Tb - U.Tamb) : undefined;
+    /* live Cold start F11 (user 2026-11-13 "Bkt same si bed temp at ms temp?"): in Cold the steam leaves at its tube metal temperature
+       (the SH / RH metal model above), not at the bed. e.r undefined = the reheater (TICHR1002) */
+    pr.tcap = U.cold ? (e.r ? U.TmS : U.TmR) : undefined;
     if (!pr.hop || !(pr.Ka > 0)) {
       pr.ld = 0;
       continue;
@@ -3958,8 +3994,8 @@ function anUnitStep0(dt) {
     h.d = pk * fr - h.pk0;
     /* 2.2.0-beta.14 (cold): the header after the spray cannot be above the gas (bed) nor below saturation either */
     if (U.cold) {
-      /* F11 (beta.207): the same back pass gas as pr.tcap above (FHI Fig 2: SH outlet = ambient + 0.85 x the furnace rise), not the bed */
-      const cap = Math.max(tsat, U.Tamb + (U.shG || 0.85) * (U.Tb - U.Tamb));
+      /* F11: the superheater tube metal (model above), not the bed */
+      const cap = Math.max(tsat, isFinite(U.TmS) ? U.TmS : U.Tb);
       for (const L of h.L) anUnitWrite(L, i => Math.max(tsat, Math.min(cap, L.a0[i] + h.x - h.pv0 + h.d)));
     } else for (const L of h.L) shifted(L, h.x - h.pv0 + h.d);
   }
