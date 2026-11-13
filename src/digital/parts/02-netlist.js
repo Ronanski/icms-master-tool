@@ -472,6 +472,11 @@ function netlistCore(sh, strict) {
       nt = cmb || ins.find(q => /^\d+(\.\d+)?$/.test(q.t)),
       ut = cmb || ins.find(q => !/^\d/.test(q.t) && unorm(q.t)),
       tg =
+        /* 3.2.3 SOHEE (DITL-80 sootblower start commands: two columns of 0.5 SEC timers with "TR950" ~ "TR984" written between them, each at
+           the height of its own timer; the first tag under the timer was the one of the timer below): a tag at the height of the timer */
+        sh.tx
+          .filter(q => /^TR\d+/i.test(q.t) && Math.abs(q.y - ay) < 2.5 && Math.abs(q.x - ax) < 16)
+          .sort((p, q) => Math.abs(p.y - ay) - Math.abs(q.y - ay) || Math.abs(p.x - ax) - Math.abs(q.x - ax))[0] ||
         sh.tx.find(q => /^TR\d+/i.test(q.t) && Math.abs(q.x - ax) < 20 && q.y < ay && q.y > ay - rr - 14) ||
         sh.tx
           .filter(q => /^TR\d+/i.test(q.t) && Math.abs(q.x - ax) < 12 && Math.abs(q.y - ay) < rr + 10)
@@ -484,7 +489,7 @@ function netlistCore(sh, strict) {
       /* 3.2.3 SOHEE (DITL-28A "TR133" over "TR143", "TR144" over "TR134"; DITL-22 "TR185/186" over "TR205/206"; DITL-112 "TR23/33/"
          over "TR43"): the tags of the equipment of one drawing written as two lines, one tag as the others of the sheet ("TR132/142"),
          the lower numbers first */
-      tg2 = tg && /^TR[\d/]+$/i.test(tg.t) ? sh.tx.find(q => q !== tg && /^TR[\d/]+$/i.test(q.t) && Math.abs(q.x - tg.x) < 1 && Math.abs(q.y - tg.y) > 2 && Math.abs(q.y - tg.y) < 4.5) : null,
+      tg2 = tg && /^TR[\d/]+$/i.test(tg.t) ? sh.tx.find(q => q !== tg && /^TR[\d/]+$/i.test(q.t) && Math.abs(q.x - tg.x) < 1.5 && Math.abs(q.y - tg.y) > 2 && Math.abs(q.y - tg.y) < 6) : null,
       tgN = q => q.t.match(/\d+/g) || [],
       tgT = tg2 ? 'TR' + [tg, tg2].sort((p, q) => +tgN(p)[0] - +tgN(q)[0]).flatMap(tgN).join('/') : tg ? tg.t : '';
     /* 2.5.0-beta.12 (sootblower DITL-80A TR330 10 MIN. ON DELAY): a D drawn standing (bulging down / up): the input comes from above /
