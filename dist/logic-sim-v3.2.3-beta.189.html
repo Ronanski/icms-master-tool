@@ -37769,7 +37769,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.3-beta.189';
-      c3.textContent += ' · build 346f2ca'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 6b683f2'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -42042,8 +42042,14 @@ setInterval(() => {
   if (!live() || !AN.run || AN._loading || anMirror()) return void (anLastT = 0);
   const sh = cs();
   if (!sh || !sh.S) return;
-  const dt = anTick(),
-    n = anSteps(dt);
+  /* Jennie beta.188 (headless Normal shutdown at x300, step 132): one world = one time. The plant does not run more than 60 s ahead of the
+     DITL world (world.js scanJob: W._owe = plant time its last job could not scan): where the PC cannot give x300 to both, the plant waits
+     for the logic (the real speed is lower) and a press of the dock or the guide is seen by the logic at the time of the plant */
+  const Wd = window.WORLD,
+    lag = Wd && Wd.on && Wd.live && AN.cat === 'an' ? +Wd._owe || 0 : 0,
+    dt = Math.min(anTick(), Math.max(0, 60 - lag));
+  if (!(dt > 0)) return;
+  const n = anSteps(dt);
   histRec(sh, 1);
   const t0_ = performance.now(),
     K = AN.tierK || 1;
@@ -55347,7 +55353,8 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       msg('One world OFF: FROM DITL signals are manual inputs again');
     }
   };
-  let last = 0;
+  let last = 0,
+    lastPT = NaN;
   /* P3 (user 2026-11-01): the DITL scan of the one world is group 2 of the engine scheduler (src/analog/engine/sched.js calls this
      every 200 ms): the job (a generator) of one scan, or null when the world does not run now */
   W.scanJob = () => {
@@ -55360,15 +55367,27 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
     if (!go) {
       if (W.live) W.live = false;
       last = 0;
+      lastPT = NaN;
       return null;
     }
     W.live = true;
     const now = performance.now();
     /* Mina F37: the real time since the last scan is kept up to 2 s (a job that took longer lost the rest), and what a frame could not scan is owed
        to the next one (W._owe, at most 60 s of plant), so the DITL keeps the time of the plant */
-    let dt = Math.min((now - (last || now)) / 1000, 2) * (AN.cat === 'an' ? AN.spd || 1 : TSP) + (W._owe || 0);
+    /* Jennie beta.188 (headless Normal shutdown at x300, step 132 MV-TS1005 / 1004 CLOSE): on the ABC Run the plant model has its own clock
+       (sched.js group 1, AN.unit.t). When a tick of the plant took longer than the 200 ms of the DITL group (x300 on this PC: 10 ms a step,
+       600 steps a tick), the DITL got one scan of 2 s real time while the plant went 600 s: measured 12 scans of the world in 20 minutes of
+       plant, the CLOSE press held for 10 minutes and the turbine stop valves closed in 40 minutes. The world now takes the time the plant
+       model went since its last scan (the same clock as the plant, one world = one time); real time only while the plant clock stands
+       (plant model OFF). What a job could not scan stays owed (up to 600 s) and the plant waits while it is above 60 s (sched.js group 1) */
+    const pt = AN.cat === 'an' && AN.unit ? +AN.unit.t : NaN,
+      byP = isFinite(pt) && isFinite(lastPT) && pt > lastPT;
+    let dt =
+      (byP ? Math.min(pt - lastPT, 600) : Math.min((now - (last || now)) / 1000, 2) * (AN.cat === 'an' ? AN.spd || 1 : TSP)) +
+      (W._owe || 0);
     W._owe = 0;
     last = now;
+    lastPT = pt;
     const job = function* () {
     try {
       /* 3.2.0-beta.23: while a short timer counts, a device moves or an output changed (W.busy, set by the scan: tmStep / mvStep / fdStep /
@@ -55392,7 +55411,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
           W.busy = TMBUSY;
           used += h;
         }
-        W._owe = Math.min(60, dt - used);
+        W._owe = Math.min(byP ? 600 : 60, dt - used);
         dt = used;
       }
     } catch (e) {
@@ -87395,7 +87414,8 @@ window.WIRING=[["DI","1","I.0000","ZSO-BD1002"],["DI","1","I.0001","ZSC-BD1002"]
       msg('One world OFF: FROM DITL signals are manual inputs again');
     }
   };
-  let last = 0;
+  let last = 0,
+    lastPT = NaN;
   /* P3 (user 2026-11-01): the DITL scan of the one world is group 2 of the engine scheduler (src/analog/engine/sched.js calls this
      every 200 ms): the job (a generator) of one scan, or null when the world does not run now */
   W.scanJob = () => {
@@ -87408,15 +87428,27 @@ window.WIRING=[["DI","1","I.0000","ZSO-BD1002"],["DI","1","I.0001","ZSC-BD1002"]
     if (!go) {
       if (W.live) W.live = false;
       last = 0;
+      lastPT = NaN;
       return null;
     }
     W.live = true;
     const now = performance.now();
     /* Mina F37: the real time since the last scan is kept up to 2 s (a job that took longer lost the rest), and what a frame could not scan is owed
        to the next one (W._owe, at most 60 s of plant), so the DITL keeps the time of the plant */
-    let dt = Math.min((now - (last || now)) / 1000, 2) * (AN.cat === 'an' ? AN.spd || 1 : TSP) + (W._owe || 0);
+    /* Jennie beta.188 (headless Normal shutdown at x300, step 132 MV-TS1005 / 1004 CLOSE): on the ABC Run the plant model has its own clock
+       (sched.js group 1, AN.unit.t). When a tick of the plant took longer than the 200 ms of the DITL group (x300 on this PC: 10 ms a step,
+       600 steps a tick), the DITL got one scan of 2 s real time while the plant went 600 s: measured 12 scans of the world in 20 minutes of
+       plant, the CLOSE press held for 10 minutes and the turbine stop valves closed in 40 minutes. The world now takes the time the plant
+       model went since its last scan (the same clock as the plant, one world = one time); real time only while the plant clock stands
+       (plant model OFF). What a job could not scan stays owed (up to 600 s) and the plant waits while it is above 60 s (sched.js group 1) */
+    const pt = AN.cat === 'an' && AN.unit ? +AN.unit.t : NaN,
+      byP = isFinite(pt) && isFinite(lastPT) && pt > lastPT;
+    let dt =
+      (byP ? Math.min(pt - lastPT, 600) : Math.min((now - (last || now)) / 1000, 2) * (AN.cat === 'an' ? AN.spd || 1 : TSP)) +
+      (W._owe || 0);
     W._owe = 0;
     last = now;
+    lastPT = pt;
     const job = function* () {
     try {
       /* 3.2.0-beta.23: while a short timer counts, a device moves or an output changed (W.busy, set by the scan: tmStep / mvStep / fdStep /
@@ -87440,7 +87472,7 @@ window.WIRING=[["DI","1","I.0000","ZSO-BD1002"],["DI","1","I.0001","ZSC-BD1002"]
           W.busy = TMBUSY;
           used += h;
         }
-        W._owe = Math.min(60, dt - used);
+        W._owe = Math.min(byP ? 600 : 60, dt - used);
         dt = used;
       }
     } catch (e) {
@@ -89165,7 +89197,10 @@ window.WIRING=[["DI","1","I.0000","ZSO-BD1002"],["DI","1","I.0001","ZSC-BD1002"]
         if (busy) return void N.skip++;
         const sh = cs();
         if (!sh || !sh.S) return void (N.nosh = (N.nosh || 0) + 1);
-        const dt = acc,
+        /* beta.188 (sched.js group 1): the plant does not run more than 60 s ahead of the DITL world (WORLD._owe) */
+        const lag = WORLD.on && WORLD.live && AN.cat === 'an' ? +WORLD._owe || 0 : 0;
+        if (lag >= 60) return void (acc = 0);
+        const dt = Math.min(acc, 60 - lag),
           /* M32: the steps that fit in about 80 ms (sched.js anSteps), 0.5 s each when there is time, never longer than 3 s */
           n = Math.max(1, Math.min(Math.ceil(dt / 0.5), Math.max(Math.max(1, Math.floor(80 / (AN._ms > 0 ? AN._ms : 2))), Math.ceil(dt / 1)))) /* never longer than 1 s (sched.js AN_STEP_MAX, Mina beta.157) */,
           K = AN.tierK || 1;
@@ -102767,7 +102802,7 @@ window.LS_LIVE = (function () {
     ['Set the load change rate HIC-MWRL to 1.2 MW/min (PR-OPE-5003: 150 ~ 90 MW at 1.2 MW/min).', OUT('HIC-MWRL', 1.1, 1.3, 'MW/min')],
     ['Lower the unit load demand HIC-ULD to 90 MW.', OUT('HIC-ULD', null, 91, 'MW')],
     ['Hold 90 MW for 8 ~ 10 min: drum level ±150 mm.', HOLD(480, ALL(VAL('MW', 87, 93), VAL('lvl', -150, 150)))],
-    ['Set HIC-MWRL to 0.6 MW/min and lower HIC-ULD toward 45 MW (at 72 MW or 230 T/H feedwater: drum level single element). Near 63 MW the steam flow falls below 220 T/H: the back-up command M.2013 of ABC-001C puts the boiler master HIC-BM and the turbine master EIC-TM in MANUAL (the CCS lets go).', ALL(MODE('HIC-BM', 'MAN'), MODE('EIC-TM', 'MAN'))],
+    ['Set HIC-MWRL to 0.6 MW/min and lower HIC-ULD toward 45 MW (at 72 MW or 230 T/H feedwater: drum level single element). When the steam flow falls below 220 T/H (about 62 ~ 73 MW), the back-up command M.2013 of ABC-001C puts the boiler master HIC-BM and the turbine master EIC-TM in MANUAL (the CCS lets go).', ALL(MODE('HIC-BM', 'MAN'), MODE('EIC-TM', 'MAN'))],
     ['By hand at about 0.6 MW/min: lower the turbine master EIC-TM to 45 MW and the boiler master HIC-BM with it, keeping the main steam pressure 115 ~ 126 kg/cm2, under the MS blow-off set point 128 (at 60 MW: staging air upper 10 %, lower 15 ~ 20 %).', HOLD(60, ALL(VAL('MW', 43, 47), VAL('MSP', 115, 126)))],
     ['Bed 750 °C: PA and SA flow controls to MANUAL (FICFA1071, FICFA1081); stop limestone and sand; APH soot blower continuous.', ALL(VAL('Tb', null, 760), MODE('FICFA1071', 'MAN'), MODE('FICFA1081', 'MAN'))],
     ['Light the start-up burners one by one (SA pressure > 1200 mmH2O); move coal to diesel (2.5 T/H coal = 1 T/H diesel) up to 4 T/H oil per feeder.', BURN4],
@@ -103844,8 +103879,24 @@ window.LS_GUIDE = (function () {
      The operator trims the fuel down by hand inside the pressure band of the 45 MW step (115 ~ 126 kg/cm2): FIC-CM when it is MANUAL
      (ABC-004A M.0130), else HIC-BM, -0.5 % each minute of the plant while the bed is over 760 C and the main steam pressure over 118
      (the band byHand holds, 118 ~ 123). The pace is that of the Do it (as byHand), not a plant value */
+  /* Jennie beta.188 (headless Normal shutdown on beta.181, steps 126 ~ 129): the trim looked at the bed and the pressure of now only, and
+     the bed answers the coal some minutes late (the same delay as byHand below): the coal kept falling after the bed had turned, the
+     main steam fell 123 -> 97 kg/cm2, the coal put back overshot to 133 kg/cm2, the MS blow-off vented about 120 T/H, the hotwell went
+     to its LOW-LOW (condensate pump stop), the deaerator emptied and both feed pumps tripped (MFT) in 2 of 4 runs. Now the trim looks
+     2 minutes ahead on both (value + 4 x its change of the last 30 s, as byHand): no cut once the bed is on its way under 760 C or the
+     pressure on its way under 118 kg/cm2 */
+  const bed750P = {};
   const bed750 = () => {
-    if (!(+U().Tb > 760) || !(h().MSP() > 118) || simT() - (paceT.b750 || -1e9) < 60) return;
+    if (simT() - (bed750P.t || -1e9) < 30) return;
+    const old = simT() - (bed750P.t || -1e9) > 90 /* a look of long ago (another step, a load) is no rate */,
+      tb = +U().Tb,
+      p = +h().MSP() || 0,
+      fT = old ? tb : tb + 4 * (tb - bed750P.tb),
+      fP = old ? p : p + 4 * (p - bed750P.p);
+    bed750P.t = simT();
+    bed750P.tb = tb;
+    bed750P.p = p;
+    if (!(tb > 760) || !(fT > 760) || !(p > 118) || !(fP > 118) || simT() - (paceT.b750 || -1e9) < 60) return;
     paceT.b750 = simT();
     const ft = md('FIC-CM') === 'MAN' ? 'FIC-CM' : 'HIC-BM',
       m = +mv(ft);
@@ -104941,7 +104992,7 @@ window.LS_GUIDE = (function () {
       { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Load change rate HIC-MWRL 1.2 MW/min', d: 'PR-OPE-5003: 150 to 90 MW at 1.2 MW per minute. The CCS stays in AUTO; you set only the rate and the target MW.', c: b.X5[0][1], fps: ['HIC-MWRL'] },
       { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Lower HIC-ULD to 90 MW (▼)', d: 'The CCS lowers the coal and the air with the load.', c: b.X5[1][1], fps: ['HIC-ULD'] },
       { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Hold 90 MW for 8 ~ 10 min', d: 'PR-OPE-5003: hold at 90 MW before going lower. Drum level ±150 mm. O₂ trim AICFG112: AUTO while the steam is over 220 T/H; under 220 T/H the drawing forces it MANUAL (ABC-002 M.0102), then put its output at 50 % (neutral: LN15 0 % = SA × 0.8, 50 % = × 1.0). O₂ runs high at low load: the air demand LN5 does not go under 446 T/H.', c: b.X5[2][1], wait: 1 },
-      { st: 11, sec: 49, req: ['bm', 'tm'], t: 'HIC-MWRL 0.6 MW/min, HIC-ULD toward 45 MW: the CCS lets go near 63 MW', d: 'PR-OPE-5003: 90 to 45 MW at 0.6 MW per minute. At 72 MW (or feedwater 230 T/H) press 1 ELEMENT for the drum level (ABC-010 M.054F; below 100 T/H steam for 60 s the drawing selects it by itself, M.022C). Near 63 MW the steam flow falls below 220 T/H: the back-up command M.2013 (ABC-001C) puts HIC-BM and EIC-TM in MANUAL by itself (CLAUDE.md BU-CMD); HIC-ULD then tracks the MW.', c: b.X5[3][1], fps: ['HIC-MWRL', 'HIC-ULD', 'HIC-BM'], a: [btn('Drum level 1 ELEMENT (ABC-010 M.054F)', () => A.push('M.054F'))] },
+      { st: 11, sec: 49, req: ['bm', 'tm'], t: 'HIC-MWRL 0.6 MW/min, HIC-ULD toward 45 MW: the CCS lets go under 220 T/H steam', d: 'PR-OPE-5003: 90 to 45 MW at 0.6 MW per minute. At 72 MW (or feedwater 230 T/H) press 1 ELEMENT for the drum level (ABC-010 M.054F; below 100 T/H steam for 60 s the drawing selects it by itself, M.022C). When the steam flow falls below 220 T/H (about 62 ~ 73 MW, it depends on the pressure and the heaters in service), the back-up command M.2013 (ABC-001C) puts HIC-BM and EIC-TM in MANUAL by itself (CLAUDE.md BU-CMD); HIC-ULD then tracks the MW.', c: b.X5[3][1], fps: ['HIC-MWRL', 'HIC-ULD', 'HIC-BM'], a: [btn('Drum level 1 ELEMENT (ABC-010 M.054F)', () => A.push('M.054F'))] },
       { st: 11, sec: 49, t: 'By hand: EIC-TM to 45 MW, HIC-BM with it', d: 'You are the CCS now. Lower the turbine master EIC-TM about 0.6 MW per minute and the boiler master HIC-BM with it so the main steam pressure stays 115 ~ 126 kg/cm², under the MS blow-off set point 128: above it the blow-off opens and its steam leaves the cycle. Too fast on EIC-TM: the pressure rises; too fast on HIC-BM: it falls. At 60 MW: staging air upper 10 %, lower 15 ~ 20 %.', c: b.X5[4][1], fps: ['EIC-TM', 'HIC-BM'], seek: byHand(45, 0.6, 's45'), a: byHandA },
       { st: 11, sec: 49, t: 'Bed 750 °C: PA and SA air to MANUAL', d: 'PR-OPE-5003: at a bed of 750 °C put the SA and PA fans in manual, stop the limestone and the sand, and run the air heater soot blower continuously. ABC-004A: with the PA or SA air flow control out of REMOTE the coal master FIC-CM goes MANUAL by itself (M.0130 force manual and tracking, also on any fuel flow signal abnormal or a feeder demand above 83.3 %): from here you set the coal by hand on FIC-CM.', c: b.X5[5][1], fps: ['FICFA1071', 'FICFA1081', 'FIC-CM'], seek: bed750, a: [btn('FICFA1071 M', () => A.man('FICFA1071', mv('FICFA1071'))), btn('FICFA1081 M', () => A.man('FICFA1081', mv('FICFA1081')))] },
       {
@@ -115705,7 +115756,7 @@ window.LS_GUIDE = (function () {
         'Engineering = white symbols, only wires, values and valves coloured'
       );
     const ver = (document.title.match(/v\d[\w.-]*/) || [''])[0];
-    row('Version', E('span', 'scsver', ver + ' · build 346f2ca'));
+    row('Version', E('span', 'scsver', ver + ' · build 6b683f2'));
   }
   function openSet(near) {
     if (!set) {
