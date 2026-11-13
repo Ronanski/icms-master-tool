@@ -6,11 +6,13 @@ const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist
 (async()=>{let {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
 await page.setViewportSize({width:1600,height:900});
 await page.waitForFunction(()=>AN.sheets&&AN.sheets.length>=54&&window.WORLD&&WORLD.idx&&S.sheets.length>=PRE_N,null,{timeout:120000});await page.waitForTimeout(1500);
+await page.evaluate(()=>{const k=document.querySelector('#scstart .scskip');if(k&&k.getClientRects().length)k.click()});await page.waitForTimeout(800); /* layout C: the start screen closed first, as the operator */
 const wait=ms=>page.waitForTimeout(ms);
 const clk=async sel=>{const b=await page.evaluate(sel=>{const e=[...document.querySelectorAll(sel)].find(x=>x.getBoundingClientRect().width>0);if(!e)return null;const r=e.getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]},sel);if(b)await page.mouse.click(b[0],b[1]);return !!b};
 const btn=async t=>{const b=await page.evaluate(t=>{const p=document.getElementById('fpop');if(!p)return null;const e=[...p.querySelectorAll('button')].find(x=>x.textContent.trim()===t&&x.offsetParent);if(!e)return null;if(e.disabled)return 'off';const r=e.getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]},t);if(b==='off')return 'off';if(!b)return 'none';await page.mouse.click(b[0],b[1]);return 'ok'};
 const txt=()=>page.evaluate(()=>((document.getElementById('fpop')||{}).innerText||'').split('\n').join(' · '));
-const go=async(id)=>{await page.evaluate(()=>lsPlant(true));await wait(800);await page.evaluate(id=>document.querySelector('#pllist button[data-id="'+id+'"]').click(),id);await wait(1800)};
+/* layout C: the plant page opens through the shell (lsShellC.openPage, as ash_fp.js / field_ctl.js); the old path (lsPlant + #pllist) is under the start screen */
+const go=async(id)=>{await page.evaluate(id=>lsShellC.openPage(id),id);await wait(2000)};
 // 150 MW: F2, F6, F7
 const a=await page.evaluate(async()=>{await AN.ades();WORLD.set(true);const C=AN.sheets.find(s=>s.name==='ABC-001C');AN.i=AN.sheets.indexOf(C);document.getElementById('load150').click();await AN._startP;
   const s=S.sheets.find(x=>x.name.endsWith(')DITL-777')),o=()=>DUI.outVal(s,12);const o0=o();
@@ -18,11 +20,14 @@ const a=await page.evaluate(async()=>{await AN.ades();WORLD.set(true);const C=AN
 console.log(JSON.stringify(a));
 ck(a.sw===1,'the dome valve seal stands from the load: '+a.sw+' (air '+a.pa+')');
 await page.evaluate(()=>{if(AN.view)AN.viewSet(false);AN.run=true});await wait(6000);
-const b=await page.evaluate(()=>({L:lsAlarms.list().map(x=>x.nm+' '+x.lv+' sd='+!!x.sd),sup:lsAlarms.suppressed(),ev:[...document.querySelectorAll('#evbox *')].length,log:(window.lsEventLog?lsEventLog():[])}));
+const b=await page.evaluate(()=>({o2:(()=>{const T=AN.sheets.find(s=>s.name==='ABC-002').S,n=T.lab.findIndex(x=>x&&String(x.t).trim()==='AI0273');return n<0?NaN:+T.rt.v[n]})(),L:lsAlarms.list().map(x=>x.nm+' '+x.lv+' sd='+!!x.sd),sup:lsAlarms.suppressed(),ev:[...document.querySelectorAll('#evbox *')].length,log:(window.lsEventLog?lsEventLog():[])}));
 console.log(b.L.join(' | '));
 ck(b.sup===0,'at 150 MW nothing is suppressed: '+b.sup);
 ck(b.L.length>0&&b.L.every(x=>/^[A-Z]{2,}[A-Z0-9]*\d/.test(x)&&!/^(SQRT|SUM|AI\d)/.test(x)),'each alarm shows its tag');
-ck(b.L.some(x=>/^AIFG1122 \S.+ HIGH/.test(x)||/^AIFG1122 .*HIGH/.test(x)),'AIFG1122 stands with its name');
+/* 3.2.3: at beta.54 the APH inlet O2 AIFG1122 stood HIGH at 150 MW (> 5 %, ABC-002 ALM AI0273 h 5); the plant model now gives 3.7 %, as the HMI
+   snapshot (hmi-op.js 1|AI0273 3.6 %) and the FHI excess air 20 %: no HIGH there. F2 (the name) is checked on the alarms that stand: tag + service */
+ck(b.L.length>0&&b.L.every(x=>/^[A-Z]{2,}[A-Z0-9]*\d\S* \S.{6,}/.test(x)),'each alarm stands with its tag and its service name: '+b.L.slice(0,2).join(' | '));
+ck(b.o2>2.5&&b.o2<5&&!b.L.some(x=>/^AIFG1122 /.test(x)),'APH inlet O2 AIFG1122 '+(+b.o2).toFixed(1)+' % at 150 MW: normal (LOW 2.5 / HIGH 5), no alarm');
 ck(!b.L.some(x=>/SYSTEM TRIP/.test(x)),'no SYSTEM TRIP at the load');
 // F29 MV-TS1001 on the Extraction page
 await go('MK18');
@@ -37,6 +42,7 @@ await btn('AUTO');await wait(300);await btn('EXECUTE');await wait(1500);t=await 
 await page.evaluate(()=>window.LS_FPOP&&LS_FPOP.close());
 // Cold: F18 and F21, a fresh page
 await browser.close();({browser,page,errs}=await open(html));await page.setViewportSize({width:1600,height:900});
+await page.evaluate(()=>{const k=document.querySelector('#scstart .scskip');if(k&&k.getClientRects().length)k.click()});await page.waitForTimeout(800); /* layout C: the start screen closed first, as the operator */
 await page.evaluate(async()=>{const C=AN.sheets.find(s=>s.name==='ABC-001C');AN.i=AN.sheets.indexOf(C);await AN.plantCold();if(AN.view)AN.viewSet(false);AN.run=true});await wait(1500);
 await go('MK06');
 ck(await clk('[data-hit="PA"]'),'BFWP-A on the page');await wait(700);
