@@ -1689,7 +1689,10 @@ window.LS_GUIDE = (function () {
          maintained AUTO MODE SELECTED (M.0283 / 0293 / 0303 / 0313 / 0333, its NOT = MANUAL), row 5 OPEN PB, row 14 CLOSE PB (M.0281 / 0291 /
          0301 / 0311 / 0331), row 11 FULLY CLOSED (I.0011 / 0016 / 001B / 005B / 0336). Before, the step said "TCS and field, confirm".
          PCVAS1030 = the deaerator pegging steam valve PCV-AS1030 of PICCD1104 (ABC-056, IO list STN102 AO0403; uat/check.js) */
-      { st: 11, sec: 49, t: 'At 40 MW: extractions 3, 2, 1 out; deaerator PICCD1104 (PCV-AS1030) SV 2.5 kg/cm²', d: 'PR-OPE-5003: take out the extractions 3, 2 and 1 in this order and set the deaerator pressure control to 2.5 kg/cm². The extraction shut-off MOVs are DCS valves (DITL-94 ~ 98): put each one in MANUAL, then CLOSE. In AUTO the drawing closes them only on a turbine trip, house operation or a heater level HI-HI.', c: b.ALL(...EXT.filter(e => e[2] <= 3).map(extC), b.MODE('PICCD1104', 'AUTO'), b.SV('PICCD1104', 2.4, 2.6)), fps: ['PICCD1104'], get a() { return [...EXT.filter(e => e[2] <= 3).flatMap(extA), btn('PICCD1104 A, SV 2.5 kg/cm²', () => A.auto('PICCD1104', 2.5), () => md('PICCD1104') === 'AUTO' && Math.abs((+svOf('PICCD1104') || 0) - 2.5) < 0.05)]; } },
+      /* Mina S155-2 / S163-1 (beta.155 / 163 Normal shutdown): this step was complete at 46.9 / 46 MW: nothing in it asked for the 40 MW
+         of its title (PR-OPE-5003 4.x "At 40 MW"). Now EIC-TM goes down to 40 MW first (the seek at 0.4 MW a minute, as the 30 MW step,
+         the fire with it) and the step checks the load (MW <= 41) */
+      { st: 11, sec: 49, t: 'At 40 MW: extractions 3, 2, 1 out; deaerator PICCD1104 (PCV-AS1030) SV 2.5 kg/cm²', d: 'PR-OPE-5003: lower EIC-TM to 40 MW by hand (about 0.4 MW a minute, the coal master FIC-CM with it, main steam 115 ~ 126 kg/cm²), then take out the extractions 3, 2 and 1 in this order and set the deaerator pressure control to 2.5 kg/cm². The extraction shut-off MOVs are DCS valves (DITL-94 ~ 98): put each one in MANUAL, then CLOSE. In AUTO the drawing closes them only on a turbine trip, house operation or a heater level HI-HI.', c: b.ALL(b.VAL('MW', null, 41), ...EXT.filter(e => e[2] <= 3).map(extC), b.MODE('PICCD1104', 'AUTO'), b.SV('PICCD1104', 2.4, 2.6)), seek: byHand(40, 0.4, 's40'), fps: ['EIC-TM', 'FIC-CM', 'PICCD1104'], get a() { return [step('EIC-TM ▼ −0.5 MW', 'EIC-TM', -0.5), step('FIC-CM ▼ −1 %', 'FIC-CM', -1), step('FIC-CM ▲ +1 %', 'FIC-CM', 1), ...EXT.filter(e => e[2] <= 3).flatMap(extA), btn('PICCD1104 A, SV 2.5 kg/cm²', () => A.auto('PICCD1104', 2.5), () => md('PICCD1104') === 'AUTO' && Math.abs((+svOf('PICCD1104') || 0) - 2.5) < 0.05)]; } },
       { st: 11, sec: 49, t: 'By hand: EIC-TM to 30 MW, the coal FIC-CM with it', d: 'PR-OPE-5003: 45 to 30 MW at 0.4 MW per minute, the main steam pressure 115 ~ 126 kg/cm² (under the MS blow-off set point 128). The coal master FIC-CM is MANUAL since the bed 750 °C step, so HIC-BM no longer moves the coal: lower FIC-CM with EIC-TM. If the pressure reaches 128 the MS blow-off opens and its steam leaves the cycle: the hotwell falls even with the make-up full open, and at −300 mm the condensate pump stops (hotwell LL). Below 120 T/H of steam the drum level goes to the start-up level control (PR-OPE-5003): LICBR1001B on the start-up valve FCV-FW1130-2.', c: b.X5[9][1], seek: byHand(30, 0.4, 's30'), a: [step('EIC-TM ▼ −0.5 MW', 'EIC-TM', -0.5), step('FIC-CM ▼ −1 %', 'FIC-CM', -1), step('FIC-CM ▲ +1 %', 'FIC-CM', 1)], fps: ['EIC-TM', 'FIC-CM', 'PICMS1002', 'LICBR1001B'] },
       {
         st: 11,
@@ -1708,7 +1711,21 @@ window.LS_GUIDE = (function () {
         /* S149-3 (Mina beta.149): a plant from the cold start-up whose ATS stood at step 6 (NORMAL OPERATION never pressed) had SHUT-DOWN
            refused ("Finish step 7 NORMAL OPERATION", 310SC90-775: step 8 follows step 7) and this step had no way to press it */
         get a() {
-          return [...EXT.filter(e => e[2] >= 4).flatMap(extA), btn('NORMAL OPERATION (ATS step 7)', () => A.tcs('normal'), () => TC().step >= 7), btn('Turbine SHUT-DOWN (ATS step 8)', () => A.tcs('shutdown')), btn('Turbine trip (TA-1)', () => A.tcs('trip'))];
+          /* Mina S163-2 (beta.163 shutdown, Do it): the three ATS buttons had no order and no done state, so one pass pressed NORMAL OPERATION,
+             SHUT-DOWN and TA-1 together: the Event log showed a MANUAL TRIP first-out and no "Turbine SHUT-DOWN (ATS step 8)" line, and
+             MV-TS1005 / 1004 were not closed yet (S163-3: the dock then stood on the DITL-98 permission TURBINE TRIP). PR-OPE-5003 order:
+             extractions 5 and 4 out, then the turbine shut-down (ATS step 8 opens 52G and trips the turbine below 20 % load); TA-1 only
+             if the turbine has not tripped after step 8. Done states: step 7 / 8 reached, turbine trip I.0400 (DITL-98 row 19) */
+          const trp = () => bit('I.0400') > 0.5,
+            out54 = () => EXT.filter(e => e[2] >= 4).every(([nm]) => !WL() || movPos(nm) <= 0),
+            sdOn = () => trp() || TC().cur === 8 || TC().step >= 8,
+            sdWait = () => !sdOn() && !(out54() && TC().step >= 7);
+          return [
+            ...EXT.filter(e => e[2] >= 4).flatMap(extA),
+            btn('NORMAL OPERATION (ATS step 7)', () => A.tcs('normal'), () => trp() || TC().step >= 7),
+            Object.assign(btn('Turbine SHUT-DOWN (ATS step 8)', () => A.tcs('shutdown'), () => sdOn() || sdWait()), { hide: sdWait }),
+            Object.assign(btn('Turbine trip (TA-1)', () => A.tcs('trip'), () => trp() || !(TC().step >= 8)), { hide: () => trp() || !(TC().step >= 8) })
+          ];
         }
       },
       /* ---- 12 bottle-up (plan e4, PR-OPE-5004-01; the checks are live.js X6) ---- */
@@ -2141,6 +2158,8 @@ window.LS_GUIDE = (function () {
     save();
   }
   /* every action of the open step (the "Do it for me" of a newbie, and the test) */
+  /* the Do it lines of the Event log written for the open step (not saved: a new page writes them again) */
+  const OPL = { i: -1, s: new Set() };
   function doIt() {
     const s = steps()[G.cur];
     if (!s) return;
@@ -2213,8 +2232,21 @@ window.LS_GUIDE = (function () {
         if (/[▲▼]/.test(a.l) && !a.band) continue;
         if (lastM >= 0 && i > lastM && !isM(a) && runN < (s.max || 1)) continue;
         if (isM(a) && s.max && n >= s.max) continue;
-        a.f();
+        const r = a.f();
         if (isM(a)) n++;
+        /* Mina S163 (beta.163 shutdown on the Do it, step 'At 40 MW'): the Event log had no line for the MV-TS CLOSE and the PICCD1104 mode
+           change; a press on the dock writes "Operator: ..." (dock.js opLog), the Do it wrote nothing. The same line now, once for each
+           button of the step (a button with no done state is pressed again each minute: one line, not one a minute; a field button logs
+           itself; the trims and the band buttons are seeks) */
+        if (!(typeof r === 'string' && r) && !a.loc && !a.band && window.lsEventAdd)
+          try {
+            const k = s.i + '|' + a.l;
+            if (OPL.i !== s.i) (OPL.i = s.i), OPL.s.clear();
+            if (!OPL.s.has(k)) {
+              OPL.s.add(k);
+              lsEventAdd(a.dg ? a.dg[0] : 'DCS', 'DCS', 'Operator: ' + a.l);
+            }
+          } catch (e) {}
       }
     /* the standby of a pump set (sby: SWBP, MWP, ACWP): FIELD REMOTE, then AUTO on its drawing, as the AUTO row of the dock card (the
        "Do it for me" started the pumps but left the standby MANUAL: the step that wants "standby in REMOTE + AUTO" never ended) */
