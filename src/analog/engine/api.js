@@ -103,6 +103,7 @@ function anEngAPI() {
     ditlRun: anDitlRun,
     airValves: () => AN_AV,
     avSv: anAvSv,
+    av: anAv /* 3.2.3-beta.180: the opening that reaches the process for a controller command (airlock / spring) */,
     fxs: (p, x) => anFXs(p, x),
     /* 3.2.1 SEULGI (boiler.js): the manual valves of the diesel oil line-up, opening in % (AN_DO.fv0) */
     doValve: anDoValve,

@@ -376,11 +376,22 @@ function anFanStep(U, dt) {
        of instance #B do not follow the command (FANS_PLANT_MODEL.md finding). Its AUTO logic opens it while the blower is stopped
        (unloaded start; 150 MW: A closed, B stopped with it open). The share of the flow that still reaches the header with both
        SOVs open is NO-SOURCE: the open vent takes it all (the header is at about 3300 mmH2O, the silencer at the atmosphere) */
-    sil = K.run.sov.map(n => fnOut(n, 1) === 1),
+    silC = K.run.sov.map(n => fnOut(n, 1) === 1),
+    /* 3.2.3-beta.180 (SOHEE): the two SOVs are single acting, NORMALLY OPEN (Continental P&ID 500-0ds REV03: XV-FA1055A2/B2 "ON/OFF
+       Valve PNEUMATIC DN150 - Single acting" NO, XV-FA1055A3/B3 "18'' - Single acting" NO; the DITL-28C coils are inverted): as the
+       instrument air goes they spring OPEN (unit.js AN_AV.sv, anAvSv). The open share of each = its position / 100: the outlet lets
+       that share through, the silencer vents that share (linear, NO-SOURCE) */
+    avs = (t, c) => {
+      const x = typeof anAvSv === 'function' ? anAvSv(t, c, c ? 100 : 0) : null;
+      return x == null ? (c ? 1 : 0) : Math.max(0, Math.min(1, x / 100));
+    },
+    fs = silC.map(c => avs('FA1055-A2', c)),
+    fo = sov.map(c => avs('FA1055-A3', c)),
+    sil = fs.map(f => f >= 0.5),
     za = doX(F.mvA, 0.428) * 100,
     zb = doX(F.mvB, 0.249) * 100,
-    g0 = [fr[0] && sov[0] ? za : 0, fr[1] && sov[1] ? zb : 0],
-    g = g0.map((x, i) => (sil[i] ? 0 : x));
+    g0 = [fr[0] ? za * fo[0] : 0, fr[1] ? zb * fo[1] : 0],
+    g = g0.map((x, i) => x * (1 - fs[i]));
   U.fnSil = sil;
   /* the FA flow is this model's: the target of the loop model of FICFA1055A (plant.js: y = smul * y + (1 - smul) * sbase, its own lag),
      the flow of the snapshot at the damper of the snapshot (9.png 26.3 T/H at 42.8 %), linear in the opening (NO-SOURCE) */
