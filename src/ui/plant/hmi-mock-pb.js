@@ -71,4 +71,14 @@
     cl.mach.LMISO = pbf('XV-LM1811A ~ H', 'Limestone isolating valves', 'DITL-LS212', 19, 'OPEN', [['OPEN', 9, 'set', 1], ['CLOSE', 9, 'set', 0]], 'CLOSED');
     cl.mach.LMFD = pbf('L-1311', 'Limestone rotary feeder', 'DITL-LS110', 6, 'RUNNING', [['START', 7], ['STOP', 8]]);
   }
+  /* PURGE AND TRIP (live Cold start 2026-11-13, finding F9: step 3 "Press FURNACE PURGE START" had no button). DITL-02 input row 6
+     M.0500 "FURNACE PURGE START P.B." (CRT push button), STATUS = output row 6 "FURNACE PURGE IN PROGRESS". The permissives (rows 2 ~ 5
+     burner SA dampers in purge position, row 15 M.050E furnace purge permissive) are all needed and already shown on the page */
+  const pt = defOf('MK10');
+  if (pt) {
+    pt.mach.PURGE = pbf('Furnace purge', 'Furnace purge start (screen push button)', 'DITL-02', 5, 'PURGE IN PROGRESS', [['PURGE START', 5]], 'NOT IN PROGRESS');
+    pt.art = pt.art
+      .replace(/<text([^>]*?)>Press FURNACE PURGE START<\/text>/, '<text$1 data-hit="PURGE" style="cursor:pointer;text-decoration:underline">Press FURNACE PURGE START</text>')
+      .replace(/<text([^>]*?)>M\.0500 \(screen push button\)<\/text>/, '<text$1 data-hit="PURGE" style="cursor:pointer">M.0500 (screen push button)</text>');
+  }
 })();
