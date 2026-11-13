@@ -2574,7 +2574,13 @@ const AN_MT = {
     ['PAF', 'DITL-26A', 'FA1053-', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2],
     ['SAF', 'DITL-27A', 'FA1054-', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2],
     ['FAB-A', 'DITL-28A', 'FA1055-A', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2],
-    ['FAB-B', 'DITL-28A #B', 'FA1055-B', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2]
+    ['FAB-B', 'DITL-28A #B', 'FA1055-B', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2],
+    /* 3.2.3-beta.177 (SOHEE): the BFWP P-1115A / B (DITL-23A and its #B; DITL-23B rows 9 ~ 23): pump bearings 1 / 2, motor bearings 3 / 4
+       (forced oil, KSB LOS: the running value Tb stays NO-SOURCE; KSB "List of measuring points" PR73686-00D: pump bearing alarm
+       >= 90 C, DITL-23B > 100 C), winding U / V / W from the closed cooling water (AN_MT.cw below), vibration x1 / x2 (NO-SOURCE 1.8 mm/s;
+       TECO data sheet: below 2.5 mm/s 0-P at no load) */
+    ['BFWP-A', 'DITL-23A', 'FW1115-A', ['1', '2', '3', '4'], ['11', '12', '21', '22', '31', '32', '41', '42'], 1.8],
+    ['BFWP-B', 'DITL-23A #B', 'FW1115-B', ['1', '2', '3', '4'], ['11', '12', '21', '22', '31', '32', '41', '42'], 1.8]
   ],
   Tb: 55,
   Tw: 85,
@@ -2599,7 +2605,27 @@ const AN_MT = {
   sf: 1.15,
   rise: 90,
   rB: 25.3,
-  tauMB: 882
+  tauMB: 882,
+  /* 3.2.3-beta.177 (SOHEE): MOTOR WINDING ON THE CLOSED COOLING WATER. The BFWP motor (TECO AEZW-S2, 3550 kW 2 P 6600 V, data sheet
+     3A057H186-71069 REV.05 and outline 3A040S670 REV.06, document-references "Boiler Feed Water Pump MOTOR DATA SHEET.pdf"): cooling
+     IC81W (totally enclosed, water-to-air cooler: the winding sees the cooling water, not the room), Ins. Class F, 355 A and eff. 96.2 %
+     at 100 % load, "Temp. Rise Limit (Res.) Stator 80 C at S.F. 1.0"; heat exchanger water inlet 5 ~ 37 C, 430 ~ 470 L/min, 2.5 ~ 5
+     kgf/cm2. The water is the ACW supply (unit.js AN_ACW U.acT2 = TT-CW1153; the BFP is one of its users).
+       winding   T = water inlet + 80 x (I / 355)^2 (the rise limit at the rated current, with the square of the current: the copper loss)
+                 + the extra warming of the water when its flow is below the design: loss x (1 / Cw(flow) - 1 / Cw(design)), where
+                 loss = 3550 x (1 / 0.962 - 1) = 140.3 kW x (I / 355)^2 (CALC) and Cw(design) = 450 L/min (the middle of 430 ~ 470) x
+                 0.991 kg/L x 4.18 / 60 = 31.07 kW/K (CALC: 4.5 C through the cooler at full load); the water flow of the motor =
+                 450 L/min x ACW flow / 1500 m3/h (the same share rule as the turbine oil cooler, NO-SOURCE: the branch flow is not
+                 measured), at least 2 % (a closed loop still moves a little by convection, NO-SOURCE) and at most 250 C;
+                 I = the BFWP current of the model (U.fwI0 / fwI1); time constant tauW (NO-SOURCE).
+     Chain: ACWP trip (no standby) -> no cooling water -> BFWP winding rises -> DITL-23B row 13 ~ 15 > 150 C (alarm / trip of DITL-23A).
+     The CEP motor (TECO AEJG-WT 325 kW 4 P, KSB GA drawing F 30157 A) is a finned, fan cooled motor: not on the closed cooling water. */
+  cw: { 'BFWP-A': [355, 'fwI0'], 'BFWP-B': [355, 'fwI1'] },
+  cwRise: 80,
+  cwLoss: 140.3,
+  cwC: 31.07,
+  cwMin: 0.02,
+  cwMax: 250
 };
 function anMotorStep(U, dt) {
   const K = AN_MT,
@@ -2610,13 +2636,22 @@ function anMotorStep(U, dt) {
     const run = ad === 'IDF' ? !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5 : /^DITL/.test(ad) ? anDitlRun(ad) === 1 : srcBit([ad]) > 0.5,
       mo = K.mot[id],
       I = mo ? +U[mo[1]] : NaN,
-      wT = mo && isFinite(I) ? T0 + K.rise * Math.pow(Math.max(0, I) / (mo[0] * K.sf), 2) : K.Tw;
+      cw = K.cw[id],
+      Ic = cw ? Math.max(0, +U[cw[1]] || 0) : 0,
+      Tc = isFinite(U.acT2) ? U.acT2 : T0,
+      fq = Math.max(K.cwMin, Math.min(1.2, (+U.acQ || 0) / 1500)),
+      x2 = cw ? Math.pow(Ic / cw[0], 2) : 0,
+      wT = cw
+        ? Math.min(K.cwMax, Tc + K.cwRise * x2 + K.cwLoss * x2 * (1 / (K.cwC * fq) - 1 / K.cwC))
+        : mo && isFinite(I)
+          ? T0 + K.rise * Math.pow(Math.max(0, I) / (mo[0] * K.sf), 2)
+          : K.Tw;
     brg.forEach((e, i) =>
       mo && i >= 2
         ? lag('TT-' + base + e, run ? T0 + K.rB + 1.2 * (i - 2) : T0, run ? K.tauMB : 2 * K.tauMB)
         : lag('TT-' + base + e, run ? K.Tb + 1.2 * i : T0, run ? K.tauB : 2 * K.tauB)
     );
-    ['U', 'V', 'W'].forEach((e, i) => lag('TT-' + base + e, run ? wT + 1.0 * i : T0, run ? K.tauW : 2 * K.tauW));
+    ['U', 'V', 'W'].forEach((e, i) => lag('TT-' + base + e, run ? wT + 1.0 * i : cw ? Tc : T0, run ? K.tauW : 2 * K.tauW)); /* a stopped IC81W motor goes to its water */
     vib.forEach((e, i) => (mt['VT-' + base + e] = run ? v1 + 0.1 * i : K.vib0));
   }
 }
