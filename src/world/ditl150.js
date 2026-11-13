@@ -621,6 +621,28 @@
       rs.forEach(([s, i]) => delete s.sig[i + ':S']);
       D.scan(10, 1);
       rep.resets = rs.map(([s, i]) => s.name + ' #' + (i + 1) + ' ' + textOf(s, i, 'S'));
+      /* 3.2.3-beta.193 (CHAEWON, plan e2 prep, boiler-side loop check headless at 150 MW): a field row that is linked to an output of a
+         drawing (the RUNNING feedback of a pump, DITL-24 row 2 I.037C PAF LUB. OIL PUMP B RUNNING <- DITL-24 #B out 58; DITL-31 row 2
+         DOP A RUNNING) got its field bit from the 150 MW load too, ORed with the link. After a relay trip the RUNNING output went 0 but
+         the row stayed 1, so the pump ran again by itself at the relay RESET (no START, MAN). Once the linked output itself is 1, the
+         link carries the row and the field bit is taken off */
+      {
+        const din = W.idx && W.idx.din,
+          O = W.out || {};
+        let n = 0;
+        if (din)
+          din.forEach((m, s) =>
+            m.forEach((srcs, row) => {
+              if (!s.sig || !s.sig[row + ':S']) return;
+              if (srcs.some(q => q.k === 'd' && typeof q.row === 'number' && O[q.d.name] && O[q.d.name].has(q.row))) {
+                delete s.sig[row + ':S'];
+                n++;
+              }
+            })
+          );
+        rep.linkBits = n;
+        if (n) D.scan(5, 1);
+      }
     } finally {
       W.live = lv;
     }

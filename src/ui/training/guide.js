@@ -348,6 +348,37 @@ window.LS_GUIDE = (function () {
     paceT.su = simT();
     A.man('LICBR1001B', Math.max(0, Math.round((m - 5) * 10) / 10));
   };
+  /* Mina S189-2 CRITICAL (beta.189 live Hot restart, Worker; headless Hot on beta.193 the same): at the pressure hold the drum sits at the
+     bottle-up level +200 mm (PR-OPE-5004), so the start-up valve LICBR1001B in AUTO at SV 0 stays shut; when the MS blow-off opens on the
+     pressure (up to 80 T/H at the 103 kg/cm2 overshoot) the drum loses the steam with no feed: +217 -> -257 mm in 6 min while the valve
+     was opening slowly (feedwater 0 -> 11 T/H), MFT. The operator keeps the mass balance (feedwater with the steam: the same rule as
+     S181-2): on a restart, while the level falls under +150 mm and the feedwater is short of the steam by more than 10 T/H, the start-up
+     valve goes to MANUAL and the feedwater follows the steam by hand: 10 % open each 10 s of the plant while it is short by more than 10 T/H
+     (level under +150), 10 % shut while it runs over by more than 10 T/H (level over -50), held in between; back to AUTO SV 0 once the
+     level is within +-50 mm with the feedwater on the steam (headless Hot: the MS blow-off swings 0 -> 85 -> 4 T/H at the hold, the
+     controller alone went -71 -> +273 mm, HH). Cold too (coordinator / Jennie gate 2026-11-13: Cold step 73 drum LL, the controller in
+     AUTO went MV 1 -> 28 % in 4 plant minutes while the steam rose 9 -> 80 T/H with the feedwater 0 -> 11 T/H, level +190 -> -89 mm) */
+  const fwH = { t: -1e9, v: NaN, r: 0 };
+  const fwSeek = () => {
+    if (!window.AN) return;
+    /* the main feedwater valve has the level (LICBR1001A / LICBR1001 in AUTO): the start-up valve is S181-2's (suSeek) */
+    if (md('LICBR1001A') === 'AUTO' || md('LICBR1001') === 'AUTO') { paceT.fwS = 0; return; }
+    const L = h().lvl(), t = simT(), F = h().FW(), M = h().MSF(), mode = md('LICBR1001B');
+    if (t - fwH.t >= 30) { fwH.r = isFinite(fwH.v) && t - fwH.t < 300 ? L - fwH.v : 0; fwH.v = L; fwH.t = t; }
+    const short = F < M - 10, over = F > M + 10, step = d => { paceT.fwT = t; A.man('LICBR1001B', Math.max(0, Math.min(100, Math.round((+mv('LICBR1001B') || 0) + d)))); };
+    if (mode === 'MAN' && paceT.fwS) {
+      /* the level is back at the normal band with the feedwater on the steam: the controller takes it again */
+      if (Math.abs(L) < 50 && !short && !over) { paceT.fwS = 0; A.auto('LICBR1001B', 0); return; }
+      if (t - (paceT.fwT || -1e9) < 10) return;
+      if (short && L < 150) step(10);
+      else if (over && L > -50) step(-10);
+      return;
+    }
+    if (mode === 'AUTO' && L < 150 && fwH.r < 0 && short) { paceT.fwS = 1; step(10); }
+    /* the high side the same (headless Warm, Worker, step "Bypass servicing": the MS blow-off closed before the HP bypass opened, steam
+       49 -> 1 T/H, the controller let the feedwater down only 40 -> 8 T/H: +84 -> +261 mm, HH) */
+    else if (mode === 'AUTO' && L > 100 && fwH.r > 0 && over) { paceT.fwS = 1; step(-10); }
+  };
   /* Warm / Hot restart load up to 45 MW (Sakura 2026-11-13; Mina live Warm beta.183: the load went to 35 MW before the coal, the main
      steam fell 83 -> 53 kg/cm2 with LOW-LOW alarms; headless Hot beta.175: the main steam fell under 110 and the TCS held the load at 22 MW,
      criterion B 1.3 MAIN STEAM PRESS. NOT LOW, tcs.js TCS_B[6], while the oil came up only under 60, the cold number).
@@ -923,18 +954,28 @@ window.LS_GUIDE = (function () {
         return lvH.r > 0;
       },
       swell = () => !rsK() || (dLv() > 200 && lvRise()),
-      dueMbdO = () => dPd() >= 10 && dLv() > (rsK() ? 200 : 127) && swell() && mcvPos('MV-BD1001') <= 0,
+      /* Mina S189-2 CRITICAL (beta.189 live Hot restart, Worker; the same headless on beta.193): at the pressure hold the level rose
+         +197 -> +216 mm on the firing, the MBD opened on that "swell" and passed 70 T/H at 100 kg/cm2 (AN_CYC.mbd), the level fell to +88
+         in 2 min; the CBD (12 T/H) opened with it and stayed; then the MS blow-off took 84 T/H at the 103 kg/cm2 overshoot while the
+         start-up valve was still opening (feedwater 8 ~ 49 T/H): -382 mm, MFT. At the pressure of a restart the MBD passes more than the
+         whole start-up feed (70 ~ 116 T/H against 40 ~ 55 T/H steam, PR-OPE-5002 "steam flow 40 ~ 55 T/H"), so on a restart the Do it does
+         not open it: the swell is taken by the CBD only, and the CBD closes again under +200 or when the level stops rising (the same
+         rule the MBD had). Cold start: unchanged */
+      dueMbdO = () => !rsK() && dPd() >= 10 && dLv() > 127 && mcvPos('MV-BD1001') <= 0,
       dueMbdC = () => mcvPos('MV-BD1001') > 0 && (dLv() < (rsK() ? 200 : 0) || (rsK() && !lvRise()) || dPd() < 10),
-      dueCbd = () => dPd() >= 10 && mcvPos('MV-BD1002') < 100 && (!rsK() || swell());
+      dueCbd = () => dPd() >= 10 && mcvPos('MV-BD1002') < 100 && (!rsK() || swell()),
+      dueCbdC = () => rsK() && mcvPos('MV-BD1002') > 0 && (dLv() < 200 || !lvRise());
     const dB = (o, due) => Object.assign(o, { on: () => !due(), hide: () => !due() });
     const DRN = [
       dB(btn('FIELD: lower ring header drains 10 % open (drum level high, under 10 kg/cm²)', () => (A.field('lhd', 10), window.lsEventAdd && lsEventAdd('FIELD', 'FIELD', 'Field operator: lower ring header drains 10 % open (PR-OPE-5002 warming up, swelling)'), '')), dueLhdO),
       dB(btn('FIELD: lower ring header drains CLOSE', () => (A.field('lhd', 0), window.lsEventAdd && lsEventAdd('FIELD', 'FIELD', 'Field operator: lower ring header drains closed'), '')), dueLhdC),
       dB(mcvB('MV-BD1001', 1), dueMbdO),
       dB(mcvB('MV-BD1001', 0), dueMbdC),
-      dB(mcvB('MV-BD1002', 1), dueCbd)
+      dB(mcvB('MV-BD1002', 1), dueCbd),
+      dB(mcvB('MV-BD1002', 0), dueCbdC)
     ];
     { const c = DRN[4], g = c.f; c.f = () => (AN.blowdown && AN.blowdown(true), g()); }
+    { const c = DRN[5], g = c.f; c.f = () => (AN.blowdown && AN.blowdown(false), g()); }
     /* automatic run 2026-11-11 (thermal swell ON): at x300 the level went -92 -> +378 mm between two looks at the screen while burner D waited, the drain came too late, MFT. A warm-up step asks for x10 while the level is above 0 or a drain is due */
     const drnSlow = () => (dLv() > 0 && dPd() < 35) || DRN.some(x => !x.hide());
     /* automatic run 2026-11-11: MV-BD1001 is the first valve of DITL-38 (no machine instance) and stood LOCAL: MCV REMOTE MODE SELECTED was 0 and OPEN did nothing. The field operator puts it in REMOTE first, as the other DITL-38 MOVs */
@@ -2401,6 +2442,8 @@ window.LS_GUIDE = (function () {
     /* S181-2: the start-up valve left in MANUAL at the hand-over is closed through the turbine, coal and load-up sections (headless Hot
        run: the steps moved on to the coal feeder with the valve at 41 %, feedwater 203 T/H against 145 T/H steam) */
     if (s.st >= 7 && s.st <= 9) suSeek();
+    /* S189-2: the start-up valve keeps the mass balance on a restart from the light-off until the main feedwater valve takes the level */
+    if (s.st >= 4 && s.st <= 9) fwSeek();
     /* max counts the machines of the step (the START / STOP buttons); its valve and field buttons are pressed as before */
     const isM = a => !!a.stop;
     let n = (s.a || []).filter(a => isM(a) && a.on && a.on()).length;
