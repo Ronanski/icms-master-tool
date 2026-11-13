@@ -829,9 +829,11 @@ function tcsStep(U, dt) {
      vapour extractor  F-1937 (main oil tank vacuum PGLO1920 -20 ~ -50 mmH2O);
      oil purifier      P-1941, local panel (AN_SRC.field.pur), discharge ~ 2.96 kg/cm2 (SOP).
    Values (36.PNG at 149 MW, SOP limits; the rest NO-SOURCE and marked):
-     MOP discharge     6.9 kg/cm2g while running (36.PNG at 149 MW, the measured discharge of this pump). 3.2.3-beta.213 (live Cold start):
-                       was 6.1, the SOP mid value; IBD TB-1 / TB-2 resets the LOW of the running pump only ABOVE 6.1 (CMP 5.6 / 6.1), so a
-                       discharge that only reaches 6.1 kept the LOW on and the standby in AUTO started 10 s after the first pump;
+     MOP discharge     6.63 kg/cm2g while running = 0.65 MPa(g), the design MAIN OIL PUMP DISCHARGE OIL of the TG lube oil system
+                       drawing 310SD14-354 (TG maintenance manual 2-1-2, legend; bearing oil 0.18 MPa(g) there). The header is held by
+                       the LUBE OIL PRESSURE CONTROL VALVE V-LOn004 (valve list), so a set value; no pump curve in the docs (the pump
+                       datasheet is a scan). 36.PNG shows 6.9, SOP 5.6 ~ 6.6. beta.212 had 6.1, the SOP mid value: IBD TB-1 / TB-2 resets the
+                       LOW of the running pump only ABOVE 6.1 (CMP 5.6 / 6.1), so the LOW stayed on and the standby in AUTO started;
      bearing oil       3.3 (36.PNG PILO10031 ~ 33) with a MOP; 1.6 with the EOP only (NO-SOURCE, above its 1.05 start); else 0;
      EOP discharge     1.6 while running (NO-SOURCE);
      COP discharge     163.2 while running (SOP "163.2 ksc"; 36.PNG 164.2); control oil header = discharge - 0.6 (the filter, 36.PNG
@@ -840,7 +842,7 @@ function tcsStep(U, dt) {
      bearing outlet    TIGE1007 / 1008 = the cooler outlet + 9 / 10 C x speed / 3600 (36.PNG 55 / 56 C);
      pressures follow with a lag of 1.5 s (NO-SOURCE), so a stopped running pump lets the header fall and the standby in AUTO start. */
 const TCS_OIL = {
-  mop: 6.9,
+  mop: 6.63,
   brg: 3.3,
   brgEop: 1.6 /* kg/cm2, NO-SOURCE inside sourced bounds: above the EOP LOW OFF 1.33 and below the 5.0 design (V-LOn005) */,
   eop: 1.6 /* same bounds */,
