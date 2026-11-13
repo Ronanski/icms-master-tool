@@ -1186,8 +1186,10 @@ window.LS_GUIDE = (function () {
           /* Mina S154: the dock keeps the buttons it drew when the step opened, so the label named A after the swap: the press picks
              the damper of the blower running at that moment */
           /* Mina S160-1: the damper before the standby goes AUTO (the 14 T/H of the 25 % damper is under the low-low that starts the standby) */
-          return [mot('M.3308', 'FAB-A'), btn('Damper of the running blower (FICFA1055A / B) M 41 % (≈ 26 T/H)', () => A.man(fabT(), 41)), mot('M.3309', 'FAB-B')];
+          return [mot('M.3308', 'FAB-A'), btn('Damper of the running blower (FICFA1055A / B) M 41 % (≈ 26 T/H)', () => A.man(fabT(), 41), () => +mv(fabT()) >= 39), mot('M.3309', 'FAB-B')];
         },
+        /* Mina S165-2: the NEXT card named "Put FA blower B in AUTO" first while the text says the damper first */
+        preSby: () => (+mv(fabT()) < 39 ? 'Raise the inlet damper of the running blower ' + fabT() + ' to about 41 % (FA flow 26 T/H) first: at its 25 % start position the flow is under the 20 T/H low-low that starts the standby in AUTO' : ''),
         field: [22] },
       { st: 2, sec: 24, t: 'Start the secondary air fan (SAF)', d: 'Close the secondary air damper (0 %) before starting the fan.', c: R.SAF, a: [btn('SA damper 0 %', () => A.man('FICFA1081', 0)), mot('M.3303', 'SAF')], fps: ['FICFA1081'], field: [23] },
       /* live check #107 (PR-OPE-5002 SAF START-UP: "Adjust SAF Inlet Damper Manually up until combustion air flow increase to 200T/H (You can use
@@ -2181,8 +2183,11 @@ window.LS_GUIDE = (function () {
     let n = (s.a || []).filter(a => isM(a) && a.on && a.on()).length;
     /* a button listed after the START buttons is for after the start (FAB: FICFA1055A M 41 % once the blower runs; pressed together
        with the START, it took the damper off its 25 % start position, FCD READY M.1033 went 0 and the blower could not start) */
+    /* Mina S165-1 (beta.165 step 35: FICFA1055A at 41 % before the START, FCD READY M.1033 = 0, FAB-A INTERLOCK): since beta.164 the
+       damper button stands between START FAB-A and START FAB-B (the damper before the standby AUTO), so "after the last START" let it
+       go with the first START. A button that is not a machine, listed after the first START, waits until the machines run */
     const L0 = s.a || [],
-      lastM = L0.reduce((k, a, i) => (isM(a) ? i : k), -1),
+      lastM = L0.findIndex(isM),
       runN = n;
     for (const [i, a] of L0.entries())
       if (!a.on || !a.on()) {
@@ -2190,7 +2195,7 @@ window.LS_GUIDE = (function () {
         /* 3.2.3-beta.90: except a band button (oilBand: pressed only outside its band, at its own pace), the seek of the bypass steps;
            before, the Do it for me never kept the 40 ~ 55 T/H of the bypass servicing (automatic runs: drum LOW-LOW at steps 75 ~ 81) */
         if (/[▲▼]/.test(a.l) && !a.band) continue;
-        if (lastM >= 0 && i > lastM && runN < (s.max || 1)) continue;
+        if (lastM >= 0 && i > lastM && !isM(a) && runN < (s.max || 1)) continue;
         if (isM(a) && s.max && n >= s.max) continue;
         a.f();
         if (isM(a)) n++;
@@ -2226,7 +2231,8 @@ window.LS_GUIDE = (function () {
     const runOk = s.sby && s.max && (s.a || []).filter(a => isM(a) && a.on && a.on()).length >= s.max;
     if (!runOk) G.sbyT = null;
     else if (G.sbyT == null || G.sbyI !== s.i) (G.sbyT = simT()), (G.sbyI = s.i);
-    if (runOk && simT() - G.sbyT >= 30 && window.LS_DOCK)
+    /* Mina S165-2: what the step does before its standby goes AUTO (FAB: the damper of the running blower) comes first */
+    if (runOk && simT() - G.sbyT >= 30 && window.LS_DOCK && !(s.preSby && s.preSby()))
       for (const a of s.a || []) {
         if (!isM(a) || !a.ad || (a.on && a.on())) continue;
         try {

@@ -2213,11 +2213,14 @@
           cb.title = 'Auto ✓: ticks by itself when the logic shows it done (RUN)';
         }
         cb.onchange = () => {
-          const dd = ls.get('ls-train', {});
+          const dd = ls.get('ls-train', {}),
+            was = !!dd[k];
           if (cb.checked) dd[k] = 1;
           else delete dd[k];
           /* live test 2026-10-30 #19: every SOP tick in the Event log (who: the By column, AO = field operator) */
-          call(() => lsEventAdd('PR-OPE-5002', /\bAO\b/.test(by) && !/CRO/.test(by) ? 'FIELD' : 'SOP', (cb.checked ? '✓ ' : '✗ ') + (f.si + 1) + '.' + (f.i + 1) + ' ' + String(f.t).slice(0, 90)));
+          /* Mina S165-3 (beta.165 step 35: "✓ 23.4 Ensure All Fluidizing Air Blower Start-up Permissive are satisfied" 16 times in 2 min): the
+             "✓ Done" of the NEXT card ticks the item again when it is already ticked; one line only when the tick really changes */
+          if (was !== cb.checked) call(() => lsEventAdd('PR-OPE-5002', /\bAO\b/.test(by) && !/CRO/.test(by) ? 'FIELD' : 'SOP', (cb.checked ? '✓ ' : '✗ ') + (f.si + 1) + '.' + (f.i + 1) + ' ' + String(f.t).slice(0, 90)));
           ls.set('ls-train', dd);
           els.trKey = JSON.stringify(dd);
           /* Mina #3 (beta.87): "Set the LCP (Local Control Panel) of both selected and standby ACWP to remote position" (PR-OPE-5002 8.3)
@@ -3023,7 +3026,16 @@
         it.cb.dispatchEvent(new Event('change'));
       };
     };
-    if (sbA && remB(sbA)) {
+    /* Mina S165-2 (FAB step: NEXT said "Put FA blower B in AUTO" while the step text says the damper first): a step may name what is
+       done before its standby goes AUTO */
+    const pre = sbA && s.preSby ? call(() => s.preSby(), '') : '';
+    if (pre) {
+      who = 'CONTROL ROOM';
+      ctx = 'Before the standby ' + mName(sbA);
+      say = pre;
+      adr = (s.fps || []).slice(0, 1).join('');
+      fp = true;
+    } else if (sbA && remB(sbA)) {
       /* live test 2026-10-30 #12: the standby to REMOTE first (field operator), then AUTO */
       who = 'FIELD OPERATOR';
       ctx = 'Standby ' + mName(sbA);
