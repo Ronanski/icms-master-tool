@@ -280,6 +280,14 @@
     const A = window.AN,
       sh = A && A.sheets && A.sheets.find(s => s.name === shn);
     if (!sh || !/^ABC-/.test(shn)) return true;
+    /* Mina beta.160 S160-3: a save point of a cold-start run at 150 MW (its starting state stays 'plantCold') with the BFPs stopped:
+       drum level LOW and drum pressure LOW were "suppressed: the equipment of its group is stopped", so no drum level alarm line came
+       before the drum level L.L. MFT. The group suppression (retest #35 / #62) is a shutdown suppression; no plant document names one
+       (PR-OPE-5002 / 5003 / 5004, alarm list: no alarm suppression or inhibit). With the generator on line (load > 1 MW) the unit is not
+       shut down: every process alarm comes through */
+    try {
+      if (window.CHECK && CHECK.H && +CHECK.H().MW() > 1) return true;
+    } catch (e) {}
     const g = GRP.findIndex(([re]) => re.test(sh.title || '')),
       on = grpOn(g);
     if (!on) {

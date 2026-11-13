@@ -588,6 +588,20 @@ window.LS_GUIDE = (function () {
     movB(nm, tg, 0, 4, 13)
   ];
   const extC = ([nm, tg]) => C(tg + ' closed', () => !WL() || movPos(nm) <= 0, () => tg + ' ' + f0(movPos(nm)) + ' %' + (dInG(nm, 20) ? ' AUTO' : ' MAN'));
+  /* Sohee 2026-11-13 (via the coordinator): no Cold / Hot / Warm step put the extraction MOVs in service, so from a cold start they stayed
+     CLOSED and MANUAL (probe beta.160: DITL-94 ~ 98 pos 0, AUTO MODE SELECTED 0 after Cold, Hot and Warm; 100 % AUTO only on the 150 MW
+     load) and the AUTO close on a heater HI-HI could not act. PR-OPE-5002 EXTRACTION STEAM SYSTEM START-UP (after NORMAL OPERATION at
+     45 MW): "Gradually Open Extraction 5 MV then set to auto" (MVTS1005), then 4 (MVTS1004) and 3 (MVTS1003); "Servicing extraction 2 & 1,
+     checked if Transfer region completed" (MVTS1002, MVTS1001). Probe beta.160 at 150 MW: AUTO then OPEN PB opened MV-TS1005 0 -> 98 % in
+     40 s. The drain valves before / after the NRV (MV-TS1385 ~ 1399) have only a position on the DCS (IO list STN102 ZITS13xx): TCS / field */
+  const extO = ([nm, tg]) => [
+    movB(nm, tg, 1, 4, 13),
+    Object.assign(
+      btn(tg + ' AUTO (' + nm + ')', () => (WL() && window.LS_DOCK && LS_DOCK.dset ? (LS_DOCK.dset(nm, 0, true), '') : ''), () => !WL() || dInG(nm, 20)),
+      { ad: nm }
+    )
+  ];
+  const extS = ([nm, tg]) => C(tg + ' open, AUTO', () => !WL() || (movPos(nm) >= 95 && dInG(nm, 20)), () => tg + ' ' + f0(movPos(nm)) + ' %' + (dInG(nm, 20) ? ' AUTO' : ' MAN'));
   /* PR-OPE-5002 18 HOTWELL FILLING: "use hotwell level control valve LCV-MU1110 and hotwell filling motorized valve MV-MU1001" (DITL-60,
      row 3 OPEN / row 12 CLOSE P.B.). On the hold at 35 kg/cm2 the MS blow-off sends 60 ~ 70 T/H to the air, more than LCV-MU1110 alone
      (58 T/H, valve sheet p90): the hotwell falls. The operator opens MV-MU1001 when the hotwell is low and closes it when it is back high */
@@ -1440,6 +1454,8 @@ window.LS_GUIDE = (function () {
          PR-OPE-5002 EXTRACTION STEAM SYSTEM START-UP (after NORMAL OPERATION at 45 MW): "Set to auto Primary / Secondary Drain" of LPH1,
          LPH2, LPH3, HPH1, HPH2 (LCVHD11011 / 11012 ... 11061 / 11062) before the extractions are put in service. The SV is the drawing's */
       { st: 7, sec: 44, t: 'Heater drains in AUTO: LP heaters 1 ~ 3 and HP heaters 1 ~ 2 (primary and alternate)', d: 'PR-OPE-5002 EXTRACTION STEAM SYSTEM START-UP: put the primary and the alternate drain level controls of the LP heaters No.1, No.2, No.3 and the HP heaters No.1, No.2 in AUTO before the extraction steam comes in with the load. In MANUAL the drain valves stay where they are: the heater fills with condensate to HIGH-HIGH and the logic closes its extraction valve (MV-TS1001 ~ 1005), and the load falls.', c: b.ALL(...HDRN.map(t => b.MODE(t, 'AUTO'))), fps: HDRN.filter((t, i) => i % 2 === 0), a: [btn('All heater drains A', () => (HDRN.forEach(t => md(t) !== 'AUTO' && A.auto(t)), ''), () => HDRN.every(t => md(t) === 'AUTO'))] },
+      { st: 7, sec: 44, t: 'Extractions 5, 4, 3 in service: MV-TS1005, 1004, 1003 OPEN, then AUTO', d: 'PR-OPE-5002 EXTRACTION STEAM SYSTEM START-UP, in this order: LP heater No.2 (extraction 5, MV-TS1005), LP heater No.3 (extraction 4, MV-TS1004), deaerator (extraction 3, MV-TS1003). For each: the field drains the line before and after the non-return valve (about 3 s each; the drain valves MV-TS1385 ~ 1399 are not DCS commands), then OPEN the shut-off MOV gradually and set it to AUTO. Keep the heater outlet temperature rise at 10 °C a minute or less (TICD11031, TICD11032, TICD1104). In AUTO the drawing closes the MOV on a turbine trip, house operation or a heater level HI-HI (DITL-94 ~ 98).', c: b.ALL(...EXT.filter(e => e[2] >= 3).sort((x, y) => y[2] - x[2]).map(extS)), get a() { return EXT.filter(e => e[2] >= 3).sort((x, y) => y[2] - x[2]).flatMap(extO); } },
+      { st: 7, sec: 44, t: 'Extractions 2, 1 in service: MV-TS1002, 1001 OPEN, then AUTO', d: 'PR-OPE-5002: with the ICV to CV transfer completed (TCS, I.0418), HP heater No.1 (extraction 2, MV-TS1002) and then HP heater No.2 (extraction 1, MV-TS1001): the field drains the line, OPEN the MOV gradually, then AUTO. Keep the heater outlet temperature rise at 10 °C a minute or less (TIFW1105, TIFW1106) and watch that the turbine bypass outlet pressure PIMS1021 is not upset.', c: b.ALL(...EXT.filter(e => e[2] <= 2).sort((x, y) => y[2] - x[2]).map(extS)), get a() { return EXT.filter(e => e[2] <= 2).sort((x, y) => y[2] - x[2]).flatMap(extO); } },
       /* ---- 8 coal at 45 MW (PR-OPE-5002 solid fuel firing) ---- */
       { st: 8, sec: 44, t: 'Bed ≥ 650 °C: feeder C, then FICCL1061C in AUTO', d: 'The third feeder, once the bed is hot enough.', seek: coalSeek(100), c: b.ALL(b.VAL('Tb', 650, null), b.BIT('M.3402', 1, 'feeder C running'), b.MODE('FICCL1061C', 'AUTO')), fps: ['FICCL1061C'], a: [fDis('C'), WLm('M.3402', 'feeder C', () => (A.motor('M.3402', 1), A.motor('M.3405', 1))), btn('FICCL1061C A', () => { const q = pv('FIC-CF'); if (bit('M.3402') > 0.5 && md('FICCL1061C') !== 'AUTO' && md('FIC-CF') === 'MAN' && isFinite(q) && mv('FIC-CF') > q) A.man('FIC-CF', q); A.loc('FICCL1061C'); })] },
       { st: 8, sec: 44, t: 'Main steam pressure 123 kg/cm² at 45 MW', seek: coalSeek(123), d: 'Coal is now the main fuel; the oil burners stay at 20 % up to about 60 % load (FHI Fig. 2). Raise the coal (FIC-CF ▲ / ▼) to 123 kg/cm² (the PIC-COBM SV in CCS); watch the bed (> 700 °C).', c: b.HOLD(120, b.ALL(b.VAL('MW', 44, null), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150))), fps: ['FIC-CF'], a: [step('FIC-CF ▲ +1 %', 'FIC-CF', 1), step('FIC-CF ▼ −1 %', 'FIC-CF', -1), oilStep('Oil (all) ▼ −5 %', ['A', 'B', 'C', 'D'], -5)], w: COAL, wait: 1 },
