@@ -663,8 +663,24 @@ window.LS_GUIDE = (function () {
      The operator trims the fuel down by hand inside the pressure band of the 45 MW step (115 ~ 126 kg/cm2): FIC-CM when it is MANUAL
      (ABC-004A M.0130), else HIC-BM, -0.5 % each minute of the plant while the bed is over 760 C and the main steam pressure over 118
      (the band byHand holds, 118 ~ 123). The pace is that of the Do it (as byHand), not a plant value */
+  /* Jennie beta.188 (headless Normal shutdown on beta.181, steps 126 ~ 129): the trim looked at the bed and the pressure of now only, and
+     the bed answers the coal some minutes late (the same delay as byHand below): the coal kept falling after the bed had turned, the
+     main steam fell 123 -> 97 kg/cm2, the coal put back overshot to 133 kg/cm2, the MS blow-off vented about 120 T/H, the hotwell went
+     to its LOW-LOW (condensate pump stop), the deaerator emptied and both feed pumps tripped (MFT) in 2 of 4 runs. Now the trim looks
+     2 minutes ahead on both (value + 4 x its change of the last 30 s, as byHand): no cut once the bed is on its way under 760 C or the
+     pressure on its way under 118 kg/cm2 */
+  const bed750P = {};
   const bed750 = () => {
-    if (!(+U().Tb > 760) || !(h().MSP() > 118) || simT() - (paceT.b750 || -1e9) < 60) return;
+    if (simT() - (bed750P.t || -1e9) < 30) return;
+    const old = simT() - (bed750P.t || -1e9) > 90 /* a look of long ago (another step, a load) is no rate */,
+      tb = +U().Tb,
+      p = +h().MSP() || 0,
+      fT = old ? tb : tb + 4 * (tb - bed750P.tb),
+      fP = old ? p : p + 4 * (p - bed750P.p);
+    bed750P.t = simT();
+    bed750P.tb = tb;
+    bed750P.p = p;
+    if (!(tb > 760) || !(fT > 760) || !(p > 118) || !(fP > 118) || simT() - (paceT.b750 || -1e9) < 60) return;
     paceT.b750 = simT();
     const ft = md('FIC-CM') === 'MAN' ? 'FIC-CM' : 'HIC-BM',
       m = +mv(ft);
@@ -1736,7 +1752,7 @@ window.LS_GUIDE = (function () {
       { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Load change rate HIC-MWRL 1.2 MW/min', d: 'PR-OPE-5003: 150 to 90 MW at 1.2 MW per minute. The CCS stays in AUTO; you set only the rate and the target MW.', c: b.X5[0][1], fps: ['HIC-MWRL'] },
       { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Lower HIC-ULD to 90 MW (▼)', d: 'The CCS lowers the coal and the air with the load.', c: b.X5[1][1], fps: ['HIC-ULD'] },
       { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Hold 90 MW for 8 ~ 10 min', d: 'PR-OPE-5003: hold at 90 MW before going lower. Drum level ±150 mm. O₂ trim AICFG112: AUTO while the steam is over 220 T/H; under 220 T/H the drawing forces it MANUAL (ABC-002 M.0102), then put its output at 50 % (neutral: LN15 0 % = SA × 0.8, 50 % = × 1.0). O₂ runs high at low load: the air demand LN5 does not go under 446 T/H.', c: b.X5[2][1], wait: 1 },
-      { st: 11, sec: 49, req: ['bm', 'tm'], t: 'HIC-MWRL 0.6 MW/min, HIC-ULD toward 45 MW: the CCS lets go near 63 MW', d: 'PR-OPE-5003: 90 to 45 MW at 0.6 MW per minute. At 72 MW (or feedwater 230 T/H) press 1 ELEMENT for the drum level (ABC-010 M.054F; below 100 T/H steam for 60 s the drawing selects it by itself, M.022C). Near 63 MW the steam flow falls below 220 T/H: the back-up command M.2013 (ABC-001C) puts HIC-BM and EIC-TM in MANUAL by itself (CLAUDE.md BU-CMD); HIC-ULD then tracks the MW.', c: b.X5[3][1], fps: ['HIC-MWRL', 'HIC-ULD', 'HIC-BM'], a: [btn('Drum level 1 ELEMENT (ABC-010 M.054F)', () => A.push('M.054F'))] },
+      { st: 11, sec: 49, req: ['bm', 'tm'], t: 'HIC-MWRL 0.6 MW/min, HIC-ULD toward 45 MW: the CCS lets go under 220 T/H steam', d: 'PR-OPE-5003: 90 to 45 MW at 0.6 MW per minute. At 72 MW (or feedwater 230 T/H) press 1 ELEMENT for the drum level (ABC-010 M.054F; below 100 T/H steam for 60 s the drawing selects it by itself, M.022C). When the steam flow falls below 220 T/H (about 62 ~ 73 MW, it depends on the pressure and the heaters in service), the back-up command M.2013 (ABC-001C) puts HIC-BM and EIC-TM in MANUAL by itself (CLAUDE.md BU-CMD); HIC-ULD then tracks the MW.', c: b.X5[3][1], fps: ['HIC-MWRL', 'HIC-ULD', 'HIC-BM'], a: [btn('Drum level 1 ELEMENT (ABC-010 M.054F)', () => A.push('M.054F'))] },
       { st: 11, sec: 49, t: 'By hand: EIC-TM to 45 MW, HIC-BM with it', d: 'You are the CCS now. Lower the turbine master EIC-TM about 0.6 MW per minute and the boiler master HIC-BM with it so the main steam pressure stays 115 ~ 126 kg/cm², under the MS blow-off set point 128: above it the blow-off opens and its steam leaves the cycle. Too fast on EIC-TM: the pressure rises; too fast on HIC-BM: it falls. At 60 MW: staging air upper 10 %, lower 15 ~ 20 %.', c: b.X5[4][1], fps: ['EIC-TM', 'HIC-BM'], seek: byHand(45, 0.6, 's45'), a: byHandA },
       { st: 11, sec: 49, t: 'Bed 750 °C: PA and SA air to MANUAL', d: 'PR-OPE-5003: at a bed of 750 °C put the SA and PA fans in manual, stop the limestone and the sand, and run the air heater soot blower continuously. ABC-004A: with the PA or SA air flow control out of REMOTE the coal master FIC-CM goes MANUAL by itself (M.0130 force manual and tracking, also on any fuel flow signal abnormal or a feeder demand above 83.3 %): from here you set the coal by hand on FIC-CM.', c: b.X5[5][1], fps: ['FICFA1071', 'FICFA1081', 'FIC-CM'], seek: bed750, a: [btn('FICFA1071 M', () => A.man('FICFA1071', mv('FICFA1071'))), btn('FICFA1081 M', () => A.man('FICFA1081', mv('FICFA1081')))] },
       {
