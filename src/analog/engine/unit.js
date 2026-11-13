@@ -2625,8 +2625,38 @@ const AN_MT = {
   cwLoss: 140.3,
   cwC: 31.07,
   cwMin: 0.02,
-  cwMax: 250
+  cwMax: 250,
+  /* 3.2.3-beta.179 (SOHEE): BFWP BEARINGS FROM THE LUBE OIL SYSTEM (KSB "30 LPM LUBE OIL SYSTEM", L7 BFP D-5 LOS O&M manual, SLPL
+     SL/WO/2142: data sheet and "DATA SHEET LUBE OIL COOLER"): one LOS per pump feeds the pump bearings 1 / 2 and the motor bearings
+     3 / 4 (TECO outline 3A040S670 note 9: forced oil, VG46, oil inlet 25 ~ 49 C). Oil 30 L/min ISO VG 46 (s.g. 0.87), cooler oil
+     65 -> 50 C (supply 50 C), cooling water 37 -> 39 C ~98 L/min, 13.65 kW, shell and tube; KSB list of measuring points PR73686-01D:
+     cooler inlet < 65 C, outlet < 50 C. The cooler water is the closed cooling water (the BFP is an ACW user, AN_ACW).
+       heat      13.65 kW while the pump runs (the design duty, NO-SOURCE: no curve of the bearing loss);
+       cooler    Coil = 13.65 / 15 = 0.910 kW/K, Cw = 13.65 / 2 = 6.825 kW/K x ACW flow / 1500 (at least 2 %, as cw above), UA = 13.65
+                 / LMTD (65 - 39 = 26, 50 - 37 = 13: 18.76 C) = 0.7277 kW/K (all CALC); effectiveness-NTU, counter flow;
+       oil       return (cooler inlet) = water inlet + 13.65 / (eff x Cmin), supply = return - 13.65 / Coil: at the design water 37 C this
+                 gives 65 / 50 C (the data sheet);
+       bearings  the RTD = the oil leaving the bearing = the return (NO-SOURCE: the metal above the drain oil is not in the docs), +0.5 C
+                 per element so that two elements are not one number; time constant tauB (the reservoir, NO-SOURCE);
+       stopped   no heat: the oil goes to the water (ACW flowing) or to the room. */
+  los: { 'BFWP-A': 1, 'BFWP-B': 1 },
+  losQ: 13.65,
+  losCo: 0.91,
+  losCw: 6.825,
+  losUA: 0.7277,
+  losMax: 150
 };
+/* the oil leaving the bearings of a running pump on its LOS (AN_MT.los); water inlet Tc, ACW flow share fq */
+function anLosRet(Tc, fq) {
+  const K = AN_MT,
+    co = K.losCo,
+    cw = K.losCw * fq,
+    cmin = Math.min(co, cw),
+    cr = cmin / Math.max(co, cw),
+    ntu = K.losUA / cmin,
+    e = cr < 0.999 ? (1 - Math.exp(-ntu * (1 - cr))) / (1 - cr * Math.exp(-ntu * (1 - cr))) : ntu / (1 + ntu);
+  return Math.min(K.losMax, Tc + K.losQ / (e * cmin));
+}
 function anMotorStep(U, dt) {
   const K = AN_MT,
     T0 = isFinite(U.Tamb) ? U.Tamb : 30,
@@ -2647,7 +2677,9 @@ function anMotorStep(U, dt) {
           ? T0 + K.rise * Math.pow(Math.max(0, I) / (mo[0] * K.sf), 2)
           : K.Tw;
     brg.forEach((e, i) =>
-      mo && i >= 2
+      K.los[id]
+        ? lag('TT-' + base + e, (run ? anLosRet(Tc, fq) : (+U.acQ || 0) > 0 ? Tc : T0) + 0.5 * i, K.tauB)
+        : mo && i >= 2
         ? lag('TT-' + base + e, run ? T0 + K.rB + 1.2 * (i - 2) : T0, run ? K.tauMB : 2 * K.tauMB)
         : lag('TT-' + base + e, run ? K.Tb + 1.2 * i : T0, run ? K.tauB : 2 * K.tauB)
     );

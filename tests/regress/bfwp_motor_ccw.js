@@ -3,6 +3,7 @@
 // From "Start at 150 MW", 1 h of plant. Checks:
 //   - running BFWP-A winding = ACW supply (TT-CW1153) + 80 x (I / 355)^2 within 1 C, below the DITL-23B set point 150 C;
 //   - DITL-23B rows 13 ~ 15 (TT-FW1115-AU / AV / AW) read that value (they read the fixed 75 C before);
+//   - beta.179: the BFWP-A bearings 1 ~ 4 = the oil return of its KSB LOS (water inlet + 13.65 kW / (eff x Cmin), CALC);
 //   - the standby BFWP-B (machine #B) reads its own pump: the water temperature, not the running pump's value;
 //   - losing the ACW flow (both ACWP tripped): the hottest BFWP-A winding phase passes 150 C and DITL-23B row 26 (TRIP OR STOP
 //     INTERLOCK CONDITION, M.1073) stops BFWP-A within 20 s of it, the stop cause names the > 150 C comparator.
@@ -59,6 +60,8 @@ const html =
       Tc: U.acT2,
       Q: U.acQ,
       AU: U.mt['TT-FW1115-AU'],
+      A1: U.mt['TT-FW1115-A1'],
+      A4: U.mt['TT-FW1115-A4'],
       BU: U.mt['TT-FW1115-BU'],
       rowA: rowVal('(42)DITL-23B', 'TT-FW1115-AU'),
       rowB: rowVal('(42)DITL-23B #B', 'TT-FW1115-AU')
@@ -92,6 +95,9 @@ const html =
   const r1 = x => Math.round(x * 10) / 10;
   const want = r.Tc + 80 * Math.pow(r.I / 355, 2);
   ck(r.run[0] === 1 && Math.abs(r.AU - want) < 1 && r.AU < 150, `BFWP-A winding U ${r1(r.AU)} C at ${r1(r.I)} A, water ${r1(r.Tc)} C (CALC ${r1(want)} C, DITL-23B > 150)`);
+  /* beta.179: the bearings on the KSB LOS (cooler 65 -> 50 C oil, 37 -> 39 C water, 13.65 kW; effectiveness 0.5357 CALC) */
+  const ret = r.Tc + 13.65 / (0.5357 * 0.91);
+  ck(Math.abs(r.A1 - ret) < 1 && Math.abs(r.A4 - (ret + 1.5)) < 1 && r.A4 < 100, `BFWP-A bearings 1 ${r1(r.A1)} / 4 ${r1(r.A4)} C = oil return (CALC ${r1(ret)} C at water ${r1(r.Tc)} C; KSB 65 C at 37 C), DITL-23B > 100`);
   ck(Math.abs(r.rowA - r.AU) < 0.2, `DITL-23B row TT-FW1115-AU reads ${r.rowA} C (the plant)`);
   ck(r.run[1] === 0 && Math.abs(r.rowB - r.Tc) < 2, `DITL-23B #B (BFWP-B stopped) reads ${r.rowB} C (its water ${r1(r.Tc)} C)`);
   ck(
