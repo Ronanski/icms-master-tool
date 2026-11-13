@@ -81,4 +81,15 @@
       .replace(/<text([^>]*?)>Press FURNACE PURGE START<\/text>/, '<text$1 data-hit="PURGE" style="cursor:pointer;text-decoration:underline">Press FURNACE PURGE START</text>')
       .replace(/<text([^>]*?)>M\.0500 \(screen push button\)<\/text>/, '<text$1 data-hit="PURGE" style="cursor:pointer">M.0500 (screen push button)</text>');
   }
+  /* DIESEL AND BURNERS (live Cold start 2026-11-13, finding F10: the igniter and burner ON / OFF push buttons were on no page). DITL-09 /
+     #B / #C / #D input rows 5 / 7 / 9 / 11 = IGNITER x "ON" / "OFF" P.B., BURNER x "ON" / "OFF" P.B. (M.0110 / 0111 / 0118 / 0119 for A),
+     STATUS = output row 27 BURNER x REMOTE SELECTED (the CRT buttons need REMOTE). The label "Burner A" ... opens the faceplate */
+  const db = defOf('MK11');
+  if (db) {
+    for (const x of 'ABCD') {
+      const d = x === 'A' ? 'DITL-09' : 'DITL-09 #' + x;
+      db.mach['BN' + x] = pbf('Burner ' + x, 'Igniter and burner ' + x + ' push buttons', d, 26, 'REMOTE', [['IGNITER ON', 4], ['IGNITER OFF', 6], ['BURNER ON', 8], ['BURNER OFF', 10]], 'NOT REMOTE');
+      db.art = db.art.replace(new RegExp('<text([^>]*?)>Burner ' + x + '</text>'), `<text$1 data-hit="BN${x}" style="cursor:pointer;text-decoration:underline">Burner ${x}</text>`);
+    }
+  }
 })();
