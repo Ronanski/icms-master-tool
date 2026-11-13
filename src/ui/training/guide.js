@@ -332,6 +332,22 @@ window.LS_GUIDE = (function () {
   /* 3.2.3-beta.56 (automatic run, load up to 45 MW on oil): the turbine took 96 T/H while the oil stayed at the 40 ~ 55 T/H of the bypass steps; the main steam fell 61 -> 10 kg/cm2 and the drum swelled to HH (MFT). The load-up steps now show oil ▲ (all lit burners +5 %) while the main steam is under 60 kg/cm2 and oil ▼ over 100 (FHI Part 2 Sect 7 Tab 4 Fig. 2: 60 kg/cm2 at 15 % load, 100 at 30 % = 45 MW; FHI Tab 9 p 2-8-TAB_9-11 step 12 and PR-OPE-5002 27.17: all four burners together to meet the start-up curve), one press each 30 s up / 60 s down (pace NO-SOURCE, ASSUMED_sources row 17), and run x10 while the pressure is under 60. */
   const mspOil = up => { const k = up ? 'mspU' : 'mspD', due = () => (up ? h().MSP() < 60 : h().MSP() > 100), b0 = oilStep(up ? 'Oil ▲ +5 % (main steam under 60 kg/cm², each 30 s)' : 'Oil ▼ −5 % (main steam over 100 kg/cm²)', ['A', 'B', 'C', 'D'], up ? 5 : -5), f0 = b0.f; b0.f = () => ((paceT[k] = simT()), f0()); return Object.assign(b0, { on: () => !due() || simT() - (paceT[k] || -1e9) < (up ? 30 : 60), hide: () => !due() }); };
   /* the Do it for me never presses the ▲ / ▼ trims (the trainee's own hand, #108): the seek of the load-up steps moves the oil instead, by the same rule as the buttons */
+  /* Mina S181-2 CRITICAL (beta.181 Hot restart, step "LOAD UP to 45 MW"): the hand-over to the main valve put the start-up valve
+     LICBR1001B in MANUAL at its MV, 72.7 % (it was making up the MS blow-off loss), with LICBR1001A in AUTO; the blow-off closed with the
+     load, feedwater 86 T/H against 34 T/H steam, level -48 -> +259 mm in 8 min: HH, MFT, turbine trip. The Do it closed the start-up
+     valve 5 % a minute whatever the level. The start-up valve in MANUAL is the operator's: while the level is over the SV of LICBR1001A
+     (+50) or the feedwater runs over the steam flow by more than 10 T/H (the drum fills: mass balance), close it 5 % each 10 s of the
+     plant; otherwise 5 % a minute as the step says. LICBR1001A (then LICBR1001 in 3-element, the next step) takes the level on the
+     main valve. Called in every step of sections 7 ~ 9 (doIt) until the valve is shut */
+  const suSeek = () => {
+    if (md('LICBR1001B') !== 'MAN' || (md('LICBR1001A') !== 'AUTO' && md('LICBR1001') !== 'AUTO')) return;
+    const m = +mv('LICBR1001B');
+    if (!(m > 0)) return;
+    const fill = h().lvl() > 50 || h().FW() > h().MSF() + 10;
+    if (simT() - (paceT.su || -1e9) < (fill ? 10 : 60)) return;
+    paceT.su = simT();
+    A.man('LICBR1001B', Math.max(0, Math.round((m - 5) * 10) / 10));
+  };
   /* Warm / Hot restart load up to 45 MW (Sakura 2026-11-13; Mina live Warm beta.183: the load went to 35 MW before the coal, the main
      steam fell 83 -> 53 kg/cm2 with LOW-LOW alarms; headless Hot beta.175: the main steam fell under 110 and the TCS held the load at 22 MW,
      criterion B 1.3 MAIN STEAM PRESS. NOT LOW, tcs.js TCS_B[6], while the oil came up only under 60, the cold number).
@@ -854,9 +870,28 @@ window.LS_GUIDE = (function () {
       dLv = () => +h().lvl() || 0,
       dueLhdO = () => dPd() < 10 && dLv() > 127 && !fstate('lhd'),
       dueLhdC = () => fstate('lhd') && (dLv() < 0 || dPd() >= 10),
-      dueMbdO = () => dPd() >= 10 && dLv() > 127 && mcvPos('MV-BD1001') <= 0,
-      dueMbdC = () => mcvPos('MV-BD1001') > 0 && (dLv() < 0 || dPd() < 10),
-      dueCbd = () => dPd() >= 10 && mcvPos('MV-BD1002') < 100;
+      /* Mina S179-4 (beta.179 Hot restart: at light-off the level fell +204 -> -1 mm in 2 min, steam flow 0, blow-off 0): the drum was
+         bottled up at +200 mm on purpose (PR-OPE-5004; AN_BU_DRUM), as the reserve for the shrink while the draft cools it and for the
+         firing. The MBD above +127 opened on that reserve at the first warm-up step, about 100 T/H at 99 kg/cm2, and drained it to the
+         close point 0 before any swell came. On a restart (AN.restartKind) the blowdown answers a SWELL only: the level above the
+         bottle-up level +200 and rising over the last minute; close as soon as the level is back under +200 or stops rising, so the
+         reserve stays (headless Hot at 112 kg/cm2: the MBD passes about 116 T/H, a close at +127 left it open to -422 mm, MFT); the CBD the same (PR-OPE-5002 5698: the MBD and CBD "to control the level"). Cold start: unchanged (+127 / 0, CBD once
+         over 10 kg/cm2) */
+      rsK = () => !!(window.AN && AN.restartKind),
+      lvH = { t: -1e9, v: NaN, r: 0 },
+      lvRise = () => {
+        const t = simT();
+        if (t - lvH.t >= 60) {
+          lvH.r = isFinite(lvH.v) && t - lvH.t < 600 ? dLv() - lvH.v : 0;
+          lvH.v = dLv();
+          lvH.t = t;
+        }
+        return lvH.r > 0;
+      },
+      swell = () => !rsK() || (dLv() > 200 && lvRise()),
+      dueMbdO = () => dPd() >= 10 && dLv() > (rsK() ? 200 : 127) && swell() && mcvPos('MV-BD1001') <= 0,
+      dueMbdC = () => mcvPos('MV-BD1001') > 0 && (dLv() < (rsK() ? 200 : 0) || (rsK() && !lvRise()) || dPd() < 10),
+      dueCbd = () => dPd() >= 10 && mcvPos('MV-BD1002') < 100 && (!rsK() || swell());
     const dB = (o, due) => Object.assign(o, { on: () => !due(), hide: () => !due() });
     const DRN = [
       dB(btn('FIELD: lower ring header drains 10 % open (drum level high, under 10 kg/cm²)', () => (A.field('lhd', 10), window.lsEventAdd && lsEventAdd('FIELD', 'FIELD', 'Field operator: lower ring header drains 10 % open (PR-OPE-5002 warming up, swelling)'), '')), dueLhdO),
@@ -1404,7 +1439,12 @@ window.LS_GUIDE = (function () {
            own hand, #108), so nothing lowered the oil. The seek does what the step text says: while the blow-off stands full open, oil ▼
            −5 % on every lit burner, not under 20 % (oilStep), one press each 2 minutes of the plant (the pace of oilBand, ASSUMED_sources row
            17: the pace of the Do it for me, not a plant value) */
-        seek: () => { if ((+mv('PICMS1002') || 0) < 100 || simT() - (paceT.bo57 || -1e9) < 120) return; paceT.bo57 = simT(); oilStep('', ['A', 'B', 'C', 'D'], -5).f(); },
+        /* Mina S181-3 (beta.181 Hot restart: the blow-off stood 50 ~ 71 % open about 90 min at 100 kg/cm2, the hotwell 464 -> -202 mm with
+           the make-up at 100 %): the choked blow-off passes about three times more at 100 than at 35 kg/cm2 (flow x MSP, unit.js U.vlv),
+           so half open at the hot hold is already more than full open at the cold one. The step text: the steam to the air is water the
+           make-up must give back, LCV-MU1110 alone about 58 T/H (valve sheet p90, plant.js). The seek lowers the oil also while the
+           blow-off steam to the air (unit U.mb less the HP bypass U.mhp) is over 58 T/H, not only at 100 % open */
+        seek: () => { const q = Math.max(0, (+U().mb || 0) - (+U().mhp || 0)); if (((+mv('PICMS1002') || 0) < 100 && !(q > 58)) || simT() - (paceT.bo57 || -1e9) < 120) return; paceT.bo57 = simT(); oilStep('', ['A', 'B', 'C', 'D'], -5).f(); },
         /* 3.2.3 automatic run (beta.36 LP heater open): the blow-off passed 60 ~ 70 T/H, the hotwell fell to -306 mm on LCV-MU1110 alone,
            the CEP stopped, the deaerator ran empty, MFT: MV-MU1001 opens when the hotwell is low (muFill) */
         get a() {
@@ -2295,6 +2335,9 @@ window.LS_GUIDE = (function () {
     }
     /* a trim step: the seek moves the stations toward the band of the SOP; the ▲ / ▼ buttons are never pressed here (below) */
     if (s.seek) s.seek();
+    /* S181-2: the start-up valve left in MANUAL at the hand-over is closed through the turbine, coal and load-up sections (headless Hot
+       run: the steps moved on to the coal feeder with the valve at 41 %, feedwater 203 T/H against 145 T/H steam) */
+    if (s.st >= 7 && s.st <= 9) suSeek();
     /* max counts the machines of the step (the START / STOP buttons); its valve and field buttons are pressed as before */
     const isM = a => !!a.stop;
     let n = (s.a || []).filter(a => isM(a) && a.on && a.on()).length;
