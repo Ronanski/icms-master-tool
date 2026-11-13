@@ -37790,7 +37790,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.3-beta.195';
-      c3.textContent += ' · build d3fe2e4'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build f050442'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -103649,6 +103649,8 @@ window.LS_GUIDE = (function () {
   /* STATION 101 M.0101 (ABC-001C), not STATION 102 M.0101 of ABC-017 */
   const m0101 = () => +h().bit('ABC-001C', 'M.0101');
   /* the TARGET MW set of HIC-ULD (ABC-001A COS SI0243), as the 'HIC-ULD A, TARGET 150' button */
+  /* the TARGET MW of HIC-ULD in LOCAL (as the load-up 'HIC-ULD A, TARGET 150'), for the shutdown steps (gate 3.2.3-beta.195: they had no Do it) */
+  const uldSet = v => { A.loc('HIC-ULD'); const d = uldT(); if (d) d.S.rt.ext[d.a] = v; return ''; };
   const uldT = () => { const s = station('HIC-ULD'), d = s && (s.T.drv[s.b.i[s.b.svI]] || []).find(z => z.k === 'AMT'); return d ? { S: s.T, a: d.a } : null; };
   const bmRdy = () => h().MSF() > 230 && bit('M.2013') < 0.5;
   const fw3Rdy = () => h().FW() > 110 && bit('M.0228') < 0.5;
@@ -103956,7 +103958,17 @@ window.LS_GUIDE = (function () {
     bed750P.t = simT();
     bed750P.tb = tb;
     bed750P.p = p;
-    if (!(tb > 760) || !(fT > 760) || !(p > 118) || !(fP > 118) || simT() - (paceT.b750 || -1e9) < 60) return;
+    if (!(tb > 760) || !(fT > 760) || simT() - (paceT.b750 || -1e9) < 60) return;
+    /* gate 3.2.3-beta.195 (Worker shutdown stuck here 300 plant min at MSP 117): with the pressure at or under 118 the fuel was never
+       lowered and the bed stayed hot. The operator then unloads the turbine a little (EIC-TM -0.5 MW, not under 40 MW) so the
+       pressure comes back and the fuel can come down (PR-OPE-5003: main steam 115 ~ 126 kg/cm2) */
+    if (!(p > 118) || !(fP > 118)) {
+      if (!(fP > p) && md('EIC-TM') === 'MAN' && +h().MW() > 40 && isFinite(+mv('EIC-TM'))) {
+        paceT.b750 = simT();
+        A.man('EIC-TM', Math.round((+mv('EIC-TM') - 0.5) * 10) / 10);
+      }
+      return;
+    }
     paceT.b750 = simT();
     const ft = md('FIC-CM') === 'MAN' ? 'FIC-CM' : 'HIC-BM',
       m = +mv(ft);
@@ -105067,10 +105079,10 @@ window.LS_GUIDE = (function () {
       { st: 10, sec: 47, t: 'Return HIC-ULD to 150 MW (▲▲)', d: 'Raise the target again.', c: b.OUT('HIC-ULD', 149, null, 'MW'), fps: ['HIC-ULD'] },
       { st: 10, sec: 47, t: 'Hold 150 MW', d: 'MSP 118 ~ 128, drum level ±150 mm, O₂ 3 ~ 6 %.', c: b.HOLD(300, b.ALL(b.VAL('MW', 147, 153), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150), b.VAL('O2', 3, 6))), wait: 1 },
       /* ---- 11 normal shutdown (plan e4, PR-OPE-5003-01 steps 4.1 ~ 4.20; the checks are live.js X5) ---- */
-      { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Load change rate HIC-MWRL 1.2 MW/min', d: 'PR-OPE-5003: 150 to 90 MW at 1.2 MW per minute. The CCS stays in AUTO; you set only the rate and the target MW.', c: b.X5[0][1], fps: ['HIC-MWRL'] },
-      { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Lower HIC-ULD to 90 MW (▼)', d: 'The CCS lowers the coal and the air with the load.', c: b.X5[1][1], fps: ['HIC-ULD'] },
+      { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Load change rate HIC-MWRL 1.2 MW/min', d: 'PR-OPE-5003: 150 to 90 MW at 1.2 MW per minute. The CCS stays in AUTO; you set only the rate and the target MW.', c: b.X5[0][1], fps: ['HIC-MWRL'], a: [btn('HIC-MWRL 1.2 MW/min', () => A.man('HIC-MWRL', 1.2), () => Math.abs((+mv('HIC-MWRL') || 0) - 1.2) < 0.05)] },
+      { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Lower HIC-ULD to 90 MW (▼)', d: 'The CCS lowers the coal and the air with the load.', c: b.X5[1][1], fps: ['HIC-ULD'], a: [btn('HIC-ULD TARGET 90', () => uldSet(90), () => { const d = uldT(); return !!d && +d.S.rt.ext[d.a] <= 91; })] },
       { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Hold 90 MW for 8 ~ 10 min', d: 'PR-OPE-5003: hold at 90 MW before going lower. Drum level ±150 mm. O₂ trim AICFG112: AUTO while the steam is over 220 T/H; under 220 T/H the drawing forces it MANUAL (ABC-002 M.0102), then put its output at 50 % (neutral: LN15 0 % = SA × 0.8, 50 % = × 1.0). O₂ runs high at low load: the air demand LN5 does not go under 446 T/H.', c: b.X5[2][1], wait: 1 },
-      { st: 11, sec: 49, req: ['bm', 'tm'], t: 'HIC-MWRL 0.6 MW/min, HIC-ULD toward 45 MW: the CCS lets go under 220 T/H steam', d: 'PR-OPE-5003: 90 to 45 MW at 0.6 MW per minute. At 72 MW (or feedwater 230 T/H) press 1 ELEMENT for the drum level (ABC-010 M.054F; below 100 T/H steam for 60 s the drawing selects it by itself, M.022C). When the steam flow falls below 220 T/H (about 62 ~ 73 MW, it depends on the pressure and the heaters in service), the back-up command M.2013 (ABC-001C) puts HIC-BM and EIC-TM in MANUAL by itself (CLAUDE.md BU-CMD); HIC-ULD then tracks the MW.', c: b.X5[3][1], fps: ['HIC-MWRL', 'HIC-ULD', 'HIC-BM'], a: [btn('Drum level 1 ELEMENT (ABC-010 M.054F)', () => A.push('M.054F'))] },
+      { st: 11, sec: 49, req: ['bm', 'tm'], t: 'HIC-MWRL 0.6 MW/min, HIC-ULD toward 45 MW: the CCS lets go under 220 T/H steam', d: 'PR-OPE-5003: 90 to 45 MW at 0.6 MW per minute. At 72 MW (or feedwater 230 T/H) press 1 ELEMENT for the drum level (ABC-010 M.054F; below 100 T/H steam for 60 s the drawing selects it by itself, M.022C). When the steam flow falls below 220 T/H (about 62 ~ 73 MW, it depends on the pressure and the heaters in service), the back-up command M.2013 (ABC-001C) puts HIC-BM and EIC-TM in MANUAL by itself (CLAUDE.md BU-CMD); HIC-ULD then tracks the MW.', c: b.X5[3][1], fps: ['HIC-MWRL', 'HIC-ULD', 'HIC-BM'], a: [btn('HIC-MWRL 0.6 MW/min', () => A.man('HIC-MWRL', 0.6), () => Math.abs((+mv('HIC-MWRL') || 0) - 0.6) < 0.05), btn('HIC-ULD TARGET 45', () => uldSet(45), () => { const d = uldT(); return !!d && +d.S.rt.ext[d.a] <= 46; }), btn('Drum level 1 ELEMENT (ABC-010 M.054F)', () => A.push('M.054F'))] },
       { st: 11, sec: 49, t: 'By hand: EIC-TM to 45 MW, HIC-BM with it', d: 'You are the CCS now. Lower the turbine master EIC-TM about 0.6 MW per minute and the boiler master HIC-BM with it so the main steam pressure stays 115 ~ 126 kg/cm², under the MS blow-off set point 128: above it the blow-off opens and its steam leaves the cycle. Too fast on EIC-TM: the pressure rises; too fast on HIC-BM: it falls. At 60 MW: staging air upper 10 %, lower 15 ~ 20 %.', c: b.X5[4][1], fps: ['EIC-TM', 'HIC-BM'], seek: byHand(45, 0.6, 's45'), a: byHandA },
       { st: 11, sec: 49, t: 'Bed 750 °C: PA and SA air to MANUAL', d: 'PR-OPE-5003: at a bed of 750 °C put the SA and PA fans in manual, stop the limestone and the sand, and run the air heater soot blower continuously. ABC-004A: with the PA or SA air flow control out of REMOTE the coal master FIC-CM goes MANUAL by itself (M.0130 force manual and tracking, also on any fuel flow signal abnormal or a feeder demand above 83.3 %): from here you set the coal by hand on FIC-CM.', c: b.X5[5][1], fps: ['FICFA1071', 'FICFA1081', 'FIC-CM'], seek: bed750, a: [btn('FICFA1071 M', () => A.man('FICFA1071', mv('FICFA1071'))), btn('FICFA1081 M', () => A.man('FICFA1081', mv('FICFA1081')))] },
       {
@@ -115845,7 +115857,7 @@ window.LS_GUIDE = (function () {
         'Engineering = white symbols, only wires, values and valves coloured'
       );
     const ver = (document.title.match(/v\d[\w.-]*/) || [''])[0];
-    row('Version', E('span', 'scsver', ver + ' · build d3fe2e4'));
+    row('Version', E('span', 'scsver', ver + ' · build f050442'));
   }
   function openSet(near) {
     if (!set) {
