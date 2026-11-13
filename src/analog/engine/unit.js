@@ -3602,12 +3602,13 @@ function anUnitStep0(dt) {
      8 h with the draft running) and, bottled (fans off), by the ambient. Steam-equivalent heat loss: kcool (T/H at the anchor air
      and 300 C above the ambient; air x 0.24 kcal/kg C x dT / 500 kcal/kg, ASSUMED 60) x air share + kamb (ASSUMED 1 T/H: about
      1.5 kg/cm2 per hour bottled), times (Tw - Tamb) / 300, fading in as the firing falls below 10 % of the anchor fuel (a fired
-     boiler already carries its flue gas loss in the fuel -> steam line). Start-up / shutdown physics only (U.cold) */
-  let Qloss = 0;
-  if (U.cold) {
-    const unf = Math.max(0, 1 - Fe / (0.1 * U.F0));
+     boiler already carries its flue gas loss in the fuel -> steam line).
+     3.2.3-beta.N S163-6 (Mina beta.163, Normal shutdown from "At 150 MW"): the cooling was for U.cold only, so a boiler loaded at 150 MW
+     (U.cold false) and then shut down held its drum at 101.07 kg/cm2 for 140 min with the bed falling 578 -> 234 C and the PA / SA air
+     still blowing. An unfired boiler cools the same whatever start it came from: the loss now applies in both paths (at load unf = 0,
+     no change) */
+  const unf = Math.max(0, 1 - Fe / (0.1 * U.F0)),
     Qloss = unf * (U.kcool * as + U.kamb) * Math.max(0, (U.Tw - U.Tamb) / 300);
-  }
   if (U.cold) {
     const ts = tsatOf(U.Pd),
       /* the water can only take heat from a hotter furnace (Mina item 12d: water 147 C with bed 141 C) */
@@ -3620,7 +3621,9 @@ function anUnitStep0(dt) {
       U.Tw = tsatOf(U.Pd);
     }
   } else {
-    U.Pd = Math.max(0, U.Pd + ((U.Qs - U.ms - U.mb - (U.msb || 0)) * dt) / U.C);
+    /* S163-6: unfired, the saturated water gives its heat too (C + Cw x dTsat/dP, as the U.cold path); fired (unf = 0) the load path
+       keeps its steam storage C alone */
+    U.Pd = Math.max(0, U.Pd + ((U.Qs - Qloss - U.ms - U.mb - (U.msb || 0)) * dt) / (U.C + unf * U.Cw * steamDTsat(U.Pd)));
     U.Tw = tsatOf(U.Pd);
   }
   /* bed temperature: firing share over air share, first order */
