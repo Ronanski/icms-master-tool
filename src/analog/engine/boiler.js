@@ -413,7 +413,6 @@ function anFanStep(U, dt) {
   const qi = g.map((x, i) => (sil[i] && g0[i] > 0 ? (K.fa.Q0 * g0[i]) / K.fa.z0 : g[0] + g[1] > 0 ? (qfa * x) / (g[0] + g[1]) : 0));
   const cur = anFanI;
   U.fnI = U.fnI || [0, 0, 0, 0, 0];
-  /* air power over the snapshot one; a blower on its silencer: its own flow on the system curve (P ~ Q^2), as if into the header */
   /* S160-2 (Mina beta.160: FA blower B STOPPED while it ran on its own at the 25 % line-up damper, then started again): the air power
      was its flow x the HEADER pressure (P ~ Q^2), so one blower at about 14 T/H drew 21.5 A, under the L.L. 24.6 A of DITL-28B row 12,
      and the drawing tripped it (DITL-28A #B row 17 M.2549 FAB B CURRENT L.L.). The FA blower is a constant speed multistage centrifugal
@@ -422,7 +421,10 @@ function anFanStep(U, dt) {
      the rest, so its air power follows its own flow at the head of the snapshot (9.png 37.3 A at 26.3 T/H). The blower curve is not in
      the docs (NO-SOURCE: head kept constant). The drawing itself bounds it: a running blower at the PR-OPE-5002 line-up damper (23 ~ 27 %,
      ABC-014 M.3115 / M.3116) is not tripped by its own current L.L. (now about 28 A at 14 T/H) */
-  const pw = i => (sil[i] && g0[i] > 0 ? Math.pow(qi[i] / K.fa.Q0, 3) : qi[i] / K.fa.Q0);
+  /* 3.2.3-beta.183 (SOHEE): the blower on its open silencer follows the same rule (own flow at the head of the snapshot). The cube of
+     the flow ratio (fan law) was for a change of speed, not of a damper at constant speed: after instrument air loss the inlet damper
+     springs open (100 %, P&ID 500-0ds) and the cube gave 278 A, over the 0 ~ 98 A range of IT-F1055A (I/O list); now about 65 A */
+  const pw = i => qi[i] / K.fa.Q0;
   U.fnIa = lagI('ia', cur(K.I0.fa, fr[0], pw(0)), 2);
   U.fnIb = lagI('ib', cur(K.I0.fa, fr[1], pw(1)), 2);
   /* PAF / SAF: flow of the loop model, outlet pressure on the system curve */
