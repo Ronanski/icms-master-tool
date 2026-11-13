@@ -464,6 +464,9 @@ function anDefaults(S) {
         P.h = e.h;
         P.l = e.l;
         P.ll = e.ll;
+        /* the reset value of the source, where it gives one (TILO1002x: back at 50 / 40, IBD TD-1); panel.js almLv */
+        if (e.hr != null) P.hr = e.hr;
+        if (e.lr != null) P.lr = e.lr;
         b.dflt = { k: 'ALM', e };
       }
     } else if (b.k === 'TP') {

@@ -794,6 +794,8 @@ const AN_DEF = {
       h: 52,
       l: 38,
       ll: null,
+      hr: 50 /* back at 50 C (IBD 310SC90-794 TD-1) */,
+      lr: 40 /* back at 40 C (IBD 310SC90-794 TD-1) */,
       u: '°C',
       desc: 'Turbine oil cooler outlet oil temperature A',
       /* 3.2.1 (LISA): the alarm list has no set point for TE-LO1002-1 / -2 (FHI package, "-"). The TCS alarms them: IBD 310SC90-794
@@ -807,6 +809,8 @@ const AN_DEF = {
       h: 52,
       l: 38,
       ll: null,
+      hr: 50 /* back at 50 C (IBD 310SC90-794 TD-1) */,
+      lr: 40 /* back at 40 C (IBD 310SC90-794 TD-1) */,
       u: '°C',
       desc: 'Turbine oil cooler outlet oil temperature B',
       /* 3.2.1 (LISA): the alarm list has no set point for TE-LO1002-1 / -2 (FHI package, "-"). The TCS alarms them: IBD 310SC90-794

@@ -733,13 +733,20 @@ function cosStatus(S, sh, e) {
   return box;
 }
 /* nm: in the engine (src/analog/engine/names.js) */
+/* Mina S165-4 (beta.165 live run, 258 lines in 3 h): TILO10021 / 22 chattered HIGH / back to normal around 52 C. A point whose source gives
+   a reset value has it (P.hr: a HIGH clears only at or under it, P.lr: a LOW only at or over it; face-defaults.js hr / lr, e.g. IBD
+   310SC90-794 TD-1 "not OK at 52 C and above (back at 50)"). The last level is kept on the block (b._alv); no reset value = as before */
 const almLv = (b, x) => {
   const P = b.p;
-  if (P.hh != null && x >= P.hh) return 'HIGH-HIGH';
-  if (P.h != null && x >= P.h) return 'HIGH';
-  if (P.ll != null && x <= P.ll) return 'LOW-LOW';
-  if (P.l != null && x <= P.l) return 'LOW';
-  return 'normal';
+  let lv = 'normal';
+  if (P.hh != null && x >= P.hh) lv = 'HIGH-HIGH';
+  else if (P.h != null && x >= P.h) lv = 'HIGH';
+  else if (P.ll != null && x <= P.ll) lv = 'LOW-LOW';
+  else if (P.l != null && x <= P.l) lv = 'LOW';
+  else if (b._alv === 'HIGH' && P.hr != null && x > P.hr) lv = 'HIGH';
+  else if (b._alv === 'LOW' && P.lr != null && x < P.lr) lv = 'LOW';
+  b._alv = lv;
+  return lv;
 };
 AN.almLv = almLv;
 function swSet(sh, b, m) {

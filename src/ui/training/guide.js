@@ -1727,8 +1727,13 @@ window.LS_GUIDE = (function () {
         st: 11,
         sec: 49,
         t: '30 MW: turbine SHUT-DOWN (MFT follows)',
-        d: 'PR-OPE-5003: take out extractions 5 and 4, then trip the turbine. ATS step 8 opens 52G and 41 and trips the turbine below 20 % load. On this unit the turbine trip makes an MFT (DITL drawing); the procedure then keeps the start-up burners and the bypass: that part waits for the bottle-up section.',
+        d: 'PR-OPE-5003: take out extractions 5 and 4, then trip the turbine. ATS step 8 opens 52G and 41 and trips the turbine below 20 % load (under 30.0 MW): if the load is still 30 MW or more, lower EIC-TM a little first. On this unit the turbine trip makes an MFT (DITL drawing); the procedure then keeps the start-up burners and the bypass: that part waits for the bottle-up section.',
         c: b.X5[11][1],
+        /* Mina S177-1 (beta.177): the step before ends at MW <= 31 (check.js X5 t30), so the automatic run left EIC-TM at 30.8 MW, but ATS
+           step 8 waits for a generator load below 20 % = 30.0 MW (310SC90-775 page 29, 776 page 14 criterion 2.11; tcs.js case 8): the
+           shut-down waited 16 min until EIC-TM was lowered by hand. Here the same by-hand pace lowers EIC-TM to 29.5 MW (under 20 %) */
+        seek: byHand(29.5, 0.4, 's30sd'),
+        fps: ['EIC-TM', 'FIC-CM'],
         /* S149-3 (Mina beta.149): a plant from the cold start-up whose ATS stood at step 6 (NORMAL OPERATION never pressed) had SHUT-DOWN
            refused ("Finish step 7 NORMAL OPERATION", 310SC90-775: step 8 follows step 7) and this step had no way to press it */
         get a() {
@@ -1743,6 +1748,7 @@ window.LS_GUIDE = (function () {
             sdWait = () => !sdOn() && !(out54() && TC().step >= 7);
           return [
             ...EXT.filter(e => e[2] >= 4).flatMap(extA),
+            Object.assign(step('EIC-TM ▼ −0.5 MW', 'EIC-TM', -0.5), { hide: () => trp() || !(h().MW() >= 30) }),
             btn('NORMAL OPERATION (ATS step 7)', () => A.tcs('normal'), () => trp() || TC().step >= 7),
             Object.assign(btn('Turbine SHUT-DOWN (ATS step 8)', () => A.tcs('shutdown'), () => sdOn() || sdWait()), { hide: sdWait }),
             Object.assign(btn('Turbine trip (TA-1)', () => A.tcs('trip'), () => trp() || !(TC().step >= 8)), { hide: () => trp() || !(TC().step >= 8) })
