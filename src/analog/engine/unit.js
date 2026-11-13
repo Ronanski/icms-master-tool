@@ -2575,7 +2575,7 @@ const AN_MT = {
     ['SAF', 'DITL-27A', 'FA1054-', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2],
     ['FAB-A', 'DITL-28A', 'FA1055-A', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2],
     ['FAB-B', 'DITL-28A #B', 'FA1055-B', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2],
-    /* 3.2.3-beta.177 (SOHEE): the BFWP P-1115A / B (DITL-23A and its #B; DITL-23B rows 9 ~ 23): pump bearings 1 / 2, motor bearings 3 / 4
+    /* 3.2.3-beta.178 (SOHEE): the BFWP P-1115A / B (DITL-23A and its #B; DITL-23B rows 9 ~ 23): pump bearings 1 / 2, motor bearings 3 / 4
        (forced oil, KSB LOS: the running value Tb stays NO-SOURCE; KSB "List of measuring points" PR73686-00D: pump bearing alarm
        >= 90 C, DITL-23B > 100 C), winding U / V / W from the closed cooling water (AN_MT.cw below), vibration x1 / x2 (NO-SOURCE 1.8 mm/s;
        TECO data sheet: below 2.5 mm/s 0-P at no load) */
@@ -2606,7 +2606,7 @@ const AN_MT = {
   rise: 90,
   rB: 25.3,
   tauMB: 882,
-  /* 3.2.3-beta.177 (SOHEE): MOTOR WINDING ON THE CLOSED COOLING WATER. The BFWP motor (TECO AEZW-S2, 3550 kW 2 P 6600 V, data sheet
+  /* 3.2.3-beta.178 (SOHEE): MOTOR WINDING ON THE CLOSED COOLING WATER. The BFWP motor (TECO AEZW-S2, 3550 kW 2 P 6600 V, data sheet
      3A057H186-71069 REV.05 and outline 3A040S670 REV.06, document-references "Boiler Feed Water Pump MOTOR DATA SHEET.pdf"): cooling
      IC81W (totally enclosed, water-to-air cooler: the winding sees the cooling water, not the room), Ins. Class F, 355 A and eff. 96.2 %
      at 100 % load, "Temp. Rise Limit (Res.) Stator 80 C at S.F. 1.0"; heat exchanger water inlet 5 ~ 37 C, 430 ~ 470 L/min, 2.5 ~ 5
@@ -3645,8 +3645,12 @@ function anUnitStep0(dt) {
      (U.cold false) and then shut down held its drum at 101.07 kg/cm2 for 140 min with the bed falling 578 -> 234 C and the PA / SA air
      still blowing. An unfired boiler cools the same whatever start it came from: the loss now applies in both paths (at load unf = 0,
      no change) */
-  const unf = Math.max(0, 1 - Fe / (0.1 * U.F0)),
-    Qloss = unf * (U.kcool * as + U.kamb) * Math.max(0, (U.Tw - U.Tamb) / 300);
+  /* Sakura beta.175 (Hot restart, pressure 100 -> 81 before light-off): the cooling read the air share with the 0.05 floor of the bed
+     (as), so a bottled boiler with every fan stopped lost kcool x 0.05 + kamb = 4 T/H, not the kamb 1 T/H of its own note (about 1.5
+     kg/cm2 per hour): about 4.6 kg/cm2 per hour in the headless Hot run. The cooling reads the air that flows (0 with the fans off) */
+  const asC = U.taf0 > 0 ? Math.max(0, taf / U.taf0) : 1,
+    unf = Math.max(0, 1 - Fe / (0.1 * U.F0)),
+    Qloss = unf * (U.kcool * asC + U.kamb) * Math.max(0, (U.Tw - U.Tamb) / 300);
   if (U.cold) {
     const ts = tsatOf(U.Pd),
       /* the water can only take heat from a hotter furnace (Mina item 12d: water 147 C with bed 141 C) */

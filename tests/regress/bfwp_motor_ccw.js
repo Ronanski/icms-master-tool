@@ -1,4 +1,4 @@
-// 3.2.3-beta.177 (SOHEE): BFWP motor winding temperature from the closed cooling water (unit.js AN_MT.cw). TECO data sheet
+// 3.2.3-beta.178 (SOHEE): BFWP motor winding temperature from the closed cooling water (unit.js AN_MT.cw). TECO data sheet
 // 3A057H186-71069: IC81W (water-to-air cooler), 355 A, stator rise limit 80 C at S.F. 1.0, eff. 96.2 %, cooler water 430 ~ 470 L/min.
 // From "Start at 150 MW", 1 h of plant. Checks:
 //   - running BFWP-A winding = ACW supply (TT-CW1153) + 80 x (I / 355)^2 within 1 C, below the DITL-23B set point 150 C;
