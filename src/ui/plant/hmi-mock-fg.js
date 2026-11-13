@@ -45,7 +45,16 @@
       'PT-FA1055-B': 'ux:fnFaP.1',
       'PT-FG1141-A': 'ux:fnGi.0',
       'PT-FG1141-B': 'ux:fnGi.1',
-      'PT-FG1151': 'fnGo'
+      'PT-FG1151': 'fnGo',
+      /* stack CEMS Z-1057 (I/O list STN101 AI0464 ~ AI0471; S199-1): SOx from its logic transmitter, the rest the plant estimate of 007 */
+      'AT-FG1057-1': 'lg:AIFG10571',
+      'AT-FG1057-2': 'est:AIFG10572',
+      'AT-FG1057-3': 'est:AIFG10573',
+      'AT-FG1057-4': 'est:AIFG10574',
+      'AT-FG1057-5': 'est:AIFG10575',
+      'AT-FG1057-6': 'est:AIFG10576',
+      'FT-FG1057-7': 'est:FIFG10577',
+      'TT-FG1057-8': 'est:TIFG10578'
     }
   });
 })();

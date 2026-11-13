@@ -88,7 +88,11 @@
       const tags = new Set([...qa('[data-v]')].map(e => e.dataset.v));
       for (const tag of tags) {
         api.reg(/\|/.test(tag) ? { t: 'val', tag, ref: tag, v: '' } : { t: 'val', tag, v: '' }, X => ((LOG[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)), null);
-        if (def.unit && def.unit[tag] && !/^(tt|ux):/.test(def.unit[tag])) api.reg({ t: 'val', tag: 'UNIT.' + def.unit[tag], v: '' }, X => ((PM[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)), null);
+        /* Mina S199-1 (beta.199: stack dust and opacity '-----' on AIR AND FLUE GAS, also after ESP OFF): the stack CEMS AT-FG1057-1 ~ 6,
+           FT / TT-FG1057-7 / 8 had no source on this page. 'lg:TAG' = the transmitter of the logic under its DCS tag (AIFG10571 SOx);
+           'est:TAG' = the plant estimate of the 007 page (hmi2.js PLANT_V2.EST, the same numbers on both pages) */
+        if (def.unit && /^lg:/.test(def.unit[tag] || '')) api.reg({ t: 'val', tag: def.unit[tag].slice(3), v: '' }, X => ((PM[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)), null);
+        else if (def.unit && def.unit[tag] && !/^(tt|ux|est|lg):/.test(def.unit[tag])) api.reg({ t: 'val', tag: 'UNIT.' + def.unit[tag], v: '' }, X => ((PM[tag] = X && isFinite(X.v) ? +X.v : null), showV(tag)), null);
         showV(tag);
         qa(`[data-v="${tag}"]`).forEach(t => {
           const ti = document.createElementNS(NS, 'title');
@@ -623,7 +627,50 @@
           c.setAttribute('stroke', on ? C.run : C.dim);
         });
       };
-      const tickAll = () => (tick0(), tickTT(), tickMov(), tickMovR(), tickTP());
+      /* 'est:TAG' (S199-1): the inputs of the estimate, the same as 007 and 038 (hmi-aph.js); computed each tick, so a field change
+         without a new transmitter value (ESP OFF: dust and opacity) shows within half a second */
+      const ES = Object.entries(def.unit || {}).filter(([, k]) => /^est:/.test(k));
+      const EE = { tb: null, pa0: 354, sa0: 213, fa0: 26.3, idf: 1, paf: 1, saf: 1 };
+      if (ES.length) {
+        const lv = (ref, tag, set) => api.reg({ t: 'val', tag: tag || '', ref: ref || undefined, v: '' }, X => set(X && isFinite(X.v) ? +X.v : null), null);
+        const avg = (x, y) => (x != null && y != null ? (x + y) / 2 : x != null ? x : y);
+        lv('pv:FICFA1071', '', v => (EE.fpa = v));
+        lv('pv:FICFA1081', '', v => (EE.fsa = v));
+        lv('', 'FIFA1055', v => (EE.ffa = v));
+        lv('', 'TIFA1076', v => (EE.tpo = v));
+        lv('', 'TIFA1086', v => (EE.tso = v));
+        lv('', 'PIFG1085', v => (EE.pf0 = v));
+        lv('', 'TIFA1072', v => (EE.ta = v));
+        lv('', 'TIFA1082', v => (EE.ts = v));
+        let oa = null,
+          ob = null;
+        lv('', 'AIFG1122', v => ((oa = v), (EE.o2 = avg(oa, ob))));
+        lv('', 'AIFG1123', v => ((ob = v), (EE.o2 = avg(oa, ob))));
+        const FAN = { idf: 'ABC-008|M.3304', saf: 'ABC-007|M.3303', paf: 'ABC-007|M.3302' };
+        for (const k in FAN) lv(FAN[k], '', v => (EE[k] = v == null ? 1 : v > 0.5 ? 1 : 0));
+        const TB = {};
+        for (const c of 'ABCDEFGHI')
+          for (const pre of ['TIFG1091', 'TIFG1090'])
+            lv('', pre + c, v => {
+              TB[pre + c] = v;
+              const Lt = Object.values(TB).filter(x => x != null);
+              EE.tb = Lt.length ? Lt.reduce((x, y) => x + y, 0) / Lt.length : null;
+            });
+      }
+      const tickEst = () => {
+        if (!ES.length) return;
+        const P2 = window.PLANT_V2 || {},
+          EST = P2.EST || {};
+        if (P2.estPrep) call(() => P2.estPrep(EE));
+        for (const [tag, k] of ES) {
+          const f = EST[k.slice(4)];
+          let v = null;
+          if (f) v = call(() => f(EE), null);
+          const nv = v != null && isFinite(v) ? +v : null;
+          if (PM[tag] !== nv) (PM[tag] = nv), showV(tag);
+        }
+      };
+      const tickAll = () => (tick0(), tickTT(), tickEst(), tickMov(), tickMovR(), tickTP());
       tickAll();
       HSYM.every(g, 500, tickAll);
       /* faceplates: click on the equipment = CONTROL, the Y / N square = PERMISSIVE · TREND · MONITOR (#59) */
