@@ -121,8 +121,14 @@ setInterval(() => {
   if (!live() || !AN.run || AN._loading || anMirror()) return void (anLastT = 0);
   const sh = cs();
   if (!sh || !sh.S) return;
-  const dt = anTick(),
-    n = anSteps(dt);
+  /* Jennie beta.188 (headless Normal shutdown at x300, step 132): one world = one time. The plant does not run more than 60 s ahead of the
+     DITL world (world.js scanJob: W._owe = plant time its last job could not scan): where the PC cannot give x300 to both, the plant waits
+     for the logic (the real speed is lower) and a press of the dock or the guide is seen by the logic at the time of the plant */
+  const Wd = window.WORLD,
+    lag = Wd && Wd.on && Wd.live && AN.cat === 'an' ? +Wd._owe || 0 : 0,
+    dt = Math.min(anTick(), Math.max(0, 60 - lag));
+  if (!(dt > 0)) return;
+  const n = anSteps(dt);
   histRec(sh, 1);
   const t0_ = performance.now(),
     K = AN.tierK || 1;
