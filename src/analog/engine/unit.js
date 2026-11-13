@@ -223,7 +223,7 @@ const AN_UNIT = {
        air (the fuel is under 10 % of the gas mass). The gas cannot give more than it carries: Q <= gas x 1.15 kJ/kg K (flue gas, textbook)
        x (gas - metal).
      - steam side: the steam leaves at the metal temperature (film coefficient far above the gas side); it takes steam x 2.2 kJ/kg K x
-       (metal - inlet), inlet = saturation (SH) / the steam from the HP bypass or the HP exhaust, taken at saturation (RH, simplified).
+       (metal - inlet), inlet = saturation (SH) / the cold reheat temperature, HP bypass outlet and HP exhaust mixed (RH, beta.227).
        No steam flow: the metal and the stagnant steam heat from the gas alone. */
   shM: 353.26e3 * 0.5 /* kJ/K */,
   rhM: 243.1e3 * 0.5 /* kJ/K */,
@@ -4746,7 +4746,10 @@ function anUnitStep0(dt) {
       qR *= k;
     }
     const sS = ((U.ms + U.mb + (U.msb || 0)) / 3.6) * 2.2 * Math.max(0, U.TmS - tsat),
-      sR = (((U.mhp || 0) + U.ms) / 3.6) * 2.2 * Math.max(0, U.TmR - tsat);
+      /* live Cold start 2026-11-14: the reheater inlet is the cold reheat line (P4S3: cold reheat -> R-1 -> R-2), the mix of the HP
+         exhaust and the HP bypass outlet of anUnitStepX (X.T.cr, last scan), not the drum saturation (293 C against 331 C live) */
+      tcr = U.xt && U.xt.T && isFinite(U.xt.T.cr) ? U.xt.T.cr : tsat,
+      sR = (((U.mhp || 0) + U.ms) / 3.6) * 2.2 * Math.max(0, U.TmR - tcr);
     U.TmS = Math.max(U.Tamb, U.TmS + ((qS - sS) * dt) / (U.shM || 176630));
     U.TmR = Math.max(U.Tamb, U.TmR + ((qR - sR) * dt) / (U.rhM || 121550));
     /* live Cold start (user 2026-11-14 "Ang sabe kasi ay RH steam temp eh?"): TT-HR1002 is on the reheater outlet pipe, outside the gas
