@@ -2574,7 +2574,13 @@ const AN_MT = {
     ['PAF', 'DITL-26A', 'FA1053-', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2],
     ['SAF', 'DITL-27A', 'FA1054-', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2],
     ['FAB-A', 'DITL-28A', 'FA1055-A', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2],
-    ['FAB-B', 'DITL-28A #B', 'FA1055-B', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2]
+    ['FAB-B', 'DITL-28A #B', 'FA1055-B', ['1', '2', '3', '4'], ['1', '2', '3', '4'], 2.2],
+    /* 3.2.3-beta.178 (SOHEE): the BFWP P-1115A / B (DITL-23A and its #B; DITL-23B rows 9 ~ 23): pump bearings 1 / 2, motor bearings 3 / 4
+       (forced oil, KSB LOS: the running value Tb stays NO-SOURCE; KSB "List of measuring points" PR73686-00D: pump bearing alarm
+       >= 90 C, DITL-23B > 100 C), winding U / V / W from the closed cooling water (AN_MT.cw below), vibration x1 / x2 (NO-SOURCE 1.8 mm/s;
+       TECO data sheet: below 2.5 mm/s 0-P at no load) */
+    ['BFWP-A', 'DITL-23A', 'FW1115-A', ['1', '2', '3', '4'], ['11', '12', '21', '22', '31', '32', '41', '42'], 1.8],
+    ['BFWP-B', 'DITL-23A #B', 'FW1115-B', ['1', '2', '3', '4'], ['11', '12', '21', '22', '31', '32', '41', '42'], 1.8]
   ],
   Tb: 55,
   Tw: 85,
@@ -2599,8 +2605,58 @@ const AN_MT = {
   sf: 1.15,
   rise: 90,
   rB: 25.3,
-  tauMB: 882
+  tauMB: 882,
+  /* 3.2.3-beta.178 (SOHEE): MOTOR WINDING ON THE CLOSED COOLING WATER. The BFWP motor (TECO AEZW-S2, 3550 kW 2 P 6600 V, data sheet
+     3A057H186-71069 REV.05 and outline 3A040S670 REV.06, document-references "Boiler Feed Water Pump MOTOR DATA SHEET.pdf"): cooling
+     IC81W (totally enclosed, water-to-air cooler: the winding sees the cooling water, not the room), Ins. Class F, 355 A and eff. 96.2 %
+     at 100 % load, "Temp. Rise Limit (Res.) Stator 80 C at S.F. 1.0"; heat exchanger water inlet 5 ~ 37 C, 430 ~ 470 L/min, 2.5 ~ 5
+     kgf/cm2. The water is the ACW supply (unit.js AN_ACW U.acT2 = TT-CW1153; the BFP is one of its users).
+       winding   T = water inlet + 80 x (I / 355)^2 (the rise limit at the rated current, with the square of the current: the copper loss)
+                 + the extra warming of the water when its flow is below the design: loss x (1 / Cw(flow) - 1 / Cw(design)), where
+                 loss = 3550 x (1 / 0.962 - 1) = 140.3 kW x (I / 355)^2 (CALC) and Cw(design) = 450 L/min (the middle of 430 ~ 470) x
+                 0.991 kg/L x 4.18 / 60 = 31.07 kW/K (CALC: 4.5 C through the cooler at full load); the water flow of the motor =
+                 450 L/min x ACW flow / 1500 m3/h (the same share rule as the turbine oil cooler, NO-SOURCE: the branch flow is not
+                 measured), at least 2 % (a closed loop still moves a little by convection, NO-SOURCE) and at most 250 C;
+                 I = the BFWP current of the model (U.fwI0 / fwI1); time constant tauW (NO-SOURCE).
+     Chain: ACWP trip (no standby) -> no cooling water -> BFWP winding rises -> DITL-23B row 13 ~ 15 > 150 C (alarm / trip of DITL-23A).
+     The CEP motor (TECO AEJG-WT 325 kW 4 P, KSB GA drawing F 30157 A) is a finned, fan cooled motor: not on the closed cooling water. */
+  cw: { 'BFWP-A': [355, 'fwI0'], 'BFWP-B': [355, 'fwI1'] },
+  cwRise: 80,
+  cwLoss: 140.3,
+  cwC: 31.07,
+  cwMin: 0.02,
+  cwMax: 250,
+  /* 3.2.3-beta.179 (SOHEE): BFWP BEARINGS FROM THE LUBE OIL SYSTEM (KSB "30 LPM LUBE OIL SYSTEM", L7 BFP D-5 LOS O&M manual, SLPL
+     SL/WO/2142: data sheet and "DATA SHEET LUBE OIL COOLER"): one LOS per pump feeds the pump bearings 1 / 2 and the motor bearings
+     3 / 4 (TECO outline 3A040S670 note 9: forced oil, VG46, oil inlet 25 ~ 49 C). Oil 30 L/min ISO VG 46 (s.g. 0.87), cooler oil
+     65 -> 50 C (supply 50 C), cooling water 37 -> 39 C ~98 L/min, 13.65 kW, shell and tube; KSB list of measuring points PR73686-01D:
+     cooler inlet < 65 C, outlet < 50 C. The cooler water is the closed cooling water (the BFP is an ACW user, AN_ACW).
+       heat      13.65 kW while the pump runs (the design duty, NO-SOURCE: no curve of the bearing loss);
+       cooler    Coil = 13.65 / 15 = 0.910 kW/K, Cw = 13.65 / 2 = 6.825 kW/K x ACW flow / 1500 (at least 2 %, as cw above), UA = 13.65
+                 / LMTD (65 - 39 = 26, 50 - 37 = 13: 18.76 C) = 0.7277 kW/K (all CALC); effectiveness-NTU, counter flow;
+       oil       return (cooler inlet) = water inlet + 13.65 / (eff x Cmin), supply = return - 13.65 / Coil: at the design water 37 C this
+                 gives 65 / 50 C (the data sheet);
+       bearings  the RTD = the oil leaving the bearing = the return (NO-SOURCE: the metal above the drain oil is not in the docs), +0.5 C
+                 per element so that two elements are not one number; time constant tauB (the reservoir, NO-SOURCE);
+       stopped   no heat: the oil goes to the water (ACW flowing) or to the room. */
+  los: { 'BFWP-A': 1, 'BFWP-B': 1 },
+  losQ: 13.65,
+  losCo: 0.91,
+  losCw: 6.825,
+  losUA: 0.7277,
+  losMax: 150
 };
+/* the oil leaving the bearings of a running pump on its LOS (AN_MT.los); water inlet Tc, ACW flow share fq */
+function anLosRet(Tc, fq) {
+  const K = AN_MT,
+    co = K.losCo,
+    cw = K.losCw * fq,
+    cmin = Math.min(co, cw),
+    cr = cmin / Math.max(co, cw),
+    ntu = K.losUA / cmin,
+    e = cr < 0.999 ? (1 - Math.exp(-ntu * (1 - cr))) / (1 - cr * Math.exp(-ntu * (1 - cr))) : ntu / (1 + ntu);
+  return Math.min(K.losMax, Tc + K.losQ / (e * cmin));
+}
 function anMotorStep(U, dt) {
   const K = AN_MT,
     T0 = isFinite(U.Tamb) ? U.Tamb : 30,
@@ -2610,13 +2666,24 @@ function anMotorStep(U, dt) {
     const run = ad === 'IDF' ? !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5 : /^DITL/.test(ad) ? anDitlRun(ad) === 1 : srcBit([ad]) > 0.5,
       mo = K.mot[id],
       I = mo ? +U[mo[1]] : NaN,
-      wT = mo && isFinite(I) ? T0 + K.rise * Math.pow(Math.max(0, I) / (mo[0] * K.sf), 2) : K.Tw;
+      cw = K.cw[id],
+      Ic = cw ? Math.max(0, +U[cw[1]] || 0) : 0,
+      Tc = isFinite(U.acT2) ? U.acT2 : T0,
+      fq = Math.max(K.cwMin, Math.min(1.2, (+U.acQ || 0) / 1500)),
+      x2 = cw ? Math.pow(Ic / cw[0], 2) : 0,
+      wT = cw
+        ? Math.min(K.cwMax, Tc + K.cwRise * x2 + K.cwLoss * x2 * (1 / (K.cwC * fq) - 1 / K.cwC))
+        : mo && isFinite(I)
+          ? T0 + K.rise * Math.pow(Math.max(0, I) / (mo[0] * K.sf), 2)
+          : K.Tw;
     brg.forEach((e, i) =>
-      mo && i >= 2
+      K.los[id]
+        ? lag('TT-' + base + e, (run ? anLosRet(Tc, fq) : (+U.acQ || 0) > 0 ? Tc : T0) + 0.5 * i, K.tauB)
+        : mo && i >= 2
         ? lag('TT-' + base + e, run ? T0 + K.rB + 1.2 * (i - 2) : T0, run ? K.tauMB : 2 * K.tauMB)
         : lag('TT-' + base + e, run ? K.Tb + 1.2 * i : T0, run ? K.tauB : 2 * K.tauB)
     );
-    ['U', 'V', 'W'].forEach((e, i) => lag('TT-' + base + e, run ? wT + 1.0 * i : T0, run ? K.tauW : 2 * K.tauW));
+    ['U', 'V', 'W'].forEach((e, i) => lag('TT-' + base + e, run ? wT + 1.0 * i : cw ? Tc : T0, run ? K.tauW : 2 * K.tauW)); /* a stopped IC81W motor goes to its water */
     vib.forEach((e, i) => (mt['VT-' + base + e] = run ? v1 + 0.1 * i : K.vib0));
   }
 }
@@ -2758,6 +2825,13 @@ const AN_AV = {
        lever IN PLACE; Fan Specification Sheet 4 of 5, 3.3.1: FAILURE = LOCK POSITION */
     PICFG108A: 'PCD-FG1056-1 (ID fan damper, STI CMV double acting, airlock set 2.5, air failure in place)'
   },
+  /* 3.2.3-beta.180 (SOHEE): modulating valves with a SPRING (single acting, no airlock): controller -> [spring position, travel
+     start, full travel (bar g)]. FA blower inlet valves FCV-FA1055-A1 / B1 (ABC-014 FICFA1055A / B): Continental P&ID 500-0ds REV03
+     (o&m-package-phase-1 L10-5 Fluidizing air blower) "Modulated Valve PNEUMATIC - DN500 4-20 mA - Single acting", NO (normally
+     open); TECOFI assembly "PNEUMATIC ACTUATOR SR200 ON VP LUG DN500" (spring return) + SIPART PS2 positioner + filter regulator.
+     The spring pressures are not in the docs: 0.6 / 2.0 bar = the median precompression / full travel of the package sheets below
+     (NO-SOURCE) */
+  spr: { FICFA1055A: [100, 0.6, 2.0], FICFA1055B: [100, 0.6, 2.0] },
   /* the lock pressure of a valve whose own sheet gives its set point (kg/cm2); the others AN_AV.lock */
   lk: { PICFG108A: 2.5 },
   /* on / off valves by the tag of the DITL solenoid: spring position (100 open / 0 closed, or 'hold'), precompression and full
@@ -2778,7 +2852,12 @@ const AN_AV = {
     'FW1121-1': ['hold'] /* item 25 */,
     MU1109: [100, 1.0, 1.9] /* item 39 */,
     FS1005: [100, 0.6, 1.7] /* item 44 */,
-    CD1004: [100, 0.276, 1.931] /* item 45: 4 / 28 psig */
+    CD1004: [100, 0.276, 1.931] /* item 45: 4 / 28 psig */,
+    /* 3.2.3-beta.180 (SOHEE): FA blower surge (to silencer) and outlet SOVs XV-FA1055-A2 / A3 (B2 / B3 on DITL-28C #B, same drawing
+       tag): Continental P&ID 500-0ds REV03, single acting, NO (normally open); TECOFI "PNEUMATIC ACTUATOR SR115 ON VP DN150" /
+       "SPRING RETURN PNEUMATIC ACTUATOR SR200 ON VP LUG DN450". Spring pressures NO-SOURCE (as spr above) */
+    'FA1055-A2': [100, 0.6, 2.0],
+    'FA1055-A3': [100, 0.6, 2.0]
   }
 };
 /* the unit header pressure the valves see (kg/cm2), NaN while the plant model is OFF or the air model has not run */
@@ -2793,6 +2872,13 @@ function anAv(tag, x) {
   if (tag && typeof anFaultStuck === 'function') {
     const s = anFaultStuck(tag, x);
     if (s != null) return s;
+  }
+  const sp = tag && AN_AV.spr[tag];
+  if (sp) {
+    const P = anAvP();
+    if (!isFinite(P) || !isFinite(x)) return x;
+    const f = Math.max(0, Math.min(1, (Math.min(P, AN_AV.reg) * AN_AV.bar - sp[1]) / (sp[2] - sp[1])));
+    return sp[0] + (x - sp[0]) * f;
   }
   if (!tag || !AN_AV.hold[tag]) return x;
   const P = anAvP(),
@@ -3610,8 +3696,12 @@ function anUnitStep0(dt) {
      (U.cold false) and then shut down held its drum at 101.07 kg/cm2 for 140 min with the bed falling 578 -> 234 C and the PA / SA air
      still blowing. An unfired boiler cools the same whatever start it came from: the loss now applies in both paths (at load unf = 0,
      no change) */
-  const unf = Math.max(0, 1 - Fe / (0.1 * U.F0)),
-    Qloss = unf * (U.kcool * as + U.kamb) * Math.max(0, (U.Tw - U.Tamb) / 300);
+  /* Sakura beta.175 (Hot restart, pressure 100 -> 81 before light-off): the cooling read the air share with the 0.05 floor of the bed
+     (as), so a bottled boiler with every fan stopped lost kcool x 0.05 + kamb = 4 T/H, not the kamb 1 T/H of its own note (about 1.5
+     kg/cm2 per hour): about 4.6 kg/cm2 per hour in the headless Hot run. The cooling reads the air that flows (0 with the fans off) */
+  const asC = U.taf0 > 0 ? Math.max(0, taf / U.taf0) : 1,
+    unf = Math.max(0, 1 - Fe / (0.1 * U.F0)),
+    Qloss = unf * (U.kcool * asC + U.kamb) * Math.max(0, (U.Tw - U.Tamb) / 300);
   if (U.cold) {
     const ts = tsatOf(U.Pd),
       /* the water can only take heat from a hotter furnace (Mina item 12d: water 147 C with bed 141 C) */

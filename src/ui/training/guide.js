@@ -615,6 +615,18 @@ window.LS_GUIDE = (function () {
      (the blow-off closes, the steam goes back to the condenser through the bypasses) */
   const muOpen = () => (WL() && movPos('DITL-60') < 100 ? [movB('DITL-60', 'MV-MU1001', 1, 2, 11)] : []);
   /* the buttons of the shutdown by-hand steps (byHand above) */
+  /* Sakura beta.175 (headless Normal shutdown on the Do it): "Bed 750 °C" waited with the bed above 760 C at 45 MW: no button and no seek
+     lowered the fuel, and the bed falls only with the fuel (its step text: PR-OPE-5003 "at a bed of 750 C put the SA and PA fans in manual").
+     The operator trims the fuel down by hand inside the pressure band of the 45 MW step (115 ~ 126 kg/cm2): FIC-CM when it is MANUAL
+     (ABC-004A M.0130), else HIC-BM, -0.5 % each minute of the plant while the bed is over 760 C and the main steam pressure over 118
+     (the band byHand holds, 118 ~ 123). The pace is that of the Do it (as byHand), not a plant value */
+  const bed750 = () => {
+    if (!(+U().Tb > 760) || !(h().MSP() > 118) || simT() - (paceT.b750 || -1e9) < 60) return;
+    paceT.b750 = simT();
+    const ft = md('FIC-CM') === 'MAN' ? 'FIC-CM' : 'HIC-BM',
+      m = +mv(ft);
+    if (md(ft) === 'MAN' && isFinite(m) && m > 0) A.man(ft, Math.max(0, Math.round((m - 0.5) * 10) / 10));
+  };
   const byHandA = [step('EIC-TM ▼ −0.5 MW', 'EIC-TM', -0.5), step('HIC-BM ▼ −1 %', 'HIC-BM', -1), step('HIC-BM ▲ +1 %', 'HIC-BM', 1)];
   const muFill = () => (!WL() ? [] : hwL() < -100 && movPos('DITL-60') < 100 ? [movB('DITL-60', 'MV-MU1001', 1, 2, 11)] : hwL() > 50 && movPos('DITL-60') > 0 ? [movB('DITL-60', 'MV-MU1001', 0, 2, 11)] : []);
   /* automatic run 2026-11-11 (plan c5, sections 17 and up): the polisher MOVs MV-CD1007 / 1008 (DITL-64 / 65 row 10 REMOTE SELECTED
@@ -1592,17 +1604,26 @@ window.LS_GUIDE = (function () {
         sec: 44,
         req: ['bm', 'tm'],
         t: 'Main steam temperature in AUTO: spray shut-off valves AUTO MODE, TICBR1140 A, TICBR1130 R, TICMS1004 A SV 541, TICBR1150 R',
-        d: 'PR-OPE-5002: put the MS desuperheater in AUTO once the steam flow is above 46 T/H. First the spray water shut-off valves in AUTO MODE (DITL-32 / 33: they open above 380 / 440 °C); while a valve is closed the spray is held MANUAL. Then the outer controllers in AUTO (#1 TICBR1140 SV 462, main steam TICMS1004 SV 541) and the sprays in REMOTE (cascade).',
+        d: 'PR-OPE-5002: put the MS desuperheater in AUTO once the steam flow is above 46 T/H. First the spray water shut-off valves in AUTO MODE (DITL-32 / 33: they open above 380 / 440 °C); while a valve is closed the spray is held MANUAL. Then the cascade, bumpless: the outer controller MANUAL with its output at the spray outlet temperature of now (the output is the spray SV, 100 % = 600 °C), the spray in REMOTE, then the outer in AUTO (#1 TICBR1140 SV 462, main steam TICMS1004 SV 541). An outer left at its low output gives the spray a low SV: it opens wide and the main steam falls.',
         c: b.ALL(b.MODE('TICBR1140', 'AUTO'), b.MODE('TICBR1130', 'REM'), b.MODE('TICMS1004', 'AUTO'), b.MODE('TICBR1150', 'REM')),
         fps: ['TICBR1140', 'TICBR1130', 'TICMS1004', 'TICBR1150'],
         ready: () => h().MSF() > 46,
         readyTxt: () => 'Wait: steam flow ' + f0(h().MSF()) + ' T/H (> 46)',
         a: [
           btn('Spray shut-off valves AUTO MODE (DITL-32 / 33 row 4)', () => (WL() ? (['DITL-32', 'DITL-33', 'DITL-32 #B', 'DITL-33 #B'].forEach(n => window.LS_DOCK && LS_DOCK.dset && LS_DOCK.dset(n, 4, 1)), '') : ''), () => !WL() || !['I.0011', 'I.0091'].some(a => h().bit('ABC-011', a) > 0.5) && !['I.0013', 'I.0093'].some(a => h().bit('ABC-012', a) > 0.5)),
-          btn('TICBR1140 A, SV 462', () => A.auto('TICBR1140', 462), () => md('TICBR1140') === 'AUTO'),
-          btn('TICBR1130 R', () => A.rem('TICBR1130'), () => md('TICBR1130') === 'REM'),
-          btn('TICMS1004 A, SV 541', () => A.auto('TICMS1004', 541), () => md('TICMS1004') === 'AUTO'),
-          btn('TICBR1150 R', () => A.rem('TICBR1150'), () => md('TICBR1150') === 'REM')
+          /* S165-5 (Mina beta.165 step 110: TICMS1004 A, then TICBR1150 R: the #2 spray went 0 -> 52 % with the main steam at 528 C, under
+             its SV 541, and fell to 493.6 C = TIMS10041 LOW-LOW). ABC-012: the outer PID output IS the SV of the spray (AMT, 0 ~ 100 % =
+             0 ~ 600 C; TICMS1004 output 59.7 ~ 100 % = 358 ~ 600 C) and the drawing has no output tracking of the outer while the spray is
+             not in cascade, so the outer held its MANUAL output (358 C at its low limit) and the spray took that SV. Bumpless by hand, the
+             operator's cascade change: the outer MANUAL with its output = the spray outlet temperature now (PV / 6), the spray to REMOTE
+             (its SV = its PV, no kick), then the outer to AUTO. The same for #1 (TICBR1140 -> TICBR1130). Each button guards itself (Do it
+             presses all of them) */
+          btn('TICBR1140 M, output = #1 spray outlet now (bumpless)', () => (md('TICBR1130') !== 'REM' ? A.man('TICBR1140', Math.max(0, Math.min(100, pv('TICBR1130') / 6))) : ''), () => md('TICBR1130') === 'REM' || Math.abs(mv('TICBR1140') * 6 - pv('TICBR1130')) < 6),
+          btn('TICBR1130 R', () => (md('TICBR1140') === 'AUTO' || Math.abs(mv('TICBR1140') * 6 - pv('TICBR1130')) < 6 ? A.rem('TICBR1130') : ''), () => md('TICBR1130') === 'REM'),
+          btn('TICBR1140 A, SV 462', () => (md('TICBR1130') === 'REM' ? A.auto('TICBR1140', 462) : ''), () => md('TICBR1140') === 'AUTO'),
+          btn('TICMS1004 M, output = #2 spray outlet now (bumpless)', () => (md('TICBR1150') !== 'REM' ? A.man('TICMS1004', Math.max(0, Math.min(100, pv('TICBR1150') / 6))) : ''), () => md('TICBR1150') === 'REM' || Math.abs(mv('TICMS1004') * 6 - pv('TICBR1150')) < 6),
+          btn('TICBR1150 R', () => (md('TICMS1004') === 'AUTO' || Math.abs(mv('TICMS1004') * 6 - pv('TICBR1150')) < 6 ? A.rem('TICBR1150') : ''), () => md('TICBR1150') === 'REM'),
+          btn('TICMS1004 A, SV 541', () => (md('TICBR1150') === 'REM' ? A.auto('TICMS1004', 541) : ''), () => md('TICMS1004') === 'AUTO')
         ]
       },
       {
@@ -1672,7 +1693,7 @@ window.LS_GUIDE = (function () {
       { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Hold 90 MW for 8 ~ 10 min', d: 'PR-OPE-5003: hold at 90 MW before going lower. Drum level ±150 mm. O₂ trim AICFG112: AUTO while the steam is over 220 T/H; under 220 T/H the drawing forces it MANUAL (ABC-002 M.0102), then put its output at 50 % (neutral: LN15 0 % = SA × 0.8, 50 % = × 1.0). O₂ runs high at low load: the air demand LN5 does not go under 446 T/H.', c: b.X5[2][1], wait: 1 },
       { st: 11, sec: 49, req: ['bm', 'tm'], t: 'HIC-MWRL 0.6 MW/min, HIC-ULD toward 45 MW: the CCS lets go near 63 MW', d: 'PR-OPE-5003: 90 to 45 MW at 0.6 MW per minute. At 72 MW (or feedwater 230 T/H) press 1 ELEMENT for the drum level (ABC-010 M.054F; below 100 T/H steam for 60 s the drawing selects it by itself, M.022C). Near 63 MW the steam flow falls below 220 T/H: the back-up command M.2013 (ABC-001C) puts HIC-BM and EIC-TM in MANUAL by itself (CLAUDE.md BU-CMD); HIC-ULD then tracks the MW.', c: b.X5[3][1], fps: ['HIC-MWRL', 'HIC-ULD', 'HIC-BM'], a: [btn('Drum level 1 ELEMENT (ABC-010 M.054F)', () => A.push('M.054F'))] },
       { st: 11, sec: 49, t: 'By hand: EIC-TM to 45 MW, HIC-BM with it', d: 'You are the CCS now. Lower the turbine master EIC-TM about 0.6 MW per minute and the boiler master HIC-BM with it so the main steam pressure stays 115 ~ 126 kg/cm², under the MS blow-off set point 128: above it the blow-off opens and its steam leaves the cycle. Too fast on EIC-TM: the pressure rises; too fast on HIC-BM: it falls. At 60 MW: staging air upper 10 %, lower 15 ~ 20 %.', c: b.X5[4][1], fps: ['EIC-TM', 'HIC-BM'], seek: byHand(45, 0.6, 's45'), a: byHandA },
-      { st: 11, sec: 49, t: 'Bed 750 °C: PA and SA air to MANUAL', d: 'PR-OPE-5003: at a bed of 750 °C put the SA and PA fans in manual, stop the limestone and the sand, and run the air heater soot blower continuously. ABC-004A: with the PA or SA air flow control out of REMOTE the coal master FIC-CM goes MANUAL by itself (M.0130 force manual and tracking, also on any fuel flow signal abnormal or a feeder demand above 83.3 %): from here you set the coal by hand on FIC-CM.', c: b.X5[5][1], fps: ['FICFA1071', 'FICFA1081', 'FIC-CM'], a: [btn('FICFA1071 M', () => A.man('FICFA1071', mv('FICFA1071'))), btn('FICFA1081 M', () => A.man('FICFA1081', mv('FICFA1081')))] },
+      { st: 11, sec: 49, t: 'Bed 750 °C: PA and SA air to MANUAL', d: 'PR-OPE-5003: at a bed of 750 °C put the SA and PA fans in manual, stop the limestone and the sand, and run the air heater soot blower continuously. ABC-004A: with the PA or SA air flow control out of REMOTE the coal master FIC-CM goes MANUAL by itself (M.0130 force manual and tracking, also on any fuel flow signal abnormal or a feeder demand above 83.3 %): from here you set the coal by hand on FIC-CM.', c: b.X5[5][1], fps: ['FICFA1071', 'FICFA1081', 'FIC-CM'], seek: bed750, a: [btn('FICFA1071 M', () => A.man('FICFA1071', mv('FICFA1071'))), btn('FICFA1081 M', () => A.man('FICFA1081', mv('FICFA1081')))] },
       {
         st: 11,
         sec: 49,

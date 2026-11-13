@@ -328,7 +328,7 @@
           /* 3.2.1 (IRENE): the fan / blower bearing and winding temperatures and vibration of the plant model (unit.js AN_MT, U.mt);
              the drawing of FA blower A serves B (DITL-28B #B): its own blower */
           let g = MTR.exec(t)[1];
-          if (/#\s*B$/.test(s.name)) g = g.replace('FA1055-A', 'FA1055-B');
+          if (/#\s*B$/.test(s.name)) g = g.replace('FA1055-A', 'FA1055-B').replace('FW1115-A', 'FW1115-B');
           mtr.push({ s, key: a.key, g });
         }
         else {
@@ -344,8 +344,9 @@
   }
   /* P2 #13 (INSTRUMENT_VALVE_COVERAGE.md): the condenser pressure follows the vacuum of the unit model (unit.js U.vac, 0 = no vacuum,
      1 = in service): 1.033 kg/cm2A (atmosphere) to 0.057 kg/cm2A (4.PNG PICD1110 at 150 MW) */
-  /* 3.2.1 (IRENE): DITL-25B / 26B / 27B / 28B analog rows TT- / VT- of the IDF, PAF, SAF and FA blowers */
-  const MTR = /(?:^|[^A-Z])([TV]T-(?:FG1056-|FA1053-|FA1054-|FA1055-[AB])[1-4UVW])\b/,
+  /* 3.2.1 (IRENE): DITL-25B / 26B / 27B / 28B analog rows TT- / VT- of the IDF, PAF, SAF and FA blowers; 3.2.3-beta.178 (SOHEE): DITL-23B
+     rows 9 ~ 23 of the BFWP (TT-FW1115-A1 ~ A4 / AU / AV / AW, VT-FW1115-A11 ~ A42; machine instance #B = pump B) */
+  const MTR = /(?:^|[^A-Z])([TV]T-(?:FG1056-|FA1053-|FA1054-|FA1055-[AB]|FW1115-[AB])(?:[1-4][12]?|[UVW]))\b/,
     mtr = [];
   const ana = [],
     suc = [],
