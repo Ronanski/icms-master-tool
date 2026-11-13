@@ -1,4 +1,4 @@
-// 3.2.3-beta.172 (SOHEE): the TR tag of a DITL timer as the drawing writes it (Logic page timer label, "To make it" reader, cause lines).
+// 3.2.3-beta.174 / 175 (SOHEE): the TR tag of a DITL timer as the drawing writes it (Logic page timer label, "To make it" reader, cause lines).
 // Before: DITL-28A row 17 CURRENT L.L. ON DELAY 5 SEC had no tag ("timer"), its "TR132/142" is written left of the timer over its input
 // line; the two-line tags of the A / B (or 3 / 4 equipment) family were read as one line ("TR133" of "TR133" over "TR143", "TR144" of
 // "TR144" over "TR134"). Expected tags read from the drawing PDFs (digital-logic-ditl.zip PDF, sand-sootblower-logic.zip Sootblower PDF);
@@ -24,7 +24,22 @@ const EXP = [
   ['DITL-14', 'on', 174, -148, 'TR150/160/170/180'],
   ['DITL-80O', 'on', 153, -35, 'TR348'],
   ['DITL-80Q', 'on', 155, -91, 'TR999'],
-  ['DITL-07', 'on', 176, -119, 'TR19/59/819/859'] // unchanged
+  ['DITL-07', 'on', 176, -119, 'TR18/58/818/858'], // beta.176: the tag at the height of the timer (before: the one below, TR19)
+  ['DITL-07', 'on', 177, -136, 'TR19/59/819/859'], // unchanged
+  /* beta.176: DITL-80 sootblower start commands, two columns of 0.5 SEC timers, the tag of each at its own height between them */
+  ['(S3)DITL-80', 'on', 275, -102, 'TR950'],
+  ['(S3)DITL-80', 'on', 297, -111, 'TR951'],
+  ['(S3)DITL-80', 'on', 275, -120, 'TR952'],
+  ['(S3)DITL-80', 'on', 297, -129, 'TR953'],
+  ['(S3)DITL-80', 'on', 297, -183, 'TR977'],
+  ['(S3)DITL-80', 'on', 275, -192, 'TR983'],
+  ['(S3)DITL-80', 'on', 297, -200, 'TR984'],
+  ['DITL-10', 'on', 243, -127, 'TR16/56/816/856'],
+  ['DITL-21A', 'off', 133, -211, 'TR443/453/463/483'],
+  ['DITL-61A', 'on', 164, -227, 'TR64/66'],
+  ['DITL-95', 'pulse', 153, -234, 'TR38'],
+  ['DITL-80O', 'on', 252, -119, 'TR577'],
+  ['DITL-80P', 'on', 247, -146, 'TR593']
 ];
 (async () => {
   const { browser, page, errs } = await open(html);
@@ -42,7 +57,7 @@ const EXP = [
   const got = await page.evaluate(EXP => {
     const dn = s => s.name.replace(/^\([^)]*\)/, '');
     const r = EXP.map(([sh, k, x, y]) => {
-      const s = S.sheets.find(z => z.nl && dn(z) === sh);
+      const s = S.sheets.find(z => z.nl && (sh[0] === '(' ? z.name === sh : dn(z) === sh));
       const g =
         s &&
         s.nl.gates.find(g => g.t === 'TMR' && g.k === k && Math.abs(g.tm.ax - x) < 1.5 && Math.abs(g.tm.ay - y) < 1.5);
