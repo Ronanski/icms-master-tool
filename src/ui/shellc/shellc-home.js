@@ -199,7 +199,18 @@
     call(logicScan);
     call(() => lsAlarms.ack());
   };
-  window.lsShellC = Object.assign(window.lsShellC || {}, { alarms: allAlarms });
+  /* Mina beta.160 S160-5: after an MFT, the LOAD of a 150 MW save point kept "2 equipment trips" in the trip pill (LOSS OF ALL FUEL
+     DITL-03F, DRUM LEVEL L.L. FIRST OUT DITL-06): a save point is put back by DITL150.savePut, not as a new starting state, so AN.loadN
+     did not change and the latched logic rows of the run before stayed (back to normal, not acknowledged). The load of a save point now
+     starts the logic and unit rows again, as the Event log does (events.js lsEventsLoaded); an output still 1 in the loaded plant is
+     latched again by the next scan */
+  const reset = () => {
+    for (const k in USEEN) delete USEEN[k];
+    for (const k in UACK) delete UACK[k];
+    for (const k in LON) delete LON[k];
+    LN = (window.AN && AN.loadN) || 0;
+  };
+  window.lsShellC = Object.assign(window.lsShellC || {}, { alarms: allAlarms, reset });
 
   /* ---------- overview ---------- */
   let ov = null,
