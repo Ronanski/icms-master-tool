@@ -17,6 +17,9 @@ const shots=process.argv.slice(2).find(a=>!/\.html$/.test(a));
 (async()=>{const b=await chromium.launch({executablePath:process.env.CHROMIUM||'/opt/pw-browsers/chromium'});let f=0;const ck=(ok,t)=>{console.log((ok?'PASS ':'FAIL ')+t);if(!ok)f++};
 for(const [w,h,side] of [[1440,900,1],[800,1280,0]]){
 const p=await (await b.newContext({viewport:{width:w,height:h}})).newPage();const errs=[];p.on('pageerror',e=>errs.push(String(e.message)));
+/* 3.2.3: the dock (#gdock) belongs to the old layout; layout C (default since 3.2.1-beta.254) shows the guide in the Training tab of the
+   Details column. The old layout is still offered (start screen "Old layout", ls-shell = old), so this test opens it */
+await p.addInitScript(()=>{try{localStorage.setItem('ls-shell','old')}catch(e){}});
 await p.addInitScript(()=>{window.LS_HOME=false;window.LS_PVWIN=false;window.open=()=>null;try{localStorage.setItem('ls-tab','"logic"');localStorage.removeItem('ls-guide');localStorage.removeItem('ls-gdock-min')}catch(e){}});
 await p.goto('file://'+require('path').resolve(html));await p.waitForTimeout(4000);
 const clickTxt=async(sel,txt)=>{for(const e of await p.$$(sel)){const t=(await e.textContent()).trim();if(t.includes(txt)&&await e.isVisible()){await e.click();return true}}return false};
