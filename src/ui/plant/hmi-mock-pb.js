@@ -89,6 +89,7 @@
     for (const x of 'ABCD') {
       const d = x === 'A' ? 'DITL-09' : 'DITL-09 #' + x;
       db.mach['BN' + x] = pbf('Burner ' + x, 'Igniter and burner ' + x + ' push buttons', d, 26, 'REMOTE', [['IGNITER ON', 4], ['IGNITER OFF', 6], ['BURNER ON', 8], ['BURNER OFF', 10]], 'NOT REMOTE');
+      db.mach['BN' + x].df.free = 1; /* F10b: four separate presses, REMOTE does not lock IGNITER ON */
       db.art = db.art.replace(new RegExp('<text([^>]*?)>Burner ' + x + '</text>'), `<text$1 data-hit="BN${x}" style="cursor:pointer;text-decoration:underline">Burner ${x}</text>`);
     }
   }
