@@ -3958,7 +3958,8 @@ function anUnitStep0(dt) {
     h.d = pk * fr - h.pk0;
     /* 2.2.0-beta.14 (cold): the header after the spray cannot be above the gas (bed) nor below saturation either */
     if (U.cold) {
-      const cap = Math.max(tsat, U.Tb);
+      /* F11 (beta.207): the same back pass gas as pr.tcap above (FHI Fig 2: SH outlet = ambient + 0.85 x the furnace rise), not the bed */
+      const cap = Math.max(tsat, U.Tamb + (U.shG || 0.85) * (U.Tb - U.Tamb));
       for (const L of h.L) anUnitWrite(L, i => Math.max(tsat, Math.min(cap, L.a0[i] + h.x - h.pv0 + h.d)));
     } else for (const L of h.L) shifted(L, h.x - h.pv0 + h.d);
   }
