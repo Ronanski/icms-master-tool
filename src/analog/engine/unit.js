@@ -3849,6 +3849,23 @@ function anUnitStep(dt) {
     if (M) M.on = 0;
   }
 }
+/* 3.2.3-beta.212 (F16): snapshot values of the furnace / cyclone / seal pot thermocouples (hmi-op.js AN_HMI_AI), kept off U */
+let AN_GAS_A0 = null;
+function anGasA0() {
+  if (AN_GAS_A0) return AN_GAS_A0;
+  const by = re =>
+      Object.values(AN_HMI_AI)
+        .filter(x => re.test(x[1]))
+        .map(x => +x[0]),
+    avg = a => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN),
+    one = tg => avg(by(new RegExp('^' + tg + '$')));
+  return (AN_GAS_A0 = {
+    u: avg(by(/^TIFG1091[A-I]$/)),
+    l: avg(by(/^TIFG1090[A-I]$/)),
+    cy: [one('TIFG1095A'), one('TIFG1095B')],
+    sp: [one('TIFG1009A'), one('TIFG1009B')]
+  });
+}
 function anUnitStep0(dt) {
   const U = AN_UNIT;
   if (!U.on || !(dt > 0)) return;
@@ -4228,6 +4245,21 @@ function anUnitStep0(dt) {
   if (U.tbed && U.tbed.length) {
     const k = Math.max(0, (U.Tb - U.Tamb) / Math.max(1, U.Tb0 - U.Tamb));
     for (const L of U.tbed) anUnitWrite(L, i => U.Tamb + (L.a0[i] - U.Tamb) * k);
+  }
+  /* 3.2.3-beta.212 (live Cold sweep F16: AIR AND FLUE GAS page '-----' for the furnace, cyclone outlet and seal pot temperatures with
+     the bed at 220 C): the cyclone outlet TT-FG1095-A / B (I/O list 1|AI0660 / 0661) and the seal pots TT-FG1009-A / B (1|AI0594 /
+     0662) are read by no sheet of the logic, so the line above never reached them. They are the same solids loop as the bed (the gas
+     and the circulating ash leave the furnace through the cyclone and come back through the seal pot): the same rule as the bed
+     thermocouples, each on its own snapshot value (hmi-op.js AN_HMI_AI). U.gFu / U.gFl = the average of the nine lower layer above /
+     under thermocouples TT-FG1091-A ~ I / TT-FG1090-A ~ I the page shows as one value. Numbers only on U (SAVE keeps U as JSON) */
+  {
+    const k = Math.max(0, (U.Tb - U.Tamb) / Math.max(1, U.Tb0 - U.Tamb)),
+      a0 = anGasA0(),
+      t = x => (isFinite(x) ? U.Tamb + (x - U.Tamb) * k : NaN);
+    U.gFu = t(a0.u);
+    U.gFl = t(a0.l);
+    U.gCy = a0.cy.map(t);
+    U.gSp = a0.sp.map(t);
   }
   /* 3.2.1 (LISA, Mina Normal shutdown on beta.115: PIFA1085 LOW-LOW at 65 MW, SA 160 T/H): the SA pressures are the bed back pressure at
      the SA ports plus the duct / air preheater / nozzle drop. Before, all of it went with the square of the SA flow (805 mmH2O at 160 T/H).

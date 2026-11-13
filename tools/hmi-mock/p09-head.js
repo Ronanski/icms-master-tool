@@ -51,7 +51,24 @@
       'PT-FA1055-B': 'ux:fnFaP.1',
       'PT-FG1141-A': 'ux:fnGi.0',
       'PT-FG1141-B': 'ux:fnGi.1',
-      'PT-FG1151': 'fnGo'
+      'PT-FG1151': 'fnGo',
+      /* 3.2.3-beta.212 (live Cold sweep F16): gas temperatures no sheet of the logic reads. unit.js: the furnace lower layer average
+         above / under (TT-FG1091-A ~ I / TT-FG1090-A ~ I), cyclone outlet, seal pots; boiler.js anAphStep: No.2 economizer outlet,
+         air heater gas in / out, ID fan outlet (stack) */
+      'TT-FG1091': 'gFu',
+      'TT-FG1090': 'gFl',
+      'TT-FG1095-A': 'ux:gCy.0',
+      'TT-FG1095-B': 'ux:gCy.1',
+      'TT-FG1009-A': 'ux:gSp.0',
+      'TT-FG1009-B': 'ux:gSp.1',
+      'TT-FG1110': 'ecoGo',
+      'TT-FG1113': 'ecoGo',
+      'TT-FG1124': 'aphGi',
+      'TT-FG1125': 'aphGi',
+      'TT-FG1132': 'aphGo',
+      'TT-FG1133': 'aphGo',
+      'TT-FG1152': 'idfGo',
+      'TT-FG1057-8': 'idfGo'
     }
   });
 })();
