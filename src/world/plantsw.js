@@ -492,7 +492,12 @@
       /* 3.2.3-beta.183 (SOHEE): a normally closed contact (-NC, "NOT LOW" / "NOT L.L.") is owned by the plant model too. The 150 MW load
          sets its field bit (DITL150, 1 = not in the state) and the switch was only ORed with it: after the switch opened the row stayed 1
          (DITL-03G row 27 PSL-IA1706-NC, rows 16 ~ 26 furnace pressure / drum level -NC). The field bit is cleared once the model gives a value */
-      if ((m.d[8] || nc) && m.s.sig && m.s.sig[m.row + ':S']) delete m.s.sig[m.row + ':S'];
+      /* 3.2.3-beta.185 (SOHEE): the same for every switch row the model owns: the 150 MW load set the field bit of a normally open row too
+         (DITL-21A row 11 I.0163 CHAIN CONVEYOR RUNNING, DITL-23A row 12 ZSO-FW1031, DITL-BA03 row 6 / BA11 row 2 MIL-M1301, DITL-774 row 14
+         REMOTE), ORed with the switch: when the plant went 0 the row stayed 1. The bit is cleared once, at the first value of the model (a
+         list made again, a Reset, a keyframe), so a field trip set later by the operator (WORLD.dset, the field panel) still works */
+      if ((m.d[8] || nc || !m.clr) && m.s.sig && m.s.sig[m.row + ':S']) delete m.s.sig[m.row + ':S'];
+      m.clr = 1;
       /* the state of the switch: tripped (level low / pressure high) with its dead band */
       /* 'ge': a switch that makes at its set point (rising), a pressure that is held AT the set point (the BFWP lube oil header) */
       const tr = dir === 'ge' ? x >= sp : m.on == null ? (dir === 'lo' ? x < sp : x > sp) : m.on ? (dir === 'lo' ? x < sp + DB : x > sp - DB) : dir === 'lo' ? x < sp : x > sp;
