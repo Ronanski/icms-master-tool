@@ -368,7 +368,25 @@ window.LS_GUIDE = (function () {
     paceT.rsl = simT();
     if (h().MSP() >= rsP() + 1 && h().MW() >= a - 1.5) A.tcs('loadup', Math.min(45, Math.round((a + r) * 100) / 100));
   };
-  const loadSeek = () => { const P = h().MSP(), cm = isColdM(), up = P < (cm ? 60 : rsP() + 2), dn = P > (cm ? 100 : rsP() + 12); rsLoad(); if (!(up || dn) || simT() - (paceT.ls || -1e9) < (up ? 30 : 60)) return; paceT.ls = simT(); mspOil(up ? 1 : 0).f(); };
+  /* Sakura 2026-11-13 (headless Hot run, beta.186, page and Worker mode: turbine trip at 75 MW, first out HP TURBINE INLET / EXHAUST STEAM DIFF.
+     PRESS. VERY HIGH, IBD TA-21): after the ICV -> CV transfer the drawing puts the LP bypass PICHR1003 on its PRESET 33 % (ABC-052 sync pulse
+     M.070D -> FF M.070F -> TON 1 s M.0714 -> SI0224); the step text says close it in M, -10 % per minute, until the preset clears (M.071D LP
+     demand <= 0 % resets M.070F), then R (OPERATOR_GUIDE 4.5). The Do it never presses the ▼ buttons (#108), so the LP bypass stayed 33 % in R
+     up to 75 MW: the cold reheat pressure stayed low (17.8 kg/cm2) and the first stage minus the cold reheat passed the TA-21 trip line.
+     The seek of the load-up steps now does the same as the step text: -10 % each plant minute while M.070F = 1, then R at 0 % */
+  const lpSeek = () => {
+    if (!(bit('I.0418') > 0.5) || simT() - (paceT.lpc || -1e9) < 60) return;
+    if (bit('M.070F') > 0.5) {
+      paceT.lpc = simT();
+      paceT.lpcOn = 1;
+      A.man('PICHR1003', Math.max(0, Math.round((+mv('PICHR1003') || 0) - 10)));
+    } else if (paceT.lpcOn && md('PICHR1003') === 'MAN') {
+      paceT.lpc = simT();
+      paceT.lpcOn = 0;
+      A.rem('PICHR1003');
+    }
+  };
+  const loadSeek = () => { lpSeek(); const P = h().MSP(), cm = isColdM(), up = P < (cm ? 60 : rsP() + 2), dn = P > (cm ? 100 : rsP() + 12); rsLoad(); if (!(up || dn) || simT() - (paceT.ls || -1e9) < (up ? 30 : 60)) return; paceT.ls = simT(); mspOil(up ? 1 : 0).f(); };
   /* coal before the 45 MW hold (boiler model thread 2026-11-11). Every limit has a source:
      lo = the main steam the step raises the coal to: 100 kg/cm2 at 30 % load with coal in (FHI Part 2 Sect 7 Tab 4 Figure 2 COLD STARTUP;
           45 MW = 30 % of 150 MW) for the hold and feeder C steps; 123 kg/cm2 for the 123 step (PIC-COBM SV, FHI Fig. 2 123 at 40 %,
@@ -1539,7 +1557,7 @@ window.LS_GUIDE = (function () {
       { st: 7, sec: 42, t: 'ATS step 4: EXCITATION', d: 'ATS page 23: AVR EXCITATION START, generator voltage OK.', c: C('Excitation done', () => TC().step >= 4, () => (TC().cur === 4 ? 'excitation' : '—')), a: [btn('EXCITATION', () => A.tcs('excite'), () => TC().cur === 4 || TC().step >= 4), svRamp('PICMS1006', rollP(), 60), HOFF()], wait: 1 },
       { st: 7, sec: 42, ready: () => !(U().el && U().el.l52 === false), readyTxt: () => 'Wait: line breaker 52L1 is open (house load). Close 52L1 first: Instructor console, Grid. 52G closes only with 52L1 closed (TCS G-1B).', t: 'ATS step 5: SYNCH. & INITIAL LOAD (52G), LP bypass in REMOTE', get d() { const n = atsN(); return 'ATS page 24 ~ 25: ASD START, 52G closed (needs 52L1 closed, TCS G-1B), initial load ' + n.init + ' % (' + (n.init * 1.5).toFixed(1) + ' MW), hold ' + n.hold + ' minutes (Fig. 3' + (isColdM() ? '' : ', ' + TC().mode) + '). Put the LP bypass in R (SV = first stage + 5.1).'; }, c: b.ALL(b.BIT('I.0931', 1, 'GCB 52G1 on'), b.MODE('PICHR1003', 'REM')), fps: ['PICHR1003'], a: [btn('SYNCH. & INITIAL LOAD', () => A.tcs('sync'), () => bit('I.0931') > 0.5), btn('LP bypass R', () => A.rem('PICHR1003'))] },
       { st: 7, sec: 42, get t() { return 'Initial load hold: ' + atsN().hold + ' minutes, LP exhaust hood < 52 °C'; }, get d() { return 'ATS page 25 Fig. 3: ' + atsN().hold + ' minutes (40 with the metal < 230 °C, 15 to 420 °C, 0 above: ATS ' + (TC().mode || 'AMBIENT COLD') + '). PR-OPE-5002 9123: hold the initial load until the LP turbine exhaust hood is < 52 °C.'; }, c: C('Initial load hold done and LP exhaust < 52 °C', () => TC().step >= 5 && TC().Tx < 52, () => (TC().cur === 5 ? f0(+TC().tmMin || 0) + ' / ' + (TC().holdMin || 40) + ' min, ' : '') + 'LP exhaust ' + f0(+TC().Tx || 0) + ' °C'), wait: 1 },
-      { st: 7, sec: 42, t: 'LOAD UP to 45 MW (TCS), ICV → CV transfer', get d() { return isColdM() ? this.d0 : this.d0.replace('LOAD UP 45 MW (7.5 MW per minute).', 'LOAD UP 20 MW (7.5 MW per minute, PR-OPE-5002), then raise the target ' + (RSRATE[atsK()] || RSRATE.warm) + ' MW each minute up to 45 MW, only while the main steam stays at ' + (rsP() + 1) + ' kg/cm² or more (FHI ' + lfig() + ': the load rises with the firing; if the pressure falls, more fire first).'); }, d0: 'On the TCS panel: LOAD UP 45 MW (7.5 MW per minute). The transfer is at 15 ~ 22 MW. While loading: move the feedwater to the main valve (LICBR1001A A SV +50, start-up valve LICBR1001B M, close it 5 % per minute, LICBR1001 M 0 %). After the transfer, close the LP bypass PICHR1003 (M, −10 % per minute) until the preset clears (M.070F = 0), then R.', c: b.ALL(b.BIT('I.0418', 1, 'ICV to CV transfer complete'), b.VAL('MW', 15, null)), fps: ['LICBR1001B', 'LICBR1001A', 'PICHR1003'], slow: loadSlow, seek: loadSeek, a: [mspOil(1), mspOil(0), Object.assign(btn('LOAD UP 45 MW (TCS)', () => A.tcs('loadup', 45), () => !isColdM() || (U().tb && U().tb.st === 'load')), { hide: () => !isColdM() }), Object.assign(btn('LOAD UP 20 MW (TCS), then by the boiler', () => A.tcs('loadup', 20), () => isColdM() || (U().tb && U().tb.st === 'load')), { hide: isColdM }), btn('Feedwater to main valve: LICBR1001A A SV +50, LICBR1001B M, LICBR1001 M 0 %', () => (A.man('LICBR1001B', mv('LICBR1001B')), A.auto('LICBR1001A', 50), A.man('LICBR1001', 0), '')), step('Start-up valve LICBR1001B ▼ −5 %', 'LICBR1001B', -5), step('LP bypass PICHR1003 ▼ −10 %', 'PICHR1003', -10), btn('LP bypass R', () => A.rem('PICHR1003'))] },
+      { st: 7, sec: 42, t: 'LOAD UP to 45 MW (TCS), ICV → CV transfer', get d() { return isColdM() ? this.d0 : this.d0.replace('LOAD UP 45 MW (7.5 MW per minute).', 'LOAD UP 20 MW (7.5 MW per minute, PR-OPE-5002), then raise the target ' + (RSRATE[atsK()] || RSRATE.warm) + ' MW each minute up to 45 MW, only while the main steam stays at ' + (rsP() + 1) + ' kg/cm² or more (FHI ' + lfig() + ': the load rises with the firing; if the pressure falls, more fire first).'); }, d0: 'On the TCS panel: LOAD UP 45 MW (7.5 MW per minute). The transfer is at 15 ~ 22 MW. While loading: move the feedwater to the main valve (LICBR1001A A SV +50, start-up valve LICBR1001B M, close it 5 % per minute, LICBR1001 M 0 %). After the transfer, close the LP bypass PICHR1003 (M, −10 % per minute) until the preset clears (M.070F = 0), then R.', c: b.ALL(b.BIT('I.0418', 1, 'ICV to CV transfer complete'), b.VAL('MW', 15, null)), fps: ['LICBR1001B', 'LICBR1001A', 'PICHR1003'], slow: loadSlow, seek: loadSeek, a: [mspOil(1), mspOil(0), Object.assign(btn('LOAD UP 45 MW (TCS)', () => A.tcs('loadup', 45), () => !isColdM() || (U().tb && U().tb.st === 'load')), { hide: () => !isColdM() }), Object.assign(btn('LOAD UP 20 MW (TCS), then by the boiler', () => A.tcs('loadup', 20), () => isColdM() || (U().tb && U().tb.st === 'load')), { hide: isColdM }), btn('Feedwater to main valve: LICBR1001A A SV +50, LICBR1001B M, LICBR1001 M 0 %', () => (A.man('LICBR1001B', mv('LICBR1001B')), A.auto('LICBR1001A', 50), A.man('LICBR1001', 0), '')), step('Start-up valve LICBR1001B ▼ −5 %', 'LICBR1001B', -5), step('LP bypass PICHR1003 ▼ −10 %', 'PICHR1003', -10), btn('LP bypass R', () => A.rem('PICHR1003'), () => md('PICHR1003') === 'REM' || bit('M.070F') > 0.5 /* R only once the preset is cleared (lpSeek) */)] },
       {
         st: 7,
         sec: 42,
@@ -1585,7 +1603,21 @@ window.LS_GUIDE = (function () {
          M.0101 is read on ABC-001C (STATION 101 "BOILER MAIN STEAM FLOW > 220 T/H"): the memory addresses are per station, and
          bit('M.0101') read ABC-017 (STATION 102 M.0101 = SB INLET PRESSURE CONTROL FORCE MANUAL, memory list), 0, so this step and
          'O2 control AICFG112 in AUTO' waited for ever at 264 T/H */
-      { st: 8, sec: 44, t: 'LOAD UP (TCS) until the main steam flow is ≥ 230 T/H (about 75 MW)', d: 'PR-OPE-5002: after NORMAL OPERATION at 45 MW raise the load toward 90 MW. At 230 T/H main steam flow (about 75 MW) the boiler master goes to AUTO (boiler follow) and the PA / SA air and the coal master to REMOTE. Raise the coal with the load (FIC-CF ▲) to hold about 123 kg/cm².', c: b.HOLD(120, b.ALL(b.VAL('MSF', 230, null), C('Steam flow > 220 T/H (ABC-001C M.0101)', () => m0101() > 0.5, () => 'M.0101 = ' + f0(m0101())))), fps: ['FIC-CF'], slow: loadSlow, seek: () => { coalSeek(123)(); const tb = U().tb; if (tb && tb.st === 'load' && (h().MSF() < 230 || m0101() < 0.5) && Math.abs((+tb.tgt || 0) - (+tb.aim || 0)) < 0.5 && (+tb.aim || 0) >= 75 && (+tb.aim || 0) < 90 && h().MSP() > 118 && simT() - (paceT.lu || -1e9) >= 300) { paceT.lu = simT(); A.tcs('loadup', Math.min(90, (+tb.aim || 0) + 5)); } }, a: [btn('LOAD UP 75 MW (TCS)', () => A.tcs('loadup', 75), () => !!(U().tb && U().tb.aim >= 75)), step('FIC-CF ▲ +1 %', 'FIC-CF', 1), step('FIC-CF ▼ −1 %', 'FIC-CF', -1)], wait: 1 },
+      { st: 8, sec: 44, t: 'LOAD UP (TCS) until the main steam flow is ≥ 230 T/H (about 75 MW)', d: 'PR-OPE-5002: after NORMAL OPERATION at 45 MW raise the load toward 90 MW at the start-up rate (FHI Tab 4: about 0.4 ~ 0.6 MW a minute; the TCS target goes up a little each minute while the main steam holds 118 kg/cm² or more). At 230 T/H main steam flow (about 75 MW) the boiler master goes to AUTO (boiler follow) and the PA / SA air and the coal master to REMOTE. Raise the coal with the load (FIC-CF ▲) to hold about 123 kg/cm².', c: b.HOLD(120, b.ALL(b.VAL('MSF', 230, null), C('Steam flow > 220 T/H (ABC-001C M.0101)', () => m0101() > 0.5, () => 'M.0101 = ' + f0(m0101())))), fps: ['FIC-CF'], slow: loadSlow, seek: () => { coalSeek(123)(); const tb = U().tb; if (tb && tb.st === 'load' && (h().MSF() < 230 || m0101() < 0.5) && Math.abs((+tb.tgt || 0) - (+tb.aim || 0)) < 0.5 && (+tb.aim || 0) >= 75 && (+tb.aim || 0) < 90 && h().MSP() > 118 && simT() - (paceT.lu || -1e9) >= 300) { paceT.lu = simT(); A.tcs('loadup', Math.min(90, (+tb.aim || 0) + 5)); } }, a: [
+          /* Mina S186-2 (beta.186 live Hot, Worker): LOAD UP 75 MW took 44 -> 74 MW in 4 min (the TCS rate 7.5 MW/min), the steam 203 -> 311 T/H
+             with the coal at 3.6 T/H, the main steam 126 -> 107. PR-OPE-5002 SU 9333 / 9417: from here the target goes up "as per boiler side
+             instruction"; FHI P2 S8 TAB_9 step 22: "in accordance with the start-up rates" (Tab 4 Fig. 2 / 3 / 4, LRATE: cold 0.42, warm 0.48,
+             hot 0.59 MW/min). The target goes up that much each plant minute, only while the main steam holds 118 or more (the band of the
+             load steps) and the load has reached the target */
+          Object.assign(
+            btn('LOAD UP at the start-up rate (TCS target up each minute, to 75 MW)', () => {
+              paceT.lu75 = simT();
+              const a = +(U().tb || {}).aim || 45;
+              return A.tcs('loadup', Math.min(75, Math.round((Math.max(a, 45) + lrate(0)) * 100) / 100));
+            }, () => !!(U().tb && U().tb.aim >= 75) || simT() - (paceT.lu75 || -1e9) < 60 || h().MSP() < 118 || h().MW() < (+(U().tb || {}).aim || 0) - 1.5),
+            { band: 1 }
+          ),
+          step('FIC-CF ▲ +1 %', 'FIC-CF', 1), step('FIC-CF ▼ −1 %', 'FIC-CF', -1)], wait: 1 },
       /* ---- 9 load up ---- */
       {
         st: 9,
@@ -1651,9 +1683,10 @@ window.LS_GUIDE = (function () {
       /* boiler model thread 2026-11-11 (automatic run): EIC-TM went to AUTO (CCS) at 80 MW, the load ramped to 133 MW and the main steam
          fell to 62 kg/cm2 (HIC-BM back to MANUAL). PR-OPE-5002 load up (SU 9334-9419): "raise to 90 MW per boiler; above 90 MW CCS can
          be set"; boiler master AUTO (boiler follow) until 90 MW (SU 10617-10692, 01-operation.md phase 11 / 12) */
-      { st: 9, sec: 44, req: ['bm'], t: 'LOAD UP to 90 MW (TCS) in boiler follow', d: 'PR-OPE-5002: the boiler master in AUTO holds the pressure (PIC-COBM) while you raise the load to 90 MW: with DCS CONTROL MODE ON (I.0082) the TCS follows the turbine master, so raise EIC-TM in MANUAL (MW); without it, LOAD UP on the TCS. The coordinated control (CCS) is set above 90 MW.', c: b.HOLD(120, b.ALL(b.VAL('MW', 89, null), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150))), slow: loadSlow,
-        /* one press of 5 MW each 60 s of the plant while the main steam is above 118 (the band of the 150 MW hold): the pace of the Do it, under the 7.5 MW/min LOAD UP rate */
-        seek: () => { if (h().MW() >= 89 || h().MSP() < 118 || simT() - (paceT.l9 || -1e9) < 60) return; paceT.l9 = simT(); if (bit('I.0082') > 0.5) { const m = mv('EIC-TM'); if (md('EIC-TM') === 'MAN' && isFinite(m)) A.man('EIC-TM', Math.min(90, m + 5)); } else A.tcs('loadup', 90); },
+      { st: 9, sec: 44, req: ['bm'], t: 'LOAD UP to 90 MW (TCS) in boiler follow', get d() { return 'PR-OPE-5002: the boiler master in AUTO holds the pressure (PIC-COBM) while you raise the load to 90 MW: with DCS CONTROL MODE ON (I.0082) the TCS follows the turbine master, so raise EIC-TM in MANUAL (MW); without it, LOAD UP on the TCS. The coordinated control (CCS) is set above 90 MW.' + ' Rate: about ' + lrate(0) + ' MW a minute (FHI ' + lfig() + ', the boiler load curve; PR-OPE-5002: "Set target load as per boiler instruction until 90 MW").'; }, c: b.HOLD(120, b.ALL(b.VAL('MW', 89, null), b.VAL('MSP', 118, 128), b.VAL('lvl', -150, 150))), slow: loadSlow,
+        /* the Do it raises the load at the start-up curve rate (LRATE above, FHI Tab 4: cold 0.42, warm 0.48, hot 0.59 MW/min), one step each
+           60 s of the plant while the main steam is above 118 (the band of the 150 MW hold). Before: 5 MW each 60 s, a pace with no source */
+        seek: () => { if (h().MW() >= 89 || h().MSP() < 118 || simT() - (paceT.l9 || -1e9) < 60) return; paceT.l9 = simT(); const r = lrate(0); if (bit('I.0082') > 0.5) { const m = mv('EIC-TM'); if (md('EIC-TM') === 'MAN' && isFinite(m)) A.man('EIC-TM', Math.min(90, Math.round((m + r) * 100) / 100)); } else { const tb = U().tb || {}, a0 = isFinite(+tb.aim) && tb.aim > 0 ? +tb.aim : h().MW(); A.tcs('loadup', Math.min(90, Math.round((Math.max(a0, h().MW()) + r) * 100) / 100)); } },
         a: [step('EIC-TM ▲ +5 MW', 'EIC-TM', 5), btn('LOAD UP 90 MW (TCS, DCS control mode OFF)', () => A.tcs('loadup', 90), () => bit('I.0082') > 0.5 || !!(U().tb && U().tb.aim >= 90))], wait: 1 },
       {
         st: 9,
@@ -1735,13 +1768,13 @@ window.LS_GUIDE = (function () {
         sec: 44,
         req: ['bm', 'tm'],
         t: 'Unit load demand HIC-ULD in AUTO, TARGET 150 MW',
-        d: 'First the load change rate HIC-MWRL 0.67 MW/min (FHI Fig. 2 COLD STARTUP: 60 % at 11.0 h to 100 % at 12.5 h = 60 MW in 1.5 h), then the TARGET 150 MW: the CCS raises the load at that rate.',
-        c: b.ALL(b.MODE('HIC-ULD', 'AUTO'), b.VAL('MW', 90, null), C('HIC-MWRL 0.67 MW/min', () => Math.abs((+mv('HIC-MWRL') || 0) - 0.67) < 0.05, () => f1(+mv('HIC-MWRL'))), C('TARGET 150 MW', () => { const d = uldT(); return !!d && +d.S.rt.ext[d.a] >= 149; }, () => { const d = uldT(); return d ? f0(+d.S.rt.ext[d.a]) : '—'; })),
+        get d() { return 'First the load change rate HIC-MWRL ' + lrate(1) + ' MW/min (FHI ' + lfig() + ', the boiler load curve from 60 % to 100 %: cold 60 MW in 1.5 h, warm in 1.0 h, hot in 0.9 h), then the TARGET 150 MW: the CCS raises the load at that rate.'; },
+        c: b.ALL(b.MODE('HIC-ULD', 'AUTO'), b.VAL('MW', 90, null), C('HIC-MWRL at the start-up curve rate (cold 0.67, warm 1.0, hot 1.11 MW/min)', () => Math.abs((+mv('HIC-MWRL') || 0) - lrate(1)) < 0.05, () => f1(+mv('HIC-MWRL')) + ' / ' + lrate(1)), C('TARGET 150 MW', () => { const d = uldT(); return !!d && +d.S.rt.ext[d.a] >= 149; }, () => { const d = uldT(); return d ? f0(+d.S.rt.ext[d.a]) : '—'; })),
         fps: ['HIC-ULD', 'HIC-MWRL'],
         /* boiler model thread 2026-11-11 (automatic run): with the 3 MW/min of the 150 MW snapshot (33.PNG HIC-MWRL) the load went 90 -> 144 MW,
            the coal hit the feeder MV limit 83.3 % (FIC-CM forced MANUAL, M.0137) and the main steam fell 126 -> 62 kg/cm2. FHI P2 S7 Fig 2
            (plant-study 02-fhi-curves.md): 60 % load at 11.0 h, 90 % at 12.0 h, 100 % at 12.5 h: CALC (150 - 90) MW / 90 min = 0.67 MW/min */
-        a: [btn('HIC-MWRL 0.67 MW/min', () => A.man('HIC-MWRL', 0.67), () => Math.abs((+mv('HIC-MWRL') || 0) - 0.67) < 0.05), btn('HIC-ULD A, TARGET 150', () => {
+        a: [btn('HIC-MWRL at the start-up curve rate (cold 0.67, warm 1.0, hot 1.11 MW/min)', () => A.man('HIC-MWRL', lrate(1)), () => Math.abs((+mv('HIC-MWRL') || 0) - lrate(1)) < 0.05), btn('HIC-ULD A, TARGET 150', () => {
           A.loc('HIC-ULD');
           const s = station('HIC-ULD'),
             d = s && (s.T.drv[s.b.i[s.b.svI]] || []).find(z => z.k === 'AMT');
@@ -2038,6 +2071,17 @@ window.LS_GUIDE = (function () {
     /* 3.2.3-beta.90: the automatic run in plant time (auto) */
     if (AUTO && simT() - AUTO.t >= AUTO.dt) {
       AUTO.t = simT();
+      /* Mina S186-2 (beta.186 live, Worker): after a turbine trip at 75 MW the automatic run went on to step 107. A turbine trip (I.0400,
+         DITL-98 row 19) that comes while the open step does not ask for one (start-up and load steps, sections before the shutdown, no
+         "trip" in the step) stops the automatic run, with an Event log line; the trainee reads the first out before going on */
+      const trp = bit('I.0400') > 0.5,
+        s0 = steps()[G.cur];
+      if (trp && AUTO.trp0 === false && s0 && s0.st < 11 && !/trip/i.test(s0.t)) {
+        AUTO = null;
+        if (window.lsEventAdd) lsEventAdd('DCS', 'DCS', 'Do it for me stopped: turbine trip during "' + s0.t + '"');
+        return;
+      }
+      AUTO.trp0 = trp;
       try {
         if (AUTO.pre) AUTO.pre();
         API.autoNext = true;
