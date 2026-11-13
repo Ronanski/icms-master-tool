@@ -417,6 +417,8 @@
     { tag: 'LICD1110', d: 'condenser hotwell level (LT-CD1110)', sh: 'ABC-031', ai: 'AI0640', hh: 300, h: 150, l: -150, ll: -300 }
   ];
   /* level switches of the field with no ABC alarm block: tag, DITL sheet, 0-based input row */
+  /* annunciator bits of the ABC drawings with no ALM block: the bit, its sheet, the tag and the text of the drawing */
+  const BALM = [{ bit: 'B.0804', sh: 'ABC-010', tag: 'LIBR1001', d: '#1 Boiler drum level (1) / (3), over 5 %' }];
   const SWALM = [{ tag: 'LSLL-CD1104-4', d: 'deaerator storage tank water level low-low switch', sh: 'DITL-23B', row: 3 }];
   function xalmVal(A, p) {
     const sh = A.sheets.find(x => x.name === p.sh),
@@ -501,6 +503,18 @@
         v = s ? DUI.rowVal(s, p.row) : null;
       } catch (e) {}
       if (v === 1) now.set('W|' + p.tag, { sh: p.sh, kind: 'ALM', nm: p.tag + ' ' + p.d, lv: 'LOW-LOW' });
+    }
+    /* e5 prep (drum level transmitter 1 fails, headless at 150 MW): ABC-010 compares DRUM LEVEL (1) and (3), |a - b| > 5 % = B.0804
+       "DRUM LEVEL(1)(3) DEVIATION 5% FOR ANN.(CRT)". The bit went to 1 and the alarm list had no line for it: the CRT line from the bit */
+    for (const p of BALM) {
+      const sh = A.sheets.find(x => x.name === p.sh),
+        S = sh && sh.S;
+      if (!S || !S.rt) continue;
+      if (p.S !== S) {
+        p.S = S;
+        p.n = S.lab.findIndex(x => x && String(x.t).trim() === p.bit);
+      }
+      if (p.n >= 0 && +S.rt.v[p.n] > 0.5) now.set('B|' + p.bit, { sh: p.sh, kind: 'ALM', nm: p.tag + ' ' + p.d, lv: 'DEVIATION' });
     }
     if (window.WORLD && WORLD.on && WORLD.idx)
       for (const s of dSheets()) {
