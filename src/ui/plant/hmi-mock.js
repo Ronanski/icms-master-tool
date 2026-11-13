@@ -157,11 +157,19 @@
         call(() => {
           const s = D().dOf(nm);
           if (!s) return null;
-          const ms = (typeof MST !== 'undefined' && MST[s.name]) || [],
-            own = t => !tg || !/(?:XV|MV)-[A-Z]{2}\d{4}/.test(t) || t.indexOf(tg) >= 0;
-          let pos = ms.length === 1 && ms[0].pos != null ? +ms[0].pos : null;
+          /* live run 2026-11-13 F6: "~PHRASE" = a valve named by its words on a sheet with two valves and no XV tag in the row text
+             (DITL-28C "FAB A TO SILENCE SOV ..." / "FAB A OUTLET SOV ..."): its rows hold the phrase, its position is its OPENED output */
+          const ph = tg && tg[0] === '~' ? tg.slice(1) : null,
+            ms = (typeof MST !== 'undefined' && MST[s.name]) || [],
+            own = ph ? t => t.indexOf(ph) >= 0 : t => !tg || !/(?:XV|MV)-[A-Z]{2}\d{4}/.test(t) || t.indexOf(tg) >= 0;
+          let pos = !ph && ms.length === 1 && ms[0].pos != null ? +ms[0].pos : null;
           const outs = DUI.outs(s) || [];
-          if (pos == null) {
+          if (ph) {
+            const o = outs.find(x => own(x.name) && /\bOPENED\b/.test(x.name)),
+              vo = o ? D().dout(nm, o.row) : null;
+            pos = vo === 1 ? 100 : vo === 0 ? 0 : null;
+          }
+          if (pos == null && !ph) {
             const o = outs.find(x => own(x.name) && /FULLY OPEN/.test(x.name)),
               c = outs.find(x => own(x.name) && /FULLY CLOSED/.test(x.name)),
               vo = o ? D().dout(nm, o.row) : null,
@@ -195,6 +203,12 @@
           if (ap && auV != null && !pbs.some(p => p.l === 'MANUAL')) {
             ap.sel = 1;
             pbs.push({ l: 'MANUAL', row: ap.row, sel: 0 });
+          }
+          /* F6: DITL-28C has no AUTO PB; its "AUTO MODE SELECTED" row is an operator memory bit (M.1032 / M.1052): the CRT AUTO / MANUAL */
+          if (ph && !ap && auV != null) {
+            const ar = ri(/AUTO (?:MODE )?SELECTED\b/, true),
+              AI = ar != null ? DUI.rowInfo(s, ar) : null;
+            if (AI && /^M\./.test(AI.tag || '')) pbs.unshift({ l: 'AUTO', row: ar, sel: 1 }, { l: 'MANUAL', row: ar, sel: 0 });
           }
           /* REMOTE: "REMOTE SELECTED" (DITL-60 ...), "MCV REMOTE MODE SELECTED" (DITL-38), "SHUT-OFF MOV REMOTE" (DITL-94 ~ 98) */
           const ro = outs.find(x => own(x.name) && /\bREMOTE\b/.test(x.name) && !/LOCAL/.test(x.name));
@@ -672,7 +686,7 @@
             sel: (() => {
               const s = call(() => D().dOf(m.mov), null),
                 tg = m.tg || m.n,
-                own = t => !/(?:XV|MV)-[A-Z]{2}\d{4}/.test(t) || t.indexOf(tg) >= 0,
+                own = tg[0] === '~' ? t => t.indexOf(tg.slice(1)) >= 0 : t => !/(?:XV|MV)-[A-Z]{2}\d{4}/.test(t) || t.indexOf(tg) >= 0,
                 rows = [];
               for (let r = 0; s && r < 64; r++) {
                 const I = call(() => DUI.rowInfo(s, r), null),
