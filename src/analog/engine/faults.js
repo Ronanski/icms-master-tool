@@ -17,6 +17,11 @@ const AN_FAULT_LIST = [
      B.0643 (ABC-001C boiler master, ABC-050 HP bypass) */
   { id: 'ai.msp.lo', g: 'ai', stn: 1, ai: 'AI0131', end: 'lo', t: 'Main steam pressure transmitter (PT-MS1002) signal lost' },
   { id: 'ai.msp.hi', g: 'ai', stn: 1, ai: 'AI0131', end: 'hi', t: 'Main steam pressure transmitter (PT-MS1002) over range' },
+  /* furnace pressure transmitter A (plan e5, air and flue gas side): I/O list STN101 AI0132 PT-FG1085 "#1 Furnace pressure (A)"
+     (DN-AII-04); the range and the SIG.AB address are read from the I/O list record (anFaultRec). ABC-008 furnace pressure control
+     PICFG108 / PICFG108A with PT-FG1086 / PT-FG1087 */
+  { id: 'ai.fpa.lo', g: 'ai', stn: 1, ai: 'AI0132', end: 'lo', t: 'Furnace pressure transmitter A (PT-FG1085) signal lost' },
+  { id: 'ai.fpa.hi', g: 'ai', stn: 1, ai: 'AI0132', end: 'hi', t: 'Furnace pressure transmitter A (PT-FG1085) over range' },
   /* Group 3 - a control valve sticks: the valve stays at the opening it had when it stuck; the controller keeps moving its output (wind-up)
      until the operator takes MANUAL. The valve of each controller: unit.js AN_AV (the valve sheets of the package index). Every valve model
      reads its opening through anAv (plant.js loop models, unit.js) */
