@@ -229,6 +229,10 @@ const AN_UNIT = {
   rhM: 243.1e3 * 0.5 /* kJ/K */,
   shUA: 261 /* kW/K at the anchor air, CALC above */,
   rhUA: 116 /* kW/K at the anchor air, CALC above */,
+  /* reheater outlet pipe at TT-HR1002 (outlet header and hot reheat pipe to the thermowell): 20 t steel x 0.5 kJ/kg K (NO-SOURCE: no
+     pipe weight in the docs), lagging loss 0.02 kW/K (NO-SOURCE, about 6 days to cool) */
+  rhPipeM: 10000 /* kJ/K */,
+  rhPipeUA: 0.02 /* kW/K */,
   ao: 2.55 /* PR-OPE-5002 4.3.x: "Approximately: 2.55 TPH coal = 1 TPH diesel" (2.2.0-beta.15; beta.14 had 2 ASSUMED) */,
   /* 2.2.0-beta.15 (M4 step 2, coal transfer): the coal burns only in a hot bed: burnt share 0 at 350 C, 1 at 600 C; the rest leaves
      unburnt. 3.2.3-beta.91 sources: Tburn1 600 = PR-OPE-5002 continuous feeding above 600 C. Tburn0 is bounded, not given: below 400 C,
@@ -4745,15 +4749,26 @@ function anUnitStep0(dt) {
       sR = (((U.mhp || 0) + U.ms) / 3.6) * 2.2 * Math.max(0, U.TmR - tsat);
     U.TmS = Math.max(U.Tamb, U.TmS + ((qS - sS) * dt) / (U.shM || 176630));
     U.TmR = Math.max(U.Tamb, U.TmR + ((qR - sR) * dt) / (U.rhM || 121550));
-  } else U.TmS = U.TmR = undefined;
+    /* live Cold start (user 2026-11-14 "Ang sabe kasi ay RH steam temp eh?"): TT-HR1002 is on the reheater outlet pipe, outside the gas
+       path. With the HP bypass shut and no reheat pressure no steam flows: the thermowell reads the outlet pipe, not the tube metal in
+       the gas (it read 474 C, floored at the drum saturation 332 C). The outlet pipe is heated only by the steam that flows out of the
+       tubes (steam x 2.2 kJ/kg K x (tube metal - pipe)) and loses to the room through its lagging (rhPipeUA) */
+    const wR = Math.max(0, (U.mhp || 0) + U.ms);
+    if (!isFinite(U.TpR)) U.TpR = wR > 1 && isFinite(rh0) ? Math.min(rh0, U.TmR) : U.Tamb;
+    U.TpR +=
+      (((wR / 3.6) * 2.2 * (U.TmR - U.TpR) - (U.rhPipeUA || 0.02) * (U.TpR - U.Tamb)) * dt) / (U.rhPipeM || 10000);
+    U.TpR = Math.max(U.Tamb, Math.min(Math.max(U.TmR, U.Tamb), U.TpR));
+    U.wR = wR;
+  } else U.TmS = U.TmR = U.TpR = undefined;
   for (const e of U.ld) {
     const pr = e.pr,
       p = e.b.p || {};
     pr.fr = fr;
-    pr.tsat = tsat;
+    /* the reheater is not on the drum: its steam is at the reheat pressure, and with no steam flowing the pipe has no saturation floor */
+    pr.tsat = e.r || !U.cold ? tsat : U.wR > 1 ? Math.min(tsatOf(Math.max(0, U.Prh || 0)), U.TpR) : U.Tamb;
     /* live Cold start F11 (user 2026-11-13 "Bkt same si bed temp at ms temp?"): in Cold the steam leaves at its tube metal temperature
-       (the SH / RH metal model above), not at the bed. e.r undefined = the reheater (TICHR1002) */
-    pr.tcap = U.cold ? (e.r ? U.TmS : U.TmR) : undefined;
+       (the SH / RH metal model above), not at the bed. e.r undefined = the reheater (TICHR1002): its outlet pipe (TpR above) */
+    pr.tcap = U.cold ? (e.r ? U.TmS : U.TpR) : undefined;
     if (!pr.hop || !(pr.Ka > 0)) {
       pr.ld = 0;
       continue;
