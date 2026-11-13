@@ -91,14 +91,19 @@
       },
       pv = (k, t) => +sh(k).rt.v[ctl(k, t).q.pv],
       mv = (k, t) => +sh(k).rt.v[ctl(k, t).out];
-    const U = AN.unit,
+    /* Sakura (headless Warm / Hot restart runs of beta.164): AN.unit was read once, when the helpers were made. The Training guide made
+       them when the Guide opened, before the Plant chip loaded the Warm / Hot state (a new AN.unit, the same sheets): MSF() then threw
+       "Cannot read properties of undefined (reading 'cn')" and every guide button that reads the steam flow (the oil band, the HP bypass
+       SV +1 of "Bypass servicing" and "ready to roll") threw in its done check, so the Do it pressed none of them: Warm stood at 39
+       kg/cm2 (needs 48), Hot at 100 (needs 109). The unit is read at each call now */
+    const UU = () => AN.unit || {},
       coal = () =>
-        U.fuel.reduce(
+        (UU().fuel || []).reduce(
           (a, l) => a + (l.length && isFinite(l[0][0].rt.st[l[0][1].id].val) ? +l[0][0].rt.st[l[0][1].id].val : 0),
           0
         );
     const MSP = () => +v[lab(S, 'AI0131')],
-      MSF = () => +v[U.cn],
+      MSF = () => +v[UU().cn],
       MW = () => +v[lab(S, 'AI0419')],
       SV = () => +v[ctl('ABC-001C', 'PIC-COBM').q.sv];
     const hbm = S.blk.find(b => b.k === 'MAN' && b.tag === 'HIC-BM'),
@@ -236,7 +241,9 @@
       val,
       pv,
       mv,
-      U,
+      get U() {
+        return UU();
+      },
       coal,
       MSP,
       MSF,

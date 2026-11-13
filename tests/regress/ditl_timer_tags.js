@@ -24,9 +24,9 @@ const EXP = [
   ['DITL-14', 'on', 174, -148, 'TR150/160/170/180'],
   ['DITL-80O', 'on', 153, -35, 'TR348'],
   ['DITL-80Q', 'on', 155, -91, 'TR999'],
-  ['DITL-07', 'on', 176, -119, 'TR18/58/818/858'], // beta.175: the tag at the height of the timer (before: the one below, TR19)
+  ['DITL-07', 'on', 176, -119, 'TR18/58/818/858'], // beta.176: the tag at the height of the timer (before: the one below, TR19)
   ['DITL-07', 'on', 177, -136, 'TR19/59/819/859'], // unchanged
-  /* beta.175: DITL-80 sootblower start commands, two columns of 0.5 SEC timers, the tag of each at its own height between them */
+  /* beta.176: DITL-80 sootblower start commands, two columns of 0.5 SEC timers, the tag of each at its own height between them */
   ['(S3)DITL-80', 'on', 275, -102, 'TR950'],
   ['(S3)DITL-80', 'on', 297, -111, 'TR951'],
   ['(S3)DITL-80', 'on', 275, -120, 'TR952'],
