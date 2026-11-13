@@ -191,9 +191,10 @@ const AN_UNIT = {
      - BED TEMPERATURE (no DCS transmitter: the bed thermocouples are on the DITL / local; model state U.Tb): first order (tauB) to
        Tamb + (Tb0 - Tamb) x (fuel share / air share) ^ 0.45 (Fig 8: furnace about 850 C at full load; two start-up burners at the
        light-off air give about 450 C = the coal batch permissive of PR-OPE-5002, 400 ~ 450 C; 600 C continuous).
-     - STEAM TEMPERATURE while cold: the superheaters cannot give more than the gas (plant.js pr.tcap = bed temperature) and not
+     - STEAM TEMPERATURE while cold: the superheaters cannot give more than the gas (plant.js pr.tcap = ambient + shG x the bed rise, F11) and not
        less than saturation (pr.tsat); TAB_9: SH outlet <= 535 C before synchronisation */
   Tamb: 30,
+  shG: 0.85 /* F11: SH outlet rise over furnace rise in a cold start, FHI SECT_7 Fig 2 (0.82 ~ 0.87) */,
   ao: 2.55 /* PR-OPE-5002 4.3.x: "Approximately: 2.55 TPH coal = 1 TPH diesel" (2.2.0-beta.15; beta.14 had 2 ASSUMED) */,
   /* 2.2.0-beta.15 (M4 step 2, coal transfer): the coal burns only in a hot bed: burnt share 0 at 350 C, 1 at 600 C; the rest leaves
      unburnt. 3.2.3-beta.91 sources: Tburn1 600 = PR-OPE-5002 continuous feeding above 600 C. Tburn0 is bounded, not given: below 400 C,
@@ -3887,7 +3888,11 @@ function anUnitStep0(dt) {
       p = e.b.p || {};
     pr.fr = fr;
     pr.tsat = tsat;
-    pr.tcap = U.cold ? U.Tb : undefined;
+    /* live Cold start F11 (user 2026-11-13 "Bkt same si bed temp at ms temp?"): the cap was the bed itself, so with no steam flow the
+       main steam read the bed temperature exactly. The superheaters sit in the back pass after the cyclone and see a cooler gas: FHI
+       SECT_7 Fig 2 COLD STARTUP printed points, SH outlet over furnace rise above the ambient 35 C: 1 h 110 / 100 C = 0.87, 6 h 483 /
+       414 C = 0.85, 8.6 h 551 / 460 C = 0.82. The cap is ambient + 0.85 x (bed - ambient) */
+    pr.tcap = U.cold ? U.Tamb + (U.shG || 0.85) * (U.Tb - U.Tamb) : undefined;
     if (!pr.hop || !(pr.Ka > 0)) {
       pr.ld = 0;
       continue;
