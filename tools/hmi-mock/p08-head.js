@@ -28,6 +28,7 @@
       TAS17: { n: 'TICAS1017', t: 'Gland steam spray TCV-CD1126', ctl: 'TICAS1017', io: 'TICAS1017' },
       X68: { n: 'XV-CD1125', t: 'Gland steam spray block', mov: 'DITL-68', tg: 'XV-CD1125' },
       M53: { n: 'MV-AS1393', t: 'Gland steam drain separator drain', mov: 'DITL-53', tg: 'MV-AS1393' },
+      GS: { n: 'GLAND STEAM SEAL', t: 'PV-GS1031', d: 'STEAM SEAL FEED · TCS', tcs: 'gland', why: 'Gland steam seal of the TCS: the steam seal feed valve PV-GS1031 (TCS PLC, AI0886 TCS to DCS) holds the gland steam header. START = put in service: aux steam over 7 kg/cm2, the turbine on the turning gear, the vacuum breaker MV-AV1391 open (TCS ATS 1.10 GLAND STEAM SEAL HEADER PRESS. NOT LOW). STOP = out of service.' },
       M75: { n: 'MV-AS1394', t: 'Turbine warming line drain', mov: 'DITL-75', tg: 'MV-AS1394' }
     },
     unit: {

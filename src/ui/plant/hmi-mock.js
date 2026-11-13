@@ -375,6 +375,8 @@
           }
           if (m.tcs) {
             const U = AN.unit;
+            /* F36 (live Cold start 2026-11-14): the gland steam seal of the TCS (tcs.js 'gland'), in service = RUN */
+            if (m.tcs === 'gland') return U && U.on && U.tc ? (U.tc.gland ? 'RUN' : 'STOP') : null;
             if (!U || !U.on || !U.loMop) return null;
             if (m.tcs === 'vex') return U.loVex ? 'RUN' : 'STOP';
             if (m.tcs === 'eop') return U.loEopR ? 'RUN' : 'STOP';
@@ -710,7 +712,7 @@
                   return U && U.on && U.loMop ? !!U['lo' + (x[1] === 'mop' ? 'Mop' : 'Cop') + 'Au'][x[2] === 'A' ? 0 : 1] : null;
                 }
               : null,
-            cmd: op => (!(AN.unit && AN.unit.on) ? 'no plant model: choose Cold or 150 MW (Plant model ON)' : m.tcs === 'vex' ? (op === 'start' || op === 'stop' ? AN.turbine('vex', op === 'start' ? 1 : 0) : 'no AUTO / MANUAL') : AN.turbine('oil', { p: m.tcs, op }))
+            cmd: op => (!(AN.unit && AN.unit.on) ? 'no plant model: choose Cold or 150 MW (Plant model ON)' : m.tcs === 'gland' ? (op === 'start' || op === 'stop' ? AN.turbine('gland', op === 'start' ? 1 : 0) : 'no AUTO / MANUAL') : m.tcs === 'vex' ? (op === 'start' || op === 'stop' ? AN.turbine('vex', op === 'start' ? 1 : 0) : 'no AUTO / MANUAL') : AN.turbine('oil', { p: m.tcs, op }))
           });
         }
         /* live test 2026-11-05 (INSTRUMENT AND PLANT AIR): a machine started at its local panel (sti: [sheet, RUNNING row, TRIP row]) had

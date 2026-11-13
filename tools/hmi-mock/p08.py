@@ -53,8 +53,8 @@ p.inner(985, 902, 'cooled by condensate · ' + V('TT-CD1120', 0, ' °C') + ' TT-
 # faceplates (transparent hits over the texts)
 for i, x, y, w in (('M51', 116, 146, 110), ('PAS4', 216, 146, 100), ('TAS1', 322, 158, 120), ('X67', 322, 186, 130), ('PAS5', 16, 402, 560),
                    ('M52', 436, 874, 150), ('PCD4', 636, 90, 150), ('M54', 616, 212, 110), ('M55', 616, 322, 110), ('M56', 1442, 286, 150),
-                   ('TAS17', 642, 652, 120), ('X68', 642, 680, 130), ('M53', 844, 706, 120), ('M75', 1060, 520, 140)):
-    p.mach(i, hits=[(x, y, w, 16 if i not in ('M51', 'PAS4', 'TAS1', 'M54', 'M55', 'M56', 'TAS17') else 30)])
+                   ('TAS17', 642, 652, 120), ('X68', 642, 680, 130), ('M53', 844, 706, 120), ('M75', 1060, 520, 140), ('GS', 996, 634, 110)):
+    p.mach(i, hits=[(x, y, w, 16 if i not in ('M51', 'PAS4', 'TAS1', 'M54', 'M55', 'M56', 'TAS17', 'GS') else 30)])
 bad = p.check()
 assert not bad, bad
 p.write('p08-head.js', 'hmi-mock-as.js')
