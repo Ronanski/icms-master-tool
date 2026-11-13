@@ -153,8 +153,7 @@ const SRC_RULES = (() => {
      off its closed seat = the source pressure. Without the one world (no MOV state) as before */
   R.PICSB1052 = s => ({ cap: s.sb1001 == null || s.sb1001 > 0 ? s.Pms : 0 });
   /* 3.2.3: R.PICAS1005 removed: the header PV is written by the aux steam model (unit.js AN_AS) */
-  R.TICAS1001 = s => ({ mul: srcCl(s.Paux / 3), base: s.Tamb });
-  R.TICAS1017 = s => ({ mul: srcCl(s.Paux / 3), base: s.Tamb });
+  /* 3.2.3-beta.223: R.TICAS1001 / R.TICAS1017 removed: TT-AS1001 / TT-AS1017 are written by the aux steam model (unit.js AN_AS) */
   /* loop 13, condensate and deaerator: the condensate pump moves the water; the deaerator is heated by aux steam or extraction */
   /* 3.2.3 SOHEE: FT-CD1121 is the flow through the polisher: the condensate (FT-CD1120: to the deaerator + recirculation) x the
      polisher share of unit.js (MV-CD1007 / 1008 against the bypass FCV-CD1121); before the plant model has run, as before */

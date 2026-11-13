@@ -885,6 +885,8 @@ function anUnitStart() {
   U.frT = undefined;
   /* 3.2.3 live Cold start: the aux steam / gland / condenser air volumes (AN_AS) start from their transmitters */
   U.asP = U.gsP = U.gsY = U.cdAirP = NaN;
+  U.asT1 = U.asT3 = U.asT17 = NaN;
+  U.asTAI = null;
   U.tco = null; /* 3.2.0-beta.66: the oil-only state of the snapshot (tcs.js tcsOilState) starts again */
   U.tc =
     null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
@@ -956,6 +958,7 @@ function anUnitCold() {
   U.frT = undefined;
   /* 3.2.3 live Cold start (AN_AS): aux steam and gland headers empty at the atmosphere, the condenser full of air */
   U.asP = U.gsP = U.gsY = 0;
+  U.asT1 = U.asT3 = U.asT17 = U.Tamb;
   U.cdAirP = NaN;
   /* 3.2.0 roadmap 3: the temperatures of anUnitStepX start at their cold value (no lag from the 150 MW anchor) */
   if (U.xt) U.xt.T = {};
@@ -2823,6 +2826,25 @@ const AN_AS = {
     [0.1319, 1925],
     [0.1496, 1867]
   ],
+  /* 3.2.3-beta.223 (live Cold start F37 / F38): the steam temperatures of the aux and gland lines are energy balances of the pipe
+     metal, M c dT/dt = w cp (T steam in - T) + G (T neighbour - T) - UA (T - T ambient), with the steam in from the IF97 enthalpy:
+     PCV-AS1010 throttles the main steam at constant enthalpy, the spray TCV-CD1124 (MV of TICAS1001) mixes condensate into it
+     (TT-AS1001, IO list S2 AI0641 "main steam desuperheater downstream"); the header TT-AS1003 (S2 AI0642) mixes that steam with
+     the cold reheat through PCV-AS1020-1 / -2; TT-AS1017 (S2 AI0902 "gland steam turbine side") is fed by PV-GS1031 from the
+     header and the gland desuperheater spray (MV of TICAS1017). Spray capacities, metal heat capacities and losses: NO-SOURCE
+     (not in the docs). Two numbers are set by 29.PNG at 150 MW (not a fit of a curve, the one unknown of each balance):
+     UA3 gives TT-AS1003 236 C with the header steam of that load; with PV-GS1031 shut (self-sealing) the TT-AS1017 pipe sits
+     between the gland header (TEGS1002 364 C) and the room, 185 C = G17 about UA17 */
+  sprA: 1000 /* kg/h TCV-CD1124 full open, NO-SOURCE */,
+  sprG: 300 /* kg/h gland desuperheater spray full open, NO-SOURCE */,
+  cps: 2.2 /* kJ/kg K steam */,
+  Mc1: 300 /* kJ/K, NO-SOURCE */,
+  UA1: 0.05 /* kW/K, NO-SOURCE */,
+  Mc3: 2000 /* kJ/K, NO-SOURCE */,
+  UA3: 0.131 /* kW/K, 29.PNG: the SJAE steam 397 kg/h of cold reheat at 347 C after PCV-AS1020 holds 236 C (the other header users are not modelled yet) */,
+  Mc17: 300 /* kJ/K, NO-SOURCE */,
+  UA17: 0.05 /* kW/K, NO-SOURCE */,
+  G17: 0.0433 /* kW/K, 29.PNG (see above) */,
   k: { sh: null }
 };
 /* steam through a control valve, kg/h (ISA-75.01, see AN_AS): P kg/cm2 G, T C */
@@ -2987,6 +3009,60 @@ function anAuxStep(U, dt) {
   U.asF = F;
   U.gsV31 = F.oF * 100;
   U.gsV34 = F.oU * 100;
+  /* pipe and header steam temperatures (AN_AS sprA ...): one step of dt, the flows of the last substep */
+  {
+    /* the transmitters of these temperatures (made once; a save before beta.223 has none) and the start of a run or of an old
+       save: the metal at the reading of its transmitter */
+    if (!U.asTAI) {
+      U.asTAI = [anAsAIs('ABC-033', 'AI0641'), anAsAIs('ABC-034', 'AI0902')];
+      if (U.own) for (const l of U.asTAI) for (const [S2, b] of l) U.own.add(S2.rt.st[b.id]);
+    }
+    if (!isFinite(U.asT1)) U.asT1 = anUnitVal(U.asTAI[0]);
+    if (!isFinite(U.asT17)) U.asT17 = anUnitVal(U.asTAI[1]);
+    if (!isFinite(U.asT3)) U.asT3 = anUnitVal((U.xt && U.xt.aux) || []);
+    const Ta0 = isFinite(U.Tamb) ? U.Tamb : 30,
+      Tw = Math.max(Ta0, Tc) /* spray water: the condensate */,
+      hw = 4.19 * Tw,
+      Pa = U.asP,
+      Pg = U.gsP,
+      tsA = Pa > -0.9 ? steamTsat(Pa) : Ta0,
+      tsG = Pg > -0.9 ? steamTsat(Pg) : Ta0,
+      /* steam in -> temperature at the pipe pressure, not below its saturation (wet steam) */
+      tOf = (P, hm, ts) => Math.max(ts, steamTph(P, hm)),
+      metal = (k, Tin, w, Mc, UA, G, Tn) => {
+        let T = isFinite(U[k]) ? U[k] : Ta0;
+        const n = Math.max(1, Math.ceil(dt / 1));
+        for (let i = 0; i < n; i++) {
+          const q = (w / 3600) * K.cps * ((isFinite(Tin) ? Tin : T) - T) + G * (Tn - T) - UA * (T - Ta0);
+          T += (q * (dt / n)) / Mc;
+        }
+        U[k] = T;
+        return T;
+      },
+      wA = F.w1010 || 0,
+      sA =
+        cl(anAsCtl('ABC-033', 'TICAS1001')) *
+        K.sprA *
+        (wA > 0 ? 1 : 0) /* no steam = no spray (it would flood the pipe) */,
+      h1 = steamH(Pms, Tms),
+      T1in = wA > 0 ? tOf(Pa, (wA * h1 + sA * hw) / (wA + sA), tsA) : NaN,
+      T1 = metal('asT1', T1in, wA + sA, K.Mc1, K.UA1, 0, Ta0),
+      wR = F.w1020 || 0,
+      hR = steamH(Pcr, Tcr),
+      hA = wA > 0 ? steamH(Pa, T1in) : 0,
+      T3in = wA + sA + wR > 0 ? tOf(Pa, ((wA + sA) * hA + wR * hR) / (wA + sA + wR), tsA) : NaN,
+      T3 = metal('asT3', T3in, wA + sA + wR, K.Mc3, K.UA3, 0, Ta0),
+      wG = F.wGf || 0,
+      sG = cl(anAsCtl('ABC-034', 'TICAS1017')) * K.sprG * (wG > 0 ? 1 : 0),
+      hG = steamH(Pa, Math.max(tsA, T3)),
+      T17in = wG > 0 ? tOf(Pg, (wG * hG + sG * hw) / (wG + sG), tsG) : NaN,
+      Tgs = isFinite(U.asTgs) ? U.asTgs : Ta0;
+    metal('asT17', T17in, wG + sG, K.Mc17, K.UA17, K.G17, Tgs);
+    U.asT1 = T1;
+    U.asT3 = T3;
+    anUnitWrite(U.asTAI[0], U.asT1);
+    anUnitWrite(U.asTAI[1], U.asT17);
+  }
   if (U.asAI) for (const l of U.asAI) anUnitWrite(l, U.asP);
   if (U.gsAI) anUnitWrite(U.gsAI, U.gsV31);
 }
@@ -4921,12 +4997,9 @@ function anUnitStepX(dt, mso) {
     /* hot reheat temperature: the reheater outlet */
     const rht = pvOf(X.rhPv);
     if (isFinite(rht)) anUnitWrite(X.hr, rht + X.hrOff * Math.max(0, Math.min(1, (rht - U.Tamb) / 300)));
-    /* aux steam header: in service with its pressure */
-    const pa = val(X.auxP);
-    if (X.aux && X.aux.length) {
-      const a0 = X.aux.a0[0];
-      anUnitWrite(X.aux, lag('aux', U.Tamb + (a0 - U.Tamb) * Math.max(0, Math.min(1, (pa || 0) / 10.2)), 300));
-    }
+    /* aux steam header TT-AS1003: the header metal of the aux steam model (anAuxStep, AN_AS UA3; it was a lag to 236 C scaled by
+       the header pressure before beta.223) */
+    if (X.aux && X.aux.length && isFinite(U.asT3)) anUnitWrite(X.aux, U.asT3);
     /* feedwater to the economizer: deaerator water + HP heaters (with the turbine load) */
     if (X.fw && X.fw.length && isFinite(X.fw0)) {
       const pd = val(X.dea),
