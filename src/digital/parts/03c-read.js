@@ -180,7 +180,9 @@ const DREAD = (function () {
         if (g.k === 'off') return want ? shortest(ins.map(n => why(s, v, n, 1, seen, d))) : I0 ? shortest(ins.map(n => why(s, v, n, 0, seen, d))).concat(one('then ' + tag + ' holds 1 for ' + P)) : one(tag + ' holds 1: ' + fmt(g.st.acc || 0) + ' / ' + P);
         return want
           ? (g.k === 'pulse' ? (I0 ? shortest(ins.map(n => why(s, v, n, 0, seen, d))) : []) : I0 ? [] : shortest(ins.map(n => why(s, v, n, 1, seen, d)))).concat(one(tag + ' gives a ' + P + ' pulse when its input goes ' + (g.k === 'pulse' ? '0 → 1' : '1 → 0')))
-          : one(tag + ' pulse ends after ' + P);
+          : /* SOHEE (S160-2: FA blower B stopped "by its logic: TR133 pulse ends after 2.0 s"): the cause of a TRIP (FIRST-OUT, ALL) through a
+               pulse that is 1 now is its input that went 1 (FAB B CURRENT L.L. into the trip pulse TR133 of DITL-28A #B), the pulse after it */
+            (ALL && g.k === 'pulse' && I0 ? shortest(ins.map(n => why(s, v, n, 0, seen, d))) : []).concat(one(tag + ' pulse ends after ' + P));
       }
       case 'CMP':
         return one('the analog value must be ' + (want ? '' : 'NOT ') + cmpTxt(g) + ' (now ' + anValN(s, ins[0]) + ')');
