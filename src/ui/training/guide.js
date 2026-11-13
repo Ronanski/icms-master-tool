@@ -1733,7 +1733,15 @@ window.LS_GUIDE = (function () {
       /* Mina beta.136 bottle-up: the main feedwater valve LICBR1001 stayed AUTO (1 element, MV 23.8 % at +367 mm, falling 0.3 %/s): the
          feedwater ran 330 -> 150 T/H for 2 min after the start-up valve was shut and the drum went to +437 mm. PR-OPE-5004 fills on the
          start-up feedwater valve only: the main valve to MANUAL 0 % first */
-      { st: 12, sec: 50, t: 'Fill the drum to +200 mm on the start-up valve', d: 'PR-OPE-5004: steam drum +200 mm (it shrinks as it cools), deaerator 0 mm. Use the start-up feedwater valve only: on the LICBR1001 faceplate below press M and set 0 % first (in AUTO it keeps feeding for minutes), then fill with LICBR1001B and at +200 mm set it to M 0 %. Watch the feedwater flow (FICFW1007) fall to 0.', c: b.X6[1][1], fps: ['LICBR1001', 'LICBR1001B', 'FICFW1007'], a: [btn('LICBR1001 M 0 % (main valve shut)', () => A.man('LICBR1001', 0)), btn('LICBR1001B M 0 % (at +200 mm)', () => A.man('LICBR1001B', 0))] },
+      { st: 12, sec: 50, t: 'Fill the drum to +200 mm on the start-up valve', d: 'PR-OPE-5004: steam drum +200 mm (it shrinks as it cools), deaerator 0 mm. Use the start-up feedwater valve only: on the LICBR1001 faceplate below press M and set 0 % first (in AUTO it keeps feeding for minutes), then fill with LICBR1001B (MANUAL, about 20 %) and at +200 mm set it to M 0 %. Watch the feedwater flow (FICFW1007) fall to 0.', c: b.X6[1][1], fps: ['LICBR1001', 'LICBR1001B', 'FICFW1007'],
+        /* S163-4 (Mina beta.163 step 132): Do it pressed "LICBR1001B M 0 %" at once and again each minute, so the start-up valve stood at
+           0 % and the drum never filled. PR-OPE-5004-01 step 4 "Fill steam drum to +200 mm": the start-up valve fills by hand, LICBR1001B
+           MANUAL 20 % (the fill of PR-OPE-5002 STEAM DRUM FILLING, step "Steam drum filling"; AUTO is refused while FICFW1007 or LICBR1001A
+           is not MANUAL, M.0226), while the drum is under +150 mm (the low end of the check), and M 0 % once the drum is at +190 mm.
+           Each button guards itself: Do it presses every button of a step */
+        a: [btn('LICBR1001 M 0 % (main valve shut)', () => A.man('LICBR1001', 0)),
+          Object.assign(btn('LICBR1001B M, MV 20 % (fill on the start-up valve)', () => (h().lvl() < 150 ? A.man('LICBR1001B', 20) : ''), () => h().lvl() >= 150 || mv('LICBR1001B') >= 15), { hide: () => h().lvl() >= 150 }),
+          Object.assign(btn('LICBR1001B M 0 % (at +200 mm)', () => (h().lvl() >= 190 ? A.man('LICBR1001B', 0) : ''), () => md('LICBR1001B') === 'MAN' && !(mv('LICBR1001B') > 0.5)), { hide: () => h().lvl() < 190 })] },
       { st: 12, sec: 50, t: 'Stop the boiler feed pump', d: 'PR-OPE-5003: the drum blowdown valve must be closed before the BFP stop (else the drum keeps losing about 25 T/H and the level falls about 25 mm per minute). PR-OPE-5004: close the outlet MOV of the BFP in service (MV-FW1001 / MV-FW1002), then STOP it. Then stop the dosing pump, close LCV-CD1104 and stop the make-up water pump. With both feed pumps stopped the drum level controls are inhibited and go MANUAL by themselves (ABC-010 M.0220).', c: b.X6[2][1], a: [btn('Close the drum blowdown valve (field)', () => (AN.blowdown && AN.blowdown(false), '')), btn('STOP BFWP-A', () => A.motor('M.3343', 0), () => bit('M.3343') < 0.5), btn('STOP BFWP-B', () => A.motor('M.3344', 0), () => bit('M.3344') < 0.5)] },
       { st: 12, sec: 50, t: 'Start-up burners out', d: 'PR-OPE-5004: oil FCV 25 %, OFF, igniter and oil gun retracted. On this unit the turbine trip made an MFT, so the burners are already out: check it.', c: b.X6[3][1] },
       { st: 12, sec: 50, need: 1, t: 'Diesel system released, reheat header drains open', d: 'PR-OPE-5004: PCV-DO0002 and PCV-DO1009 to MANUAL, open PCV-DO0002, PCV-DO1009 and FCV-DO1012 to 100 %, stop the diesel pump; open the cold and hot reheat header drains when the pressure is near 0 kg/cm². Confirm when done.' },
@@ -1741,7 +1749,7 @@ window.LS_GUIDE = (function () {
       { st: 12, sec: 50, t: 'PA fan and FA blowers: dampers down, STOP', d: 'PR-OPE-5004: SAF inlet damper to 20 % (5 % steps), PAF inlet damper to 0 % (1 % steps), keep the furnace pressure at about −15 mmH₂O; then stop the PA fan and the FA blowers. First put the standby FA blower (FAB-B, AUTO standby) in MANUAL: in AUTO the logic starts it as soon as FAB-A stops (DITL-28A). The ID fan coupling PICFG108 stays in AUTO only down to its 20 % low limit: put it in MANUAL and lower it with each damper step, or the furnace goes to −130 mmH₂O. Below 14 % the coupling goes MANUAL by itself (ABC-008 M.0206), and with the furnace pressure control in MANUAL the PA and SA air flow controls are forced MANUAL too (ABC-007 M.0188).', c: b.X6[6][1], fps: ['FICFA1071', 'FICFA1081', 'PICFG108'], a: [btn('FA blowers A and B to MANUAL (DITL-28A)', () => fabMan()), btn('PICFG108 M', () => A.man('PICFG108', mv('PICFG108'))), step('PICFG108 ▼ −1 %', 'PICFG108', -1), btn('STOP PAF', () => A.motor('M.3302', 0), () => bit('M.3302') < 0.5), btn('STOP FAB-A', () => A.motor('M.3308', 0), () => bit('M.3308') < 0.5), btn('STOP FAB-B', () => A.motor('M.3309', 0), () => bit('M.3309') < 0.5)] },
       { st: 12, sec: 50, t: 'SA fan: damper down, STOP', d: 'PR-OPE-5004: SAF inlet damper down in 5 % steps, furnace pressure −15 mmH₂O, then stop the SA fan. Lower the ID fan coupling PICFG108 (MANUAL) with it, or the furnace goes to −180 mmH₂O.', c: b.X6[7][1], fps: ['FICFA1081', 'PICFG108'], a: [step('PICFG108 ▼ −1 %', 'PICFG108', -1), btn('STOP SAF', () => A.motor('M.3303', 0), () => bit('M.3303') < 0.5)] },
       { st: 12, sec: 50, t: 'ID fan: coupling to 0 %, STOP', d: 'PR-OPE-5004: below 16 % the coupling goes to MANUAL by itself. Lower it 1 % at a time to 0 % (furnace −15 mmH₂O), then stop the ID fan.', c: b.X6[8][1], fps: ['PICFG108'], a: [step('PICFG108 ▼ −1 %', 'PICFG108', -1), btn('STOP IDF', () => A.motor('M.3304', 0), () => bit('M.3304') < 0.5)] },
-      { st: 12, sec: 50, t: 'Furnace pressure on the damper: −20 ~ +20 mmH₂O', d: 'PR-OPE-5004: change the furnace pressure control to DAMPER CONTROL, damper 5 %, then about 2.5 % until the furnace is −20 ~ +20 mmH₂O. The boiler is bottled up.', c: b.X6[9][1], fps: ['PICFG108A'], a: [btn('DAMPER CONTROL select (ABC-008 M.0201)', () => A.push('M.0201')), btn('PICFG108A M 5 %', () => A.man('PICFG108A', 5)), btn('PICFG108A M 2.5 %', () => A.man('PICFG108A', 2.5))] },
+      { st: 12, sec: 50, t: 'Furnace pressure on the damper: −20 ~ +20 mmH₂O', d: 'PR-OPE-5004: change the furnace pressure control to DAMPER CONTROL, damper 5 %, then about 2.5 % until the furnace is −20 ~ +20 mmH₂O. The boiler is bottled up. END of the normal shutdown: the practices after this start again from 150 MW (pick one in the stage list).', end: 1 /* S163-9 (Mina beta.163): the shutdown ran on into the turbine trip practice; it ends here */, c: b.X6[9][1], fps: ['PICFG108A'], a: [btn('DAMPER CONTROL select (ABC-008 M.0201)', () => A.push('M.0201')), btn('PICFG108A M 5 %', () => A.man('PICFG108A', 5)), btn('PICFG108A M 2.5 %', () => A.man('PICFG108A', 2.5))] },
       /* ---- 13 turbine trip at load and hot restart (plan e5, FHI Tab 9 p20 ~ 25; the checks are live.js X7) ---- */
       { st: 13, sec: 51, t: 'Turbine trip at 150 MW', d: 'Press TURBINE TRIP (page 13 or here). FHI Tab 9: when the turbine stops, all fuel stops by itself; on this unit the DITL turbine trip makes the MFT.', c: b.X7[0][1], a: [btn('TURBINE TRIP (TA-1)', () => A.tcs('trip'))] },
       { st: 13, sec: 51, need: 1, cr: 1, t: 'Read the first outs; bypass protects the reheater', d: 'Page 13: the turbine trip first out; the MFT first out on the purge and trip page. FHI Tab 9 p25: the HP / LP bypass opens to keep steam through the reheater. If the bypass is not open and the cyclone exit is above 535 °C, the PA fan stops by itself and the RH biasing damper closes (p20). Confirm when read.' },
@@ -1970,7 +1978,8 @@ window.LS_GUIDE = (function () {
   }
   /* 3.2.0 retest #30: a step that is done waits for the trainee ("✓ Tapos" and its result, then "Susunod ›"); a test tool sets autoNext */
   function done(s) {
-    if (API.autoNext) {
+    /* S163-9: the last step of a run (end: 1) waits, also for a test tool: the next stage is a practice from another plant state */
+    if (API.autoNext && !s.end) {
       open(G.cur + 1);
       return true;
     }
@@ -1979,6 +1988,7 @@ window.LS_GUIDE = (function () {
   }
   function next() {
     if (G.ok !== G.cur) return false;
+    if ((steps()[G.cur] || {}).end) return false;
     G.ok = null;
     open(G.cur + 1);
     return true;

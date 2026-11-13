@@ -775,7 +775,7 @@ window.LS_LIVE = (function () {
      already out). Valves of the field and the TCS are confirmed; motors, drum level, dampers and the furnace pressure are read */
   const X6 = [
     ['Close MV-MS1391, PCV-MS1001 (blow off), the HP bypass isolation valve and the auxiliary steam isolation valve; open the TG drain pots (upstream valve first), then hot reheat blow off MV-HR1391 to release the line and close it (field: confirm).', null],
-    ['Main feedwater valve LICBR1001 to MANUAL 0 %, fill the steam drum to +200 mm on the start-up valve (and the deaerator to 0 mm).', ALL(VAL('lvl', 150, 250), MODE('LICBR1001', 'MAN'))],
+    ['Main feedwater valve LICBR1001 to MANUAL 0 %, fill the steam drum to +200 mm on the start-up valve (and the deaerator to 0 mm).', /* S163-5 (Mina beta.163: the drum rose to +339 mm with this step ticked): the start-up valve shut too */ ALL(VAL('lvl', 150, 250), MODE('LICBR1001', 'MAN'), MODE('LICBR1001B', 'MAN'), MV('LICBR1001B', null, 0.5))],
     ['Close the BFP outlet valve (MV-FW1001 / MV-FW1002), then STOP the BFP in service; stop the dosing pump, close LCV-CD1104, stop the make-up water pump.', NOBIT(['M.3343', 'M.3344'], 'BFWP stopped')],
     ['Start-up burners out: oil FCV 25 %, OFF, igniter and oil gun retracted (after the MFT of the turbine trip they are already out).', NOBIT(['M.3412', 'M.3413', 'M.3418', 'M.3419'], 'start-up burners out')],
     ['Diesel: PCV-DO0002 and PCV-DO1009 to MANUAL, open PCV-DO0002, PCV-DO1009 and FCV-DO1012 100 %, stop the diesel pump; open the CR / HR header drains near 0 kg/cm2 (field: confirm).', null],
