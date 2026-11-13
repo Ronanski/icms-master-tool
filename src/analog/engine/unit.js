@@ -4798,7 +4798,12 @@ function anUnitStep0(dt) {
           }
       dn = Math.max(0, 541 - T);
     }
-    if ((U.cold || (U.tc && U.tc.step < 7)) && e.s > 0) {
+    /* live Cold start 2026-11-14 (no curve fits, user rule): in Cold the steam leaves the superheater / reheater at its tube metal
+       temperature, the heat balance of the metal model above (gas in, steam out): SH = U.TmS, RH = its outlet pipe U.TpR. The FHI
+       Fig. 2 curve is a check only; the curve stays for a Warm / Hot turbine start out of Cold, where there is no metal model */
+    const Tm = U.cold ? (e.r ? U.TmS : U.TpR) : NaN;
+    if (U.cold && e.s > 0 && isFinite(Tm)) dn = 541 - Tm;
+    else if ((U.cold || (U.tc && U.tc.step < 7)) && e.s > 0) {
       const p0 = (U.tc && U.suRoll[U.tc.mode]) || U.suCurve[0][1],
         c = U.suCurve.map(([a, b]) => [a, Math.max(b, p0)]),
         x = Math.max(c[0][0], xl);
