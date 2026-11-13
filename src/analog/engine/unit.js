@@ -3610,8 +3610,12 @@ function anUnitStep0(dt) {
      (U.cold false) and then shut down held its drum at 101.07 kg/cm2 for 140 min with the bed falling 578 -> 234 C and the PA / SA air
      still blowing. An unfired boiler cools the same whatever start it came from: the loss now applies in both paths (at load unf = 0,
      no change) */
-  const unf = Math.max(0, 1 - Fe / (0.1 * U.F0)),
-    Qloss = unf * (U.kcool * as + U.kamb) * Math.max(0, (U.Tw - U.Tamb) / 300);
+  /* Sakura beta.175 (Hot restart, pressure 100 -> 81 before light-off): the cooling read the air share with the 0.05 floor of the bed
+     (as), so a bottled boiler with every fan stopped lost kcool x 0.05 + kamb = 4 T/H, not the kamb 1 T/H of its own note (about 1.5
+     kg/cm2 per hour): about 4.6 kg/cm2 per hour in the headless Hot run. The cooling reads the air that flows (0 with the fans off) */
+  const asC = U.taf0 > 0 ? Math.max(0, taf / U.taf0) : 1,
+    unf = Math.max(0, 1 - Fe / (0.1 * U.F0)),
+    Qloss = unf * (U.kcool * asC + U.kamb) * Math.max(0, (U.Tw - U.Tamb) / 300);
   if (U.cold) {
     const ts = tsatOf(U.Pd),
       /* the water can only take heat from a hotter furnace (Mina item 12d: water 147 C with bed 141 C) */
