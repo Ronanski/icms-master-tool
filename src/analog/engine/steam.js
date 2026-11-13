@@ -20,6 +20,18 @@ function steamTsat(P) {
     x = n[9] + D;
   return (x - Math.sqrt(x * x - 4 * (n[8] + n[9] * D))) / 2 - 273.15;
 }
+/* 3.2.3 (F29, drum drains): the saturation pressure (kg/cm2 G) of a temperature in C, IF97 region 4, the basic equation ps(T) (same
+   coefficients). Checked: 0.0 at 100 C, 10.0 at 183.3 C, 60.0 at 275.4 C kg/cm2 G */
+function steamPsat(Tc) {
+  const n = STEAM_N,
+    T = Math.min(647.096, Math.max(273.16, (+Tc || 0) + 273.15)),
+    th = T + n[8] / (T - n[9]),
+    A = th * th + n[0] * th + n[1],
+    B = n[2] * th * th + n[3] * th + n[4],
+    C = n[5] * th * th + n[6] * th + n[7],
+    p = Math.pow((2 * C) / (-B + Math.sqrt(B * B - 4 * A * C)), 4); /* MPa */
+  return p / 0.0980665 - 1.0332;
+}
 /* slope of the saturation line, C per kg/cm2 */
 function steamDTsat(P) {
   const p = Math.max(0, +P || 0);

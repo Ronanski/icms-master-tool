@@ -390,22 +390,63 @@ AN_CYC.kgmm = {
    15 % margin; reheater 60 m3, total 312 m3, p.5). Less the drum (K1AU3D-101: R 824.2 mm, shell 12.481 m, hemispherical heads,
    about 29 m3) and the superheater, which is dry in service: 75.8 m3 (FHI Part 2 Sect 8 Tab 2 p 2-8-TAB_2-1; before 60 m3 taken like
    the reheater) -> 252 - 29 - 75.8 = 147 m3; AN_THERM.on: the term is used */
-/* 3.2.3: the critical (choked) mass flux of flashing saturated water, kg/m2 s, by the drum pressure Pb (bar abs): homogeneous
-   equilibrium model, read off the standard Moody critical flow chart (CALCULATION: a fluid property like the steam table). Used by the blowdowns of the drum (anProcStep) */
+/* 3.2.3: the critical (choked) mass flux of flashing saturated water, kg/m2 s, by the stagnation pressure Pb (bar abs), discharging
+   to the atmospheric blowdown / flash tank (1.013 bar abs). Homogeneous equilibrium model (HEM): saturated liquid at Pb expands at
+   constant entropy, G(p) = sqrt(2 (h0 - h(p))) / v(p), and G is the maximum over the throat pressure p between Pb and 1.013 bar.
+   3.2.3-beta.217 (F29): CALCULATION from IAPWS-IF97 (region 1 liquid, region 2 vapour, region 4 saturation line: the same steam table
+   as steam.js; checked with the IF97 verification values, Tables 5 and 15), 4000 steps per point; cross-check with the omega method
+   (Leung 1986, API 520 Part I Annex C): 6,500 kg/m2 s at 10 bar, 26,000 at 69 bar. Before: 3,900 at 13.8 bar, 8,300 at 34.5,
+   14,650 at 69, 23,900 at 138, "read off the Moody chart", about half of the HEM and a straight line from 0 at 1.013 to 3,900 at
+   13.8 bar (300 at 2 bar, HEM 1,787). Used by the drum blowdowns and the lower ring header drains (anFlashG) */
 const AN_BDG = [
   [1.013, 0],
-  [13.8, 3900],
-  [34.5, 8300],
-  [69, 14650],
-  [138, 23900]
+  [1.05, 1044],
+  [1.1, 1089],
+  [1.2, 1171],
+  [1.5, 1409],
+  [2, 1787],
+  [3, 2487],
+  [5, 3746],
+  [7, 4883],
+  [10, 6441],
+  [15, 8773],
+  [20, 10879],
+  [25, 12823],
+  [35, 16357],
+  [50, 21031],
+  [70, 26459],
+  [100, 33390],
+  [140, 40922],
+  [160, 43999]
 ];
 function anBdG(Pb) {
   const G = AN_BDG,
-    k = G.findIndex(g => g[0] >= Pb),
-    i = k < 1 ? (k === 0 ? 1 : G.length - 1) : k,
+    p = Math.min(G[G.length - 1][0], Math.max(G[0][0], +Pb || 0)),
+    i = Math.max(1, G.findIndex(g => g[0] >= p)),
     a = G[i - 1],
     b = G[i];
-  return Math.max(0, a[1] + ((b[1] - a[1]) * (Math.min(Pb, 138) - a[0])) / (b[0] - a[0]));
+  return Math.max(0, a[1] + ((b[1] - a[1]) * (p - a[0])) / (b[0] - a[0]));
+}
+/* 3.2.3-beta.217 (F29): the mass flux, kg/m2 s, of drum water through an open drain or blowdown valve to the atmospheric tank, at
+   every pressure (no pressure limit: an open valve passes water at any pressure). Pd the drum pressure (kg/cm2 G), Tw the drum water
+   temperature (C, unit model; at most the saturation of Pd), col the water column (m) from the drum water to the valve.
+   The water reaches the valve at P0 = drum + column. It flows as liquid until its pressure falls to its saturation pressure Ps
+   (steam table steamPsat, at least the 1.013 bar of the tank), then flashes and chokes:
+     liquid orifice   G = sqrt(2 rho (P0 - 1.013 bar))           (cold water: no flashing, the plain orifice law)
+     flashing, choked G = sqrt(2 rho (P0 - Ps) + Gs(Ps)^2)        (subcooled inlet form of the HEM, Leung and Grolmes 1988, the
+                                                                    omega method of API 520 Part I Annex C; Gs = AN_BDG)
+   G = the smaller one. Both agree when the water is at 100 C or colder, so the flux is continuous over every pressure and temperature */
+function anFlashG(Pd, Tw, col) {
+  const PdG = Math.max(0, +Pd || 0),
+    Tmax = typeof steamTsat === 'function' ? steamTsat(PdG) : 100,
+    T = isFinite(Tw) ? Math.min(+Tw, Tmax) : Tmax,
+    rho = anWaterRho(T),
+    pb = 101325,
+    p0 = (PdG + 1.0332) * 98066.5 + rho * 9.80665 * Math.max(0, +col || 0),
+    ps = Math.min(p0, Math.max(pb, typeof steamPsat === 'function' ? (steamPsat(T) + 1.0332) * 98066.5 : pb)),
+    gl = Math.sqrt(2 * rho * Math.max(0, p0 - pb)),
+    gs = anBdG(ps / 1e5);
+  return Math.min(gl, Math.sqrt(2 * rho * Math.max(0, p0 - ps) + gs * gs));
 }
 /* 3.2.3-beta.182 (Mina S177-3, beta.177 shutdown: the drum level stood at +218.83 mm for 6.7 h while the bottled boiler cooled, no
    shrink): ON. It was OFF "until the Training has the drain steps" (PR-OPE-5002 WARMING UP: "Observe steam drum level: swelling ... use
@@ -840,15 +881,17 @@ function anProcStep(S, dt) {
       /* Mina H1 (Step 28: the drum overfilled to +660 mm). PR-OPE-5002 (drum level): "Use lowering header drain until to control the level
          and at steam drum pressure of above 10 Kg/cm2 use the MBD and CBD". The lower ring header drains of flow diagram K1AU3-PD-019 Rev D:
          BD-1-005 / 006 (1") and BD-1-008 / 010 / 012 / 014 (2") from the furnace water wall lower ring header, manual valves V-BD1005 ~
-         V-BD1021, to the blowdown tank T-1051 (field valves, AN.field('lhd', %)). Their flow by the orifice law of a liquid,
-         Q = Cd x A x (opening / 100) x sqrt(2 x dP x rho):
+         V-BD1021, to the blowdown tank T-1051 (field valves, AN.field('lhd', %)). Their flow
+         Q = Cd x A x (opening / 100) x G:
            A   the bore of the six lines (PD-019 nominal sizes 4 x 2" + 2 x 1" = 0.00912 m2);
            Cd  0.61, the discharge coefficient of a sharp edged orifice (ISO 5167-2, standard engineering value);
-           dP  the drum pressure (unit model, kg/cm2 G) + the water column from the drum to the lower ring header; the column is taken
-               as the refractory lined lower furnace, 7.748 m from the grate (FHI manual 2-4-9), the documented part of that height
-               (the drum stands higher, so the real column and the flow are larger);
-           rho 1000 kg/m3 (water).
-         Used only below 10 kg/cm2 (the SOP; FHI 2-8-TAB_6-10: never while steaming). MBD above 10 kg/cm2: below */
+           G   anFlashG: the smaller of the liquid orifice flux and the choked flux of the flashing drum water, at the drum pressure
+               (unit model, kg/cm2 G) + the water column from the drum to the lower ring header; the column is taken as the
+               refractory lined lower furnace, 7.748 m from the grate (FHI manual 2-4-9), the documented part of that height (the drum
+               stands higher, so the real column and the flow are larger); rho of the water at its temperature (steam table).
+         3.2.3-beta.217 (F29, live Cold start: drains 10 % open at 12 kg/cm2, nothing left the drum): before, the flow was set to 0 at
+         and above 10 kg/cm2 and was the cold-water orifice law (rho 1000, no flashing) below. An open valve passes water at every
+         pressure; the flashing chokes it instead. MBD: below */
       let lhdQ = 0;
       /* 3.2.3: the drum pressure of the drains is the plant (unit model U.Pd, kg/cm2 G) while the unit model runs. Before: only the AI0128
          of ABC-001C, which is not on that sheet (pr.integ.pd = -1), so the drains always saw 0 kg/cm2 (the lower header drain also
@@ -858,32 +901,25 @@ function anProcStep(S, dt) {
         const ps0 = S1 && pr.integ.pd >= 0 ? S1.rt.st[pr.integ.pd] : null;
         return ps0 && isFinite(ps0.val) ? Math.max(0, +ps0.val) : 0;
       })();
+      /* 3.2.3-beta.217: the drum water temperature (unit model); without the unit model the water is taken at saturation */
+      const drumTw = typeof AN_UNIT !== 'undefined' && AN_UNIT.on && isFinite(AN_UNIT.Tw) ? +AN_UNIT.Tw : NaN;
       if (typeof AN_SRC !== 'undefined' && AN_SRC.field && AN_SRC.field.lhd && AN_SRC.lhdPct > 0 && q.y > lo) {
-        const Pd = drumP;
-        if (Pd < 10)
-          lhdQ =
-            0.61 *
-            0.00912 *
-            (AN_SRC.lhdPct / 100) *
-            Math.sqrt(2 * (Pd * 98066.5 + 1000 * 9.80665 * 7.748) * 1000) *
-            3.6; /* kg/s -> T/H */
+        lhdQ = 0.61 * 0.00912 * (Math.min(100, AN_SRC.lhdPct) / 100) * anFlashG(drumP, drumTw, 7.748) * 3.6; /* kg/s -> T/H */
       }
       /* 3.2.3 MASS BLOWDOWN (PR-OPE-5002 5698: "at steam drum pressure of above 10 Kg/cm2 use the MBD and CBD to control the level"; FHI
          SECT_8 TAB_9: "if the water level is abnormally high, reduce the level by opening the intermittent blowdown valves"). Flow
          diagram K1AU3-PD-019 (A1-0-001 RA p15): the drum line BD-1-001-LE1W-2.5" goes through V-BD1002 to the mass blowdown MOV
          MV-BD1001 (DITL-38, its position) and BD-1-002-DC1W-8" MASS BLOWDOWN LINE to the blowdown tank T-1051. Saturated water
-         flashing is choked at the smallest bore: flow = A x G x opening, A = the MV-BD1001 valve bore, 45.0 mm inlet (62.6 mm outlet), KOSO
-         MA5ES3P1425a-01 p24 (0.00159 m2; before: the 2.5" pipe taken as Sch 80, 59.0 mm); G = the critical mass flux of saturated water,
-         homogeneous equilibrium model (CALCULATION: the standard Moody critical flow chart, a property like the steam table: 3,900 kg/m2 s
-         at 13.8 bar, 8,300 at 34.5, 14,650 at 69, 23,900 at 138). About 48 T/H full open at 35 kg/cm2.
+         flashing is choked at the smallest bore: flow = Cd x A x G x opening, A = the MV-BD1001 valve bore, 45.0 mm inlet (62.6 mm outlet),
+         KOSO MA5ES3P1425a-01 p24 (0.00159 m2; before: the 2.5" pipe taken as Sch 80, 59.0 mm); G = anFlashG (the drum water at the drum
+         pressure, no column: the line leaves the drum); Cd 0.61 as the lower header drains (one law for every drum outlet).
+         3.2.3-beta.217: G is now the HEM of the IF97 steam table (AN_BDG, about twice the old chart values) and the Cd is applied (before
+         A x G, no Cd): about 57 T/H full open at 35 kg/cm2 (before 48; MB-019 item 23, the MBD line, 50 T/H). No pressure limit.
          The continuous blowdown MV-BD1002: below */
       let mbdQ = 0;
       if (typeof anDitlPos === 'function' && q.y > lo) {
-        const pos = anDitlPos('DITL-38', 0),
-          Pb = drumP * 0.980665 + 1.013; /* bar abs */
-        if (pos > 0 && Pb > 1.1) {
-          mbdQ = (0.00159 * anBdG(Pb) * Math.min(100, pos) * 3.6) / 100; /* kg/s -> T/H */
-        }
+        const pos = anDitlPos('DITL-38', 0);
+        if (pos > 0) mbdQ = (0.61 * 0.00159 * anFlashG(drumP, drumTw, 0) * Math.min(100, pos) * 3.6) / 100; /* kg/s -> T/H */
       }
       lhdQ += mbdQ;
       /* 3.2.3 SOHEE: the steam the sootblowers take between the drum and FT-MS1031 (unit.js AN_SB): it leaves the drum, unseen by the
@@ -899,7 +935,7 @@ function anProcStep(S, dt) {
          (hmi-op.js AN_CBD_DESIGN); before it was the 25 T/H snapshot difference, of which 10 T/H had no outlet on MB-019. integLoss stays the setting of the
          field blowdown valve (AN.blowdown); now it also follows the MOV position and, as a choked flashing flow, the drum pressure:
          x G(P) / G(134 kg/cm2, the drum at 150 MW, unit model Start at 150 MW). Before: 25 T/H at any pressure and with MV-BD1002
-         shut. About 9 T/H at 35 kg/cm2 */
+         shut. About 6.3 T/H at 35 kg/cm2 full open (3.2.3-beta.217, the IF97 HEM table; 5.5 T/H with the old chart table) */
       let loss = pr.integLoss || 0;
       if (loss > 0 && typeof anDitlPos === 'function') {
         const pc = anDitlPos('DITL-38 #MV-BD1002', 0);
