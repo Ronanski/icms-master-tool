@@ -1374,12 +1374,13 @@
         setTimeout(tick, 150);
         return;
       }
-      const r = call(() => P.press(p.row), 'no logic') || '';
+      /* live run 2026-11-13 F7: the position before the press (an SOV moves in the same scan: read after, it had "not moved") */
+      const p0 = (call(P.info, null) || {}).pos,
+        r = call(() => P.press(p.row), 'no logic') || '';
       /* Mina F22, F23, F26: a press is judged by what the valve does, not by the inputs in the moment of the press (FULLY OPEN is 1 when CLOSE
          is pressed and that is no block). A travel command that moves nothing in its time gets the reason; a sequence (ISOLATE, REINSTATE)
          moves its valve only after the bypass: 14 s */
       const hard = typeof r === 'string' && r,
-        p0 = (call(P.info, null) || {}).pos,
         wait = /^(OPEN|CLOSE)$/.test(p.l) ? 3000 : /^(ISOLATE|REINSTATE)$/.test(p.l) ? 14000 : 0;
       msg.textContent = hard ? '⚠ ' + r : wait ? P.n + ' ' + p.l + ': sent' : P.n + ' ' + p.l + ': EXECUTED';
       if (!hard && wait) {

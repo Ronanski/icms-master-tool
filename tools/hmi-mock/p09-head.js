@@ -25,6 +25,8 @@
       SVB: { n: 'XV-FA1055-B2', t: 'Fluidizing air blower B surge (to silencer) SOV', mov: 'DITL-28C #B', tg: '~TO SILENCE' },
       OVA: { n: 'XV-FA1055-A3', t: 'Fluidizing air blower A outlet SOV', mov: 'DITL-28C', tg: '~OUTLET SOV' },
       OVB: { n: 'XV-FA1055-B3', t: 'Fluidizing air blower B outlet SOV', mov: 'DITL-28C #B', tg: '~OUTLET SOV' },
+      LOA: { n: 'PAF LUBE OIL PUMP A', t: 'Primary air fan lube oil pump A', ad: 'DITL-24', d: 'DITL-24' },
+      LOB: { n: 'PAF LUBE OIL PUMP B', t: 'Primary air fan lube oil pump B', ad: 'DITL-24 #B', d: 'DITL-24 #B' },
       APH: { n: 'AIR PREHEATER', t: 'H-1052', ad: 'DITL-43', d: 'DITL-43' },
       CPA: { n: 'FICFA1071', t: 'Primary air flow', ctl: 'FICFA1071', io: 'FICFA1071' },
       CSA: { n: 'FICFA1081', t: 'Secondary air flow', ctl: 'FICFA1081', io: 'FICFA1081' },
