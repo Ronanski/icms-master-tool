@@ -2825,6 +2825,13 @@ const AN_AV = {
        lever IN PLACE; Fan Specification Sheet 4 of 5, 3.3.1: FAILURE = LOCK POSITION */
     PICFG108A: 'PCD-FG1056-1 (ID fan damper, STI CMV double acting, airlock set 2.5, air failure in place)'
   },
+  /* 3.2.3-beta.180 (SOHEE): modulating valves with a SPRING (single acting, no airlock): controller -> [spring position, travel
+     start, full travel (bar g)]. FA blower inlet valves FCV-FA1055-A1 / B1 (ABC-014 FICFA1055A / B): Continental P&ID 500-0ds REV03
+     (o&m-package-phase-1 L10-5 Fluidizing air blower) "Modulated Valve PNEUMATIC - DN500 4-20 mA - Single acting", NO (normally
+     open); TECOFI assembly "PNEUMATIC ACTUATOR SR200 ON VP LUG DN500" (spring return) + SIPART PS2 positioner + filter regulator.
+     The spring pressures are not in the docs: 0.6 / 2.0 bar = the median precompression / full travel of the package sheets below
+     (NO-SOURCE) */
+  spr: { FICFA1055A: [100, 0.6, 2.0], FICFA1055B: [100, 0.6, 2.0] },
   /* the lock pressure of a valve whose own sheet gives its set point (kg/cm2); the others AN_AV.lock */
   lk: { PICFG108A: 2.5 },
   /* on / off valves by the tag of the DITL solenoid: spring position (100 open / 0 closed, or 'hold'), precompression and full
@@ -2845,7 +2852,12 @@ const AN_AV = {
     'FW1121-1': ['hold'] /* item 25 */,
     MU1109: [100, 1.0, 1.9] /* item 39 */,
     FS1005: [100, 0.6, 1.7] /* item 44 */,
-    CD1004: [100, 0.276, 1.931] /* item 45: 4 / 28 psig */
+    CD1004: [100, 0.276, 1.931] /* item 45: 4 / 28 psig */,
+    /* 3.2.3-beta.180 (SOHEE): FA blower surge (to silencer) and outlet SOVs XV-FA1055-A2 / A3 (B2 / B3 on DITL-28C #B, same drawing
+       tag): Continental P&ID 500-0ds REV03, single acting, NO (normally open); TECOFI "PNEUMATIC ACTUATOR SR115 ON VP DN150" /
+       "SPRING RETURN PNEUMATIC ACTUATOR SR200 ON VP LUG DN450". Spring pressures NO-SOURCE (as spr above) */
+    'FA1055-A2': [100, 0.6, 2.0],
+    'FA1055-A3': [100, 0.6, 2.0]
   }
 };
 /* the unit header pressure the valves see (kg/cm2), NaN while the plant model is OFF or the air model has not run */
@@ -2860,6 +2872,13 @@ function anAv(tag, x) {
   if (tag && typeof anFaultStuck === 'function') {
     const s = anFaultStuck(tag, x);
     if (s != null) return s;
+  }
+  const sp = tag && AN_AV.spr[tag];
+  if (sp) {
+    const P = anAvP();
+    if (!isFinite(P) || !isFinite(x)) return x;
+    const f = Math.max(0, Math.min(1, (Math.min(P, AN_AV.reg) * AN_AV.bar - sp[1]) / (sp[2] - sp[1])));
+    return sp[0] + (x - sp[0]) * f;
   }
   if (!tag || !AN_AV.hold[tag]) return x;
   const P = anAvP(),
