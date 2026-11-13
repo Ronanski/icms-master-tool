@@ -3,7 +3,8 @@
 // carry-over (src/analog/ui/category-search.js), so the status went RUN / PAUSED / "RUN (ABC)" and the DCS START of SWP-A / B and the
 // FIELD REMOTE did nothing. Now setCat alone carries RUN (and a paused DITL page stays paused). Checks, local and ?worker=1: 150 MW, the
 // DITL in service, ABC RUN; LS_DOCK.openD of a DITL drawing: RUN stays on with no toggle for 2 s, no "RUN kept" event, the world scans;
-// the START PB of the A-AUX. COOLING WATER PUMP (DITL-76 row 2, as eng_radio_winter.js) runs it (row 5 RUNNING); a maintained selection
+// the START PB of the A-AUX. COOLING WATER PUMP (DITL-76 row 2, as eng_radio_winter.js; stopped first by its STOP PB, it runs at
+// 150 MW) runs it (row 5 RUNNING); a maintained selection
 // (DITL-78 row 1) stays; back to ABC: RUN on; a paused DITL page opens the ABC page paused. Usage: node tests/regress/dock_open_run.js [html]
 const { open } = require('./lib.js');
 const fs = require('fs'), url = require('url'), path = require('path');
@@ -64,6 +65,11 @@ async function mode(worker) {
   };
   const p = await page.evaluate(async outS => {
     const out = eval(outS);
+    /* 3.2.3-beta.189: since the closed cooling plant model (3.2.1, ditl150.js EQ, HMI snapshot 27.PNG) ACWP-A runs at 150 MW (ACWP-B is
+       the AUTO standby): the operator stops it first with its STOP PB (DITL-76 row 18 M.1231), then the START PB is tested */
+    WORLD.dpress('DITL-76', 17);
+    for (let i = 0; i < 60 && out('DITL-76', 4); i++) await new Promise(r => setTimeout(r, 100));
+    await new Promise(r => setTimeout(r, 1000));
     const before = out('DITL-76', 4);
     const pr = WORLD.dpress('DITL-76', 1),
       sel = WORLD.dset('DITL-78', 0, 1);

@@ -78,6 +78,20 @@
     };
     trip.onclick = openAlarms;
     alm.onclick = openAlarms;
+    /* 3.2.3-beta.189 (SOHEE): the signals the user forced (Inspector FORCE), on every ABC sheet. The old layout has its FORCED chip and
+       the list with Go / Release (src/ui/shell/cr.js, #crflist); this layout had none, so a force was not seen. The pill shows only while
+       a signal is forced and opens the same list */
+    const frc = E('button', 'pill frc');
+    frc.type = 'button';
+    const frcT = E('span', '', '');
+    frc.append(E('span', 'dot'), frcT);
+    frc.title = 'Signals you forced (FORCE in the Inspector), on every ABC sheet: they stay until you release them. Click: the list with Go and Release';
+    frc.hidden = true;
+    frc.onclick = e => {
+      e.stopPropagation();
+      const c = document.querySelector('#cralarm .crchip.frc');
+      if (c) c.click();
+    };
     /* speed: the app's own speed control (the Simulation speed select), shown as ×1 ▾ with the choices */
     const spd = E('div', 'spd'),
       spdB = E('button', 'pill', 'Speed ×1'),
@@ -142,11 +156,11 @@
         else AN.runOn();
       } catch (e) {}
     };
-    pills.append(trip, alm, runB, spd, seg);
+    pills.append(trip, alm, frc, runB, spd, seg);
     strip.append(vals, pills);
     band.prepend(strip);
     document.body.classList.add('sc');
-    S = { cells, trip, tripT, alm, almT, spdB, bOp, bEn, runB, runT };
+    S = { cells, trip, tripT, alm, almT, frc, frcT, spdB, bOp, bEn, runB, runT };
     setTimeout(() => dispatchEvent(new Event('resize')), 0);
     setInterval(tick, 1000);
     tick();
@@ -206,6 +220,15 @@
     S.alm.classList.toggle('alm', n > 0);
     S.alm.classList.toggle('new', un > 0);
     S.almT.textContent = n ? n + (n === 1 ? ' alarm' : ' alarms') + (un ? ' · ' + un + ' new' : '') : 'No alarm';
+    /* the user's forces: S.rt.force minus what the plant model owns (S.rt.pf), the rule of cr.js userForces and the Inspector */
+    let nf = 0;
+    for (const sh of (window.AN && AN.sheets) || []) {
+      const R = sh.S && sh.S.rt;
+      if (R && R.force) for (const k in R.force) if (!(R.pf && R.pf[k])) nf++;
+    }
+    S.frc.hidden = !nf;
+    const ft = nf + ' FORCED';
+    if (S.frcT.textContent !== ft) S.frcT.textContent = ft;
     /* Mina beta.213: at 1366 the strip (two-line labels, value, unit) was taller than the top bar and the page under it covered the
        units and the reheat values: the top bar takes the height the strip needs (any width, dock open or not) */
     try {

@@ -3701,7 +3701,14 @@ function anUnitStep0(dt) {
      kg/cm2 per hour): about 4.6 kg/cm2 per hour in the headless Hot run. The cooling reads the air that flows (0 with the fans off) */
   const asC = U.taf0 > 0 ? Math.max(0, taf / U.taf0) : 1,
     unf = Math.max(0, 1 - Fe / (0.1 * U.F0)),
-    Qloss = unf * (U.kcool * asC + U.kamb) * Math.max(0, (U.Tw - U.Tamb) / 300);
+    /* Mina S179-2 (beta.179 Hot restart: fans on, boiler unfired, drum 99.4 -> 73.1 kg/cm2 and bed 673 -> 439 C before light-off; FHI
+       SECT_7 Fig 4 HOT STARTUP: fans and blowers started at 0.0 h, furnace 700 -> 650 C at 0.1 h, the pressure stays at 100): the draft
+       cooling took the air at the ambient. The air the fans push goes through the bed first and reaches the water walls at the bed
+       temperature: it can only cool the water by Tw - Tgas, Tgas = the bed (not under the ambient). While the bed is hotter than the
+       water the draft carries the bed heat away (the bed lag below) and takes none from the water: Fig 4. Once the bed is under the
+       water (Fig 5 cold shutdown, furnace 840 -> 100 C in 8 h) the draft cools the water as before. kcool / kamb unchanged; the ambient
+       loss (kamb) stays on Tw - Tamb */
+    Qloss = unf * (U.kcool * asC * Math.max(0, (U.Tw - Math.max(U.Tamb, U.Tb)) / 300) + U.kamb * Math.max(0, (U.Tw - U.Tamb) / 300));
   if (U.cold) {
     const ts = tsatOf(U.Pd),
       /* the water can only take heat from a hotter furnace (Mina item 12d: water 147 C with bed 141 C) */
@@ -4030,7 +4037,11 @@ function anUnitStep0(dt) {
          (100 ~ 300 C) the loop model of the hot plant (anchored at 150 MW) takes over. Before: the cold model was blended out at 10 %
          of the design air, and the loop model wanted 27 % at 348 T/H */
       const tb = isFinite(+U.Tb) ? +U.Tb : 30,
-        ia = idf && U.idf && U.idf.S.rt.pm ? Math.max(0, Math.min(1, (tb - 100) / 200)) : 1;
+        /* Jennie beta.192 (headless Hot restart, beta.191: the ID fan at 13 % before any air read -172 mmH2O for 4 minutes, steps 33 ~ 36;
+           PR-OPE-5002 IDF START-UP: about -15 at 13 %). A hot bed with no fire and no air is the same gas path as the cold furnace: the
+           loop model anchored at 150 MW (its air term taf / taf0 - 1 = -1 with no air) takes over only with the air too, fully from half
+           the purge air of the SOP (203 of 406 T/H), so the Hot / Warm restart starts the fans like the Cold one */
+        ia = idf && U.idf && U.idf.S.rt.pm ? Math.max(0, Math.min(1, (tb - 100) / 200)) * Math.max(0, Math.min(1, taf / 203)) : 1;
       if (ia < 1 && !p.pr.src) {
         const m = U.idfV ? Math.max(0, Math.min(100, +U.idfV.S.rt.v[U.idfV.n] || 0)) : 0,
           sp = anIdfN(m) / AN_IDF_CRV[2][1],

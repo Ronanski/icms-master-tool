@@ -33,6 +33,11 @@ body.sc #gsbar > #crband{position:relative;gap:8px!important;padding:0 8px!impor
 #scstrip .pill.alm{background:#f6e7cf!important;border-color:var(--sc-amber)!important;color:#5c3f0b!important}
 #scstrip .pill.alm .dot{background:var(--sc-amber)}
 #scstrip .pill.alm.new{animation:scblink 1s steps(2,start) infinite}
+#scstrip .pill.frc{background:#f6e7cf!important;border-color:var(--sc-amber)!important;color:#5c3f0b!important}
+#scstrip .pill.frc[hidden]{display:none!important}
+#scstrip .pill.frc .dot{background:var(--sc-amber);border-radius:2px}
+/* the list of the FORCED pill opens over the side panel (Why / Inspector), not under it: its Go / Release stayed hidden */
+body.sc #crband > #cralarm > #crflist{z-index:8000}
 @keyframes scblink{to{background:var(--sc-white)}}
 @media (prefers-reduced-motion:reduce){#scstrip .pill.alm.new{animation:none}}
 #scstrip .seg{display:inline-flex;border:1px solid var(--sc-steel);border-radius:6px;overflow:hidden;flex:none}

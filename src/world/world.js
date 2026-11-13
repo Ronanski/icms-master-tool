@@ -1485,7 +1485,8 @@
       msg('One world OFF: FROM DITL signals are manual inputs again');
     }
   };
-  let last = 0;
+  let last = 0,
+    lastPT = NaN;
   /* P3 (user 2026-11-01): the DITL scan of the one world is group 2 of the engine scheduler (src/analog/engine/sched.js calls this
      every 200 ms): the job (a generator) of one scan, or null when the world does not run now */
   W.scanJob = () => {
@@ -1498,15 +1499,27 @@
     if (!go) {
       if (W.live) W.live = false;
       last = 0;
+      lastPT = NaN;
       return null;
     }
     W.live = true;
     const now = performance.now();
     /* Mina F37: the real time since the last scan is kept up to 2 s (a job that took longer lost the rest), and what a frame could not scan is owed
        to the next one (W._owe, at most 60 s of plant), so the DITL keeps the time of the plant */
-    let dt = Math.min((now - (last || now)) / 1000, 2) * (AN.cat === 'an' ? AN.spd || 1 : TSP) + (W._owe || 0);
+    /* Jennie beta.188 (headless Normal shutdown at x300, step 132 MV-TS1005 / 1004 CLOSE): on the ABC Run the plant model has its own clock
+       (sched.js group 1, AN.unit.t). When a tick of the plant took longer than the 200 ms of the DITL group (x300 on this PC: 10 ms a step,
+       600 steps a tick), the DITL got one scan of 2 s real time while the plant went 600 s: measured 12 scans of the world in 20 minutes of
+       plant, the CLOSE press held for 10 minutes and the turbine stop valves closed in 40 minutes. The world now takes the time the plant
+       model went since its last scan (the same clock as the plant, one world = one time); real time only while the plant clock stands
+       (plant model OFF). What a job could not scan stays owed (up to 600 s) and the plant waits while it is above 60 s (sched.js group 1) */
+    const pt = AN.cat === 'an' && AN.unit ? +AN.unit.t : NaN,
+      byP = isFinite(pt) && isFinite(lastPT) && pt > lastPT;
+    let dt =
+      (byP ? Math.min(pt - lastPT, 600) : Math.min((now - (last || now)) / 1000, 2) * (AN.cat === 'an' ? AN.spd || 1 : TSP)) +
+      (W._owe || 0);
     W._owe = 0;
     last = now;
+    lastPT = pt;
     const job = function* () {
     try {
       /* 3.2.0-beta.23: while a short timer counts, a device moves or an output changed (W.busy, set by the scan: tmStep / mvStep / fdStep /
@@ -1530,7 +1543,7 @@
           W.busy = TMBUSY;
           used += h;
         }
-        W._owe = Math.min(60, dt - used);
+        W._owe = Math.min(byP ? 600 : 60, dt - used);
         dt = used;
       }
     } catch (e) {

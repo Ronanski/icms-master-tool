@@ -332,6 +332,22 @@ window.LS_GUIDE = (function () {
   /* 3.2.3-beta.56 (automatic run, load up to 45 MW on oil): the turbine took 96 T/H while the oil stayed at the 40 ~ 55 T/H of the bypass steps; the main steam fell 61 -> 10 kg/cm2 and the drum swelled to HH (MFT). The load-up steps now show oil ▲ (all lit burners +5 %) while the main steam is under 60 kg/cm2 and oil ▼ over 100 (FHI Part 2 Sect 7 Tab 4 Fig. 2: 60 kg/cm2 at 15 % load, 100 at 30 % = 45 MW; FHI Tab 9 p 2-8-TAB_9-11 step 12 and PR-OPE-5002 27.17: all four burners together to meet the start-up curve), one press each 30 s up / 60 s down (pace NO-SOURCE, ASSUMED_sources row 17), and run x10 while the pressure is under 60. */
   const mspOil = up => { const k = up ? 'mspU' : 'mspD', due = () => (up ? h().MSP() < 60 : h().MSP() > 100), b0 = oilStep(up ? 'Oil ▲ +5 % (main steam under 60 kg/cm², each 30 s)' : 'Oil ▼ −5 % (main steam over 100 kg/cm²)', ['A', 'B', 'C', 'D'], up ? 5 : -5), f0 = b0.f; b0.f = () => ((paceT[k] = simT()), f0()); return Object.assign(b0, { on: () => !due() || simT() - (paceT[k] || -1e9) < (up ? 30 : 60), hide: () => !due() }); };
   /* the Do it for me never presses the ▲ / ▼ trims (the trainee's own hand, #108): the seek of the load-up steps moves the oil instead, by the same rule as the buttons */
+  /* Mina S181-2 CRITICAL (beta.181 Hot restart, step "LOAD UP to 45 MW"): the hand-over to the main valve put the start-up valve
+     LICBR1001B in MANUAL at its MV, 72.7 % (it was making up the MS blow-off loss), with LICBR1001A in AUTO; the blow-off closed with the
+     load, feedwater 86 T/H against 34 T/H steam, level -48 -> +259 mm in 8 min: HH, MFT, turbine trip. The Do it closed the start-up
+     valve 5 % a minute whatever the level. The start-up valve in MANUAL is the operator's: while the level is over the SV of LICBR1001A
+     (+50) or the feedwater runs over the steam flow by more than 10 T/H (the drum fills: mass balance), close it 5 % each 10 s of the
+     plant; otherwise 5 % a minute as the step says. LICBR1001A (then LICBR1001 in 3-element, the next step) takes the level on the
+     main valve. Called in every step of sections 7 ~ 9 (doIt) until the valve is shut */
+  const suSeek = () => {
+    if (md('LICBR1001B') !== 'MAN' || (md('LICBR1001A') !== 'AUTO' && md('LICBR1001') !== 'AUTO')) return;
+    const m = +mv('LICBR1001B');
+    if (!(m > 0)) return;
+    const fill = h().lvl() > 50 || h().FW() > h().MSF() + 10;
+    if (simT() - (paceT.su || -1e9) < (fill ? 10 : 60)) return;
+    paceT.su = simT();
+    A.man('LICBR1001B', Math.max(0, Math.round((m - 5) * 10) / 10));
+  };
   /* Warm / Hot restart load up to 45 MW (Sakura 2026-11-13; Mina live Warm beta.183: the load went to 35 MW before the coal, the main
      steam fell 83 -> 53 kg/cm2 with LOW-LOW alarms; headless Hot beta.175: the main steam fell under 110 and the TCS held the load at 22 MW,
      criterion B 1.3 MAIN STEAM PRESS. NOT LOW, tcs.js TCS_B[6], while the oil came up only under 60, the cold number).
@@ -663,8 +679,24 @@ window.LS_GUIDE = (function () {
      The operator trims the fuel down by hand inside the pressure band of the 45 MW step (115 ~ 126 kg/cm2): FIC-CM when it is MANUAL
      (ABC-004A M.0130), else HIC-BM, -0.5 % each minute of the plant while the bed is over 760 C and the main steam pressure over 118
      (the band byHand holds, 118 ~ 123). The pace is that of the Do it (as byHand), not a plant value */
+  /* Jennie beta.188 (headless Normal shutdown on beta.181, steps 126 ~ 129): the trim looked at the bed and the pressure of now only, and
+     the bed answers the coal some minutes late (the same delay as byHand below): the coal kept falling after the bed had turned, the
+     main steam fell 123 -> 97 kg/cm2, the coal put back overshot to 133 kg/cm2, the MS blow-off vented about 120 T/H, the hotwell went
+     to its LOW-LOW (condensate pump stop), the deaerator emptied and both feed pumps tripped (MFT) in 2 of 4 runs. Now the trim looks
+     2 minutes ahead on both (value + 4 x its change of the last 30 s, as byHand): no cut once the bed is on its way under 760 C or the
+     pressure on its way under 118 kg/cm2 */
+  const bed750P = {};
   const bed750 = () => {
-    if (!(+U().Tb > 760) || !(h().MSP() > 118) || simT() - (paceT.b750 || -1e9) < 60) return;
+    if (simT() - (bed750P.t || -1e9) < 30) return;
+    const old = simT() - (bed750P.t || -1e9) > 90 /* a look of long ago (another step, a load) is no rate */,
+      tb = +U().Tb,
+      p = +h().MSP() || 0,
+      fT = old ? tb : tb + 4 * (tb - bed750P.tb),
+      fP = old ? p : p + 4 * (p - bed750P.p);
+    bed750P.t = simT();
+    bed750P.tb = tb;
+    bed750P.p = p;
+    if (!(tb > 760) || !(fT > 760) || !(p > 118) || !(fP > 118) || simT() - (paceT.b750 || -1e9) < 60) return;
     paceT.b750 = simT();
     const ft = md('FIC-CM') === 'MAN' ? 'FIC-CM' : 'HIC-BM',
       m = +mv(ft);
@@ -854,9 +886,28 @@ window.LS_GUIDE = (function () {
       dLv = () => +h().lvl() || 0,
       dueLhdO = () => dPd() < 10 && dLv() > 127 && !fstate('lhd'),
       dueLhdC = () => fstate('lhd') && (dLv() < 0 || dPd() >= 10),
-      dueMbdO = () => dPd() >= 10 && dLv() > 127 && mcvPos('MV-BD1001') <= 0,
-      dueMbdC = () => mcvPos('MV-BD1001') > 0 && (dLv() < 0 || dPd() < 10),
-      dueCbd = () => dPd() >= 10 && mcvPos('MV-BD1002') < 100;
+      /* Mina S179-4 (beta.179 Hot restart: at light-off the level fell +204 -> -1 mm in 2 min, steam flow 0, blow-off 0): the drum was
+         bottled up at +200 mm on purpose (PR-OPE-5004; AN_BU_DRUM), as the reserve for the shrink while the draft cools it and for the
+         firing. The MBD above +127 opened on that reserve at the first warm-up step, about 100 T/H at 99 kg/cm2, and drained it to the
+         close point 0 before any swell came. On a restart (AN.restartKind) the blowdown answers a SWELL only: the level above the
+         bottle-up level +200 and rising over the last minute; close as soon as the level is back under +200 or stops rising, so the
+         reserve stays (headless Hot at 112 kg/cm2: the MBD passes about 116 T/H, a close at +127 left it open to -422 mm, MFT); the CBD the same (PR-OPE-5002 5698: the MBD and CBD "to control the level"). Cold start: unchanged (+127 / 0, CBD once
+         over 10 kg/cm2) */
+      rsK = () => !!(window.AN && AN.restartKind),
+      lvH = { t: -1e9, v: NaN, r: 0 },
+      lvRise = () => {
+        const t = simT();
+        if (t - lvH.t >= 60) {
+          lvH.r = isFinite(lvH.v) && t - lvH.t < 600 ? dLv() - lvH.v : 0;
+          lvH.v = dLv();
+          lvH.t = t;
+        }
+        return lvH.r > 0;
+      },
+      swell = () => !rsK() || (dLv() > 200 && lvRise()),
+      dueMbdO = () => dPd() >= 10 && dLv() > (rsK() ? 200 : 127) && swell() && mcvPos('MV-BD1001') <= 0,
+      dueMbdC = () => mcvPos('MV-BD1001') > 0 && (dLv() < (rsK() ? 200 : 0) || (rsK() && !lvRise()) || dPd() < 10),
+      dueCbd = () => dPd() >= 10 && mcvPos('MV-BD1002') < 100 && (!rsK() || swell());
     const dB = (o, due) => Object.assign(o, { on: () => !due(), hide: () => !due() });
     const DRN = [
       dB(btn('FIELD: lower ring header drains 10 % open (drum level high, under 10 kg/cm²)', () => (A.field('lhd', 10), window.lsEventAdd && lsEventAdd('FIELD', 'FIELD', 'Field operator: lower ring header drains 10 % open (PR-OPE-5002 warming up, swelling)'), '')), dueLhdO),
@@ -1263,13 +1314,16 @@ window.LS_GUIDE = (function () {
       { st: 2, sec: 24, t: 'Start the secondary air fan (SAF)', d: 'Close the secondary air damper (0 %) before starting the fan.', c: R.SAF, a: [btn('SA damper 0 %', () => A.man('FICFA1081', 0)), mot('M.3303', 'SAF')], fps: ['FICFA1081'], field: [23] },
       /* live check #107 (PR-OPE-5002 SAF START-UP: "Adjust SAF Inlet Damper Manually up until combustion air flow increase to 200T/H (You can use
          double arrow but be cautious of the furnace pressure reaction)"): the SA flow by hand to 200 T/H, the IDF coupling with it (-15) */
-      { st: 2, sec: 24, t: 'Secondary air fan inlet damper up: secondary air 200 T/H, furnace pressure −15 mmH₂O', d: 'Do: raise the SA damper FICFA1081 (MANUAL) until the secondary air flow is 200 T/H. ▲▲ (+5 %) is allowed, but watch the furnace pressure: when it rises toward positive, raise the IDF coupling PICFG108 (MV ▲); when it is below −25, lower it. The damper is about 34 % at 200 T/H.', c: b.HOLD(10, b.ALL(b.VAL('SA', 185, 215), b.VAL('FP', -65, 35))), fps: ['FICFA1081', 'PICFG108'], seek: seekB([[() => h().SA(), 190, 210, 'FICFA1081', 2], [() => h().FP(), -65, 35, 'PICFG108', 1, 1]]), a: [btn('SA damper ▲▲ +5 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (5))))), btn('SA damper ▲ +1 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (1))))), btn('SA damper ▼ −1 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (-1))))), btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1)))] },
+      /* Jennie beta.191 (Mina S179-3 LOW, live Hot restart: furnace +29 ~ +43 mmH2O for 20 min at SA 172 ~ 195 T/H): the Do it trimmed the IDF
+         coupling only at the alarm limits (-65 / +35, alarm list PT-FG1085 / 1086), so it rode near +35. PR-OPE-5002 SAF / PAF START-UP: "Maintain
+         the Furnace pressure to -15mmH2O": the trim now holds -25 ~ -5 (the step check keeps the alarm band). Headless Hot run: -8.6 ~ +4.5 */
+      { st: 2, sec: 24, t: 'Secondary air fan inlet damper up: secondary air 200 T/H, furnace pressure −15 mmH₂O', d: 'Do: raise the SA damper FICFA1081 (MANUAL) until the secondary air flow is 200 T/H. ▲▲ (+5 %) is allowed, but watch the furnace pressure: when it rises toward positive, raise the IDF coupling PICFG108 (MV ▲); when it is below −25, lower it. The damper is about 34 % at 200 T/H.', c: b.HOLD(10, b.ALL(b.VAL('SA', 185, 215), b.VAL('FP', -65, 35))), fps: ['FICFA1081', 'PICFG108'], seek: seekB([[() => h().SA(), 190, 210, 'FICFA1081', 2], [() => h().FP(), -25, -5, 'PICFG108', 1, 1] /* S179-3 */]), a: [btn('SA damper ▲▲ +5 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (5))))), btn('SA damper ▲ +1 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (1))))), btn('SA damper ▼ −1 %', () => A.man('FICFA1081', Math.max(0, Math.min(100, Math.round(mv('FICFA1081')) + (-1))))), btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1)))] },
       /* 3.2.0-beta.23: the PAF start interlock DITL-26A row 8 "PAF LUB. OIL PUMP ALL STOPPED" = 0 (DITL-24): a lube oil pump first */
       { st: 2, sec: 25, t: 'Start primary air fan lube oil pump A (DITL-24)', d: 'The primary air fan will not start with no lube oil pump running (DITL-26A row 8 "PAF LUB. OIL PUMP ALL STOPPED"). The pump has no DCS memory on the ABC, so it is started on DITL-24.', c: C('PAF lube oil pump A running (DITL-24)', () => dRun('DITL-24') !== 0, () => (dRun('DITL-24') === 1 ? 'RUNNING' : dRun('DITL-24') === 0 ? 'STOPPED' : '— (one world OFF)')), a: [dmot('DITL-24', 'PAF LO pump A')] },
       { st: 2, sec: 25, t: 'Start the primary air fan (PAF)', d: 'Close the primary air damper (0 %) before starting the fan.', c: R.PAF, a: [btn('PA damper 0 %', () => A.man('FICFA1071', 0)), mot('M.3302', 'PAF')], fps: ['FICFA1071'], field: [24] },
       /* live check #103 / #107 (PR-OPE-5002 PAF START-UP: "Increase PAF Inlet Damper Manually (Use Single Arrow ...). Maintain the Furnace
          pressure to -15mmH2O whilst simultaneously increasing HC Speed of IDF. Target Primary Air Flow: 180T/H = No Bed") */
-      { st: 2, sec: 25, t: 'Primary air fan inlet damper up (single arrow): primary air 180 T/H, ID fan coupling up (−15 mmH₂O)', d: 'Do: raise the PA damper FICFA1071 (MANUAL) 1 % at a time (single arrow) until 180 T/H (no bed). At the same time raise the IDF hydraulic coupling PICFG108 (MV ▲) to keep the furnace pressure near −15 mmH₂O. At the end the PA damper is about 18 % and the coupling about 16 % (PA 180 + SA 200 + FA 26 ≈ 406 T/H, above 25 % MCR = 151.5 T/H, DESIGN BASE total air 606 T/H).', c: b.HOLD(10, b.ALL(b.VAL('PA', 170, 195), b.PURGE_AIR, b.VAL('FP', -65, 35))), fps: ['FICFA1071', 'PICFG108'], seek: seekB([[() => h().PA(), 175, 190, 'FICFA1071', 1], [() => h().FP(), -65, 35, 'PICFG108', 1, 1]]), a: [btn('PA damper ▲ +1 %', () => A.man('FICFA1071', Math.max(0, Math.min(100, Math.round(mv('FICFA1071')) + (1))))), btn('PA damper ▼ −1 %', () => A.man('FICFA1071', Math.max(0, Math.min(100, Math.round(mv('FICFA1071')) + (-1))))), btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1)))] },
+      { st: 2, sec: 25, t: 'Primary air fan inlet damper up (single arrow): primary air 180 T/H, ID fan coupling up (−15 mmH₂O)', d: 'Do: raise the PA damper FICFA1071 (MANUAL) 1 % at a time (single arrow) until 180 T/H (no bed). At the same time raise the IDF hydraulic coupling PICFG108 (MV ▲) to keep the furnace pressure near −15 mmH₂O. At the end the PA damper is about 18 % and the coupling about 16 % (PA 180 + SA 200 + FA 26 ≈ 406 T/H, above 25 % MCR = 151.5 T/H, DESIGN BASE total air 606 T/H).', c: b.HOLD(10, b.ALL(b.VAL('PA', 170, 195), b.PURGE_AIR, b.VAL('FP', -65, 35))), fps: ['FICFA1071', 'PICFG108'], seek: seekB([[() => h().PA(), 175, 190, 'FICFA1071', 1], [() => h().FP(), -25, -5, 'PICFG108', 1, 1] /* S179-3 */]), a: [btn('PA damper ▲ +1 %', () => A.man('FICFA1071', Math.max(0, Math.min(100, Math.round(mv('FICFA1071')) + (1))))), btn('PA damper ▼ −1 %', () => A.man('FICFA1071', Math.max(0, Math.min(100, Math.round(mv('FICFA1071')) + (-1))))), btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1)))] },
       { st: 2, sec: 25, t: 'Furnace pressure control PICFG108 in AUTO, SV −15 mmH₂O', d: 'Do: when the hydraulic coupling is at about 16 % and the furnace pressure is steady at about −15 mmH₂O, PICFG108 A, SV −15 (PR-OPE-5002). While the MV is below 14 %, PICFG108 is FORCE MANUAL (ABC-008 M.0205): AUTO is not allowed yet. In AUTO, PICFG108 moves the coupling to hold −15.', c: b.ALL(b.MV('PICFG108', 14, null), b.MODE('PICFG108', 'AUTO'), b.SV('PICFG108', -16, -14), b.HOLD(30, b.VAL('FP', -30, 0))) /* Mina F56: coupling at 16 % and furnace near -15 before AUTO (PR-OPE-5002) */, fps: ['PICFG108'], ask: () => (mv('PICFG108') < 15 ? 'Raise the IDF coupling MV to about 16 % first: below 14 % AUTO is refused' : ''), seek: seekB([[() => +mv('PICFG108'), 15, 100, 'PICFG108', 1]]) /* the drawing forces MANUAL below 14 % (M.0205): the MV up first */, a: [btn('IDF coupling MV ▲ +1 %', () => A.man('PICFG108', Math.min(100, Math.round(mv('PICFG108')) + 1))), btn('IDF coupling MV ▼ −1 %', () => A.man('PICFG108', Math.max(0, Math.round(mv('PICFG108')) - 1))), btn('PICFG108 A, SV −15', () => (mv('PICFG108') < 14 ? 'PICFG108 is still FORCE MANUAL (ABC-008 M.0205: IDF coupling < 14 %): raise the MV first' : h().FP() <= -65 || h().FP() >= 35 ? 'Wait: furnace pressure ' + f0(h().FP()) + ' mmH₂O (must be inside the alarm limits L −65 ~ H 35, normal −15: alarm list PT-FG1085 / 1086)' : A.auto('PICFG108', -15)))] },
       /* ---- 3 purge ---- */
       {
@@ -1404,7 +1458,12 @@ window.LS_GUIDE = (function () {
            own hand, #108), so nothing lowered the oil. The seek does what the step text says: while the blow-off stands full open, oil ▼
            −5 % on every lit burner, not under 20 % (oilStep), one press each 2 minutes of the plant (the pace of oilBand, ASSUMED_sources row
            17: the pace of the Do it for me, not a plant value) */
-        seek: () => { if ((+mv('PICMS1002') || 0) < 100 || simT() - (paceT.bo57 || -1e9) < 120) return; paceT.bo57 = simT(); oilStep('', ['A', 'B', 'C', 'D'], -5).f(); },
+        /* Mina S181-3 (beta.181 Hot restart: the blow-off stood 50 ~ 71 % open about 90 min at 100 kg/cm2, the hotwell 464 -> -202 mm with
+           the make-up at 100 %): the choked blow-off passes about three times more at 100 than at 35 kg/cm2 (flow x MSP, unit.js U.vlv),
+           so half open at the hot hold is already more than full open at the cold one. The step text: the steam to the air is water the
+           make-up must give back, LCV-MU1110 alone about 58 T/H (valve sheet p90, plant.js). The seek lowers the oil also while the
+           blow-off steam to the air (unit U.mb less the HP bypass U.mhp) is over 58 T/H, not only at 100 % open */
+        seek: () => { const q = Math.max(0, (+U().mb || 0) - (+U().mhp || 0)); if (((+mv('PICMS1002') || 0) < 100 && !(q > 58)) || simT() - (paceT.bo57 || -1e9) < 120) return; paceT.bo57 = simT(); oilStep('', ['A', 'B', 'C', 'D'], -5).f(); },
         /* 3.2.3 automatic run (beta.36 LP heater open): the blow-off passed 60 ~ 70 T/H, the hotwell fell to -306 mm on LCV-MU1110 alone,
            the CEP stopped, the deaerator ran empty, MFT: MV-MU1001 opens when the hotwell is low (muFill) */
         get a() {
@@ -1736,7 +1795,7 @@ window.LS_GUIDE = (function () {
       { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Load change rate HIC-MWRL 1.2 MW/min', d: 'PR-OPE-5003: 150 to 90 MW at 1.2 MW per minute. The CCS stays in AUTO; you set only the rate and the target MW.', c: b.X5[0][1], fps: ['HIC-MWRL'] },
       { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Lower HIC-ULD to 90 MW (▼)', d: 'The CCS lowers the coal and the air with the load.', c: b.X5[1][1], fps: ['HIC-ULD'] },
       { st: 11, sec: 49, req: ['bm', 'tm'], t: 'Hold 90 MW for 8 ~ 10 min', d: 'PR-OPE-5003: hold at 90 MW before going lower. Drum level ±150 mm. O₂ trim AICFG112: AUTO while the steam is over 220 T/H; under 220 T/H the drawing forces it MANUAL (ABC-002 M.0102), then put its output at 50 % (neutral: LN15 0 % = SA × 0.8, 50 % = × 1.0). O₂ runs high at low load: the air demand LN5 does not go under 446 T/H.', c: b.X5[2][1], wait: 1 },
-      { st: 11, sec: 49, req: ['bm', 'tm'], t: 'HIC-MWRL 0.6 MW/min, HIC-ULD toward 45 MW: the CCS lets go near 63 MW', d: 'PR-OPE-5003: 90 to 45 MW at 0.6 MW per minute. At 72 MW (or feedwater 230 T/H) press 1 ELEMENT for the drum level (ABC-010 M.054F; below 100 T/H steam for 60 s the drawing selects it by itself, M.022C). Near 63 MW the steam flow falls below 220 T/H: the back-up command M.2013 (ABC-001C) puts HIC-BM and EIC-TM in MANUAL by itself (CLAUDE.md BU-CMD); HIC-ULD then tracks the MW.', c: b.X5[3][1], fps: ['HIC-MWRL', 'HIC-ULD', 'HIC-BM'], a: [btn('Drum level 1 ELEMENT (ABC-010 M.054F)', () => A.push('M.054F'))] },
+      { st: 11, sec: 49, req: ['bm', 'tm'], t: 'HIC-MWRL 0.6 MW/min, HIC-ULD toward 45 MW: the CCS lets go under 220 T/H steam', d: 'PR-OPE-5003: 90 to 45 MW at 0.6 MW per minute. At 72 MW (or feedwater 230 T/H) press 1 ELEMENT for the drum level (ABC-010 M.054F; below 100 T/H steam for 60 s the drawing selects it by itself, M.022C). When the steam flow falls below 220 T/H (about 62 ~ 73 MW, it depends on the pressure and the heaters in service), the back-up command M.2013 (ABC-001C) puts HIC-BM and EIC-TM in MANUAL by itself (CLAUDE.md BU-CMD); HIC-ULD then tracks the MW.', c: b.X5[3][1], fps: ['HIC-MWRL', 'HIC-ULD', 'HIC-BM'], a: [btn('Drum level 1 ELEMENT (ABC-010 M.054F)', () => A.push('M.054F'))] },
       { st: 11, sec: 49, t: 'By hand: EIC-TM to 45 MW, HIC-BM with it', d: 'You are the CCS now. Lower the turbine master EIC-TM about 0.6 MW per minute and the boiler master HIC-BM with it so the main steam pressure stays 115 ~ 126 kg/cm², under the MS blow-off set point 128: above it the blow-off opens and its steam leaves the cycle. Too fast on EIC-TM: the pressure rises; too fast on HIC-BM: it falls. At 60 MW: staging air upper 10 %, lower 15 ~ 20 %.', c: b.X5[4][1], fps: ['EIC-TM', 'HIC-BM'], seek: byHand(45, 0.6, 's45'), a: byHandA },
       { st: 11, sec: 49, t: 'Bed 750 °C: PA and SA air to MANUAL', d: 'PR-OPE-5003: at a bed of 750 °C put the SA and PA fans in manual, stop the limestone and the sand, and run the air heater soot blower continuously. ABC-004A: with the PA or SA air flow control out of REMOTE the coal master FIC-CM goes MANUAL by itself (M.0130 force manual and tracking, also on any fuel flow signal abnormal or a feeder demand above 83.3 %): from here you set the coal by hand on FIC-CM.', c: b.X5[5][1], fps: ['FICFA1071', 'FICFA1081', 'FIC-CM'], seek: bed750, a: [btn('FICFA1071 M', () => A.man('FICFA1071', mv('FICFA1071'))), btn('FICFA1081 M', () => A.man('FICFA1081', mv('FICFA1081')))] },
       {
@@ -2295,6 +2354,9 @@ window.LS_GUIDE = (function () {
     }
     /* a trim step: the seek moves the stations toward the band of the SOP; the ▲ / ▼ buttons are never pressed here (below) */
     if (s.seek) s.seek();
+    /* S181-2: the start-up valve left in MANUAL at the hand-over is closed through the turbine, coal and load-up sections (headless Hot
+       run: the steps moved on to the coal feeder with the valve at 41 %, feedwater 203 T/H against 145 T/H steam) */
+    if (s.st >= 7 && s.st <= 9) suSeek();
     /* max counts the machines of the step (the START / STOP buttons); its valve and field buttons are pressed as before */
     const isM = a => !!a.stop;
     let n = (s.a || []).filter(a => isM(a) && a.on && a.on()).length;

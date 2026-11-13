@@ -761,7 +761,7 @@ window.LS_LIVE = (function () {
     ['Set the load change rate HIC-MWRL to 1.2 MW/min (PR-OPE-5003: 150 ~ 90 MW at 1.2 MW/min).', OUT('HIC-MWRL', 1.1, 1.3, 'MW/min')],
     ['Lower the unit load demand HIC-ULD to 90 MW.', OUT('HIC-ULD', null, 91, 'MW')],
     ['Hold 90 MW for 8 ~ 10 min: drum level ±150 mm.', HOLD(480, ALL(VAL('MW', 87, 93), VAL('lvl', -150, 150)))],
-    ['Set HIC-MWRL to 0.6 MW/min and lower HIC-ULD toward 45 MW (at 72 MW or 230 T/H feedwater: drum level single element). Near 63 MW the steam flow falls below 220 T/H: the back-up command M.2013 of ABC-001C puts the boiler master HIC-BM and the turbine master EIC-TM in MANUAL (the CCS lets go).', ALL(MODE('HIC-BM', 'MAN'), MODE('EIC-TM', 'MAN'))],
+    ['Set HIC-MWRL to 0.6 MW/min and lower HIC-ULD toward 45 MW (at 72 MW or 230 T/H feedwater: drum level single element). When the steam flow falls below 220 T/H (about 62 ~ 73 MW), the back-up command M.2013 of ABC-001C puts the boiler master HIC-BM and the turbine master EIC-TM in MANUAL (the CCS lets go).', ALL(MODE('HIC-BM', 'MAN'), MODE('EIC-TM', 'MAN'))],
     ['By hand at about 0.6 MW/min: lower the turbine master EIC-TM to 45 MW and the boiler master HIC-BM with it, keeping the main steam pressure 115 ~ 126 kg/cm2, under the MS blow-off set point 128 (at 60 MW: staging air upper 10 %, lower 15 ~ 20 %).', HOLD(60, ALL(VAL('MW', 43, 47), VAL('MSP', 115, 126)))],
     ['Bed 750 °C: PA and SA flow controls to MANUAL (FICFA1071, FICFA1081); stop limestone and sand; APH soot blower continuous.', ALL(VAL('Tb', null, 760), MODE('FICFA1071', 'MAN'), MODE('FICFA1081', 'MAN'))],
     ['Light the start-up burners one by one (SA pressure > 1200 mmH2O); move coal to diesel (2.5 T/H coal = 1 T/H diesel) up to 4 T/H oil per feeder.', BURN4],
