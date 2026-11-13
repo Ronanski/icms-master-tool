@@ -1273,7 +1273,9 @@ function anStep(S, dt) {
         if (q.eq === 0 ? v[q.c] < 0.5 : v[q.c] > 0.5) {
           v[+k] = q.src != null ? v[q.src] : q.val;
           /* 2.3.0-beta.2: a SET on the operator SV (COS) holds after the pulse, as the operator's own SV (ABC-003A "SET SV = 49 T/H") */
-          if (q.src != null || q.hold) rt.ext[+k] = v[+k];
+          /* 3.2.3-beta.225: a fixed SET on the SV input itself holds too (ABC-033 "IF M.012B = 1 SET SV = 350 C": M.012B is a
+             2 s TPS pulse, the SV fell back to 0 after it and TICAS1001 in AUTO opened the spray valve full, live Cold start) */
+          if (q.src != null || q.hold || q.val != null) rt.ext[+k] = v[+k];
         }
   }
   const rd = n => (n >= 0 ? v[n] : 0);
