@@ -4280,7 +4280,9 @@ function anUnitStep0(dt) {
   U.t += dt;
   /* transmitters */
   anUnitWrite(U.msp, Pms);
-  for (const l of U.tin) anUnitWrite(l, Math.max(0, Pms - U.kln * U.ms * U.ms));
+  /* live Cold start sweep (user 2026-11-13): written as exactly 0 the SELECT CIRCUIT of ABC-050 took PT-MS1006-1 / -2 as lost and held
+     122.0 kg/cm2 on the HP bypass PV with the main steam at 0. A live transmitter at 0 kg/cm2 is a healthy 4 mA signal: not exactly 0 */
+  for (const l of U.tin) anUnitWrite(l, Math.max(1e-3, Pms - U.kln * U.ms * U.ms));
   anUnitWrite(U.drum, U.Pd);
   for (const l of U.mw) anUnitWrite(l, U.MW);
   anUnitWrite(U.tgt, U.tcsT);
@@ -4311,7 +4313,10 @@ function anUnitStep0(dt) {
     const rrs = (U.ms + U.mhp) / (U.m0 * (1 + (U.lpb * olp) / 100));
     U.rr += ((rrs - U.rr) * dt) / U.tauRH;
   }
-  for (const L of U.rhp) scaled(L, U.rr);
+  /* live Cold start F12 (user 2026-11-13 "may steam naba sa reheat line?"): an empty reheater reads 0 kg/cm2 on PT-HR1003-1 / -2, a live
+     4 mA signal. Written as exactly 0 the SELECT CIRCUIT of ABC-052 (SI0180) took both as lost and held its last value 0.6 kg/cm2 on
+     the hot reheat pressure. Not exactly 0, as the first stage pressure below */
+  for (const L of U.rhp) scaled(L, Math.max(1e-3, U.rr));
   /* 3.2.0-beta.14 (source.js): hot reheat pressure and LP bypass flow, the source of the LP bypass desuperheater */
   {
     const Prh0 = U.rhp.length && U.rhp[0].a0.length && U.rhp[0].a0[0] > 0 ? U.rhp[0].a0[0] : 34;

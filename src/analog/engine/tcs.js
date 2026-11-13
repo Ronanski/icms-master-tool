@@ -120,7 +120,12 @@ const tcsLin = (pts, x) => {
 function tcsDitl(L) {
   try {
     /* the press in the engine (src/world/dock-eng.js; the page dock in a page without it) */
-    const P = window.WORLD && WORLD.dpress ? (nm, r) => WORLD.dpress(nm, r) : window.LS_DOCK && LS_DOCK.dpress ? (nm, r) => LS_DOCK.dpress(nm, r) : null;
+    const P =
+      window.WORLD && WORLD.dpress
+        ? (nm, r) => WORLD.dpress(nm, r)
+        : window.LS_DOCK && LS_DOCK.dpress
+          ? (nm, r) => LS_DOCK.dpress(nm, r)
+          : null;
     if (P) for (const [nm, r] of L) P(nm, r - 1);
   } catch (e) {}
 }
@@ -281,14 +286,24 @@ function tcsCrit(U) {
       s.rht
     ),
     '1.10': f('1.10', 'GLAND STEAM SEAL HEADER PRESS. NOT LOW', c.gland && c.Pa > 7),
-    1.11: f('1.11', 'CONDENSER VACUUM OK', isFinite(U.cdP) ? tcsBand(c, '1.11', U.cdP, 0.14, 0.12) : U.vac >= 0.9, isFinite(U.cdP) ? U.cdP : U.vac),
+    1.11: f(
+      '1.11',
+      'CONDENSER VACUUM OK',
+      isFinite(U.cdP) ? tcsBand(c, '1.11', U.cdP, 0.14, 0.12) : U.vac >= 0.9,
+      isFinite(U.cdP) ? U.cdP : U.vac
+    ),
     1.12: f('1.12', 'LP TURBINE EXHAUST HOOD STEAM TEMP. NOT HIGH (≤ 80 C)', tcsBand(c, '1.12', c.Tx, 80, 77), c.Tx),
     1.14: f('1.14', 'CONTROL OIL PRESS. NOT LOW', tcsBand(c, '1.14', U.loCtl, 133, 138), U.loCtl),
     1.15: f('1.15', 'BEARING OIL PRESS. NOT LOW', tcsBand(c, '1.15', U.loBrg, 1.05, 1.33), U.loBrg),
     /* c3 (3.2.3): IBD TD-1 (page 84) is the logic of 1.16: lube oil cooler outlet (MAX of TE-LO1002-1 / -2) 27 ~ 40 C on the turning gear,
        27 ~ 50 C while rolling, 40 ~ 50 C at rated speed (after 60 s), net 14 (PR-OPE-5002: bearing oil at least 40 C before synchronizing).
        Before the IBD has run once: the old reading (oil in service) */
-    1.16: f('1.16', 'BEARING OIL TEMP. OK', c.ib && c.ib.v['TD-1'] ? c.ib.v['TD-1'][14] > 0.5 : c.brgOk !== undefined ? c.brgOk : c.lop, U.loTout),
+    1.16: f(
+      '1.16',
+      'BEARING OIL TEMP. OK',
+      c.ib && c.ib.v['TD-1'] ? c.ib.v['TD-1'][14] > 0.5 : c.brgOk !== undefined ? c.brgOk : c.lop,
+      U.loTout
+    ),
     1.17: f('1.17', 'MAIN OIL TANK LEVEL OK', true),
     1.18: f('1.18', 'MAIN OIL TANK VAPOUR EXTRACTOR RUNNING', c.vex),
     1.19: f(
@@ -547,15 +562,7 @@ function tcsStepIn(U, k, arg) {
      (page 14 Fig. 1: complete when not ambient cold / cold 1, PR-OPE-5002 8267) */
   const need = k === 1 ? -1 : k === 3 && !(c.mode === 'amb' || c.mode === 'c1') ? 1 : k - 1;
   if (c.step < need)
-    return (
-      'Finish step ' +
-      need +
-      ' ' +
-      TCS.names[need] +
-      ' (ATS page ' +
-      [13, 14, 17, 19, 23, 24, 26, 28][need] +
-      ')'
-    );
+    return 'Finish step ' + need + ' ' + TCS.names[need] + ' (ATS page ' + [13, 14, 17, 19, 23, 24, 26, 28][need] + ')';
   if (c.step >= k) return 'Already done: ' + TCS.names[k];
   const miss = k === 8 ? '' : tcsMiss(U, TCS_A[k]);
   if (miss) return 'CRITERIA A' + k + ' (' + TCS.names[k] + ') missing: ' + miss;
@@ -611,12 +618,17 @@ function tcsStep(U, dt) {
   c.sexp = Math.max(0, (c.Thp - Ta) * 0.02);
   /* LP exhaust hood: windage of the blades with little steam, the hood spray below 15 % load (PR-OPE-5002 9195), the vacuum
      (NO-SOURCE law, limits 80 / 52 C sourced, ambient 30 C: with the spray about 56 C at 3600 rpm with no load, about 49 C at the initial load 4.5 MW, about 58 C on load: under the 80 C of 1.12) */
+  /* live Cold start sweep (user 2026-11-13): the 15 C of the windage counts with the speed: a turbine at rest makes no heat, the hood
+     sat at 45 C with no steam and 0 rpm (the condenser TEST11101 ~ 3 too). At 3600 rpm the values above are unchanged */
   const sp = Math.min(1, (tb.rpm || 0) / 3600),
     /* 3.2.0-beta.38: the hood spray FVCD1904 in AUTO (PR-OPE-5002 6307, put in AUTO at the vacuum up) sprays below 15 % load (22.5
        MW, 9195) and takes 70 % of the windage heat (NO-SOURCE share; the spray itself is sourced: FV-CD1904 full open below 15 % load, IBD TC-28, 5226 kg/h, TG maintenance manual p104 and p2520 ~ 2521). Without it: 82 C at 3600 rpm with no load, over the 80 C of 1.12 (hold) */
     hs = c.hsp && (U.MW || 0) < 22.5 ? 0.3 : 1,
     XSS =
-      Ta + 15 + 37 * hs * sp * sp * Math.max(0.35, 1 - (U.MW || 0) / 7.5) + 120 * Math.max(0, 0.9 - (U.vac || 0)) * sp,
+      Ta +
+      15 * sp +
+      37 * hs * sp * sp * Math.max(0.35, 1 - (U.MW || 0) / 7.5) +
+      120 * Math.max(0, 0.9 - (U.vac || 0)) * sp,
     /* 3.2.1 (IRENE, 29.PNG 151 MW: TEST11101 ~ 3 38 / 38 / 37 C = the saturation of the condenser 0.056 kg/cm2A): on load the steam
        carries the windage away and the hood is wet steam at the condenser saturation. NO-SOURCE blend: from the windage value at 7.5 MW to the
        saturation at 22.5 MW (15 % load, the hood spray limit of PR-OPE-5002 9195), linear; below 7.5 MW unchanged */
@@ -747,7 +759,8 @@ function tcsStep(U, dt) {
       } else if (c.ph === 'init' && U.MW >= 0.9 * tb.aim && c.tm >= c.holdMin * 60) {
         /* plan c3: PR-OPE-5002 9082 ~ 9088 / 9123: the initial load is held also until the LP exhaust hood is below 52 C (the hood spray
            cools it below 15 % load); before, only the 80 C of criterion 1.12 was checked */
-        if (isFinite(c.Tx) && c.Tx >= 52) c.hold = 'Waiting: LP exhaust hood ' + c.Tx.toFixed(0) + ' C, below 52 C before load up (PR-OPE-5002)';
+        if (isFinite(c.Tx) && c.Tx >= 52)
+          c.hold = 'Waiting: LP exhaust hood ' + c.Tx.toFixed(0) + ' C, below 52 C before load up (PR-OPE-5002)';
         else {
           if (/LP exhaust hood/.test(c.hold || '')) c.hold = '';
           tcsDone(U, 5);
@@ -870,7 +883,8 @@ function tcsOilCmd(c, a) {
   if (op === 'start') c[k][i] = true;
   else if (op === 'stop') {
     /* SOP 2620: the standby to MANUAL first, then STOP; a pump in AUTO cannot be stopped */
-    if (c[k + 'Au'][i]) return (k === 'mop' ? 'MOP' : 'COP') + '-' + m[2] + ' is in AUTO: set MANUAL first, then STOP (SOP)';
+    if (c[k + 'Au'][i])
+      return (k === 'mop' ? 'MOP' : 'COP') + '-' + m[2] + ' is in AUTO: set MANUAL first, then STOP (SOP)';
     c[k][i] = false;
   } else if (op === 'auto') c[k + 'Au'][i] = true;
   else if (op === 'man') c[k + 'Au'][i] = false;
@@ -899,14 +913,30 @@ function tcsIO(U) {
     now = +U.t || 0,
     held = (p, op) => !!(c.do && c.do[p] && c.do[p].op === op && now - c.do[p].t <= 3),
     st = (pfx, run, au) => {
-      Object.assign(o, { [pfx + '_YIR']: run ? 1 : 0, [pfx + '_YIP']: run ? 0 : 1, [pfx + '_ABN']: 0, [pfx + '_IEP']: 0, [pfx + '_IES']: 0, [pfx + '_IET']: 0, [pfx + '_IYP']: 1, [pfx + '_YEE']: 0, [pfx + '_IYS']: 1 });
+      Object.assign(o, {
+        [pfx + '_YIR']: run ? 1 : 0,
+        [pfx + '_YIP']: run ? 0 : 1,
+        [pfx + '_ABN']: 0,
+        [pfx + '_IEP']: 0,
+        [pfx + '_IES']: 0,
+        [pfx + '_IET']: 0,
+        [pfx + '_IYP']: 1,
+        [pfx + '_YEE']: 0,
+        [pfx + '_IYS']: 1
+      });
       if (au != null) Object.assign(o, { [pfx + '_IIA']: au ? 1 : 0, [pfx + '_IIH']: au ? 0 : 1 });
     };
   ['A', 'B'].forEach((L, i) => {
     const p = '1P1931' + L,
       k = 'cop' + L;
     st(p, c.cop[i], c.copAu[i]);
-    Object.assign(o, { [p + '_JYS']: held(k, 'start') ? 1 : 0, [p + '_JYP']: held(k, 'stop') ? 1 : 0, [p + '_IKA']: held(k, 'auto') ? 1 : 0, [p + '_IKH']: held(k, 'man') ? 1 : 0, [p + '_IKR']: 0 });
+    Object.assign(o, {
+      [p + '_JYS']: held(k, 'start') ? 1 : 0,
+      [p + '_JYP']: held(k, 'stop') ? 1 : 0,
+      [p + '_IKA']: held(k, 'auto') ? 1 : 0,
+      [p + '_IKH']: held(k, 'man') ? 1 : 0,
+      [p + '_IKR']: 0
+    });
     o['1PTLO1931' + L + '_PV'] = +U['loC' + L.toLowerCase()] || 0;
   });
   o['1PTLO1931AA_XA'] = c.cop[1] && o['1PTLO1931B_PV'] <= TCS_OIL.copLo ? 1 : 0;
