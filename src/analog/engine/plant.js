@@ -1118,9 +1118,19 @@ function anProcStep(S, dt) {
          stopped and the integrating drum level rose 2 mm every 10 minutes */
       const lo0 = a.rng ? a.rng.lo : 0,
         kf = !pr.integ && q.offm != null && lo0 >= 0 && q.offm - lo0 > 1e-9 ? Math.max(0, Math.min(1, (w - lo0) / (q.offm - lo0))) : 1;
+      /* F24 (live Cold start 3.2.3-beta.215, t 438 min: FT-FW1007-1 / -2 read 0.0 T/H while FICFW1007.PV read 2.6 T/H with BFWP A
+         running and the start-up valve FCV-FW1130-2 open 3.5 %). A live transmitter at no flow / no pressure sends its 4 mA, 0 % of
+         its range: a live signal. The simulator writes it as exactly the bottom, 0, and the AVERAGE SELECT CIRCUIT of the drawing
+         takes an exact 0 as a lost transmitter (SIG.AB, user rule v1.20.34) and HOLDS ITS LAST VALUE (ABC-010: SEL of AI0256 /
+         AI0384 after the density compensation LN30). In a cold start (BFWP stopped, pr.mul 0: the flow is gone at once) the PV
+         stayed at a flow that was no longer there, the model could not bring it to 0 through its transmitters (q.bad above), fell
+         to "pin" after 30 steps and never wrote AI0256 / AI0384 again: the transmitters stayed 0 for the rest of the run while the
+         PV followed the model. A live signal at the bottom of a range from 0 is written a hair above 0 (1e-6 of the span, it shows
+         0.0), as unit.js does for the first stage and reheat pressures: the select then reads a live 0, the PV follows the
+         transmitters down to no flow and back, and FT and PV agree */
       const r = a.rng,
         w1 = w + ((q.off && q.off[id]) || 0) * kf,
-        x = r ? Math.max(r.lo, Math.min(r.hi, w1)) : w1;
+        x = r ? Math.max(r.lo === 0 ? 1e-6 * r.hi : r.lo, Math.min(r.hi, w1)) : w1;
       s.val = x;
       s.act = x;
     }
