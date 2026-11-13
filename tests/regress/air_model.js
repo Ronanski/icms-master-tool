@@ -39,7 +39,11 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
     };
     const f = x => Math.round(x * 1000) / 1000;
     const g03 = sh('DITL-03G');
-    const mft = (DUI.outs(g03) || []).filter(q => /INST.*AIR|AIR.*PRESS/i.test(q.name)).map(q => q.row);
+    /* 3.2.3-beta.183: the output row 27 "INSTRUMENT AIR PRESS. NOT LOW" (PSL-IA1706-NC, to DITL-37 row 22) is the normally closed contact:
+       0 when the pressure is low. It was counted with the L.L. rows and read 1 only because its 150 MW field bit was never cleared */
+    const outsIA = (DUI.outs(g03) || []).filter(q => /INST.*AIR|AIR.*PRESS/i.test(q.name)),
+      mft = outsIA.filter(q => !/\bNOT\b/i.test(q.name)).map(q => q.row),
+      ncR = outsIA.filter(q => /\bNOT\b/i.test(q.name)).map(q => q.row);
     const snap = k => {
       const U = AN.unit,
         c = k === 'ia' ? 'DITL-113' : 'DITL-114',
@@ -50,7 +54,7 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
         dRun: [5, 12, 19].map(r => DUI.rowVal(sh(c), r)), av: Object.values(av).map(f), mem: out(c, 0), cmd: [5, 12, 19].map(r => out(c, r))
       };
     };
-    const o = { mft };
+    const o = { mft, ncR };
     AN.run = false;
     AN.reset();
     ditlStates();
@@ -77,7 +81,7 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
     o.back = { ia: snap('ia'), pa: snap('pa') };
     for (const r of [6, 13, 20]) set('DITL-113', r, true);
     await run(300);
-    o.noia = { ia: snap('ia'), mft: mft.map(r => out('DITL-03G', r)), psl: (WORLD.plantSw() || []).filter(x => x.tag === 'PSL-IA1706').map(x => x.on) };
+    o.noia = { ia: snap('ia'), mft: mft.map(r => out('DITL-03G', r)), psl: (WORLD.plantSw() || []).filter(x => x.tag === 'PSL-IA1706').map(x => x.on), nc: ncR.map(r => out('DITL-03G', r)) };
     AN.run = false;
     AN.reset();
     ditlStates();
@@ -105,6 +109,7 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
   }
   const n = r.noia;
   ck(n.ia.P < 2.8 && n.mft.length && n.mft.every(x => x === 1) && n.psl.includes(true), `all IA compressors tripped: header ${n.ia.PU} kg/cm2, DITL-03G instrument air MFT rows ${r.mft} = ${n.mft}, PSL-IA1706 ${n.psl}`);
+  ck(n.nc.length === 1 && n.nc[0] === 0, `all IA compressors tripped: DITL-03G row ${r.ncR.map(x => x + 1)} INSTRUMENT AIR PRESS. NOT LOW = ${n.nc} (the -NC contact opens below 2.8 kg/cm2)`);
   const c = r.cold;
   ck(c.ia.R.join() === '0,0,0' && c.pa.R.join() === '0,0,0' && c.ia.P === 0 && c.pa.P === 0, `Cold: no compressor, tanks ${c.ia.P} / ${c.pa.P}`);
   const l = r.loc;
