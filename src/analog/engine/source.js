@@ -91,7 +91,8 @@ function srcState(t0) {
   /* oil header after the diesel oil pump (ABC-028 PICDO0005) and aux steam header (ABC-030 PICAS1005): sources of other loops */
   /* (never above their own source: the PV of that loop lags one scan, a new plant state must not see the old header) */
   s.Pdo = s.dop ? srcPv('ABC-028', 'PICDO0005') : 0;
-  s.Paux = Math.min(srcPv('ABC-030', 'PICAS1005'), Math.max(s.Pms, s.Pcrh));
+  /* 3.2.3: PT-AS1004 is the mass balance of the header (unit.js anAuxStep), no cap at its sources any more */
+  s.Paux = srcPv('ABC-030', 'PICAS1005');
   /* no. 4 extraction to the deaerator (ABC-056 PT-TS1022 0 ~ 5 kg/cm2): proportional to the turbine steam, 4.5 at MCR (NO-SOURCE: the mass balance has one load point, MB-013: extraction III to
      the deaerator 5.37, IV to LP heater #3 0.91 kg/cm2; which of them PT-TS1022 reads, I/O list STN102 AI0562 "NO.4 extraction" 0 ~ 5, is open) */
   s.Pext = 4.5 * s.ext * Math.min(1, ms / m0);
@@ -151,7 +152,7 @@ const SRC_RULES = (() => {
      header PISB1052 0.4 kg/cm2 at 150 MW): MV-SB1001 shut = no steam to the reducing station. The stroke curve of the MOV is NO-SOURCE:
      off its closed seat = the source pressure. Without the one world (no MOV state) as before */
   R.PICSB1052 = s => ({ cap: s.sb1001 == null || s.sb1001 > 0 ? s.Pms : 0 });
-  R.PICAS1005 = s => ({ cap: Math.max(s.Pms, s.Pcrh) });
+  /* 3.2.3: R.PICAS1005 removed: the header PV is written by the aux steam model (unit.js AN_AS) */
   R.TICAS1001 = s => ({ mul: srcCl(s.Paux / 3), base: s.Tamb });
   R.TICAS1017 = s => ({ mul: srcCl(s.Paux / 3), base: s.Tamb });
   /* loop 13, condensate and deaerator: the condensate pump moves the water; the deaerator is heated by aux steam or extraction */

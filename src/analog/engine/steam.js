@@ -87,3 +87,17 @@ function steamTph(P, h) {
   }
   return (a + b) / 2;
 }
+/* 3.2.3 (live Cold start, user 2026-11-14 "Code ang gawin. Hnd temporary fix!"): the density of superheated steam, IAPWS-IF97 region 2
+   (the same Gibbs equation as steamH2): v = R T / p x pi x (1 / pi + d(gamma_r) / d(pi)), Table 12 of the IF97 release. Checked with the
+   IF97 verification values (Table 15): 300 K / 0.0035 MPa 39.4913866 m3/kg, 700 K / 0.0035 MPa 92.3015898, 700 K / 30 MPa 0.00542946619.
+   P in kg/cm2 G, T in C (at least saturation), result kg/m3 */
+function steamV2(p, T) {
+  const t = 540 / T;
+  let gp = 0;
+  for (const [I, J, n] of STEAM_R2_R) gp += n * I * Math.pow(p, I - 1) * Math.pow(t - 0.5, J);
+  return ((0.461526 * T) / p) * (1 + p * gp) / 1000;
+}
+function steamRho(P, T) {
+  const Ps = Math.max(-1, +P || 0);
+  return 1 / steamV2((Ps + 1.0332) * 0.0980665, Math.max(steamTsat(Ps), +T || 0) + 273.15);
+}

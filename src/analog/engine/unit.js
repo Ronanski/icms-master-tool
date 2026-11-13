@@ -837,6 +837,10 @@ function anUnitStart() {
   /* 3.2.1 the MV of TICLO1002 = TCV-CW1201 (STN102 AO0469), cooling water to the lube oil cooler (AN_LO) */
   U.loMv = ctlOut('ABC-053', 'TICLO1002') || manOut('ABC-053', 'TICLO1002');
   /* the transmitters this model writes: the plant model of a loop on them stops writing (ABC-001C PIC-COBM: main steam pressure) */
+  /* 3.2.3 live Cold start (AN_AS): the aux steam header PT-AS1004 / PT-AS1005 (ABC-030 AI0514 / AI0515) and the steam seal feed valve
+     PV-GS1031 to the DCS (ABC-034 AI0886) are written by the aux steam model */
+  U.asAI = [ais('ABC-030', 'AI0514'), ais('ABC-030', 'AI0515')].filter(l => l.length);
+  U.gsAI = ais('ABC-034', 'AI0886');
   const own = new Set();
   const lists = [U.msp, U.drum, U.msf, U.spd || []]
     .concat(
@@ -859,7 +863,9 @@ function anUnitStart() {
       U.xt.rhi,
       U.xt.fab,
       U.zt.map(z => z.L),
-      U.lo || []
+      U.lo || [],
+      U.asAI,
+      [U.gsAI]
     )
     .concat(...(U.hd || []).map(h => h.L));
   for (const l of lists) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
@@ -877,6 +883,8 @@ function anUnitStart() {
   U.hdSeedN = 0;
   for (const h of U.hd || []) h.w0 = NaN;
   U.frT = undefined;
+  /* 3.2.3 live Cold start: the aux steam / gland / condenser air volumes (AN_AS) start from their transmitters */
+  U.asP = U.gsP = U.gsY = U.cdAirP = NaN;
   U.tco = null; /* 3.2.0-beta.66: the oil-only state of the snapshot (tcs.js tcsOilState) starts again */
   U.tc =
     null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
@@ -946,6 +954,9 @@ function anUnitCold() {
   });
   U.o2v = 21;
   U.frT = undefined;
+  /* 3.2.3 live Cold start (AN_AS): aux steam and gland headers empty at the atmosphere, the condenser full of air */
+  U.asP = U.gsP = U.gsY = 0;
+  U.cdAirP = NaN;
   /* 3.2.0 roadmap 3: the temperatures of anUnitStepX start at their cold value (no lag from the 150 MW anchor) */
   if (U.xt) U.xt.T = {};
   U.Pmsv = 0; /* the main steam pipe after the stop MOV: no pressure in a cold plant */
@@ -2115,7 +2126,12 @@ function anCondStep(U, dt) {
     Ps = Math.min(1.033, anPsat(U.cdTs));
   U.cdQ = Math.round(Q / 100) / 10; /* MW */
   U.cdT = U.cdTs;
-  U.cdP = Ps + (1.033 - Ps) * (1 - vac);
+  /* 3.2.3 live Cold start: the air in the condenser is its own mass balance (anAuxStep U.cdAirP); the vacuum share is what is left of the
+     room between the saturation and the atmosphere (the screens and the hood model read it) */
+  if (isFinite(U.cdAirP)) {
+    U.cdP = Ps + U.cdAirP;
+    U.vac = Math.max(0, Math.min(1, (1.033 - U.cdP) / Math.max(1e-3, 1.033 - Ps)));
+  } else U.cdP = Ps + (1.033 - Ps) * (1 - vac);
   /* the condensate pumps */
   const run = [srcBit(['M.3350']) > 0.5 ? 1 : 0, srcBit(['M.3351']) > 0.5 ? 1 : 0],
     n = run[0] + run[1],
@@ -2681,7 +2697,7 @@ function anAsTagStep(U, dt) {
     c = U.tc,
     Ta = isFinite(U.Tamb) ? U.Tamb : 30,
     L = Math.max(0, Math.min(1, (+U.MW || 0) / 150)),
-    gland = c ? !!c.gland : (U.tb && U.tb.rpm > 100) || (+U.MW || 0) > 0,
+    gland = isFinite(U.gsP) ? U.gsP >= 0.1 : c ? !!c.gland : (U.tb && U.tb.rpm > 100) || (+U.MW || 0) > 0,
     Ps = isFinite(U.cdP) ? anTsatA(U.cdP) : NaN,
     hood = c && isFinite(c.Tx) ? c.Tx : isFinite(Ps) ? Ps : Ta;
   /* PIC-AS1005 MV -> the two valves (ABC-030 F(X)) */
@@ -2719,13 +2735,243 @@ function anAsTagStep(U, dt) {
     'ZT-AS1020-1': r1(fx(C.f1)),
     'ZT-AS1020-2': r1(fx(C.f2)),
     'TT-AS1015': r1(U.asT15),
-    PTGS10011: gland ? 0.32 : 0,
-    PTGS10012: gland ? 0.32 : 0,
+    PTGS10011: isFinite(U.gsP) ? r3(U.gsP) : gland ? 0.32 : 0,
+    PTGS10012: isFinite(U.gsP) ? r3(U.gsP) : gland ? 0.32 : 0,
     TEGS1002: r1(U.asTgs),
     TEGS1003: r1(U.asTgs - 2 * L),
-    'PV-GS1034': gland ? r1(42.6 * L) : 0,
+    'PV-GS1034': isFinite(U.gsV34) ? r1(U.gsV34) : gland ? r1(42.6 * L) : 0,
+    'PV-GS1031': isFinite(U.gsV31) ? r1(U.gsV31) : 0,
     'ZT-AS1011': c && c.cur === 0 && c.ph === 'warm' ? 40 : 0
   });
+}
+/* 3.2.3 live Cold start (user 2026-11-14 "Bkt patch lng? Code ang gawin. Hnd temporary fix!"): the auxiliary steam header, the gland
+   steam seal header and the air in the condenser as mass balances. Before: the header pressure was a first-order lag toward
+   min(10.5, drum - 1) (tcs.js TCS.tauAux), the gland seal a switch (tcs.js c.gland) with its header written 0.32 / 0, and the vacuum a
+   share that rose at a fixed rate (AN_UNIT vacUp) once the TCS flags said so. Now each one is the pressure of its own volume, from the
+   flows of the valves and machines that are on it.
+   Sources (document-references, read 2026-11-14):
+     valve flow       ISA-75.01 compressible: W = 27.3 Cv Y sqrt(x P1 rho1) kg/h (P bar a, rho kg/m3), x = dP / P1 not above Fk xT
+                      (Fk = 1.3 / 1.4, xT 0.7 globe), Y = 1 - x / (3 Fk xT); rho1 = IF97 region 2 (steam.js steamRho). Checked against the
+                      valve sheets: PV-GS1031 NOR 2170 kg/h at Cv 17.4 (model 2136), MAX 3600 at Cv 47.9 (3554); PCV-AS1020-1 COND 1
+                      10000 kg/h at Cv 255 (10042); PV-GS1034 NOR 460 kg/h at Cv 38.5 (451); PCV-AS1030 COND 1 22059 kg/h at Cv 190
+                      (18900: Raven trim, its xT is not on the sheet);
+     aux header       in: PCV-AS1010 (PICAS1004 MV, ABC-030) from the main steam through the MOV MV-AS1391 (DITL-51), Cv 93 (plant study
+                      04 from the L21 sheet: 45,500 kg/h, 60.2 -> 11.4 kg/cm2 G); PCV-AS1020-1 Cv 341.5 linear and PCV-AS1020-2 Cv 9 linear
+                      (E2-0-123 p32 / p37) from the cold reheat, their openings = F(X) LN17 / LN16 of the PICAS1005 MV (ABC-030);
+                      out: deaerator pegging PCV-AS1030 (PICCD1104 MV, ABC-056) Cv 253.7 (E2-0-123 p42, linear: NO-SOURCE characteristic)
+                      to the deaerator pressure PT-CD1104; the steam jet air ejector MV-AS1396 (DITL-55) 223 + 202 = 425 kg/h and the
+                      start-up ejector MV-AS1395 (DITL-54) 1477 kg/h at 11 kg/cm2 G (ED 066 p6 / p9), a choked nozzle: x (P / 12.03 abs);
+                      the steam seal feed valve PV-GS1031; the volume 6 m3 is NO-SOURCE (the 12-inch header and branches are only on
+                      the scanned P&ID PD-014); the header steam at 350 C (MB-014 items 2 / 5 operating 11 kg/cm2 G, 350 C);
+     gland header     PV-GS1031 Cv 75 linear DN80 (TG maintenance manual p2385 ~ 2394) from the aux header, PV-GS1034 unloading Cv 375
+                      equal % (p2395 ~ 2404) to the No.1 LP heater; one PI on PT-GS1001 (p103: feed at vacuum up / low load, unloading
+                      spills the surplus on load), split at 0; set point 0.32 kg/cm2 G (29.PNG 150 MW; the feed valve sheet NOR outlet
+                      1.31 kg/cm2 A = 0.28 G); PI gains NO-SOURCE; the glands take K sqrt(P^2 - Pc^2) (labyrinth), K from the NOR case
+                      2170 kg/h at 1.31 abs into a condenser at 0.07 abs; on load the HP / IP packing leaks into the header with the cold
+                      reheat pressure (CALC: 2694 kg/h at 150 MW = the glands 2243 + the unloading valve 451 at 42.6 %, 29.PNG); volume
+                      1.5 m3 NO-SOURCE; "in service" (ATS 1.10) = header >= 0.10 kg/cm2 G (IBD TD-3 LOW alarm);
+     condenser air    the evacuated volume 338 m3 (ED 066 p15) at the condenser temperature; in: the air in-leakage, an orifice that passes
+                      the design 25.5 kg/h (ED 066 p6) at the design 0.055 kg/cm2 A, the LP glands while their steam is below the
+                      atmosphere (orifice CdA 0.00072 m2, NO-SOURCE: 610 kg/h into full vacuum, the gland clearances are not in the docs),
+                      the vacuum breaker MV-AV1391 (DITL-56, CdA 0.0195 m2 = an 8-inch valve, NO-SOURCE size); out: the ejectors as
+                      volume pumps, S(P) m3/h from their curves (start-up ejector ED 066 p16 air kg/h / air density; steam jet air
+                      ejector p14 total kg/h / mixture density of the design point 25.5 air + 61.3 steam), the air taken = S x the air
+                      density at its partial pressure; the capacity goes with the motive steam (choked nozzle: P / 12.03 abs); the steam
+                      jet air ejector needs its inter / after condenser cooled by the condensate (a condensate pump running);
+                      condenser pressure = air partial pressure + saturation of the condensing temperature (anCondStep).
+     Check: the start-up ejector alone takes the condenser from 1.03 to 0.345 kg/cm2 A in about 14 min in this model; ED 066 p15 gives
+     20 min (its p16 capacity curve, read from the plot, is higher than the p15 pump-down needs). */
+const AN_AS = {
+  Va: 6 /* m3, NO-SOURCE */,
+  Vg: 1.5 /* m3, NO-SOURCE */,
+  Ta: 350,
+  Tg: 260 /* PV-GS1031 sheet 260 C */,
+  cv1010: 93,
+  cv1020: [341.5, 9],
+  cv1030: 253.7,
+  cvGf: 75,
+  cvGu: 375,
+  ej: { sjae: 425, start: 1477, Pm: 12.0332 },
+  gSv: 0.32,
+  gKp: 60 /* % per kg/cm2, NO-SOURCE */,
+  gTi: 15 /* s, NO-SOURCE */,
+  Kseal: 2170 / Math.sqrt(1.31 * 1.31 - 0.07 * 0.07),
+  Whp0: 2694,
+  Vc: 338,
+  cdaLeak: 25.5 / 3600 / 235 /* m2, the orifice that passes 25.5 kg/h into the design vacuum */,
+  cdaGl: 0.00072,
+  cdaVb: 0.0195,
+  /* P abs kg/cm2 -> S m3/h (see the head) */
+  sStart: [
+    [0.1, 0],
+    [0.1767, 1204],
+    [0.2175, 1631],
+    [0.2474, 1792],
+    [0.2787, 1909],
+    [0.3331, 1863],
+    [0.4011, 1769],
+    [0.4758, 1677],
+    [0.5574, 1591],
+    [0.6295, 1549]
+  ],
+  sSjae: [
+    [0.015, 0],
+    [0.0272, 1027],
+    [0.0551, 2003],
+    [0.0816, 2177],
+    [0.0952, 2133],
+    [0.1319, 1925],
+    [0.1496, 1867]
+  ],
+  k: { sh: null }
+};
+/* steam through a control valve, kg/h (ISA-75.01, see AN_AS): P kg/cm2 G, T C */
+function anStmW(Cv, P1, P2, T1) {
+  if (!(Cv > 0) || !(P1 > P2)) return 0;
+  const p1 = (P1 + 1.0332) * 0.980665,
+    p2 = Math.max(0, (P2 + 1.0332) * 0.980665),
+    xc = (1.3 / 1.4) * 0.7,
+    x = Math.min(xc, (p1 - p2) / p1),
+    Y = 1 - x / (3 * xc);
+  return 27.3 * Cv * Y * Math.sqrt(x * p1 * steamRho(P1, T1));
+}
+/* air through an orifice (isentropic nozzle), kg/s from the side at P1 to the side at P2 (Pa abs); negative = the other way */
+function anAirOr(CdA, P1, P2, T) {
+  if (!(CdA > 0) || P1 === P2) return 0;
+  const s = P1 > P2 ? 1 : -1,
+    Pu = Math.max(P1, P2),
+    r = Math.max(Math.min(P1, P2) / Pu, 0.5283),
+    g = 1.4;
+  return (
+    s *
+    CdA *
+    Pu *
+    Math.sqrt(((2 * g) / ((g - 1) * 287 * (T + 273.15))) * (Math.pow(r, 2 / g) - Math.pow(r, (g + 1) / g)))
+  );
+}
+function anAsTab(L, x) {
+  if (!(x > L[0][0])) return L[0][1];
+  for (let i = 1; i < L.length; i++)
+    if (x <= L[i][0]) return L[i - 1][1] + ((L[i][1] - L[i - 1][1]) * (x - L[i - 1][0])) / (L[i][0] - L[i - 1][0]);
+  return L[L.length - 1][1];
+}
+/* the output of the A / M station of a controller (sheet links kept out of the unit state: no functions or sheets on U) */
+function anAsCtl(sheet, tag) {
+  const K = AN_AS.k;
+  if (K.sh !== AN.sheets) {
+    K.sh = AN.sheets;
+    K.c = {};
+  }
+  if (!(tag in K.c)) {
+    const x = AN.sheets.find(y => y.name === sheet),
+      c = x && x.S && AN.hmiCtrls ? (AN.hmiCtrls(x.S) || []).find(q => q.tag === tag) : null;
+    K.c[tag] = c && c.out != null ? { S: x.S, n: c.out } : null;
+  }
+  const o = K.c[tag];
+  return o ? +o.S.rt.v[o.n] : NaN;
+}
+function anAuxStep(U, dt) {
+  const K = AN_AS,
+    c = U.tc,
+    pos = (d, dflt) => {
+      const p = typeof anDitlPos === 'function' ? anDitlPos(d, 0) : null;
+      return Math.max(0, Math.min(1, (p != null && isFinite(p) ? p : dflt) / 100));
+    },
+    cl = x => (isFinite(x) ? Math.max(0, Math.min(100, x)) / 100 : 0),
+    onLoad = (U.tb && U.tb.rpm > 100) || (+U.MW || 0) > 0;
+  /* the state of a save made before this model: from the transmitters */
+  if (!isFinite(U.asP)) {
+    const a = anUnitVal(U.asAI && U.asAI[0] ? U.asAI[0] : []);
+    U.asP = isFinite(a) ? a : c && isFinite(c.Pa) ? c.Pa : 0;
+  }
+  const gsOn = c ? (c.gsOn != null ? !!c.gsOn : !!c.gland || !!c.fromLoad) : onLoad;
+  if (c && c.gsOn == null) c.gsOn = gsOn;
+  if (!isFinite(U.gsP)) U.gsP = gsOn ? K.gSv : 0;
+  if (!isFinite(U.gsY)) U.gsY = gsOn && onLoad ? -42.6 * Math.max(0, Math.min(1, (+U.MW || 0) / 150)) : 0;
+  const Tc = isFinite(U.cdTs) ? U.cdTs : isFinite(U.Tamb) ? U.Tamb : 30,
+    Psc = Math.min(1.033, anPsat(Tc));
+  if (!isFinite(U.cdAirP))
+    U.cdAirP = Math.max(0, (1.033 - Psc) * (1 - (isFinite(U.vac) ? Math.max(0, Math.min(1, U.vac)) : 1)));
+  /* sources and valve openings */
+  const Pms = isFinite(U.Pms) ? U.Pms : 0,
+    X = U.xt || {},
+    mst = X.mst && X.mst.c && X.mst.c.q && X.mst.c.q.pv != null ? +X.mst.S.rt.v[X.mst.c.q.pv] : NaN,
+    Tms = isFinite(mst) ? mst : 538,
+    Pcr = (isFinite(U.Prh) ? U.Prh : 0) * (36.6 / 35.1),
+    tcr = anUnitVal(X.cr || []),
+    Tcr = isFinite(tcr) ? tcr : 370,
+    pdea = anUnitVal(X.dea || []),
+    Pdea = isFinite(pdea) ? pdea : 0,
+    o1004 = cl(anAsCtl('ABC-030', 'PICAS1004')),
+    o1030 = cl(anAsCtl('ABC-056', 'PICCD1104')),
+    tt = U.tt || {},
+    o1020 = [cl(tt['ZT-AS1020-1']), cl(tt['ZT-AS1020-2'])],
+    m1391 = pos('DITL-51', c ? (c.asv ? 100 : 0) : 100),
+    m1395 = pos('DITL-54', 0),
+    m1396 = pos('DITL-55', onLoad ? 100 : 0),
+    mVb = pos('DITL-56', 0),
+    cep = srcBit(['M.3350', 'M.3351']) ? 1 : 0,
+    L = Math.max(0, Math.min(1, (+U.MW || 0) / 150)),
+    Pcr0 = 34.4 * (36.6 / 35.1) + 1.033,
+    Patm = 1.033;
+  const n = Math.max(1, Math.ceil(dt / 0.1)),
+    h = dt / n,
+    F = {};
+  for (let i = 0; i < n; i++) {
+    const Pa = U.asP,
+      Pg = U.gsP,
+      fm = Math.max(0, Math.min(1, (Pa + 1.0332) / K.ej.Pm)),
+      /* MV-AS1391 in series with PCV-AS1010: the MOV is a shut-off, its stroke opens the gate area (1 / Cv^2 in series, gate Cv
+         1500 for a 6-inch gate, NO-SOURCE: it only matters near its closed seat) */
+      cvA =
+        m1391 > 0 && o1004 > 0 ? 1 / Math.sqrt(1 / Math.pow(K.cv1010 * o1004, 2) + 1 / Math.pow(1500 * m1391, 2)) : 0,
+      w1010 = anStmW(cvA, Pms, Pa, Tms),
+      w1020 = anStmW(K.cv1020[0] * o1020[0] + K.cv1020[1] * o1020[1], Pcr, Pa, Tcr),
+      w1030 = anStmW(K.cv1030 * o1030, Pa, Pdea, K.Ta),
+      wej = (K.ej.sjae * m1396 + K.ej.start * m1395) * fm,
+      /* gland PI (split range at 0: + opens the feed valve, - opens the unloading valve) */
+      e = K.gSv - Pg;
+    if (gsOn) U.gsY = Math.max(-100, Math.min(100, U.gsY + (K.gKp * e * h) / K.gTi));
+    else U.gsY = 0;
+    const yP = gsOn ? Math.max(-100, Math.min(100, U.gsY + K.gKp * e)) : 0,
+      oF = Math.max(0, yP) / 100,
+      oU = Math.max(0, -yP) / 100,
+      wGf = anStmW(K.cvGf * oF, Pa, Pg, K.Tg),
+      Pga = Pg + 1.0332,
+      Pc = Psc + U.cdAirP,
+      wSeal = Pga > Pc ? K.Kseal * Math.sqrt(Pga * Pga - Pc * Pc) : 0,
+      Pcra = Pcr + 1.0332,
+      wHp =
+        onLoad && Pcra > Pga
+          ? (K.Whp0 * Math.sqrt(Pcra * Pcra - Pga * Pga)) / Math.sqrt(Pcr0 * Pcr0 - 1.353 * 1.353)
+          : 0,
+      wGu = oU > 0 ? anStmW(K.cvGu * Math.pow(50, oU - 1), Pg, Math.max(Pc, 0.366 * L) - 1.0332, 364) : 0;
+    /* header pressures: dm = V drho/dP dP (drho/dP of IF97 at the header state) */
+    const dRa = Math.max(0.05, (steamRho(Pa + 0.05, K.Ta) - steamRho(Pa - 0.05, K.Ta)) / 0.1),
+      dRg = Math.max(0.05, (steamRho(Pg + 0.05, K.Tg) - steamRho(Pg - 0.05, K.Tg)) / 0.1);
+    U.asP = Math.max(-1, Pa + ((w1010 + w1020 - w1030 - wej - wGf) / 3600) * (h / (K.Va * dRa)));
+    U.gsP = Math.max(Pc - 1.0332, Pg + ((wGf + wHp - wSeal - wGu) / 3600) * (h / (K.Vg * dRg)));
+    /* condenser air */
+    const PaP = Patm * 98066.5,
+      PcP = Pc * 98066.5,
+      Pin = Math.max(Pc, Pga) * 98066.5,
+      ain =
+        anAirOr(K.cdaLeak, PaP, PcP, Tc) +
+        (Pga < Patm ? anAirOr(K.cdaGl, PaP, Pin, Tc) : 0) +
+        anAirOr(K.cdaVb * mVb, PaP, PcP, Tc),
+      rhoA = (U.cdAirP * 98066.5) / (287 * (Tc + 273.15)),
+      sS = anAsTab(K.sStart, Pc) * m1395 * fm,
+      sJ = anAsTab(K.sSjae, Pc) * m1396 * fm * cep,
+      aout = ((sS + sJ) * rhoA) / 3600;
+    U.cdAirP = Math.max(0, U.cdAirP + ((ain - aout) * h * 287 * (Tc + 273.15)) / K.Vc / 98066.5);
+    Object.assign(F, { w1010, w1020, w1030, wej, wGf, wSeal, wHp, wGu, ain: ain * 3600, aout: aout * 3600, oF, oU });
+  }
+  for (const k in F) F[k] = Math.round(F[k] * 1000) / 1000;
+  U.asF = F;
+  U.gsV31 = F.oF * 100;
+  U.gsV34 = F.oU * 100;
+  if (U.asAI) for (const l of U.asAI) anUnitWrite(l, U.asP);
+  if (U.gsAI) anUnitWrite(U.gsAI, U.gsV31);
 }
 const AN_FWT = {
   ms0: 472.7,
@@ -3904,9 +4150,6 @@ function anUnitStep0(dt) {
   }
   /* 3.2.0-beta.15: condenser vacuum (see AN_UNIT vacUp): with no seawater or condensate pump the TCS trips the turbine on LOW VACUUM */
   {
-    const sea = srcBit(['M.3353', 'M.3354', 'M.3355']) ? 1 : 0,
-      cep = srcBit(['M.3350', 'M.3351']) ? 1 : 0,
-      cw = sea && cep ? 1 : 0;
     if (!isFinite(U.vac)) U.vac = 1;
     /* raised by the vacuum pumps at a steady rate, lost first order. 3.2.0-beta.37 (CHECKLIST 0.5, user 2026-10-25 "bakit wala ang
        vacuum up at gland steam at auxiliary steam"): PR-OPE-5002 VACUUM UP needs the steam ejectors and the gland sealing, both on
@@ -3928,30 +4171,13 @@ function anUnitStep0(dt) {
         tcx.ej = p54 > 50 || p55 > 50;
       }
     }
-    const aux = tcx ? tcx.ej && !tcx.vb && tcx.Pa > 10 && tcx.gland : U.Pd > 12,
-      cw2 = tcx && tcx.vb ? 0 : cw;
-    U.aux = aux ? 1 : 0;
-    /* Mina beta.136 (normal shutdown, 47 MW): CEP-A stopped on hotwell low and the turbine tripped on LOW VACUUM 17 s later (vacDn 60 s).
-       With the seawater on the steam still condenses; only the air ejector stops (its inter / after condensers are cooled by the
-       condensate, ED 066 p2 flowsheet: cooling water 362.6 t/h normal, 80 t/h design). The condenser then gains its air in-leakage:
-       25.5 kg/h (ED 066 p2, design air of the SJAE suction) in the evacuated volume 338 m3 (ED 066 p15, starting ejector curve), at
-       40 C: dP/dt = 25.5 / 3600 x 287 x 313 / 338 = 1.88 Pa/s = 0.0000192 kg/cm2 per s (about 1.1 mbar per minute; from 0.07 to the
-       0.26 trip in about 2.7 h). No seawater or an open vacuum breaker: lost in vacDn as before */
-    const Ps0 = isFinite(U.cdTs) ? Math.min(1.033, anPsat(U.cdTs)) : 0.07,
-      airR = ((25.5 / 3600) * 287 * 313) / 338 / 98066.5;
-    U.vac = Math.max(
-      0,
-      Math.min(
-        1,
-        sea && !cep && !(tcx && tcx.vb)
-          ? U.vac - (airR * dt) / Math.max(0.1, 1.033 - Ps0)
-          : cw2 > U.vac
-            ? aux
-              ? U.vac + dt / U.vacUp
-              : U.vac
-            : U.vac + ((cw2 - U.vac) * dt) / U.vacDn
-      )
-    );
+    /* 3.2.3 live Cold start (user 2026-11-14 "Code ang gawin"): the aux steam header, the gland header and the air in the condenser are
+       mass balances (AN_AS, anAuxStep); the condenser pressure is its air plus the saturation of the condensing temperature (anCondStep).
+       Before: the vacuum share rose at dt / vacUp while the TCS flags said ejector + gland + aux > 10, and fell in vacDn */
+    anAuxStep(U, dt);
+    U.aux = U.asF && U.asF.aout > 0 ? 1 : 0;
+    /* Mina beta.136 (CEP-A stopped at 47 MW): the steam jet air ejector needs a condensate pump (its inter / after condensers, ED 066
+       p2); the air in-leakage then raises the condenser pressure (anAuxStep), no fixed decay time any more */
     const tb0 = U.tb,
       l = U.vtrip;
     /* I.0400 follows the valves (IBD TA-6, tcsI0400); a model without a vacuum value keeps its own rule */
