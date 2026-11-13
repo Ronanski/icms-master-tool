@@ -2870,7 +2870,24 @@ function anAsCtl(sheet, tag) {
   const o = K.c[tag];
   return o ? +o.S.rt.v[o.n] : NaN;
 }
+/* the AI blocks of one address on one sheet (as anUnitStart's ais) */
+function anAsAIs(k, a) {
+  const x = AN.sheets.find(y => y.name === k);
+  let st = null;
+  try {
+    st = x && x.S ? shStn(x) : null;
+  } catch (e) {}
+  return anUnitAnchor(st != null ? anUnitAIs(st + '|' + a) : []);
+}
 function anAuxStep(U, dt) {
+  /* 3.2.3-beta.223 (live Cold start): a save point made before beta.222 has no transmitter lists of this model and its U.own does
+     not hold them, so the loop model kept writing PT-AS1004 / 1005 (PICAS1004 PV frozen at 9.57 while the header drained): the lists
+     are made here once and owned */
+  if (!U.asAI || !U.gsAI) {
+    U.asAI = [anAsAIs('ABC-030', 'AI0514'), anAsAIs('ABC-030', 'AI0515')].filter(l => l.length);
+    U.gsAI = anAsAIs('ABC-034', 'AI0886');
+    if (U.own) for (const l of U.asAI.concat([U.gsAI])) for (const [S2, b] of l) U.own.add(S2.rt.st[b.id]);
+  }
   const K = AN_AS,
     c = U.tc,
     pos = (d, dflt) => {
