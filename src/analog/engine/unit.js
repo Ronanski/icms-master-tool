@@ -968,7 +968,10 @@ function anTurbine0(cmd, arg) {
     } catch (e) {}
     if (tr) return 'The turbine is tripped (' + tr + '): press TURBINE RESET first';
   }
-  if (cmd === 'shutdown' && !U.tc) tcsFromOil(U);
+  /* Mina S163-2 (beta.163 shutdown from the 150 MW state): NORMAL OPERATION answered "Unknown command: normal". The 150 MW state runs the
+     oil TCS model (no U.tc); 'shutdown' changed it to the step model, 'normal' did not and fell to the oil commands. Both now do */
+  if ((cmd === 'shutdown' || cmd === 'normal') && !U.tc) tcsFromOil(U);
+  if (cmd === 'normal' && U.tc && U.tc.step >= 7 && U.tc.cur < 0) return '';
   if (U.tc) {
     const c = U.tc;
     if (cmd === 'roll') {
