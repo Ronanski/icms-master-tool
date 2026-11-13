@@ -1,6 +1,6 @@
 // 3.2.0-beta.6 (engineering audit, signals and forcing): the FORCED chip of the alarm banner counts only the USER's forces (not
 // the values the plant model owns while it is ON), on every ABC sheet; a click opens one list of them with Go and Release.
-// 3.2.3-beta.188: the default layout has the same count as a pill of its top strip (#scstrip .pill.frc), the old layout (?shell=old)
+// 3.2.3-beta.189: the default layout has the same count as a pill of its top strip (#scstrip .pill.frc), the old layout (?shell=old)
 // its chip (#cralarm .crchip.frc): the test reads the one on screen. Run it in both: node tests/regress/forcelist.js [html] [old]
 const {open}=require('./lib.js');const fs=require('fs');
 const html=(process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x)))+(process.argv.includes('old')?'?shell=old':'');

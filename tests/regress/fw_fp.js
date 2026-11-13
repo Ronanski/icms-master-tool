@@ -7,7 +7,7 @@ const {open}=require('./lib.js');const fs=require('fs');
 const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist').find(x=>/^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 (async()=>{const {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
 await page.setViewportSize({width:1600,height:900});
-/* 3.2.3-beta.188: the default layout opens on its start screen (#scstart), which covered the page: every click landed on it. The test
+/* 3.2.3-beta.189: the default layout opens on its start screen (#scstart), which covered the page: every click landed on it. The test
    loads Cold itself, so it closes the start screen with "Open without a start state" first (the cep_auto.js way) */
 await page.evaluate(()=>{const k=document.querySelector('#scstart .scskip');if(k&&k.offsetParent)k.click()});await page.waitForTimeout(1000);
 await page.evaluate(async()=>{const C=AN.sheets.find(s=>s.name==='ABC-001C');AN.i=AN.sheets.indexOf(C);await AN.plantCold();if(AN.view)AN.viewSet(false);AN.run=true});

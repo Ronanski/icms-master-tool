@@ -65,7 +65,7 @@ async function mode(worker) {
   };
   const p = await page.evaluate(async outS => {
     const out = eval(outS);
-    /* 3.2.3-beta.188: since the closed cooling plant model (3.2.1, ditl150.js EQ, HMI snapshot 27.PNG) ACWP-A runs at 150 MW (ACWP-B is
+    /* 3.2.3-beta.189: since the closed cooling plant model (3.2.1, ditl150.js EQ, HMI snapshot 27.PNG) ACWP-A runs at 150 MW (ACWP-B is
        the AUTO standby): the operator stops it first with its STOP PB (DITL-76 row 18 M.1231), then the START PB is tested */
     WORLD.dpress('DITL-76', 17);
     for (let i = 0; i < 60 && out('DITL-76', 4); i++) await new Promise(r => setTimeout(r, 100));

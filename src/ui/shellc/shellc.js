@@ -78,7 +78,7 @@
     };
     trip.onclick = openAlarms;
     alm.onclick = openAlarms;
-    /* 3.2.3-beta.188 (SOHEE): the signals the user forced (Inspector FORCE), on every ABC sheet. The old layout has its FORCED chip and
+    /* 3.2.3-beta.189 (SOHEE): the signals the user forced (Inspector FORCE), on every ABC sheet. The old layout has its FORCED chip and
        the list with Go / Release (src/ui/shell/cr.js, #crflist); this layout had none, so a force was not seen. The pill shows only while
        a signal is forced and opens the same list */
     const frc = E('button', 'pill frc');
