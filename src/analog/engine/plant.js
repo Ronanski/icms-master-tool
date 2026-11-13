@@ -407,7 +407,7 @@ function anBdG(Pb) {
     b = G[i];
   return Math.max(0, a[1] + ((b[1] - a[1]) * (Math.min(Pb, 138) - a[0])) / (b[0] - a[0]));
 }
-/* 3.2.3-beta.180 (Mina S177-3, beta.177 shutdown: the drum level stood at +218.83 mm for 6.7 h while the bottled boiler cooled, no
+/* 3.2.3-beta.182 (Mina S177-3, beta.177 shutdown: the drum level stood at +218.83 mm for 6.7 h while the bottled boiler cooled, no
    shrink): ON. It was OFF "until the Training has the drain steps" (PR-OPE-5002 WARMING UP: "Observe steam drum level: swelling ... use
    lowering header drain ... MBD and CBD"); the drains are in the Training since beta.51. PR-OPE-5004-01 bottle-up step 4 "Fill steam drum
    to +200 mm" is the reserve for this shrink. Probe (Hot restart, faster cooling): water 309 -> 292 C, level +166 -> -199 mm */
