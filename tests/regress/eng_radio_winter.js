@@ -39,6 +39,10 @@ const pj = W => JSON.stringify([W._press || {}, W._rel || {}]);
   const A = mk(), B = mk();
   A.AN.plantLoad150();
   A.ctx.DITL150.apply();
+  /* 3.2.3-beta.191: since the closed cooling plant model (3.2.1, ditl150.js EQ, HMI snapshot 27.PNG) ACWP-A runs at 150 MW (ACWP-B is the
+     AUTO standby): before the keyframe the operator of A stops it with its STOP PB (DITL-76 row 18 M.1231), so the START below starts it */
+  A.WORLD.live = true;
+  A.WORLD.dpress('DITL-76', 17);
   for (let k = 0; k < 20; k++) { A.ctx.ENGINE.E.stepSet(A.C1, 0.5); A.WORLD.tick(0.5); }
   /* the one world runs (in the app the engine scheduler sets it: WORLD.scanJob) */
   A.WORLD.live = true;

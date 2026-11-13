@@ -380,6 +380,9 @@
       x.av150 = null;
       x._win = null;
       x.avw = null;
+      /* 3.2.3-beta.191 (SOHEE, reset_worker): the causes of the MOVs moved by their logic (world.js, the Event log) are part of the run: a
+         Reset left them, so the state after a run + Reset was not the state of a fresh page */
+      delete x._mvWhy;
       if (x.nl) {
         x.nl._v = null;
         x.nl.fx = [];

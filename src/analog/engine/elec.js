@@ -44,7 +44,10 @@ const AN_EL = {
 function anElec(U) {
   U = U || AN_UNIT;
   if (!U || !U.on) return null;
-  const e = U.el || (U.el = { l52: true }),
+  /* 3.2.3-beta.191 (SOHEE, eng_worker): a read only. It made U.el on the side that read it: in Worker mode the page (the Instructor
+     console, the overview end block) added el to its mirror of the unit model and the page no longer equalled the engine. The step
+     (anElecStep) and the command (anElecL52) make it; until then 52L1 reads closed */
+  const e = U.el || { l52: true },
     tb = U.tb || {},
     g52 = tb.st === 'sync' || tb.st === 'load',
     G = typeof anGenEl === 'function' ? anGenEl() : null,
