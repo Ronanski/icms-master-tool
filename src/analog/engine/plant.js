@@ -407,7 +407,11 @@ function anBdG(Pb) {
     b = G[i];
   return Math.max(0, a[1] + ((b[1] - a[1]) * (Math.min(Pb, 138) - a[0])) / (b[0] - a[0]));
 }
-const AN_THERM = { vEvap: 147, on: false }; /* not in AN_CYC: a loaded state replaces AN_CYC's fields */
+/* 3.2.3-beta.182 (Mina S177-3, beta.177 shutdown: the drum level stood at +218.83 mm for 6.7 h while the bottled boiler cooled, no
+   shrink): ON. It was OFF "until the Training has the drain steps" (PR-OPE-5002 WARMING UP: "Observe steam drum level: swelling ... use
+   lowering header drain ... MBD and CBD"); the drains are in the Training since beta.51. PR-OPE-5004-01 bottle-up step 4 "Fill steam drum
+   to +200 mm" is the reserve for this shrink. Probe (Hot restart, faster cooling): water 309 -> 292 C, level +166 -> -199 mm */
+const AN_THERM = { vEvap: 147, on: true }; /* not in AN_CYC: a loaded state replaces AN_CYC's fields */
 AN_CYC.vacLoss = (U, T) => (6 * Math.max(-1, T - 38.65) * 0.7 * U.ms) / 3600;
 AN_CYC.y = {};
 AN_CYC.levels = () => ({ ...AN_CYC.y });
