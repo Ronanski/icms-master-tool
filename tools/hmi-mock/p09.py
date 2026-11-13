@@ -83,7 +83,7 @@ _t = '<text x="360" y="924" font-size="11" fill="#9aa3ab">lube oil pump A ' + ST
 p.s = p.s[:_e] + _t + p.s[_e:]
 # combustion controls
 p.inner(1360, 292, C('AICFG112', 'sv', 1, ' %'))
-p.inner(1360, 310, V('ABC-006|SI0060', 1, ' T/H'))  # total air = ABC-006 SI0060 (live sweep 2026-11-14)
+p.inner(1360, 310, V('ABC-002|SI0060', 1, ' T/H'))  # total air = ABC-006 SI0060 (live sweep 2026-11-14)
 p.inner(1360, 328, NS + ' / ' + NS)
 p.inner(1360, 346, 'PV ' + C('TICHR1002A', 'pv', 0) + ' · SV ' + C('TICHR1002A', 'sv', 0, ' °C'))
 p.inner(1360, 364, 'RH ' + C('HICHR1002A', 'mv', 1, ' %') + ' · SH ' + C('HICHR1002B', 'mv', 1, ' %') + ' ' + MODE('HICHR1002A'))
