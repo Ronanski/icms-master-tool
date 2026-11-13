@@ -134,7 +134,11 @@ function anSyncSlots() {
       return r;
     },
     d => {
-      for (const k of AN_STATE_FLAGS) AN[k] = d.f[k];
+      /* 3.2.3-beta.189 (SOHEE, dock_open_run worker mode, about 1 run in 4): the page owns the category on screen (ABC / DITL / TCS,
+         setCat, sent to the engine with WN.put('cat')). An engine patch made just before the switch carried the old cat = 'an' and put it
+         back on the page: the DITL drawing opened from the Training dock showed while AN.cat said ABC (RUN read from the wrong page) */
+      const pg = typeof document !== 'undefined';
+      for (const k of AN_STATE_FLAGS) if (!(pg && k === 'cat')) AN[k] = d.f[k];
       if (d.f.startN != null) AN.startN = d.f.startN;
       for (const k of AN_STATE_SETS) AN[k] = d.s[k];
       if (d.u) AN.unit = AN_UNIT;
