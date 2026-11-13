@@ -683,10 +683,45 @@ window.LS_GUIDE = (function () {
      45 MW): "Gradually Open Extraction 5 MV then set to auto" (MVTS1005), then 4 (MVTS1004) and 3 (MVTS1003); "Servicing extraction 2 & 1,
      checked if Transfer region completed" (MVTS1002, MVTS1001). Probe beta.160 at 150 MW: AUTO then OPEN PB opened MV-TS1005 0 -> 98 % in
      40 s. The drain valves before / after the NRV (MV-TS1385 ~ 1399) have only a position on the DCS (IO list STN102 ZITS13xx): TCS / field */
-  const extO = ([nm, tg]) => [
-    movB(nm, tg, 1, 4, 13),
+  /* Mina S186-1 (live Hot beta.186, Worker): LP heater No.1 level HIGH-HIGH when the extractions came in service. The Do it pressed OPEN of
+     MV-TS1005, 1004 and 1003 in the same pass (each full open in about 40 s): probe beta.198 at 150 MW, extractions 5 and 4 closed then
+     opened together: the No.3 and No.2 LP heater drains cascade into No.1 faster than its level controller follows: No.1 LPH -2 -> +44 mm
+     (alarm list LT-HD1101: H 10, H.H. 50), No.2 +34, No.3 +30. PR-OPE-5002 EXTRACTION STEAM SYSTEM START-UP: "Gradually Open Extraction 5
+     MV then set to auto", then 4 and 3; extraction 2 and 1: "OPEN the MOV gradually". DITL-94 ~ 98 have the STOP PB (row 9): the Do it opens
+     one MOV at a time, 25 % (OPEN PB, then STOP PB at the step: s.fast, each 10 s of the plant), the next 25 % after 2 minutes of the plant
+     with the heater levels under their H alarm (alarm list: LP heaters H 10 mm, HP heater No.1 42, No.2 56), AUTO once fully open. The 25 %
+     and the 2 minutes are the pace of the Do it, not plant values */
+  const XG = {};
+  const extLv = () => [['LICHD11011', 10], ['LICHD11021', 10], ['LICHD11031', 10], ['LICHD11051', 42], ['LICHD11061', 56]].every(([t, h]) => !(+pv(t) >= h));
+  const extFast = () => {
+    for (const nm in XG) {
+      const P = XG[nm];
+      if (P.mv && movPos(nm) >= P.tg - 0.5) {
+        P.mv = 0;
+        if (P.tg < 100) dPress(nm, 9);
+      }
+    }
+  };
+  const extO = ([nm, tg], i, L0) => [
     Object.assign(
-      btn(tg + ' AUTO (' + nm + ')', () => (WL() && window.LS_DOCK && LS_DOCK.dset ? (LS_DOCK.dset(nm, 0, true), '') : ''), () => !WL() || dInG(nm, 20)),
+      btn(tg + ' OPEN gradually, 25 % a step (' + nm + ')', () => {
+        if (!WL()) return '';
+        const P = XG[nm] || (XG[nm] = { tg: 0, t: -1e9, mv: 0 }),
+          pos = movPos(nm);
+        if (pos >= 100 || P.mv) return '';
+        const prev = (L0 || []).slice(0, i).find(e => movPos(e[0]) < 100);
+        if (prev) return 'Wait: ' + prev[1] + ' first';
+        if (simT() - P.t < 120 || !extLv()) return 'Wait: heater levels steady under H';
+        P.tg = Math.min(100, Math.floor((pos + 0.5) / 25) * 25 + 25);
+        P.t = simT();
+        P.mv = 1;
+        dPress(nm, 4);
+        return '';
+      }, () => !WL() || movPos(nm) >= 100),
+      { dg: [nm, 4], ad: nm }
+    ),
+    Object.assign(
+      btn(tg + ' AUTO (' + nm + ')', () => (WL() && window.LS_DOCK && LS_DOCK.dset && movPos(nm) >= 100 ? (LS_DOCK.dset(nm, 0, true), '') : 'Wait: fully open first'), () => !WL() || dInG(nm, 20)),
       { ad: nm }
     )
   ];
@@ -2378,6 +2413,8 @@ window.LS_GUIDE = (function () {
       return;
     }
     /* again after a minute of the plant when the step is still not done (a value the drawing held while the machine was stopping) */
+    /* S186-1: the STOP PB of a gradual MOV opening at its step, each pass (10 s of the plant), before the once-a-minute gate below */
+    extFast();
     if (G.did === s.i && simT() - (G.didT || 0) < 60) return;
     /* 3.2.3-beta.90: the warm-up steps (stage 4 with the heating rate on their card, or once the drum has pressure) hold the heating
        rate as their text says */
