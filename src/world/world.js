@@ -1302,7 +1302,10 @@
           try {
             c = DUI.cause(s, row);
           } catch (e) {}
-          if (c && c.lines.length) s._stopWhy = { tk: W.tk, lines: deeper(s, c.lines, 1) };
+          /* SOHEE (S160-2): the STOPPED status row that follows the run feedback rises 1 ~ 2 scans after the trip, with "FAB B STOPPED"
+             as its cause: the cause of the stop read first (FAB B CURRENT L.L.) stays until the Event log has written it (10 s at most) */
+          const w0 = s._stopWhy;
+          if (c && c.lines.length && !(w0 && !w0.done && W.tk - w0.tk >= 0 && W.tk - w0.tk < 20)) s._stopWhy = { tk: W.tk, lines: deeper(s, c.lines, 1) };
           break;
         }
       }
