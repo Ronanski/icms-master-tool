@@ -94,7 +94,6 @@ const TCS = {
      30 + 390 x exp(8 / 71.9) = 466 C). Before 72,000 s (20 h, NO-SOURCE): a turbine was Warm after about 3 h */
   tauCool: 258900,
   tauX: 600 /* s, LP exhaust hood */,
-  tauAux: 120 /* s, aux steam header */,
   names: [
     'HP TURBINE WARMING',
     'TURBINE PREPARATION',
@@ -285,7 +284,7 @@ function tcsCrit(U) {
       s.rht >= f3l && s.rht <= f3u,
       s.rht
     ),
-    '1.10': f('1.10', 'GLAND STEAM SEAL HEADER PRESS. NOT LOW', c.gland && c.Pa > 7),
+    '1.10': f('1.10', 'GLAND STEAM SEAL HEADER PRESS. NOT LOW', isFinite(U.gsP) ? U.gsP >= 0.1 : c.gland && c.Pa > 7),
     1.11: f(
       '1.11',
       'CONDENSER VACUUM OK',
@@ -495,14 +494,16 @@ function tcsCmd(U, cmd, arg) {
       c.asv = on;
       return '';
     case 'gland':
+      /* 3.2.3: the command puts the gland steam controller (PV-GS1031 / PV-GS1034 PI on PT-GS1001) in or out of service; the seal is in
+         service when the header pressure comes up (unit.js anAuxStep) */
       if (!on) {
+        c.gsOn = false;
         c.gland = false;
         return '';
       }
-      if (!(c.Pa > 7)) return 'gland sealing: aux steam > 7 kg/cm2 (PR-OPE-5002 6164), ngayon ' + c.Pa.toFixed(1);
       if (!(tb && tb.rpm >= 1)) return 'Gland sealing: the turbine must turn on the turning gear (PR-OPE-5002 6219)';
       if (!c.vb) return 'Gland sealing: the vacuum breaker MV-AV1391 must be open (PR-OPE-5002 6197)';
-      c.gland = true;
+      c.gsOn = true;
       return '';
     case 'vacuum':
       if (!on) {
@@ -593,9 +594,11 @@ function tcsStep(U, dt) {
     const p51 = typeof anDitlPos === 'function' ? anDitlPos('DITL-51', 0) : null;
     if (p51 != null) c.asv = p51 > 0;
   }
-  const PaSS = c.asv ? Math.max(0, Math.min(10.5, U.Pd - 1)) : 0;
-  c.Pa += ((PaSS - c.Pa) * dt) / TCS.tauAux;
-  if (c.Pa < 7) c.gland = c.gland && c.Pa > 5;
+  /* 3.2.3 live Cold start (user 2026-11-14 "Code ang gawin"): the aux steam header and the gland header are mass balances (unit.js
+     AN_AS anAuxStep): Pa = PT-AS1004, the gland seal is in service while its header holds >= 0.10 kg/cm2 G (ATS 1.10, IBD TD-3 LOW).
+     Before: a lag toward min(10.5, drum - 1) and a switch */
+  if (isFinite(U.asP)) c.Pa = U.asP;
+  if (isFinite(U.gsP)) c.gland = !!c.gsOn && U.gsP >= 0.1;
   if (!c.brgOk) c.tg = false;
   /* turning gear: about 3 rpm (PR-OPE-5002 7955); disengages above 4 rpm and engages again at zero speed */
   const steam = tb.st !== 'off' && (tb.icv > 0.001 || U.gv > 0.001);
