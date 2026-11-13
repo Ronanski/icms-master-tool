@@ -4037,7 +4037,11 @@ function anUnitStep0(dt) {
          (100 ~ 300 C) the loop model of the hot plant (anchored at 150 MW) takes over. Before: the cold model was blended out at 10 %
          of the design air, and the loop model wanted 27 % at 348 T/H */
       const tb = isFinite(+U.Tb) ? +U.Tb : 30,
-        ia = idf && U.idf && U.idf.S.rt.pm ? Math.max(0, Math.min(1, (tb - 100) / 200)) : 1;
+        /* Jennie beta.192 (headless Hot restart, beta.191: the ID fan at 13 % before any air read -172 mmH2O for 4 minutes, steps 33 ~ 36;
+           PR-OPE-5002 IDF START-UP: about -15 at 13 %). A hot bed with no fire and no air is the same gas path as the cold furnace: the
+           loop model anchored at 150 MW (its air term taf / taf0 - 1 = -1 with no air) takes over only with the air too, fully from half
+           the purge air of the SOP (203 of 406 T/H), so the Hot / Warm restart starts the fans like the Cold one */
+        ia = idf && U.idf && U.idf.S.rt.pm ? Math.max(0, Math.min(1, (tb - 100) / 200)) * Math.max(0, Math.min(1, taf / 203)) : 1;
       if (ia < 1 && !p.pr.src) {
         const m = U.idfV ? Math.max(0, Math.min(100, +U.idfV.S.rt.v[U.idfV.n] || 0)) : 0,
           sp = anIdfN(m) / AN_IDF_CRV[2][1],
