@@ -30,9 +30,16 @@ const AN_UNIT = {
   /* sweep 34 (Mina beta.175: AN.unit.MW read NaN once right after a chip load): a load begins with the Reset (anStateInPlace back to
      this object), which had no MW, so MW was undefined until the starting state set it (MW0 / 0). The generator gives 0 MW until then */
   MW: 0,
-  a: (484 - 302) / (89.7 - 55.4) /* T/H of steam per T/H of coal: plant trends 2026-11-08 holds at 150 and 90 MW (5.31; the snapshots 03.png / 02.png gave 5.78, coal 3.6 % high at 90 MW in Mina's b6 run) */,
-  c: (149.8 - 90.3) / (481 - 304) /* MW per T/H of steam: plant trends 2026-11-08 (holds at 150 and 90 MW); the snapshots gave 0.3336 */,
-  mwK: 0.3362 * 481 - 149.8 /* MW lost at the anchor line: MW = c x steam - mwK on the plant trend (149.8 MW at 481 T/H); the snapshot anchor 150.5 at 474.1 was 3 MW above it */,
+  a:
+    (484 - 302) /
+    (89.7 -
+      55.4) /* T/H of steam per T/H of coal: plant trends 2026-11-08 holds at 150 and 90 MW (5.31; the snapshots 03.png / 02.png gave 5.78, coal 3.6 % high at 90 MW in Mina's b6 run) */,
+  c:
+    (149.8 - 90.3) /
+    (481 - 304) /* MW per T/H of steam: plant trends 2026-11-08 (holds at 150 and 90 MW); the snapshots gave 0.3336 */,
+  mwK:
+    0.3362 * 481 -
+    149.8 /* MW lost at the anchor line: MW = c x steam - mwK on the plant trend (149.8 MW at 481 T/H); the snapshot anchor 150.5 at 474.1 was 3 MW above it */,
   /* storage and firing lag from the TUNING OF THE PLANT (PID summary: PIC-COBM Kp 3.0, Ti 165 s, Td 7 s): the pressure of a drum
      whose steam flow the TCS holds is an integrator, and a PI on an integrator with a lag is stable only when the lag is well below
      Ti. With 700 / 150 s the loop of the plant tuning oscillated (MSP 70 ~ 126 kg/cm2 at 85 MW, the PID at +-25 %); with
@@ -120,10 +127,20 @@ const AN_UNIT = {
   ],
   /* natural steam temperature below the spray range, steam share of MCR: plant trends (90 MW MST 522, RHT 521, 2 h hold) and 02.png (60 MW
      MST 517, RHT 499); below 0.443 the FHI Fig 6 slope */
-  natSH: [[0.443, 517], [0.661, 522], [0.707, 541]],
-  natRH: [[0.443, 499], [0.661, 521], [0.707, 541]],
+  natSH: [
+    [0.443, 517],
+    [0.661, 522],
+    [0.707, 541]
+  ],
+  natRH: [
+    [0.443, 499],
+    [0.661, 521],
+    [0.707, 541]
+  ],
   /* temperature fall below 60 % MCR, C per unit of load share (02.png: MST 541 -> 517 and RHT 541 -> 499 at 0.443 MCR) */
-  slopeSH: (541 - 524) / (0.6 - 0.4) /* FHI Fig 6: 541 at 60 %, 524 at 40 %, one curve for SH and RH. Manual outranks the snapshot 02.png */,
+  slopeSH:
+    (541 - 524) /
+    (0.6 - 0.4) /* FHI Fig 6: 541 at 60 %, 524 at 40 %, one curve for SH and RH. Manual outranks the snapshot 02.png */,
   slopeRH: (541 - 524) / (0.6 - 0.4),
   /* 3.2.0-beta.38 (CHECKLIST 0.6, ATS 1.4 / 1.6 / 1.71 / 1.72 at the roll): the SH / RH outlet in a start-up versus the boiler load,
      FHI SECT_7 Fig. 2 COLD STARTUP (one curve "SH / RH Out. Temp."): about 415 C from the roll to the IP / HP transfer (15 % load),
@@ -364,12 +381,14 @@ function anUnitStart() {
   U.cdHwL = s31 && s31.S ? anUnitAIs(shStn(s31) + '|AI0640') : [];
   /* 3.2.1 (IRENE: HEATER LEVELS): the level transmitters of the five feedwater heaters (STN102 LT-HD110x-1 / -2) and the outputs of
      their primary / alternate drain level controllers (ABC-035 ~ 039): AN_HD writes the levels and reads the valves */
-  U.hd = AN_HD.h.map(([k, sh, ais, c1, c2]) => {
-    const s = AN.sheets.find(x => x.name === sh);
-    if (!s || !s.S) return null;
-    const L = ais.map(ai => anUnitAIs(shStn(s) + '|' + ai)).filter(l => l.length);
-    return { k, L, v1: null, v2: null, c1, c2, sh, y: NaN };
-  }).filter(Boolean);
+  U.hd = AN_HD.h
+    .map(([k, sh, ais, c1, c2]) => {
+      const s = AN.sheets.find(x => x.name === sh);
+      if (!s || !s.S) return null;
+      const L = ais.map(ai => anUnitAIs(shStn(s) + '|' + ai)).filter(l => l.length);
+      return { k, L, v1: null, v2: null, c1, c2, sh, y: NaN };
+    })
+    .filter(Boolean);
   /* the valve commands of the other outlets (output of their A / M station after the interlocks) */
   const ctlOut = (k, t) => {
     const x = AN.sheets.find(y => y.name === k),
@@ -478,7 +497,11 @@ function anUnitStart() {
     if (s52 && s52.S && s54 && s54.S) {
       const a = netOf(s52.S, 'SI0180'),
         b = netOf(s54.S, 'STN102017');
-      if (a >= 0 && b >= 0 && s54.S.ext.includes(b)) U.alink.push([{ S: s52.S, n: a }, { S: s54.S, n: b }]);
+      if (a >= 0 && b >= 0 && s54.S.ext.includes(b))
+        U.alink.push([
+          { S: s52.S, n: a },
+          { S: s54.S, n: b }
+        ]);
       /* 2.2.0-beta.20 (bug, fixed): ABC-054 has no drawn link to the set of ABC-001C (its PV comes through this alink), so the run
          loop never stepped it: the RH blow-off stayed at the value it had when the sheet was loaded (0 %) whatever the operator or
          the PIDV did, and the unit model read that 0 (CHECK bypass stage: "RH blow-off 0 %" in every run). The sheets the unit
@@ -535,15 +558,25 @@ function anUnitStart() {
     U.taf0 = taf0;
   }
   U.pa = ais('ABC-006', 'AI0166');
-  U.bedDp = [[ais('ABC-006', 'AI0134'), 1426], [ais('ABC-006', 'AI0262'), 1432]];
+  U.bedDp = [
+    [ais('ABC-006', 'AI0134'), 1426],
+    [ais('ABC-006', 'AI0262'), 1432]
+  ];
   U.soxAI = anUnitAIs('1|AI0466'); /* stack SOx, boiler.js anSoxStep */
-  U.bedSc = [['ABC-009A', 'SICL1060A'], ['ABC-009A', 'SICL1060B'], ['ABC-009A', 'SICL1060C'], ['ABC-009B', 'SICL1060D']].map(([k, t]) => {
-    /* MAN stations, in rpm (compile-step.js): their output pin */
-    const x = shOf(k),
-      b = x && x.S ? x.S.blk.find(q => q.k === 'MAN' && (q.txt || []).includes(t)) : null,
-      p = b && (b.pins || []).find(q => q.role === 'out');
-    return p ? { S: x.S, n: p.n } : null;
-  }).filter(Boolean);
+  U.bedSc = [
+    ['ABC-009A', 'SICL1060A'],
+    ['ABC-009A', 'SICL1060B'],
+    ['ABC-009A', 'SICL1060C'],
+    ['ABC-009B', 'SICL1060D']
+  ]
+    .map(([k, t]) => {
+      /* MAN stations, in rpm (compile-step.js): their output pin */
+      const x = shOf(k),
+        b = x && x.S ? x.S.blk.find(q => q.k === 'MAN' && (q.txt || []).includes(t)) : null,
+        p = b && (b.pins || []).find(q => q.role === 'out');
+      return p ? { S: x.S, n: p.n } : null;
+    })
+    .filter(Boolean);
   U.paNet = U.tafS ? netOf(U.tafS, 'FIFA1071.PV') : -1;
   U.pa0 = U.paNet >= 0 ? +U.tafS.rt.v[U.paNet] : NaN;
   /* ---- 2.2.0-beta.12 (M3): trips ---- */
@@ -629,7 +662,13 @@ function anUnitStart() {
   /* 3.2.1 (IRENE: FEEDWATER): the motor of the DITL drawing too (BFWP A / B = DITL-23A / #B): a FIELD TRIP (protection relay) stops the
      water although ABC-010 M.3343 (DITL-23A output 55 RUNNING) still reads 1 */
   U.mul[0].drw = U.mul[0].run.length === 2 ? ['DITL-23A', 'DITL-23A #B'] : null;
-  U.mul[0].dis = U.mul[0].run.length === 2 ? [['DITL-38 #MV-FW1001', 'DITL-38 #MV-FW1391'], ['DITL-38 #MV-FW1002', 'DITL-38 #MV-FW1392']] : null;
+  U.mul[0].dis =
+    U.mul[0].run.length === 2
+      ? [
+          ['DITL-38 #MV-FW1001', 'DITL-38 #MV-FW1391'],
+          ['DITL-38 #MV-FW1002', 'DITL-38 #MV-FW1392']
+        ]
+      : null;
   /* 2.2.0-beta.15 (M4 step 2): the start-up feedwater valve (ABC-010 LICBR1001B, single-element drum level control for the start-up,
      FCV-FW1060) is a second line into the drum beside the main valve of FICFW1007: its flow is added to the feedwater flow
      transmitter (plant.js pr.op of the FICFW1007 loop), its flow is from the valve sheet (anSuFw below, K1AU3-E2-0-123 p147);
@@ -747,8 +786,18 @@ function anUnitStart() {
     const t = 'HICFA10' + String(i).padStart(2, '0');
     ztMap.push([i <= 16 ? 'ABC-015' : 'ABC-016', t, null]);
   }
-  ztMap.push(['ABC-020', 'HICHR1002A', 'S4 AI0368'], ['ABC-020', 'HICHR1002A', 'S4 AI0369'], ['ABC-020', 'HICHR1002A', 'S4 AI0370'], ['ABC-020', 'HICHR1002A', 'S4 AI0371']);
-  ztMap.push(['ABC-020', 'HICHR1002B', 'S4 AI0372'], ['ABC-020', 'HICHR1002B', 'S4 AI0373'], ['ABC-020', 'HICHR1002B', 'S4 AI0374'], ['ABC-020', 'HICHR1002B', 'S4 AI0375']);
+  ztMap.push(
+    ['ABC-020', 'HICHR1002A', 'S4 AI0368'],
+    ['ABC-020', 'HICHR1002A', 'S4 AI0369'],
+    ['ABC-020', 'HICHR1002A', 'S4 AI0370'],
+    ['ABC-020', 'HICHR1002A', 'S4 AI0371']
+  );
+  ztMap.push(
+    ['ABC-020', 'HICHR1002B', 'S4 AI0372'],
+    ['ABC-020', 'HICHR1002B', 'S4 AI0373'],
+    ['ABC-020', 'HICHR1002B', 'S4 AI0374'],
+    ['ABC-020', 'HICHR1002B', 'S4 AI0375']
+  );
   U.zt = [];
   for (const [k, t, ai] of ztMap) {
     const x = shOf(k);
@@ -761,7 +810,8 @@ function anUnitStart() {
     for (const b of S2.blk) {
       if (b.k !== 'AI' || !b.o || b.o[0] == null) continue;
       const nm = (AN.nm(S2, b.o[0]) || '').trim();
-      if (ai ? nm === ai : (AN.descOf ? AN.descOf(x, nm) || '' : '').startsWith('ZT-FA' + t.slice(5) + ' ')) L.push([S2, b]);
+      if (ai ? nm === ai : (AN.descOf ? AN.descOf(x, nm) || '' : '').startsWith('ZT-FA' + t.slice(5) + ' '))
+        L.push([S2, b]);
     }
     if (L.length) U.zt.push({ src, L, y: NaN, t });
   }
@@ -789,9 +839,28 @@ function anUnitStart() {
   /* the transmitters this model writes: the plant model of a loop on them stops writing (ABC-001C PIC-COBM: main steam pressure) */
   const own = new Set();
   const lists = [U.msp, U.drum, U.msf, U.spd || []]
-    .concat(U.mw, U.tin, U.rhp, U.pist, U.o2, [U.pa], U.tbed, U.aphT, U.saP, U.idfS.length ? [U.idfS] : [], (U.bedDp || []).map(x => x[0]), [U.soxAI])
+    .concat(
+      U.mw,
+      U.tin,
+      U.rhp,
+      U.pist,
+      U.o2,
+      [U.pa],
+      U.tbed,
+      U.aphT,
+      U.saP,
+      U.idfS.length ? [U.idfS] : [],
+      (U.bedDp || []).map(x => x[0]),
+      [U.soxAI]
+    )
     .concat(...U.sh.map(h => h.L))
-    .concat([U.xt.cr, U.xt.hr, U.xt.aux, U.xt.fw, U.xt.lt2], U.xt.rhi, U.xt.fab, U.zt.map(z => z.L), U.lo || [])
+    .concat(
+      [U.xt.cr, U.xt.hr, U.xt.aux, U.xt.fw, U.xt.lt2],
+      U.xt.rhi,
+      U.xt.fab,
+      U.zt.map(z => z.L),
+      U.lo || []
+    )
     .concat(...(U.hd || []).map(h => h.L));
   for (const l of lists) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
   U.own = own;
@@ -809,7 +878,8 @@ function anUnitStart() {
   for (const h of U.hd || []) h.w0 = NaN;
   U.frT = undefined;
   U.tco = null; /* 3.2.0-beta.66: the oil-only state of the snapshot (tcs.js tcsOilState) starts again */
-  U.tc = null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
+  U.tc =
+    null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
   /* 3.2.0-beta.14: the snapshot plant has its diesel oil pump in service (source.js field equipment) */
   AN_SRC.field.hypo = true;
   AN_SRC.field.hypoB = false; /* live test 2026-11-04: dosing pump B standby, unloading pump stopped (field, HCDSP) */
@@ -823,15 +893,27 @@ function anUnitStart() {
   U.bedI = NaN; /* the bed inventory starts again (anBedStep) */
   U.soxZ = NaN; /* the lime in the bed too (boiler.js anSoxStep) */
   U.bedLeg = 0;
-  if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
+  if (AN_SRC.valve)
+    for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed while steaming */
   AN_SRC.lhdPct = 0;
   U.cwPrime = 1;
   AN_SRC.field.esp = true;
   /* 3.2.3 SOHEE: the dosing pumps A in service, B standby, agitator stopped (PR-OPE-5002 one pump each); the chemistry at its target */
-  Object.assign(AN_SRC.field, { tspA: true, tspB: false, amnA: true, amnB: false, chzA: true, chzB: false, agt: false });
+  Object.assign(AN_SRC.field, {
+    tspA: true,
+    tspB: false,
+    amnA: true,
+    amnB: false,
+    chzA: true,
+    chzB: false,
+    agt: false
+  });
   U.chC = U.chP = U.chS = U.chO = U.sp1006 = NaN;
-  U.sbTa = U.sbTb = U.hrT10 = NaN; /* SOHEE: the sootblower drains and TT-HR1010 start at their rest value (AN_SB.dr, AN_HRW) */
+  U.sbTa =
+    U.sbTb =
+    U.hrT10 =
+      NaN; /* SOHEE: the sootblower drains and TT-HR1010 start at their rest value (AN_SB.dr, AN_HRW) */
   U.chCold = 0;
   AN.unit = U;
 }
@@ -882,15 +964,27 @@ function anUnitCold() {
   U.lpT = undefined; /* 3.2.1 AN_LP: the LP heaters too */
   U.bedI = NaN; /* the bed inventory starts again (anBedStep) */
   U.soxZ = NaN; /* the lime in the bed too (boiler.js anSoxStep) */
-  if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
+  if (AN_SRC.valve)
+    for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed */
   AN_SRC.lhdPct = 0;
   U.cwPrime = 0;
   AN_SRC.field.esp = false;
   /* 3.2.3 SOHEE: cold = the dosing pumps stopped (PR-OPE-5002 starts them in the start-up); no phosphate yet, the cycle water conditioned */
-  Object.assign(AN_SRC.field, { tspA: false, tspB: false, amnA: false, amnB: false, chzA: false, chzB: false, agt: false });
+  Object.assign(AN_SRC.field, {
+    tspA: false,
+    tspB: false,
+    amnA: false,
+    amnB: false,
+    chzA: false,
+    chzB: false,
+    agt: false
+  });
   U.chC = U.chP = U.chS = U.chO = U.sp1006 = NaN;
-  U.sbTa = U.sbTb = U.hrT10 = NaN; /* SOHEE: the sootblower drains and TT-HR1010 start at their rest value (AN_SB.dr, AN_HRW) */
+  U.sbTa =
+    U.sbTb =
+    U.hrT10 =
+      NaN; /* SOHEE: the sootblower drains and TT-HR1010 start at their rest value (AN_SB.dr, AN_HRW) */
   U.chCold = 2; /* the water filled cold is not deaerated (air-saturated) until the deaerator is first pressurized (2 = until the transmitter reads the cold deaerator) */
   AN_SRC.t = -1;
   /* 3.2.0-beta.68: cold = the air compressors stopped, the air tanks empty (AN_AIR) */
@@ -948,10 +1042,26 @@ function anUnitLive() {
    answer went only to the status bar (the TCS / Field menu, the Training buttons), so the press looked silent; a Turbine trip that was not
    taken said nothing either. The engine writes every refused TCS command to the Event log with its reason (the engine only: a mirror
    page gets the line from the worker, like the trip lines of tcs-trip.js) */
-const AN_TCS_CMD = { roll: 'ROLL', sync: 'SYNC', loadup: 'LOAD UP', shutdown: 'SHUT-DOWN', holdoff: 'HOLD OFF', trip: 'TURBINE TRIP', tripreset: 'TURBINE RESET', normal: 'NORMAL OPERATION' };
+const AN_TCS_CMD = {
+  roll: 'ROLL',
+  sync: 'SYNC',
+  loadup: 'LOAD UP',
+  shutdown: 'SHUT-DOWN',
+  holdoff: 'HOLD OFF',
+  trip: 'TURBINE TRIP',
+  tripreset: 'TURBINE RESET',
+  normal: 'NORMAL OPERATION'
+};
 function anTurbine(cmd, arg) {
   const r = anTurbine0(cmd, arg);
-  if (typeof r === 'string' && r && AN_TCS_CMD[cmd] && typeof window !== 'undefined' && window.lsEventAdd && !(window.ENG && ENG.mode === 'mirror'))
+  if (
+    typeof r === 'string' &&
+    r &&
+    AN_TCS_CMD[cmd] &&
+    typeof window !== 'undefined' &&
+    window.lsEventAdd &&
+    !(window.ENG && ENG.mode === 'mirror')
+  )
     lsEventAdd('TCS', 'TCS', AN_TCS_CMD[cmd] + ' not taken: ' + r);
   return r;
 }
@@ -1009,7 +1119,10 @@ function anTurbine0(cmd, arg) {
       /* plan c5: G-1B closes 52G1 only with 52L1 closed (elec.js): an open 52L1 timed the synchronizing out after 5 min with no word */
       if (U.el && U.el.l52 === false) return 'Line breaker 52L1 is open: close 52L1 first (Instructor console, Grid)';
       if (c.step >= 1 && c.step < 3 && tb.rpm > 3550) c.step = 3;
-      if (c.step < 3) return c.step < 1 ? 'Roll the turbine first' : 'Not at 3600 rpm / ACCELERATION not finished (' + tb.rpm.toFixed(0) + ' rpm)';
+      if (c.step < 3)
+        return c.step < 1
+          ? 'Roll the turbine first'
+          : 'Not at 3600 rpm / ACCELERATION not finished (' + tb.rpm.toFixed(0) + ' rpm)';
       const r = c.cur >= 0 ? '' : tcsStepIn(U, c.step + 1);
       if (r) return r;
       c.auto = true;
@@ -1018,7 +1131,14 @@ function anTurbine0(cmd, arg) {
     }
     if (cmd === 'loadup') {
       if (tb.st !== 'sync' && tb.st !== 'load') return 'Synchronise the generator first';
-      if (c.step < 5) return 'Waiting for the initial load hold (SYNCH. & INITIAL LOAD, ' + (c.tm / 60).toFixed(0) + ' / ' + (c.holdMin || 0) + ' min)';
+      if (c.step < 5)
+        return (
+          'Waiting for the initial load hold (SYNCH. & INITIAL LOAD, ' +
+          (c.tm / 60).toFixed(0) +
+          ' / ' +
+          (c.holdMin || 0) +
+          ' min)'
+        );
       return tcsStepIn(U, 6, arg);
     }
     const r = tcsCmd(U, cmd, arg);
@@ -1026,7 +1146,12 @@ function anTurbine0(cmd, arg) {
   }
   if (cmd === 'roll') {
     if (tb.st !== 'off') return 'The turbine is already turning (' + tb.st + ')';
-    if (!(U.vac >= 0.9)) return 'No condenser vacuum (' + Math.round(100 * (U.vac || 0)) + ' %): start the seawater pumps (SWP) and a condensate pump (CEP); VACUUM UP (ejectors, gland sealing) needs aux steam: main steam > 12 kg/cm2';
+    if (!(U.vac >= 0.9))
+      return (
+        'No condenser vacuum (' +
+        Math.round(100 * (U.vac || 0)) +
+        ' %): start the seawater pumps (SWP) and a condensate pump (CEP); VACUUM UP (ejectors, gland sealing) needs aux steam: main steam > 12 kg/cm2'
+      );
     Object.assign(tb, { st: 'roll', xfer: false, tgt: 0, aim: 0 });
     return '';
   }
@@ -1188,7 +1313,8 @@ const AN_SW = {
 };
 const swInterp = (X, Y, x) => {
   if (x <= X[0]) return Y[0] + ((Y[1] - Y[0]) * (x - X[0])) / (X[1] - X[0]);
-  for (let i = 1; i < X.length; i++) if (x <= X[i]) return Y[i - 1] + ((Y[i] - Y[i - 1]) * (x - X[i - 1])) / (X[i] - X[i - 1]);
+  for (let i = 1; i < X.length; i++)
+    if (x <= X[i]) return Y[i - 1] + ((Y[i] - Y[i - 1]) * (x - X[i - 1])) / (X[i] - X[i - 1]);
   const n = X.length - 1;
   return Y[n] + ((Y[n] - Y[n - 1]) * (x - X[n])) / (X[n] - X[n - 1]);
 };
@@ -1309,21 +1435,52 @@ function swSolve(st) {
      air (PD-023 Rev C): unit 1 header isolation V-IA1101 (IA) / V-PA1087 (PA), cross-tie PA -> IA tanks V-PA0013 (normally closed). */
 const AN_FV0 = {
   /* the water side of the feedwater heaters (PD-017, team-files/plant-study/11-heater-valves.md): manual gear valves, no DCS signal */
-  'V-FW1009': 100, 'V-FW1010': 100, 'V-FW1011': 0, 'V-FW1012': 100, 'V-FW1013': 100, 'V-FW1014': 0,
-  'V-CD1026': 100, 'V-CD1027': 100, 'V-CD1028': 0, 'V-CD1029': 100, 'V-CD1030': 100, 'V-CD1031': 0,
-  'V-CW1002': 100, 'V-CW1004': 100, 'V-CW1007': 100, 'V-CW1009': 100,
-  'V-CW1010': 100, 'V-CW1011': 100, 'V-CW1012': 0, 'V-CW1013': 100, 'V-CW1014': 100, 'V-CW1015': 0,
-  'V-MU0001': 100, 'V-MU0002': 100, 'V-MU0003': 100, 'V-MU0004': 100, 'V-MU0005': 100,
-  'V-MU0007': 100, 'V-MU0009': 100, 'V-MU0011': 100, 'V-MU0013': 100, 'V-MU0015': 100, 'V-MU0017': 100,
+  'V-FW1009': 100,
+  'V-FW1010': 100,
+  'V-FW1011': 0,
+  'V-FW1012': 100,
+  'V-FW1013': 100,
+  'V-FW1014': 0,
+  'V-CD1026': 100,
+  'V-CD1027': 100,
+  'V-CD1028': 0,
+  'V-CD1029': 100,
+  'V-CD1030': 100,
+  'V-CD1031': 0,
+  'V-CW1002': 100,
+  'V-CW1004': 100,
+  'V-CW1007': 100,
+  'V-CW1009': 100,
+  'V-CW1010': 100,
+  'V-CW1011': 100,
+  'V-CW1012': 0,
+  'V-CW1013': 100,
+  'V-CW1014': 100,
+  'V-CW1015': 0,
+  'V-MU0001': 100,
+  'V-MU0002': 100,
+  'V-MU0003': 100,
+  'V-MU0004': 100,
+  'V-MU0005': 100,
+  'V-MU0007': 100,
+  'V-MU0009': 100,
+  'V-MU0011': 100,
+  'V-MU0013': 100,
+  'V-MU0015': 100,
+  'V-MU0017': 100,
   /* the line to T-1109 MU-1-021 (PD-024): V-MU1031, XV-MU1109 with its bypass V-MU1033, V-MU1032. PR-OPE-5002 section 7 "Ensure Expansion
      tank inlet valve is open (V-MU1031 and V-MU1032)". XV-MU1109 is spring opening: with no instrument air these are the only way to stop the fill (Mina F33) */
-  'V-MU1031': 100, 'V-MU1032': 100,
-  'V-IA1101': 100, 'V-PA1087': 100, 'V-PA0013': 0,
+  'V-MU1031': 100,
+  'V-MU1032': 100,
+  'V-IA1101': 100,
+  'V-PA1087': 100,
+  'V-PA0013': 0,
   /* 3.2.1 (IRENE: FEEDWATER): the BFWP suction manual valves, PR-OPE-5002 19.16 "Fully OPEN BFPs suction (V-FW1002/V-FW1001) ...
      Check if the limit switch is touched" (IO list STN102 I.028F ZSO-FW1031 BFWP-A / I.032F ZSO-FW1032 BFWP-B suction manual valve
      open; V-FW1001 = A, V-FW1002 = B by the number order of the discharge MOVs MV-FW1001 A / MV-FW1002 B). Normal line-up: both open
      (the standby pump lined up for its auto start) */
-  'V-FW1001': 100, 'V-FW1002': 100
+  'V-FW1001': 100,
+  'V-FW1002': 100
 };
 /* the water of a heater: inlet, outlet, bypass openings (%) -> share through the tubes (s) and whether the line passes at all (p).
    The split between the tubes and the bypass by opening: bypass hydraulics NO-SOURCE */
@@ -1338,7 +1495,18 @@ const anFv = tag => {
   const V = (typeof AN_SRC !== 'undefined' && AN_SRC.valve) || {};
   return isFinite(V[tag]) ? V[tag] : tag in AN_FV0 ? AN_FV0[tag] : AN_SW_V0[tag];
 };
-const AN_SW_V0 = { 'V-SW1002': 100, 'V-SW1004': 100, 'V-SW1006': 100, 'V-SW1007': 100, 'V-SW1008': 100, 'V-SW1009': 40, 'V-SW1010': 40, 'V-SW1016': 100, 'V-SW1018': 100, 'V-SW1020': 100 };
+const AN_SW_V0 = {
+  'V-SW1002': 100,
+  'V-SW1004': 100,
+  'V-SW1006': 100,
+  'V-SW1007': 100,
+  'V-SW1008': 100,
+  'V-SW1009': 40,
+  'V-SW1010': 40,
+  'V-SW1016': 100,
+  'V-SW1018': 100,
+  'V-SW1020': 100
+};
 function anSeawaterStep(U, dt) {
   const K = AN_SW,
     c = swCal(),
@@ -1376,13 +1544,24 @@ function anSeawaterStep(U, dt) {
     dirt: U.swDirt1
   };
   /* the network is solved again only when a speed, a valve, the forebay or the dirt (0.01) changed */
-  const key = [st.s.map(x => x.toFixed(3)), st.sb.map(x => x.toFixed(3)), st.vd, st.vi, st.vo, st.vb, st.L, st.dirt.toFixed(2)].join('|');
+  const key = [
+    st.s.map(x => x.toFixed(3)),
+    st.sb.map(x => x.toFixed(3)),
+    st.vd,
+    st.vi,
+    st.vo,
+    st.vb,
+    st.L,
+    st.dirt.toFixed(2)
+  ].join('|');
   if (!U._swR || U._swK !== key) {
     U._swR = swSolve(st);
     U._swK = key;
   }
   const r = U._swR;
-  U.swRunout = r.q.map(q => (q > K.Qmax ? 1 : 0)) /* above the max flow of the curve (22,680 m3/h): the curve is extrapolated */;
+  U.swRunout = r.q.map(q =>
+    q > K.Qmax ? 1 : 0
+  ); /* above the max flow of the curve (22,680 m3/h): the curve is extrapolated */
   /* flows (m3/h), for the HMI and the loop check */
   r.q.forEach((q, i) => (U['swQa' + i] = Math.round(q)));
   r.b.q.forEach((q, i) => (U['swQb' + i] = Math.round(q)));
@@ -1443,7 +1622,10 @@ function anSeawaterStep(U, dt) {
       PN = Math.max(0, r.PN || 0);
     lag('swBs' + i, PN, K.tauP);
     lag('swBd' + i, s > 0 && PN > 0 ? PN + K.kP * swbH(q, s) : PN, K.tauP);
-    const Pw = s > 0 ? Math.max(0.4 * 50.87, (1020 * 9.80665 * (q / 3600) * swbH(q, s)) / 1000 / Math.max(0.25, swEb(K, q / K.bBep))) : 0; /* floor 40 % of the rated 50.87 kW at low flow: NO-SOURCE */
+    const Pw =
+      s > 0
+        ? Math.max(0.4 * 50.87, (1020 * 9.80665 * (q / 3600) * swbH(q, s)) / 1000 / Math.max(0.25, swEb(K, q / K.bBep)))
+        : 0; /* floor 40 % of the rated 50.87 kW at low flow: NO-SOURCE */
     const I = K.bIsop + ((K.bI100 - K.bIsop) * (Pw - c.bPsop)) / (K.bkW - c.bPsop);
     if (s <= 0) U['swIb' + i] = 0;
     else lag('swIb' + i, s < 1 ? K.bIst : Math.max(0, I), K.tauI);
@@ -1669,10 +1851,20 @@ function acwSolve(s, kv, kA) {
     qOf = (si, dp, i) => {
       const v = (kv && kv[i]) || 0;
       if (!(si > 0) || !(v < Infinity) || K.rho * si * si * K.cH[0] <= dp) return 0;
-      return swBisect(q => K.rho * si * si * swInterp(K.cQ, K.cH, q / si) - v * q * q - dp, 0, 1.6 * K.cQ[K.cQ.length - 1] * si, 40);
+      return swBisect(
+        q => K.rho * si * si * swInterp(K.cQ, K.cH, q / si) - v * q * q - dp,
+        0,
+        1.6 * K.cQ[K.cQ.length - 1] * si,
+        40
+      );
     };
   if (!s.some(x => x > 0) || !(k < Infinity)) return { Q: 0, q: s.map(() => 0) };
-  const Q = swBisect(x => s.reduce((a, si, i) => a + qOf(si, k * x * x, i), 0) - x, 0, 2 * 1.6 * K.cQ[K.cQ.length - 1], 40);
+  const Q = swBisect(
+    x => s.reduce((a, si, i) => a + qOf(si, k * x * x, i), 0) - x,
+    0,
+    2 * 1.6 * K.cQ[K.cQ.length - 1],
+    40
+  );
   return { Q, q: s.map((si, i) => qOf(si, k * Q * Q, i)) };
 }
 function anAcwStep(U, dt) {
@@ -1698,7 +1890,9 @@ function anAcwStep(U, dt) {
     fx = 0.571 / 1.2,
     sc = hxo.reduce((a, o) => a + o * o, 0) /* parallel paths: flow area ~ opening^2 */,
     kA = nHx ? c.kA * (1 - fx + fx * Math.pow(K.hxN / sc, 2)) : Infinity,
-    kv = dis.map(o => (o > 0 ? (K.kd100 / (K.dQ * K.dQ)) * (1 / Math.pow(o, 4) - 1) : Infinity)) /* 100 % = the calibration (27.PNG) */,
+    kv = dis.map(o =>
+      o > 0 ? (K.kd100 / (K.dQ * K.dQ)) * (1 / Math.pow(o, 4) - 1) : Infinity
+    ) /* 100 % = the calibration (27.PNG) */,
     sp = U.acSpd.map((x, i) => (suc[i] > 0 ? x : 0));
   U.acHxN = nHx;
   const key = sp.map(x => x.toFixed(3)).join(',') + '|' + dis.join(',') + '|' + hxo.join(',');
@@ -1741,7 +1935,11 @@ function anAcwStep(U, dt) {
   U.acCool = n && hx > 0 ? 1 : 0;
   if (Ch > 0) {
     /* the return (pump discharge, TT-CW1152) is the node; the first step after a starting state starts at its steady value */
-    if (first || !isFinite(U.acT1)) U.acT1 = hx > 0 && Q > 0.5 * K.dQ ? K.Tsw + Qload / hx : Math.min(60, K.Tamb + 10); /* 3.2.1: a throttled first step does not start hot */
+    if (first || !isFinite(U.acT1))
+      U.acT1 =
+        hx > 0 && Q > 0.5 * K.dQ
+          ? K.Tsw + Qload / hx
+          : Math.min(60, K.Tamb + 10); /* 3.2.1: a throttled first step does not start hot */
     U.acT1 += ((Qload - hx * (U.acT1 - K.Tsw)) * dt) / K.M;
     U.acT1 = Math.max(K.Tsw, Math.min(99, U.acT1));
     U.acT2 = U.acT1 - (hx * (U.acT1 - K.Tsw)) / Ch;
@@ -1836,14 +2034,19 @@ const AN_PA_FURN = 328.2 / 354.0;
    carry-over gives. tau itself is NO-SOURCE inside that bound. At a hot bed (bf = 1) with no coal held, the burn is the fed coal, as
    before. Module level (never a function on U: SAVE / LOAD). */
 const AN_CBED = { tau: 60 };
-const AN_BED = { s: [0.43, 0.525, 0.626, 0.715, 0.86, 1], t: [798, 819, 840, 840, 840, 840], a: [0.612, 0.557, 0.622, 0.716, 0.861, 1] };
+const AN_BED = {
+  s: [0.43, 0.525, 0.626, 0.715, 0.86, 1],
+  t: [798, 819, 840, 840, 840, 840],
+  a: [0.612, 0.557, 0.622, 0.716, 0.861, 1]
+};
 function anBedSS(U, fs, as) {
   const K = AN_BED,
     start = U.Tamb + (U.Tb0 - U.Tamb) * Math.pow(Math.min(3, fs / as), U.kBedSU != null ? U.kBedSU : 0.45),
     x = Math.min(1.1, fs),
     ip = Y => {
       if (x <= K.s[0]) return Y[0];
-      for (let i = 1; i < K.s.length; i++) if (x <= K.s[i]) return Y[i - 1] + ((Y[i] - Y[i - 1]) * (x - K.s[i - 1])) / (K.s[i] - K.s[i - 1]);
+      for (let i = 1; i < K.s.length; i++)
+        if (x <= K.s[i]) return Y[i - 1] + ((Y[i] - Y[i - 1]) * (x - K.s[i - 1])) / (K.s[i] - K.s[i - 1]);
       return Y[Y.length - 1] + ((x - 1) * (Y[Y.length - 1] - Y[Y.length - 2])) / (1 - K.s[K.s.length - 2]);
     };
   const tab = U.Tamb + (ip(K.t) * (U.Tb0 / 840) - U.Tamb) * Math.pow(ip(K.a) / as, 0);
@@ -1871,7 +2074,7 @@ function anBedStep(U, dt, rpm, pa, fa) {
   U.bedI = Math.max(0, U.bedI + ((U.bedIn - U.bedOut) * dt) / 3600);
   /* the solids held in the cyclone legs (t) */
   U.bedLeg = U.bedLeg || 0;
-  const mv = ((K.loop * (pa > 106 ? 1 : 0)) * dt) / 3600,
+  const mv = (K.loop * (pa > 106 ? 1 : 0) * dt) / 3600,
     seal = fa == null || fa >= K.faLL;
   U.bedSeal = seal ? 1 : 0;
   if (!seal) {
@@ -1892,7 +2095,8 @@ function anVacMW(U) {
   U.dMWv = (6 * dT * 0.7 * U.ms) / 3600;
   return U.dMWv;
 }
-const anPsat = T => (Math.pow(10, 8.07131 - 1730.63 / (233.426 + T)) * 1.33322) / 980.665; /* kg/cm2A, Antoine (water) */
+const anPsat = T =>
+  (Math.pow(10, 8.07131 - 1730.63 / (233.426 + T)) * 1.33322) / 980.665; /* kg/cm2A, Antoine (water) */
 function anCondStep(U, dt) {
   const K = AN_CD,
     sw = AN_SW,
@@ -1916,7 +2120,11 @@ function anCondStep(U, dt) {
   const run = [srcBit(['M.3350']) > 0.5 ? 1 : 0, srcBit(['M.3351']) > 0.5 ? 1 : 0],
     n = run[0] + run[1],
     u = (typeof AN_CYC !== 'undefined' && AN_CYC.u) || {},
-    Qt = n ? (Math.min(520, typeof anDaQ === 'function' ? anDaQ(u.da) : 21.7 * Math.max(0, u.da || 0)) + 2.5 * Math.max(0, Math.min(100, u.cf || 0))) / 0.9926 : 0,
+    Qt = n
+      ? (Math.min(520, typeof anDaQ === 'function' ? anDaQ(u.da) : 21.7 * Math.max(0, u.da || 0)) +
+          2.5 * Math.max(0, Math.min(100, u.cf || 0))) /
+        0.9926
+      : 0,
     q = n ? Qt / n : 0,
     hw = anUnitVal(U.cdHwL || []),
     Psuc = U.cdP - 1.033 + 0.09926 * (K.zS + (isFinite(hw) ? hw : 0) / 1000);
@@ -1960,7 +2168,10 @@ function anFwStep(U, dt) {
   const K = AN_FW,
     dr = d => (typeof anDitlRun === 'function' ? anDitlRun(d) : null),
     /* a running pump with its suction manual valve closed (V-FW1001 / 1002) gives no head (dry: the motor protection is not modelled) */
-    run = [['DITL-23A', 'M.3343', 'V-FW1001'], ['DITL-23A #B', 'M.3344', 'V-FW1002']].map(([d, m, v]) => (anFv(v) < 5 ? 0 : dr(d) != null ? (dr(d) === 1 ? 1 : 0) : srcBit([m]) > 0.5 ? 1 : 0)),
+    run = [
+      ['DITL-23A', 'M.3343', 'V-FW1001'],
+      ['DITL-23A #B', 'M.3344', 'V-FW1002']
+    ].map(([d, m, v]) => (anFv(v) < 5 ? 0 : dr(d) != null ? (dr(d) === 1 ? 1 : 0) : srcBit([m]) > 0.5 ? 1 : 0)),
     n = run[0] + run[1],
     ffw = typeof AN_CYC !== 'undefined' && isFinite(AN_CYC.ffw) ? Math.max(0, AN_CYC.ffw) : 0,
     q = n ? Math.max(K.qMin, ffw / K.sg / n) : 0,
@@ -1970,7 +2181,10 @@ function anFwStep(U, dt) {
   U.fwRun = run;
   U.fwQp = Math.round(q);
   /* the pump inlet = the suction header less its branch loss (strainer + line, 0.4 kg/cm2 at q0: 03.png, see anFwTagStep) */
-  U.fwPd = Math.max(0, Math.min(250, n ? Ps - 0.4 * (q / K.q0) * (q / K.q0) + (K.sg / 10) * swInterp(K.qQ, K.qH, q) - K.kz : Ps));
+  U.fwPd = Math.max(
+    0,
+    Math.min(250, n ? Ps - 0.4 * (q / K.q0) * (q / K.q0) + (K.sg / 10) * swInterp(K.qQ, K.qH, q) - K.kz : Ps)
+  );
   run.forEach((r, i) => {
     U['fwI' + i] = r ? Math.round((10 * K.I0 * swInterp(K.pQ, K.pP, q)) / P0) / 10 : 0;
     U['fwDp' + i] = r ? Math.round(1000 * K.dp0 * (q / K.q0) * (q / K.q0)) / 1000 : 0;
@@ -1986,7 +2200,25 @@ function anFwStep(U, dt) {
    repository or on the PC); a shut-off MOV less than 20 % open throttles it (NO-SOURCE). The heater gives FW out = saturation of its
    shell + TTD, never below FW in; the extraction (= drain) flow from its heat duty, scaled on the design point. Metal / water lag 120 s
    (NO-SOURCE). The water side valves: AN_FV0, anHtrPath. */
-const AN_HP = { dhX: [1160.1, 917.1, 454.8, 311.4, 257.2] /* kJ/kg down to the exhaust 2378.4: No.2 HPH hot reheat 3538.5, No.1 HPH 3295.5, No.3 LPH 2833.2, No.2 LPH 2689.8, No.1 LPH saturated 2635.6 (HEAT_BALANCE.md) */, cpFw: 4.6 /* kJ/kg per C, feedwater 195.7 to 245.4 C */, dhB: 2382 /* kJ/kg, main steam 3446.7 less feedwater 1064.4 */, F0: 458.684, P1: 37.48 - 1.0332, P2: 14.12 - 1.0332, ttd1: 1.07, ttd2: 0.05, dT1: 195.7 - 158.4, dT2: 245.4 - 195.7, m1: 25.33, m2: 45.147, dca1: 166.3 - 158.4, dca2: 201.3 - 195.7, tau: 120 };
+const AN_HP = {
+  dhX: [
+    1160.1, 917.1, 454.8, 311.4, 257.2
+  ] /* kJ/kg down to the exhaust 2378.4: No.2 HPH hot reheat 3538.5, No.1 HPH 3295.5, No.3 LPH 2833.2, No.2 LPH 2689.8, No.1 LPH saturated 2635.6 (HEAT_BALANCE.md) */,
+  cpFw: 4.6 /* kJ/kg per C, feedwater 195.7 to 245.4 C */,
+  dhB: 2382 /* kJ/kg, main steam 3446.7 less feedwater 1064.4 */,
+  F0: 458.684,
+  P1: 37.48 - 1.0332,
+  P2: 14.12 - 1.0332,
+  ttd1: 1.07,
+  ttd2: 0.05,
+  dT1: 195.7 - 158.4,
+  dT2: 245.4 - 195.7,
+  m1: 25.33,
+  m2: 45.147,
+  dca1: 166.3 - 158.4,
+  dca2: 201.3 - 195.7,
+  tau: 120
+};
 function anHphStep(U, dt) {
   const K = AN_HP,
     ms = Math.max(0, +U.ms || 0),
@@ -2028,7 +2260,13 @@ function anHphStep(U, dt) {
     e2o = ffw > 1 ? (K.m2 * f * Math.max(0, t2o - t1o)) / K.dT2 : 0,
     ls = U.lpS || {},
     sh = k => (isFinite(ls[k]) ? ls[k] : 1),
-    x = [Math.max(0, e2o - e2), Math.max(0, e1o - e1), (15.25 * ms * (1 - (pos('DITL-97') / 100) * sh('H3'))) / K.F0, (12.27 * ms * (1 - (pos('DITL-98') / 100) * sh('H2'))) / K.F0, (8.42 * ms * (1 - sh('H1'))) / K.F0];
+    x = [
+      Math.max(0, e2o - e2),
+      Math.max(0, e1o - e1),
+      (15.25 * ms * (1 - (pos('DITL-97') / 100) * sh('H3'))) / K.F0,
+      (12.27 * ms * (1 - (pos('DITL-98') / 100) * sh('H2'))) / K.F0,
+      (8.42 * ms * (1 - sh('H1'))) / K.F0
+    ];
   U.xtra = x[0] + x[1] + x[2] + x[3]; /* T/H more to the condenser */
   U.dMWx = (x.reduce((a, q, i) => a + q * K.dhX[i], 0) * 0.985) / 3600;
   U.fwDrop = Math.max(0, t2o - U.hpT2); /* feedwater colder than with both heaters in: boiler.js anAphIn */
@@ -2060,11 +2298,81 @@ const AN_HD = {
   /* key, ABC sheet, level AIs, primary / alternate controller, design extraction t/h, heater before (cascade), H.H. mm, shell ID m,
      length m, water kg/m3, primary capacity t/h at 100 % (150 MW), extraction MOV (DITL) */
   h: [
-    ['H6', 'ABC-036', ['AI0677', 'AI0853'], 'LICHD11061', 'LICHD11062', 45.147, null, 140, 1.25, 9.1385, 864, 45.147 / 0.5, 'DITL-94'],
-    ['H5', 'ABC-035', ['AI0676', 'AI0852'], 'LICHD11051', 'LICHD11052', 25.33, 'H6', 140, 1.156, 9.595, 900, 91 /* LCV-HD1105 sheet, E2-0-123 */, 'DITL-95'],
-    ['H3', 'ABC-039', ['AI0675', 'AI0851'], 'LICHD11031', 'LICHD11032', 15.246, null, 140, 1.03, 10.674, 961, 21.3 /* LCV sheet, E2-0-123 */, 'DITL-97'],
-    ['H2', 'ABC-038', ['AI0674', 'AI0850'], 'LICHD11021', 'LICHD11022', 12.27, 'H3', 140, 1.08, 10.679, 974, 35.3 /* LCV sheet, E2-0-123 */, 'DITL-98'],
-    ['H1', 'ABC-037', ['AI0673', 'AI0849'], 'LICHD11011', 'LICHD11012', 17.861, 'H2', 140, 1.13, 13.612, 990, 69.9 /* LCV sheet, E2-0-123 */, null]
+    [
+      'H6',
+      'ABC-036',
+      ['AI0677', 'AI0853'],
+      'LICHD11061',
+      'LICHD11062',
+      45.147,
+      null,
+      140,
+      1.25,
+      9.1385,
+      864,
+      45.147 / 0.5,
+      'DITL-94'
+    ],
+    [
+      'H5',
+      'ABC-035',
+      ['AI0676', 'AI0852'],
+      'LICHD11051',
+      'LICHD11052',
+      25.33,
+      'H6',
+      140,
+      1.156,
+      9.595,
+      900,
+      91 /* LCV-HD1105 sheet, E2-0-123 */,
+      'DITL-95'
+    ],
+    [
+      'H3',
+      'ABC-039',
+      ['AI0675', 'AI0851'],
+      'LICHD11031',
+      'LICHD11032',
+      15.246,
+      null,
+      140,
+      1.03,
+      10.674,
+      961,
+      21.3 /* LCV sheet, E2-0-123 */,
+      'DITL-97'
+    ],
+    [
+      'H2',
+      'ABC-038',
+      ['AI0674', 'AI0850'],
+      'LICHD11021',
+      'LICHD11022',
+      12.27,
+      'H3',
+      140,
+      1.08,
+      10.679,
+      974,
+      35.3 /* LCV sheet, E2-0-123 */,
+      'DITL-98'
+    ],
+    [
+      'H1',
+      'ABC-037',
+      ['AI0673', 'AI0849'],
+      'LICHD11011',
+      'LICHD11012',
+      17.861,
+      'H2',
+      140,
+      1.13,
+      13.612,
+      990,
+      69.9 /* LCV sheet, E2-0-123 */,
+      null
+    ]
   ],
   F0: 458.684,
   fA: 0.7,
@@ -2157,13 +2465,13 @@ function anHdStep(U, dt) {
     /* 3.2.1 the drain valves have an airlock (AN_AV): below 3.5 kg/cm2 of instrument air they stay where they are */
     let w1 = cap1 * sq * (anAv(h.c1, h.fx && h.fx.p ? fxv(h.fx.p, mv(h.v1)) : mv(h.v1)) / 100),
       w2 = c2 * (anAv(h.c2, mv(h.v2)) / 100);
-    const M = (rho * D * Ls * K.fA) / 1000 /* kg per mm */;
+    const M = (rho * D * Ls * K.fA) / 1000; /* kg per mm */
     if (h.y <= -300 && w1 + w2 > win) {
-      const f = (w1 + w2) > 0 ? win / (w1 + w2) : 0;
+      const f = w1 + w2 > 0 ? win / (w1 + w2) : 0;
       w1 *= f;
       w2 *= f;
     }
-    h.y = Math.max(-320, Math.min(350, h.y + ((win - w1 - w2) * 1000 / 3600 * dt) / M));
+    h.y = Math.max(-320, Math.min(350, h.y + ((((win - w1 - w2) * 1000) / 3600) * dt) / M));
     h.win = win;
     h.w1 = w1;
     h.w2 = w2;
@@ -2305,7 +2613,8 @@ function anCdTagStep(U, ld) {
     'TT-CD1110-4': r1(hw + 2 * L),
     'FT-CD1122': f ? r1(f.fda) : null,
     'PT-CD1122': isFinite(Pda) ? r1(Pda + 1.6) : null,
-    'TT-CD1104': isFinite(Pda) && Pda > 0.05 ? r1(steamTsat(Pda)) : isFinite(Pda) ? r1(isFinite(U.Tamb) ? U.Tamb : 30) : null,
+    'TT-CD1104':
+      isFinite(Pda) && Pda > 0.05 ? r1(steamTsat(Pda)) : isFinite(Pda) ? r1(isFinite(U.Tamb) ? U.Tamb : 30) : null,
     'FT-CD1115': isFinite(mv) && isFinite(uf) ? r1((68 * anAv('TICHR1012', mv) * uf) / 100) : null
   });
 }
@@ -2424,10 +2733,32 @@ const AN_FWT = {
   ts17: 5.3,
   K: 35000 / (9.49 * Math.sqrt(165.3 - 142.2)) / 1000,
   cv: {
-    a1: [[0, 0], [2, 0.17], [25, 3.29], [68, 9.49], [100, 14]],
-    a2: [[0, 0], [6, 0.05], [59, 0.99], [100, 1.67]],
-    b1: [[0, 0], [10, 0.17], [48, 2.46], [75, 8.84], [100, 15]],
-    b2: [[0, 0], [19, 0.05], [90, 0.99], [100, 1.5]]
+    a1: [
+      [0, 0],
+      [2, 0.17],
+      [25, 3.29],
+      [68, 9.49],
+      [100, 14]
+    ],
+    a2: [
+      [0, 0],
+      [6, 0.05],
+      [59, 0.99],
+      [100, 1.67]
+    ],
+    b1: [
+      [0, 0],
+      [10, 0.17],
+      [48, 2.46],
+      [75, 8.84],
+      [100, 15]
+    ],
+    b2: [
+      [0, 0],
+      [19, 0.05],
+      [90, 0.99],
+      [100, 1.5]
+    ]
   },
   k2: 2.94
 };
@@ -2468,7 +2799,8 @@ function anFwTagStep(U) {
     },
     cv = (L, x) => {
       if (!isFinite(x)) return NaN;
-      for (let i = 1; i < L.length; i++) if (x <= L[i][0]) return L[i - 1][1] + ((L[i][1] - L[i - 1][1]) * (x - L[i - 1][0])) / (L[i][0] - L[i - 1][0]);
+      for (let i = 1; i < L.length; i++)
+        if (x <= L[i][0]) return L[i - 1][1] + ((L[i][1] - L[i - 1][1]) * (x - L[i - 1][0])) / (L[i][0] - L[i - 1][0]);
       return L[L.length - 1][1];
     },
     drum = (() => {
@@ -2503,8 +2835,14 @@ function anFwTagStep(U) {
     w2 = K.k2 * K.K * (cv(K.cv.b1, z21) * pos('DITL-33') + cv(K.cv.b2, z22) * pos('DITL-33 #B')) * sq(drum - 9.3 * lf),
     Prh = isFinite(U.Prh) ? U.Prh : 0,
     dr = isFinite(pd) ? Math.sqrt(Math.max(0, pd - Prh) / (165.4 - 34.9)) : NaN,
-    wrh = (29.5 * held('TICHR1002', mvOf('ABC-019', 'TICHR1002'))) / 100 * pos('DITL-35') * dr /* 29.5 T/H at 100 %, Cv 6.2, dp 34, L21 */,
-    whp = (67 * held('TICMS1022', mvOf('ABC-051', 'TICMS1022'))) / 100 * pos('DITL-79') * dr /* 67 T/H at 100 %, Cv 10.3, dp 61, L21 */,
+    wrh =
+      ((29.5 * held('TICHR1002', mvOf('ABC-019', 'TICHR1002'))) / 100) *
+      pos('DITL-35') *
+      dr /* 29.5 T/H at 100 %, Cv 6.2, dp 34, L21 */,
+    whp =
+      ((67 * held('TICMS1022', mvOf('ABC-051', 'TICMS1022'))) / 100) *
+      pos('DITL-79') *
+      dr /* 67 T/H at 100 %, Cv 10.3, dp 61, L21 */,
     cr = U.xt && U.xt.T ? U.xt.T.cr : NaN;
   Object.assign(U.tt || (U.tt = {}), {
     'PT-TS1013': ms > 0 ? r2(Math.max(-1, stage(K.ts13))) : r2(0),
@@ -2541,7 +2879,10 @@ function anLubeCoolStep(U, dt) {
     const cmin = Math.min(K.Co, Cw),
       cr = cmin / Math.max(K.Co, Cw),
       ntu = K.UA / cmin,
-      e = Math.abs(1 - cr) > 1e-6 ? (1 - Math.exp(-ntu * (1 - cr))) / (1 - cr * Math.exp(-ntu * (1 - cr))) : ntu / (1 + ntu);
+      e =
+        Math.abs(1 - cr) > 1e-6
+          ? (1 - Math.exp(-ntu * (1 - cr))) / (1 - cr * Math.exp(-ntu * (1 - cr)))
+          : ntu / (1 + ntu);
     return Math.max(0, e * cmin * (Ti - Tw));
   };
   /* the first step after a starting state: at its steady value (bisection on the return temperature) */
@@ -2681,7 +3022,12 @@ function anMotorStep(U, dt) {
     mt = U.mt || (U.mt = {}),
     lag = (k, x, tau) => (mt[k] = isFinite(mt[k]) ? mt[k] + ((x - mt[k]) * Math.min(dt, tau)) / tau : x);
   for (const [id, ad, base, brg, vib, v1] of K.m) {
-    const run = ad === 'IDF' ? !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5 : /^DITL/.test(ad) ? anDitlRun(ad) === 1 : srcBit([ad]) > 0.5,
+    const run =
+        ad === 'IDF'
+          ? !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5
+          : /^DITL/.test(ad)
+            ? anDitlRun(ad) === 1
+            : srcBit([ad]) > 0.5,
       mo = K.mot[id],
       I = mo ? +U[mo[1]] : NaN,
       cw = K.cw[id],
@@ -2698,10 +3044,12 @@ function anMotorStep(U, dt) {
       K.los[id]
         ? lag('TT-' + base + e, (run ? anLosRet(Tc, fq) : (+U.acQ || 0) > 0 ? Tc : T0) + 0.5 * i, K.tauB)
         : mo && i >= 2
-        ? lag('TT-' + base + e, run ? T0 + K.rB + 1.2 * (i - 2) : T0, run ? K.tauMB : 2 * K.tauMB)
-        : lag('TT-' + base + e, run ? K.Tb + 1.2 * i : T0, run ? K.tauB : 2 * K.tauB)
+          ? lag('TT-' + base + e, run ? T0 + K.rB + 1.2 * (i - 2) : T0, run ? K.tauMB : 2 * K.tauMB)
+          : lag('TT-' + base + e, run ? K.Tb + 1.2 * i : T0, run ? K.tauB : 2 * K.tauB)
     );
-    ['U', 'V', 'W'].forEach((e, i) => lag('TT-' + base + e, run ? wT + 1.0 * i : cw ? Tc : T0, run ? K.tauW : 2 * K.tauW)); /* a stopped IC81W motor goes to its water */
+    ['U', 'V', 'W'].forEach((e, i) =>
+      lag('TT-' + base + e, run ? wT + 1.0 * i : cw ? Tc : T0, run ? K.tauW : 2 * K.tauW)
+    ); /* a stopped IC81W motor goes to its water */
     vib.forEach((e, i) => (mt['VT-' + base + e] = run ? v1 + 0.1 * i : K.vib0));
   }
 }
@@ -2752,8 +3100,34 @@ const AN_AIR = {
   fU: 0.5 /* NO-SOURCE: the share of unit 1 in the use (unit 1, unit 2, utility area; no consumption list in the docs) */,
   Kx: 1500 /* free air m3/h at 1 kg/cm2 difference, V-PA0013 6" fully open (NO-SOURCE) */,
   sys: {
-    ia: { c: 'DITL-113', d: '@14', iso: 'V-IA1101', V: 10, Qc: 1500, Qd: 1200, kW: 176, I100: 286, kW100: 190, Ist: 286 * 5.32, tSt: 3, Imax: 500 },
-    pa: { c: 'DITL-114', d: '@3', iso: 'V-PA1087', V: 20, Qc: 5100, Qd: 1500, kW: 600, I100: 69.9, kW100: 671, Ist: 3 * 69.9, tSt: 10, Imax: 140 }
+    ia: {
+      c: 'DITL-113',
+      d: '@14',
+      iso: 'V-IA1101',
+      V: 10,
+      Qc: 1500,
+      Qd: 1200,
+      kW: 176,
+      I100: 286,
+      kW100: 190,
+      Ist: 286 * 5.32,
+      tSt: 3,
+      Imax: 500
+    },
+    pa: {
+      c: 'DITL-114',
+      d: '@3',
+      iso: 'V-PA1087',
+      V: 20,
+      Qc: 5100,
+      Qd: 1500,
+      kW: 600,
+      I100: 69.9,
+      kW100: 671,
+      Ist: 3 * 69.9,
+      tSt: 10,
+      Imax: 140
+    }
   },
   rows: [5, 12, 19],
   dry: ['DITL-45', 'DITL-45 #B', 'DITL-45 #C'],
@@ -2786,7 +3160,17 @@ const AN_AIR = {
    to 0. The flow of a liquid goes with the square root of the dP: W = 120 T/H x Cv(x) / 11.7 x sqrt((214.5 - drum pressure) / 149.9),
    P1 = the inlet pressure of the sheet. Before: 30 % of the anchor feedwater at 100 %, linear, no dP (150 T/H full, 15 T/H at 10 %,
    75 T/H at 50 % against the sheet 6 and about 36 T/H) */
-const AN_SUFW = { pts: [[10, 0.585], [76, 11.7], [100, 15.58]], cv76: 11.7, w76: 120, p1: 214.5, dp76: 149.9 };
+const AN_SUFW = {
+  pts: [
+    [10, 0.585],
+    [76, 11.7],
+    [100, 15.58]
+  ],
+  cv76: 11.7,
+  w76: 120,
+  p1: 214.5,
+  dp76: 149.9
+};
 function anSuFwCv(x) {
   const P = AN_SUFW.pts;
   if (!(x > 0)) return 0;
@@ -3070,8 +3454,22 @@ function anTbSpeed(U, tb, dt, on, Pm, Pe) {
   const w = Math.max(0.5, (tb.rpm || 3600) / 3600);
   tb.rpm = Math.max(0, (w + (dt * (Pm - Pe)) / (2 * U.Hgen * AN_GEN.S * w)) * 3600);
 }
-const AN_GEN = { kV: 13.8, Hz: 60, S: 176.5, xd: 1.99, pf: 0.977, If: 8.7, Vf: 46.0, E0: 0, MWh: 7266257, MVArh: 882996 };
-AN_GEN.E0 = Math.hypot(1 + (AN_GEN.xd * 151.1 * Math.tan(Math.acos(AN_GEN.pf))) / AN_GEN.S, (AN_GEN.xd * 151.1) / AN_GEN.S);
+const AN_GEN = {
+  kV: 13.8,
+  Hz: 60,
+  S: 176.5,
+  xd: 1.99,
+  pf: 0.977,
+  If: 8.7,
+  Vf: 46.0,
+  E0: 0,
+  MWh: 7266257,
+  MVArh: 882996
+};
+AN_GEN.E0 = Math.hypot(
+  1 + (AN_GEN.xd * 151.1 * Math.tan(Math.acos(AN_GEN.pf))) / AN_GEN.S,
+  (AN_GEN.xd * 151.1) / AN_GEN.S
+);
 function anGenEl() {
   const U = AN.unit;
   if (!U || !U.on) return null;
@@ -3175,7 +3573,15 @@ function anGenInt(dt) {
    tied to the 200 L). Alarm AL2-SP01 (analyzer common alarm) = a modelled analyzer beyond its H / L of the alarm list; AL1-SP01, AL3-SP01,
    AL-Z1110 = 0 (no fault in the model). Only numbers on U (the save is JSON: no function on U, Chaewon beta.108). */
 const AN_CHEM = {
-  pumps: { tspA: 'Z1107A', tspB: 'Z1107B', amnA: 'Z1108A', amnB: 'Z1108B', chzA: 'Z1109A', chzB: 'Z1109B', agt: 'Z1101A' },
+  pumps: {
+    tspA: 'Z1107A',
+    tspB: 'Z1107B',
+    amnA: 'Z1108A',
+    amnB: 'Z1108B',
+    chzA: 'Z1109A',
+    chzB: 'Z1109B',
+    agt: 'Z1101A'
+  },
   Fbd0: 15,
   pH0: 9.0,
   pHmu: 7.5,
@@ -3187,10 +3593,27 @@ const AN_CHEM = {
   Pda: 0.7,
   o2da: 10,
   o2air: 100,
-  po4: [[0, 0], [1, 8.85], [2.5, 9.2], [5, 9.5], [7.5, 9.65], [10, 9.77], [15, 9.93], [20, 10.0]],
+  po4: [
+    [0, 0],
+    [1, 8.85],
+    [2.5, 9.2],
+    [5, 9.5],
+    [7.5, 9.65],
+    [10, 9.77],
+    [15, 9.93],
+    [20, 10.0]
+  ],
   lam: { na: 50.1, oh: 198.0, hpo4: 114, po4: 207, h: 349.8 },
   /* alarm list "Alarm List _20160912" sheet AT, H / L (dcs) */
-  al: { sp1004: [20, null], sp1009: [9.6, 8.8], sp1010: [4.2, null], sp1011: [9.5, 8.8], sp1012: [10, null], sp1016: [null, 7.0], sp1020: [10, null] }
+  al: {
+    sp1004: [20, null],
+    sp1009: [9.6, 8.8],
+    sp1010: [4.2, null],
+    sp1011: [9.5, 8.8],
+    sp1012: [10, null],
+    sp1016: [null, 7.0],
+    sp1020: [10, null]
+  }
 };
 /* 3.2.3 (SOHEE): the steam the sootblowers take. Diamond Power N11639-SC1 "Sootblower steam data" (IK4M manual N11639 - IK4M-EL-,
    o&m-package-phase-1 L10-2, page 93), one row per location: head pressure (kg/cm2 g, set by the poppet valve of the blower), blowing
@@ -3371,7 +3794,7 @@ function anChemStep(U, dt) {
   }
   /* the feedwater tank residence (h): water mass / feedwater flow; no flow = nothing moves */
   const res = ffw > 1 ? K.fwt / ffw : Infinity,
-    lag = (x, y) => (res === Infinity ? x : x + ((y - x) * Math.min(1, h / res))),
+    lag = (x, y) => (res === Infinity ? x : x + (y - x) * Math.min(1, h / res)),
     Pda = U.xt && U.xt.dea ? anUnitVal(U.xt.dea) : NaN,
     o2t = isFinite(Pda) && Pda >= K.Pda ? K.o2da : K.o2air;
   U.chPda = isFinite(Pda) ? Math.round(Pda * 100) / 100 : null;
@@ -3384,15 +3807,16 @@ function anChemStep(U, dt) {
     pc = (() => {
       const T = K.po4;
       if (P <= T[1][0]) return null;
-      for (let i = 2; i < T.length; i++) if (P <= T[i][0]) return T[i - 1][1] + ((T[i][1] - T[i - 1][1]) * (P - T[i - 1][0])) / (T[i][0] - T[i - 1][0]);
+      for (let i = 2; i < T.length; i++)
+        if (P <= T[i][0]) return T[i - 1][1] + ((T[i][1] - T[i - 1][1]) * (P - T[i - 1][0])) / (T[i][0] - T[i - 1][0]);
       return T[T.length - 1][1];
     })(),
     ohP = pc == null ? 0 : Math.pow(10, pc - 14),
     pHd = pc == null ? pHfw : Math.max(pc, pHfw),
     L = K.lam,
-    C = P / 1000 / 94.97, /* mol/L of PO4 */
+    C = P / 1000 / 94.97 /* mol/L of PO4 */,
     oh = Math.pow(10, pHd - 14),
-    x = Math.max(0, Math.min(C, 0.6 * C - ohP)), /* PO4--- */
+    x = Math.max(0, Math.min(C, 0.6 * C - ohP)) /* PO4--- */,
     kd = 1000 * (L.na * 2.6 * C + L.hpo4 * (C - x) + L.po4 * x + L.oh * oh),
     cat = 1000 * (L.h + L.oh) * 1e-7,
     r = (v, d) => Math.round(v * d) / d;
@@ -3448,7 +3872,7 @@ function anUnitStep0(dt) {
   U.burn = bf;
   U.cbn = Fb;
   U.cbed = Math.max(0, cb0 + (((1 - bf) * F - cbB) * dt) / 3600);
-  U.unb = F - Fb /* fed minus burnt: negative while held coal burns out */;
+  U.unb = F - Fb; /* fed minus burnt: negative while held coal burns out */
   U.Fc = F; /* 3.2.0-beta.14: coal of the feeders (source.js: SOx) */
   U.Qs += ((Qss * (isFinite(U.hpFac) ? U.hpFac : 1) - U.Qs) * dt) / U.tauF;
   /* ---- 2.2.0-beta.12 (M3): station wiring S2 -> S1, turbine trip ---- */
@@ -3497,7 +3921,7 @@ function anUnitStep0(dt) {
        40 C: dP/dt = 25.5 / 3600 x 287 x 313 / 338 = 1.88 Pa/s = 0.0000192 kg/cm2 per s (about 1.1 mbar per minute; from 0.07 to the
        0.26 trip in about 2.7 h). No seawater or an open vacuum breaker: lost in vacDn as before */
     const Ps0 = isFinite(U.cdTs) ? Math.min(1.033, anPsat(U.cdTs)) : 0.07,
-      airR = (25.5 / 3600) * 287 * 313 / 338 / 98066.5;
+      airR = ((25.5 / 3600) * 287 * 313) / 338 / 98066.5;
     U.vac = Math.max(
       0,
       Math.min(
@@ -3514,7 +3938,16 @@ function anUnitStep0(dt) {
     const tb0 = U.tb,
       l = U.vtrip;
     /* I.0400 follows the valves (IBD TA-6, tcsI0400); a model without a vacuum value keeps its own rule */
-    if (tb0 && tb0.st !== 'off' && !isFinite(U.cdP) && U.vac < 0.6 && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
+    if (
+      tb0 &&
+      tb0.st !== 'off' &&
+      !isFinite(U.cdP) &&
+      U.vac < 0.6 &&
+      l &&
+      l.S.rt.force[l.n] === undefined &&
+      l.S.ext.includes(l.n) &&
+      l.S.rt.ext[l.n] !== 1
+    ) {
       l.S.rt.ext[l.n] = 1;
     }
   }
@@ -3584,7 +4017,8 @@ function anUnitStep0(dt) {
     for (const l of U.di.warm || []) w(l, m === 'warm' ? 1 : 0);
     for (const l of U.di.hot || []) w(l, m === 'hot' ? 1 : 0);
     w(U.di.tg, c && c.tg && tb.rpm < 4 ? 1 : 0);
-    if (U.lpbSp && U.lpbSp.n != null) w(U.di.lpbZso, anAv('TICHR1012', Math.max(0, Math.min(100, +U.lpbSp.S.rt.v[U.lpbSp.n] || 0))) >= 99 ? 1 : 0);
+    if (U.lpbSp && U.lpbSp.n != null)
+      w(U.di.lpbZso, anAv('TICHR1012', Math.max(0, Math.min(100, +U.lpbSp.S.rt.v[U.lpbSp.n] || 0))) >= 99 ? 1 : 0);
     for (const [l, k, sp] of U.di.hd || []) if (isFinite(H[k])) w(l, H[k] >= sp ? 1 : 0);
   }
   U.turb = tb.st !== 'off';
@@ -3649,7 +4083,15 @@ function anUnitStep0(dt) {
          as soon as the ICV closes); before, the lagged U.MW kept the valves shut about 7 s and the speed fell to 95.8 % */
       plu = U.el && U.el.l52 === false && ((isFinite(U.Pm) ? U.Pm : U.MW) - ld) / U.MW0 > 0.4;
     if (plu && !tb.plu && typeof window !== 'undefined' && window.lsEventAdd && !(window.ENG && ENG.mode === 'mirror'))
-      lsEventAdd('TCS', 'TCS', 'PLU (power load unbalance): CV and ICV fast closing, turbine ' + Math.round(U.MW) + ' MW against ' + Math.round(ld) + ' MW load');
+      lsEventAdd(
+        'TCS',
+        'TCS',
+        'PLU (power load unbalance): CV and ICV fast closing, turbine ' +
+          Math.round(U.MW) +
+          ' MW against ' +
+          Math.round(ld) +
+          ' MW load'
+      );
     tb.plu = plu;
     if (plu) {
       U.gv = Math.max(0.02, U.gv - dt / U.tauTrip);
@@ -3667,12 +4109,21 @@ function anUnitStep0(dt) {
       tb.hlT = (tb.hlT || 0) + dt;
       if (tb.hlT <= U.rbT || !isFinite(tb.gs)) tb.gs = U.rbIP;
       else tb.gs = Math.max(0, Math.min(1.4, tb.gs + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
-      const dem = Math.max(0.02, Math.min(1.4, tb.gs - (U.flowSpan * anDb((tb.rpm || 3600) - 3600, U.dbRpm || 0)) / ((U.droop || 0.06) * 3600))),
+      const dem = Math.max(
+          0.02,
+          Math.min(1.4, tb.gs - (U.flowSpan * anDb((tb.rpm || 3600) - 3600, U.dbRpm || 0)) / ((U.droop || 0.06) * 3600))
+        ),
         r = dt / U.tauTrip;
       U.gv += Math.max(-r, Math.min(r, dem - U.gv));
       /* the ICV takes the same flow demand (TCE p.141 TCE207: the CV and ICV demands come from the one flow demand; the ICV curve itself
          is NO-SOURCE, here ICV = flow demand): with the HP bypass open the reheater feeds the IP turbine (75 % of the shaft, cIP) */
-      tb.icv = Math.max(0, Math.min(1, (tb.icv == null ? 1 : tb.icv) + Math.max(-r, Math.min(r, Math.min(1, dem) - (tb.icv == null ? 1 : tb.icv)))));
+      tb.icv = Math.max(
+        0,
+        Math.min(
+          1,
+          (tb.icv == null ? 1 : tb.icv) + Math.max(-r, Math.min(r, Math.min(1, dem) - (tb.icv == null ? 1 : tb.icv)))
+        )
+      );
     } else {
       tb.gs = NaN;
       tb.hlT = 0;
@@ -3726,7 +4177,10 @@ function anUnitStep0(dt) {
        water the draft carries the bed heat away (the bed lag below) and takes none from the water: Fig 4. Once the bed is under the
        water (Fig 5 cold shutdown, furnace 840 -> 100 C in 8 h) the draft cools the water as before. kcool / kamb unchanged; the ambient
        loss (kamb) stays on Tw - Tamb */
-    Qloss = unf * (U.kcool * asC * Math.max(0, (U.Tw - Math.max(U.Tamb, U.Tb)) / 300) + U.kamb * Math.max(0, (U.Tw - U.Tamb) / 300));
+    Qloss =
+      unf *
+      (U.kcool * asC * Math.max(0, (U.Tw - Math.max(U.Tamb, U.Tb)) / 300) +
+        U.kamb * Math.max(0, (U.Tw - U.Tamb) / 300));
   if (U.cold) {
     const ts = tsatOf(U.Pd),
       /* the water can only take heat from a hotter furnace (Mina item 12d: water 147 C with bed 141 C) */
@@ -3741,7 +4195,10 @@ function anUnitStep0(dt) {
   } else {
     /* S163-6: unfired, the saturated water gives its heat too (C + Cw x dTsat/dP, as the U.cold path); fired (unf = 0) the load path
        keeps its steam storage C alone */
-    U.Pd = Math.max(0, U.Pd + ((U.Qs - Qloss - U.ms - U.mb - (U.msb || 0)) * dt) / (U.C + unf * U.Cw * steamDTsat(U.Pd)));
+    U.Pd = Math.max(
+      0,
+      U.Pd + ((U.Qs - Qloss - U.ms - U.mb - (U.msb || 0)) * dt) / (U.C + unf * U.Cw * steamDTsat(U.Pd))
+    );
     U.Tw = tsatOf(U.Pd);
   }
   /* bed temperature: firing share over air share, first order */
@@ -3796,7 +4253,10 @@ function anUnitStep0(dt) {
     MWss = onGrid
       ? Math.max(
           0,
-          U.c * ((1 - U.cIP) * U.ms + U.cIP * qip) - (U.mwK != null ? U.mwK : U.c * U.m0 - U.MW0) * Math.min(1, qip / (0.3 * U.m0)) - anVacMW(U) + (U.dMWx || 0)
+          U.c * ((1 - U.cIP) * U.ms + U.cIP * qip) -
+            (U.mwK != null ? U.mwK : U.c * U.m0 - U.MW0) * Math.min(1, qip / (0.3 * U.m0)) -
+            anVacMW(U) +
+            (U.dMWx || 0)
         )
       : 0;
   U.MW += ((MWss - U.MW) * dt) / U.tauMW;
@@ -3902,12 +4362,21 @@ function anUnitStep0(dt) {
     tsat = Math.min(tsatOf(U.Pd), isFinite(U.Tw) ? U.Tw : 1e9);
   /* F11: superheater / reheater tube metal (see AN_UNIT.shM). Gas into the backpass = the bed / furnace temperature U.Tb */
   if (U.cold) {
-    const tw0 = Math.max(U.Tamb, isFinite(U.Tw) ? U.Tw : U.Tamb);
+    /* start value (a save without the metal state): the tube metal is at least as hot as the steam held in its headers (h.x of
+       TT-BR1140 / TT-MS1004), not below the water. beta.208 started it at the water (57 C) under 135 C steam: a false drop live */
+    let tw0 = Math.max(U.Tamb, isFinite(U.Tw) ? U.Tw : U.Tamb);
+    if (!isFinite(U.TmS)) for (const h of U.sh || []) if (isFinite(h.x)) tw0 = Math.max(tw0, Math.min(U.Tb, h.x));
+    const rq = U.xt && U.xt.rhPv && U.xt.rhPv.c && U.xt.rhPv.c.q,
+      rh0 =
+        rq && rq.pv != null
+          ? +U.xt.rhPv.S.rt.v[rq.pv]
+          : NaN; /* the RH tubes: the steam held in them, PV of TICHR1002 */
+    if (!isFinite(U.TmR))
+      U.TmR = isFinite(rh0) ? Math.max(Math.max(U.Tamb, isFinite(U.Tw) ? U.Tw : U.Tamb), Math.min(U.Tb, rh0)) : tw0;
     if (!isFinite(U.TmS)) U.TmS = tw0;
-    if (!isFinite(U.TmR)) U.TmR = tw0;
     const gr = U.taf0 > 0 ? Math.max(0, taf / U.taf0) : 0,
       kg = Math.pow(gr, 0.6),
-      gcp = (taf / 3.6) * 1.15 /* kW/K */;
+      gcp = (taf / 3.6) * 1.15; /* kW/K */
     let qS = (U.shUA || 261) * kg * Math.max(0, U.Tb - U.TmS),
       qR = (U.rhUA || 116) * kg * Math.max(0, U.Tb - U.TmR);
     const qMax = gcp * Math.max(0, U.Tb - Math.min(U.TmS, U.TmR));
@@ -3947,7 +4416,12 @@ function anUnitStep0(dt) {
       const N = e.r ? U.natSH : U.natRH;
       let T = N[N.length - 1][1];
       if (xs < N[0][0]) T = N[0][1] - e.s * (N[0][0] - xs);
-      else for (let i = 1; i < N.length; i++) if (xs <= N[i][0]) { T = N[i - 1][1] + ((N[i][1] - N[i - 1][1]) * (xs - N[i - 1][0])) / (N[i][0] - N[i - 1][0]); break; }
+      else
+        for (let i = 1; i < N.length; i++)
+          if (xs <= N[i][0]) {
+            T = N[i - 1][1] + ((N[i][1] - N[i - 1][1]) * (xs - N[i - 1][0])) / (N[i][0] - N[i - 1][0]);
+            break;
+          }
       dn = Math.max(0, 541 - T);
     }
     if ((U.cold || (U.tc && U.tc.step < 7)) && e.s > 0) {
@@ -4010,8 +4484,22 @@ function anUnitStep0(dt) {
   /* bed inventory and the furnace pressure drop */
   if (U.paNet >= 0) {
     /* only a running cooler takes ash out (DITL-21A and its instances); 16.PNG: all four stopped at 150 MW */
-    const rpm = (U.bedSc || []).reduce((a, o, i) => a + (typeof anDitlRun === 'function' && anDitlRun(['DITL-21A', 'DITL-21A #B', 'DITL-21A #C', 'DITL-21A #D'][i]) === 1 ? Math.max(0, Math.min(5, +o.S.rt.v[o.n] || 0)) : 0), 0),
-      k = anBedStep(U, dt, rpm, Math.max(0, +U.tafS.rt.v[U.paNet]), U.taf && U.taf.length === 3 ? Math.max(0, +U.tafS.rt.v[U.taf[2]]) : null);
+    const rpm = (U.bedSc || []).reduce(
+        (a, o, i) =>
+          a +
+          (typeof anDitlRun === 'function' &&
+          anDitlRun(['DITL-21A', 'DITL-21A #B', 'DITL-21A #C', 'DITL-21A #D'][i]) === 1
+            ? Math.max(0, Math.min(5, +o.S.rt.v[o.n] || 0))
+            : 0),
+        0
+      ),
+      k = anBedStep(
+        U,
+        dt,
+        rpm,
+        Math.max(0, +U.tafS.rt.v[U.paNet]),
+        U.taf && U.taf.length === 3 ? Math.max(0, +U.tafS.rt.v[U.taf[2]]) : null
+      );
     for (const [L, a] of U.bedDp || []) if (L.length) anUnitWrite(L, a * k);
   }
   /* PA to the furnace follows the PAF flow */
@@ -4083,7 +4571,10 @@ function anUnitStep0(dt) {
            PR-OPE-5002 IDF START-UP: about -15 at 13 %). A hot bed with no fire and no air is the same gas path as the cold furnace: the
            loop model anchored at 150 MW (its air term taf / taf0 - 1 = -1 with no air) takes over only with the air too, fully from half
            the purge air of the SOP (203 of 406 T/H), so the Hot / Warm restart starts the fans like the Cold one */
-        ia = idf && U.idf && U.idf.S.rt.pm ? Math.max(0, Math.min(1, (tb - 100) / 200)) * Math.max(0, Math.min(1, taf / 203)) : 1;
+        ia =
+          idf && U.idf && U.idf.S.rt.pm
+            ? Math.max(0, Math.min(1, (tb - 100) / 200)) * Math.max(0, Math.min(1, taf / 203))
+            : 1;
       if (ia < 1 && !p.pr.src) {
         const m = U.idfV ? Math.max(0, Math.min(100, +U.idfV.S.rt.v[U.idfV.n] || 0)) : 0,
           sp = anIdfN(m) / AN_IDF_CRV[2][1],
@@ -4121,7 +4612,15 @@ function anUnitStepX(dt, mso) {
       thx = isFinite(X.cr0) ? X.cr0 + (isFinite(mst) ? mst - X.MST0 : 0) : NaN,
       tby = val(X.byo),
       w = (U.ms || 0) + (U.mhp || 0);
-    const tcr = lag('cr', w > 1 ? ((U.ms || 0) * Math.max(U.Tamb, thx) + (U.mhp || 0) * (isFinite(tby) ? tby : U.Tamb)) / w : (X.T.cr != null ? X.T.cr + ((U.Tamb - X.T.cr) * dt) / (20 * U.tauT) : U.Tamb), U.tauT);
+    const tcr = lag(
+      'cr',
+      w > 1
+        ? ((U.ms || 0) * Math.max(U.Tamb, thx) + (U.mhp || 0) * (isFinite(tby) ? tby : U.Tamb)) / w
+        : X.T.cr != null
+          ? X.T.cr + ((U.Tamb - X.T.cr) * dt) / (20 * U.tauT)
+          : U.Tamb,
+      U.tauT
+    );
     if (isFinite(tcr)) {
       anUnitWrite(X.cr, tcr);
       /* after the RH spray: the cooling of the anchor spray, in the share of the spray MV that reaches the water (block valve) */
@@ -4129,7 +4628,15 @@ function anUnitStepX(dt, mso) {
         sp = U.spr && U.spr.find(z => z.v[0] === 'DITL-35'),
         uf = sp && sp.pr.uf != null ? sp.pr.uf : 1,
         k = X.rhv0 > 1 ? Math.min(2, (mv * uf) / X.rhv0) : 0;
-      X.rhi.forEach((L, i) => anUnitWrite(L, Math.max(U.Tamb, tcr - (isFinite(X.rhi0[i]) && isFinite(X.cr0) ? (X.cr0 - X.rhi0[i]) * k * (w > 1 ? 1 : 0) : 0))));
+      X.rhi.forEach((L, i) =>
+        anUnitWrite(
+          L,
+          Math.max(
+            U.Tamb,
+            tcr - (isFinite(X.rhi0[i]) && isFinite(X.cr0) ? (X.cr0 - X.rhi0[i]) * k * (w > 1 ? 1 : 0) : 0)
+          )
+        )
+      );
     }
     /* hot reheat temperature: the reheater outlet */
     const rht = pvOf(X.rhPv);
