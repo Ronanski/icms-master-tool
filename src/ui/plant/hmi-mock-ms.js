@@ -39,8 +39,8 @@
         t: 'Lower ring header drains (manual)',
         fset: () => {
           const st = () => (window.AN && AN.fieldState ? !!AN.fieldState().lhd : null),
-            pc = () => (st() ? window.LS_LHD_PCT || null : 0),
-            set = x => ((window.LS_LHD_PCT = x), AN.field('lhd', x));
+            pc = () => (st() ? (AN.lhdPct ? AN.lhdPct() : 0) || null : 0),
+            set = x => AN.field('lhd', x);
           return {
             n: 'V-BD1005 ~ V-BD1021',
             t: 'Lower ring header drains',
