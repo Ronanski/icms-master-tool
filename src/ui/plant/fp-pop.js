@@ -1012,15 +1012,17 @@
         bRem.classList.toggle('on', rem);
         bLoc.classList.toggle('on', !rem);
       }
-      B[0].disabled = on || !run || !ok;
+      /* live Cold start F10b: P.free = every button is its own press (igniter / burner ON / OFF): the status (REMOTE) does not lock or
+         light the first one */
+      B[0].disabled = P.free ? !run : on || !run || !ok;
       /* design review 2026-11-08 (Yuna): the second push button is the STOP of the first only when it says so (STOP / CLOSE / AUTO STOP).
          Another command (the SKIP of a sootblower, DITL-80x row r + 1) is its own press: enabled in RUN, not lit green as a "stopped" */
       if (B[1]) {
-        const isStop = /\b(STOP|CLOSE)\b/.test(P.pbs[1][0]);
+        const isStop = !P.free && /\b(STOP|CLOSE)\b/.test(P.pbs[1][0]);
         B[1].disabled = !run || (isStop && (!on || !rem));
         B[1].classList.toggle('lit-stop', isStop && !on);
       }
-      B[0].classList.toggle('lit-run', on);
+      B[0].classList.toggle('lit-run', on && !P.free);
       why.textContent = !run ? 'Simulation PAUSED: press ▶ RUN first (nothing moves while paused).' : !ok && !on ? P.pbs[0][0] + ' blocked: no ' + (P.permWhy || 'permissive') + '.' : '';
       why.hidden = !why.textContent;
       for (const [v, f] of V) {
