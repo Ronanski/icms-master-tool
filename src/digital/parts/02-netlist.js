@@ -475,7 +475,18 @@ function netlistCore(sh, strict) {
         sh.tx.find(q => /^TR\d+/i.test(q.t) && Math.abs(q.x - ax) < 20 && q.y < ay && q.y > ay - rr - 14) ||
         sh.tx
           .filter(q => /^TR\d+/i.test(q.t) && Math.abs(q.x - ax) < 12 && Math.abs(q.y - ay) < rr + 10)
-          .sort((p, q) => Math.abs(p.y - ay) - Math.abs(q.y - ay))[0];
+          .sort((p, q) => Math.abs(p.y - ay) - Math.abs(q.y - ay))[0] ||
+        /* 3.2.3 SOHEE (DITL-28A row 17 CURRENT L.L. ON DELAY 5 SEC: "TR132/142" written left of the timer, over its input line): the tag
+           on the input side, at the height of the timer */
+        sh.tx
+          .filter(q => /^TR\d+/i.test(q.t) && q.x < ax && ax - q.x < 22 && Math.abs(q.y - ay) < rr)
+          .sort((p, q) => Math.abs(p.y - ay) - Math.abs(q.y - ay))[0],
+      /* 3.2.3 SOHEE (DITL-28A "TR133" over "TR143", "TR144" over "TR134"; DITL-22 "TR185/186" over "TR205/206"; DITL-112 "TR23/33/"
+         over "TR43"): the tags of the equipment of one drawing written as two lines, one tag as the others of the sheet ("TR132/142"),
+         the lower numbers first */
+      tg2 = tg && /^TR[\d/]+$/i.test(tg.t) ? sh.tx.find(q => q !== tg && /^TR[\d/]+$/i.test(q.t) && Math.abs(q.x - tg.x) < 1 && Math.abs(q.y - tg.y) > 2 && Math.abs(q.y - tg.y) < 4.5) : null,
+      tgN = q => q.t.match(/\d+/g) || [],
+      tgT = tg2 ? 'TR' + [tg, tg2].sort((p, q) => +tgN(p)[0] - +tgN(q)[0]).flatMap(tgN).join('/') : tg ? tg.t : '';
     /* 2.5.0-beta.12 (sootblower DITL-80A TR330 10 MIN. ON DELAY): a D drawn standing (bulging down / up): the input comes from above /
        below into the flat side, the output leaves the round side */
     const vert = md > 225 && md < 315 ? 'd' : md > 45 && md < 135 ? 'u' : '';
@@ -496,7 +507,7 @@ function netlistCore(sh, strict) {
       ob,
       nt,
       ut,
-      tag: tg ? tg.t : ''
+      tag: tgT
     });
   }
   const inT = (x1, y1, x2, y2) =>
