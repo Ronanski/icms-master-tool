@@ -110,6 +110,33 @@
      never started on its AUTO START (O.1400) */
   const fvOf = t => () => (window.AN && AN.fv && isFinite(AN.fv(t)) ? AN.fv(t) : NaN);
   L.push(['ZSO-FW1031', fvOf('V-FW1001'), 100, 'ge', 0, 0, /\bBFWP A\b/], ['ZSO-FW1031', fvOf('V-FW1002'), 100, 'ge', 0, 0, /\bBFWP B\b/]);
+  /* 3.2.3-beta.200 (JENNIE live operator Cold start, finding F4): the inlet vane limit switches of the three fans. DITL-25A rows 26 / 27
+     ZSC / ZSO-FG1056-1, DITL-26A rows 26 / 27 ZSC / ZSO-FA1053-1, DITL-27A rows 26 / 27 ZSC / ZSO-FA1054-1, and their station wiring
+     copies on the start permissives: DITL-25A row 4 M.3111 PAF VANE OPENED, row 5 M.3113 SAF VANE OPENED, row 6 M.3117 IDF INLET VANE
+     CLOSED, DITL-26A row 3 M.3110 PAF INLET VANE CLOSED, DITL-27A row 4 M.3112 SAF INLET VANE CLOSED. No sheet writes these addresses and
+     the plant model had no vane switch: every one stayed 0, so an operator could not start the ID fan (nor the PA / SA fan) with the DCS
+     controls; only the Training guide's forced running bit did. The vane is moved by its actuator whether the fan runs or not; its
+     position is the output of its station: PA fan inlet vane MCV-FA1053-1 = FICFA1071.MV, SA fan MCV-FA1054-1 = FICFA1081.MV (ABC-007),
+     IDF inlet damper PCD-FG1056-1 = PICFG108A.MV (ABC-008). The switch makes at the end of travel: closed <= 2 %, opened >= 98 % (the end
+     points are NO-SOURCE: no limit switch setting in the docs searched; the names say fully closed / fully opened) */
+  const mvOf = (sh, tag) => () => {
+    const s = window.AN && AN.sheets && AN.sheets.find(x => x.name === sh),
+      S = s && (s.S || (AN.ensure && AN.ensure(s)));
+    if (!S || !S.lab || !S.rt) return NaN;
+    const k = mvOf.k[sh + tag] != null ? mvOf.k[sh + tag] : (mvOf.k[sh + tag] = S.lab.findIndex(x => x && String(x.t).trim() === tag + '.MV'));
+    const v = k >= 0 ? S.rt.v[k] : NaN;
+    return v == null || !isFinite(v) ? NaN : +v;
+  };
+  mvOf.k = {};
+  for (const [id, sh, tag, cl, op] of [
+    ['FA1053-1', 'ABC-007', 'FICFA1071', 'M.3110', 'M.3111'],
+    ['FA1054-1', 'ABC-007', 'FICFA1081', 'M.3112', 'M.3113'],
+    ['FG1056-1', 'ABC-008', 'PICFG108A', 'M.3117', null]
+  ]) {
+    const v = mvOf(sh, tag);
+    L.push(['ZSC-' + id, v, 2, 'lo', 0, 1], ['ZSO-' + id, v, 98, 'ge', 0, 0], [cl, v, 2, 'lo', 0, 1, /\bVANE CLOSED\b/]);
+    if (op) L.push([op, v, 98, 'ge', 0, 0, /\bVANE OPENED\b/]);
+  }
   /* 3.2.1 (IRENE: HEATER LEVELS): the level switches H.H. of the heaters (DITL-41 rows 15 ~ 27, STN102 I.029B ~ I.029F) on the
      shell level of the plant model (unit.js AN_HD); alarm list LS-HD110x: 140 mm (No.1 HPH, No.3 LPH), 150 mm (the others) */
   const hdOf = k => () => (window.AN && AN.unit && AN.unit.hdLvl && isFinite(AN.unit.hdLvl[k]) ? AN.unit.hdLvl[k] : NaN);
