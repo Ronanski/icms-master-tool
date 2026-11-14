@@ -13,7 +13,7 @@ Ang OneDrive ay Files On-Demand: ang pagbukas ng file ay nagda-download nito. Is
 - **LPDSI** = `D:\LPDSI Documents\` (40,780 file).
 - **OD** = `C:\Users\Ronanski\OneDrive\` (personal OneDrive, nagsi-sync pa: folders pa lang, 1 file noong 2026-11-14 8:30 PM PHT). Plant-related na folder: `Desktop\PDF\TCS Logic`, `Desktop\PDF\NUS` (walang laman pa).
 
-Phase 1 = Unit 1 at 2 (code K1AU3, ito ang LMYP #1). Phase 2 = Unit 3 at 4 (code K3AU2): **huwag gamiting source sa Unit 1**. Ang mga file na may "ML-" sa unahan (folder MHPS EI) ay mukhang Malita / Davao project ng MHPS: gamitin lang bilang check, ang "LM-" ang Limay.
+Phase 1 = Unit 1 at 2 (code K1AU3, ito ang LMYP #1). Phase 2 = Unit 3 at 4 (code K3AU2). **Ayon sa user (2026-11-14): pisikal na identical ang Phase 2 sa Unit 1, tag number lang ang iba.** Kaya source din ang Phase 2 para sa sukat, design data, curves at drawing ng equipment; ang tag number, address at logic sheet number ay laging galing sa Phase 1 (K1AU3) at sa LMYP #1 DCS. Ang mga file na may "ML-" sa unahan (folder MHPS EI) ay mukhang Malita / Davao project ng MHPS: gamitin lang bilang check, ang "LM-" ang Limay.
 
 ## Pinakamahalagang folder (SMGP)
 
@@ -63,9 +63,9 @@ Phase 1 = Unit 1 at 2 (code K1AU3, ito ang LMYP #1). Phase 2 = Unit 3 at 4 (code
 - Turbine start-up: `MHPS TG RH Training Data\XSM-CO-PRJ-187` at `-188`.
 - TCS soft logic TCA / TCE: `TURN OVER FILES\DCS TCS\TCS\TCS\`.
 
-## Wala pa rin kahit saan (hinanap 2026-11-14)
+## Turbine heat balance at generator data (na-update 2026-11-14)
 
-- Turbine heat balance ng Unit 1. Ang meron lang: Phase 2 (PPE-14-0725 R1 at PPE-14-0728 R1 sa `PHASE 2\DRWG FOR PHASE 2\Drawings\`) at Davao (PPE-13-0138). Pang-check lang, hindi source ng Unit 1.
-- Turbine at generator sectional drawing ng Unit 1 (may Phase 2 brushless exciter outline 310QK06-564 lang).
-- Historian / trend data (may LPBV trend PNG lang sa DCS Files\Reports).
+- Turbine heat balance (MHPS, identical na turbine): Phase 2 `PHASE 2\DRWG FOR PHASE 2\Drawings\486_PPE-14-0725_R1 Heat Balance Diagram.pdf` at `488_PPE-14-0728_R1 Heat Balance Turbine Bypass Operation.pdf`. Sa parehong folder: 487 STG start-up information, 489 heater out of service, 492 ~ 494 aux power / CW / aux steam consumption, 498 CRH at extraction NRV design conditions. Kapareho ng Davao set (`OTHER EXTERNAL DOCUMENTS\Davao Drawing Reference\` PPE-13-0138 R4, TAQ-14-216 correction curves, TAQ-13-252 thermal kit). I-check pa rin laban sa Unit 1 mass balance K1AU3-A2-0-001.
+- Generator at exciter (Phase 2 `Drawings\`): 186 brushless exciter outline 310QK06-564, 276 excitation V curves 310SD23-270, 279 / 280 winding thermal capability, 399 description of excitation system DBE-15-0021, 423 brushless exciter curve GAE-2015-0004.
+- Wala talaga (user 2026-11-14: ito na ang buong document set): historian / trend data (may LPBV trend PNG lang sa DCS Files\Reports), sectional drawing ng turbine casing.
 - Ang personal OneDrive (OD) ay hindi pa tapos mag-sync: hanapin ulit kapag dumating na ang mga file.
