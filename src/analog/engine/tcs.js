@@ -742,7 +742,8 @@ function tcsStep(U, dt) {
         const g = tcsGen(U);
         g.ex = true;
         c.exc = g.f41;
-        if (g.f41 && g.V >= 1) tcsDone(U, 4);
+        /* beta.236: the voltage comes from the field physics (tcs-gen.js): GENERATOR VOLTAGE OK = inside the ASD window, 2 % */
+        if (g.f41 && Math.abs(g.V - 1) <= TCS_GEN.dV) tcsDone(U, 4);
       }
       break;
     case 5 /* SYNCH. & INITIAL LOAD (page 24 ~ 25): ASD closes 52G, initial load, hold timer (Fig. 3) */:
@@ -1120,7 +1121,7 @@ function tcsState() {
     tmMin: c.tm / 60,
     soakMin: c.soakMin,
     holdMin: c.holdMin,
-    gen: U.gen ? { f41: U.gen.f41, volt: U.gen.V >= 1, sync: U.gen.x25, on25: U.gen.on25, msg: U.gen.last } : null,
+    gen: U.gen ? { f41: U.gen.f41, volt: Math.abs(U.gen.V - 1) <= 0.02, slip: U.gen.slip, th: U.gen.th, sync: U.gen.x25, on25: U.gen.on25, msg: U.gen.last } : null,
     hold: c.hold,
     rpm: U.tb ? U.tb.rpm : 0,
     Pa: c.Pa,

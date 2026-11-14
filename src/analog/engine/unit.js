@@ -3878,7 +3878,8 @@ function anGenEl() {
     q = Q / AN_GEN.S,
     /* 3.2.3-beta.235: before 52G the voltage builds up after the field breaker 41 closes (tcs-gen.js g.V, 30 s); was 13.8 kV at once */
     vb = syn ? 1 : U.gen && isFinite(U.gen.V) ? U.gen.V : fcb ? 1 : 0,
-    E = fcb ? (vb * Math.hypot(1 + AN_GEN.xd * q, AN_GEN.xd * p)) / AN_GEN.E0 : 0,
+    /* beta.236: before 52G the exciter output of the field model (tcs-gen.js g.efd, 1 = no load field) */
+    E = !fcb ? 0 : syn || !(U.gen && isFinite(U.gen.efd)) ? (vb * Math.hypot(1 + AN_GEN.xd * q, AN_GEN.xd * p)) / AN_GEN.E0 : U.gen.efd / AN_GEN.E0,
     kA = Math.hypot(P, Q) / (Math.sqrt(3) * AN_GEN.kV),
     g = U.genE || (U.genE = { MWh: AN_GEN.MWh, MVArh: AN_GEN.MVArh });
   return {
