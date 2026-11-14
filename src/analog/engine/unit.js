@@ -221,7 +221,7 @@ const AN_UNIT = {
        (h about 3,545): 44.6 MW, metal about 455 C: UA = 44.6 MW / 385 K = 116 kW/K.
      - UA moves with the gas flow ^ 0.6 (forced convection over tube banks, Colburn / Grimison exponent, textbook); gas flow = the total
        air (the fuel is under 10 % of the gas mass). The gas cannot give more than it carries: Q <= gas x 1.15 kJ/kg K (flue gas, textbook)
-       x (gas - metal).
+       x (gas - metal). The gas temperature: the furnace gas balance and the cyclone refractory (AN_FG, beta.229), not the bed.
      - steam side: the steam leaves at the metal temperature (film coefficient far above the gas side); it takes steam x 2.2 kJ/kg K x
        (metal - inlet), inlet = saturation (SH) / the cold reheat temperature, HP bypass outlet and HP exhaust mixed (RH, beta.227).
        No steam flow: the metal and the stagnant steam heat from the gas alone. */
@@ -2052,6 +2052,48 @@ const AN_PA_FURN = 328.2 / 354.0;
    carry-over gives. tau itself is NO-SOURCE inside that bound. At a hot bed (bf = 1) with no coal held, the burn is the fed coal, as
    before. Module level (never a function on U: SAVE / LOAD). */
 const AN_CBED = { tau: 60 };
+/* live Cold start 2026-11-14 (user: "Code ang gawin ... WALANG DAYAIN"): THE FURNACE GAS THAT REACHES THE SUPERHEATER / REHEATER.
+   Before, the SH / RH tube metal took its heat from the bed temperature U.Tb, as if the gas left the furnace at the bed temperature at
+   any firing. In a CFB the bed is the zone of the PA and the start-up burners; the gas leaving the furnace is that gas mixed with the
+   SA and the FA, less the heat the water walls take, and it then crosses the refractory of the cyclone inlet ducts, the cyclones and
+   their outlet ducts before the backpass (03-boiler; P2S4). Physics used:
+   - fuel heat: coal-equivalent burnt (Fe, T/H; one T/H of oil = ao T/H of coal) x the coal LHV 3,662 kcal/kg (T3) = 4,259 kW per T/H.
+   - air heat: PA / SA at the hot air temperatures of the air heater model (boiler.js anAphStep), FA at the ambient, air cp 1.005
+     kJ/kg K (textbook), above the ambient.
+   - water walls: the steam the walls make (qW, the drum model, T/H) x the latent heat of the drum pressure hfg = hg - hf (hg: IF97
+     region 2 of steam.js at saturation; hf: the saturated liquid of the IAPWS-IF97 steam tables, AN_HF below, bar abs -> kJ/kg). The
+     feedwater heating from the economizer outlet to saturation is not counted (economizer outlet not modelled): the gas balance is
+     high by that share (at most about 0.13 MW per T/H of steam at full load).
+   - gas: total air + burnt coal less its ash (6.82 %, T3) + oil, cp 1.15 kJ/kg K (the flue gas cp of the metal model, textbook).
+   - the gas cannot be hotter than the bed solids it leaves with (CFB: the circulating solids and the gas leave the furnace together,
+     the gas-solid heat exchange is fast), and not colder than the ambient.
+   - cyclone refractory: inlet ducts 98.8 ~ 118.3 t + cyclones 373.7 ~ 450.2 t + outlet ducts 214.4 ~ 303.9 t (13-thermal-masses A6,
+     K1AU3-C-0-007), centre 780 t x 1.0 kJ/kg K (textbook refractory) = 780 MJ/K, one lump the gas heats or cools on its way. The gas
+     leaves the cyclones at the lining temperature (exchange effectiveness 1: NO-SOURCE, the lining area and film coefficient are
+     not in the documents). */
+const AN_FG = { lhv: (3662 * 4.1868) / 3.6, cpA: 1.005, cpG: 1.15, ash: 0.0682, mCy: 780e3 };
+/* saturated liquid enthalpy, IAPWS-IF97 steam tables: [bar abs, kJ/kg] */
+const AN_HF = [
+  [1, 417.4],
+  [5, 640.1],
+  [10, 762.6],
+  [20, 908.6],
+  [40, 1087.4],
+  [60, 1213.7],
+  [80, 1317.1],
+  [100, 1408.0],
+  [120, 1491.3],
+  [140, 1571.0],
+  [160, 1649.7]
+];
+function anHfSat(Pkg) {
+  const b = (Math.max(-1, +Pkg || 0) + 1.0332) * 0.980665,
+    T = AN_HF;
+  if (b <= T[0][0]) return T[0][1];
+  for (let i = 1; i < T.length; i++)
+    if (b <= T[i][0]) return T[i - 1][1] + ((T[i][1] - T[i - 1][1]) * (b - T[i - 1][0])) / (T[i][0] - T[i - 1][0]);
+  return T[T.length - 1][1];
+}
 const AN_BED = {
   s: [0.43, 0.525, 0.626, 0.715, 0.86, 1],
   t: [798, 819, 840, 840, 840, 840],
@@ -4525,6 +4567,7 @@ function anUnitStep0(dt) {
     const ts = tsatOf(U.Pd),
       /* the water can only take heat from a hotter furnace (Mina item 12d: water 147 C with bed 141 C) */
       qW = Math.min(U.Qs, U.uaW * Math.max(0, U.Tb - U.Tw));
+    U.qW = qW; /* the water walls' heat, read by the furnace gas balance below */
     if (U.Tw < ts - 0.01) {
       U.Tw = Math.max(U.Tamb, Math.min(ts, U.Tw + ((qW - Qloss) * dt) / U.Cw));
       U.Pd = Math.max(0, U.Pd - ((U.ms + U.mb + (U.msb || 0)) * dt) / U.C);
@@ -4720,7 +4763,8 @@ function anUnitStep0(dt) {
        cold boiler (water 30 C, no steam) the saturation temperature of 0 kg/cm2 is 99.97 C: the SH / RH steam temperatures
        (TICBR1130 / 1140 / 1150, TICMS1004, TICHR1002) read 99.97 C instead of the ambient. Once the water boils Tw = saturation */
     tsat = Math.min(tsatOf(U.Pd), isFinite(U.Tw) ? U.Tw : 1e9);
-  /* F11: superheater / reheater tube metal (see AN_UNIT.shM). Gas into the backpass = the bed / furnace temperature U.Tb */
+  /* F11: superheater / reheater tube metal (see AN_UNIT.shM). Gas into the backpass = the furnace gas balance and the cyclone
+     refractory (AN_FG, beta.229), no longer the bed temperature U.Tb */
   if (U.cold) {
     /* start value (a save without the metal state): the tube metal is at least as hot as the steam held in its headers (h.x of
        TT-BR1140 / TT-MS1004), not below the water. beta.208 started it at the water (57 C) under 135 C steam: a false drop live */
@@ -4734,12 +4778,27 @@ function anUnitStep0(dt) {
     if (!isFinite(U.TmR))
       U.TmR = isFinite(rh0) ? Math.max(Math.max(U.Tamb, isFinite(U.Tw) ? U.Tw : U.Tamb), Math.min(U.Tb, rh0)) : tw0;
     if (!isFinite(U.TmS)) U.TmS = tw0;
+    /* the furnace gas balance (AN_FG above): fuel heat + air heat - water walls = gas heat above the ambient */
+    const K = AN_FG,
+      av = U.tafS && U.taf.length === 3 ? U.taf.map(n => Math.max(0, +U.tafS.rt.v[n] || 0)) : [taf, 0, 0],
+      tPa = isFinite(U.aphPa) ? U.aphPa : U.Tamb,
+      tSa = isFinite(U.aphSa) ? U.aphSa : U.Tamb,
+      qAir = ((av[0] * Math.max(0, tPa - U.Tamb) + av[1] * Math.max(0, tSa - U.Tamb)) / 3.6) * K.cpA,
+      hfg = Math.max(0, steamH(U.Pd, tsatOf(U.Pd)) - anHfSat(U.Pd)),
+      qWw = (Math.max(0, U.qW || 0) / 3.6) * hfg,
+      mg = taf + (U.cbn || 0) * (1 - K.ash) + (U.oilF || 0) /* T/H */,
+      gcp = (mg / 3.6) * K.cpG; /* kW/K */
+    const tgF = gcp > 1 ? U.Tamb + (Fe * K.lhv + qAir - qWw) / gcp : U.Tamb;
+    U.tgF = Math.max(U.Tamb, Math.min(U.Tb, tgF)); /* furnace exit gas */
+    /* the cyclone refractory lump: the gas gives it heat (or takes it back) and leaves at its temperature */
+    if (!isFinite(U.Tcy)) U.Tcy = U.tgF;
+    U.Tcy += (gcp * (U.tgF - U.Tcy) * dt) / K.mCy;
+    const tG = U.Tcy; /* gas into the backpass: SH / RH */
     const gr = U.taf0 > 0 ? Math.max(0, taf / U.taf0) : 0,
-      kg = Math.pow(gr, 0.6),
-      gcp = (taf / 3.6) * 1.15; /* kW/K */
-    let qS = (U.shUA || 261) * kg * Math.max(0, U.Tb - U.TmS),
-      qR = (U.rhUA || 116) * kg * Math.max(0, U.Tb - U.TmR);
-    const qMax = gcp * Math.max(0, U.Tb - Math.min(U.TmS, U.TmR));
+      kg = Math.pow(gr, 0.6);
+    let qS = (U.shUA || 261) * kg * Math.max(0, tG - U.TmS),
+      qR = (U.rhUA || 116) * kg * Math.max(0, tG - U.TmR);
+    const qMax = gcp * Math.max(0, tG - Math.min(U.TmS, U.TmR));
     if (qS + qR > qMax) {
       const k = qMax / (qS + qR);
       qS *= k;
@@ -4762,7 +4821,9 @@ function anUnitStep0(dt) {
       (((wR / 3.6) * 2.2 * (U.TmR - U.TpR) - (U.rhPipeUA || 0.02) * (U.TpR - U.Tamb)) * dt) / (U.rhPipeM || 10000);
     U.TpR = Math.max(U.Tamb, Math.min(Math.max(U.TmR, U.Tamb), U.TpR));
     U.wR = wR;
-  } else U.TmS = U.TmR = U.TpR = undefined;
+    /* the cyclone outlet thermocouples TT-FG1095-A / B read the gas leaving the cyclones (beta.212 scaled them on the bed) */
+    U.gCy = [U.Tcy, U.Tcy];
+  } else U.TmS = U.TmR = U.TpR = U.Tcy = U.tgF = undefined;
   for (const e of U.ld) {
     const pr = e.pr,
       p = e.b.p || {};
