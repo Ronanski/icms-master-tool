@@ -29,6 +29,7 @@
       X68: { n: 'XV-CD1125', t: 'Gland steam spray block', mov: 'DITL-68', tg: 'XV-CD1125' },
       M53: { n: 'MV-AS1393', t: 'Gland steam drain separator drain', mov: 'DITL-53', tg: 'MV-AS1393' },
       GS: { n: 'GLAND STEAM SEAL', t: 'PV-GS1031', d: 'STEAM SEAL FEED · TCS', tcs: 'gland', why: 'Gland steam seal of the TCS: the steam seal feed valve PV-GS1031 (TCS PLC, AI0886 TCS to DCS) holds the gland steam header. START = put in service: aux steam over 7 kg/cm2, the turbine on the turning gear, the vacuum breaker MV-AV1391 open (TCS ATS 1.10 GLAND STEAM SEAL HEADER PRESS. NOT LOW). STOP = out of service.' },
+      HSP: { n: 'LP EXHAUST HOOD SPRAY', t: 'FV-CD1904', d: 'HOOD SPRAY · TCS', tcs: 'hood', why: 'LP exhaust hood water spray of the TCS: FV-CD1904 opens fully below 15 % load (IBD TC-28 / TC-35) and cools the hood (TEST11101 ~ 3) against the windage of the blades at speed. START = put the spray in AUTO (PR-OPE-5002 6307, with the vacuum up). STOP = out of service. ATS 1.12: hood below 80 C, below 52 C before load up.' },
       M75: { n: 'MV-AS1394', t: 'Turbine warming line drain', mov: 'DITL-75', tg: 'MV-AS1394' }
     },
     unit: {
