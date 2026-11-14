@@ -139,7 +139,7 @@ Lahat sa FHI1 `E1 Engineer data of electrical equipment\` (`E1\` o `AS BUILT\`),
 - Generator protection at metering: tingnan ang seksiyon 12 (GSE-2013-0068 / 0083 / 0085, ML-GSE-2014-0018 setting list, ML-310SD03-741 one line, -743 protection / breaker logic).
 - Vendor O&M (`SMGP\E-LIBRARY\Operation and Maintenance Manuals\PHASE 1\`): `L23-1 AIS, BUS DUCT, GMCB, MV & LV, RCP & TR & VFD`, `L23-2 & L23-3 UPS, HBT, FTR, SCADA, SOFT STARTER, CTTS`, `L24-1 Main transformer`, `L24-2 Auxiliary transformer` (AVR), `L28 Motor control damper, EDG` (ABB Emax ACB), `L22 DCS`, `L27 Instrument` (14 vendor), `L26 CEMS`.
 - P2 relay settings: FHI1 `E1 ...\K3AU2-E0-7010A-0 U3 Protection Relay Setting Table For 460V.pdf` (at 7010B U4).
-- **Wala:** relay setting table ng Unit 1 MV / LV (P2 460 V lang, at generator protection setting list).
+- **Meron (Units 1-4 magkakambal):** K3AU2-E0-7010A/B 460 V relay setting, 7011A/B MV calculation, 7012A/B; tingnan ang "Ikalawang hanap".
 
 ## Hop by hop: alin ang may dokumento
 
@@ -155,12 +155,57 @@ Lahat sa FHI1 `E1 Engineer data of electrical equipment\` (`E1\` o `AS BUILT\`),
 - Network: bahagi (E2-0-106, E2-0-115, E2-0-204, ML-331DM07737). Walang hiwalay na FL-NET / V-net drawing.
 - Grounding: oo (E2-0-108 DCS, E1-0-119 plant).
 
-## Buod: hinanap pero wala
+## Ikalawang hanap (2026-11-14 gabi): nakita na ang 5 dating "wala"
 
-- K3AU2 (P2) DCS hardware set E2-0-106 ~ 118 (P2 E2-0-107 lang ang meron).
-- Hiwalay na main-plant instrument cable schedule (nasa wiring diagram at WIRING.xls ang data).
-- Hiwalay na 24 VDC / 110 VAC distribution schedule (PDP drawing lang).
-- SCADA cabinet wiring bukod sa K1AU3-E1-0-112 Drawing of SCADA System at Modbus list.
-- Relay setting table ng Unit 1 MV / LV switchgear (P2 460 V lang).
-- FL-NET / V-net / Information LAN drawing bukod sa E2-0-106 at E2-0-115.
-- Bilang ng pahina ng bawat PDF (hindi binuksan: nagda-download ang OneDrive file).
+Batayan: magkakambal ang Units 1, 2, 3 at 4 (user 2026-11-14). Valid ang dokumento ng kahit anong unit para sa Unit 1 hardware; tag at address laging galing sa Unit 1. Hinanap ang buong `SMGP\LAPTOP_BACKUP_02062026` (55,227 files, nag-iisang laptop backup sa OneDrive), Teams Chat Files, at loob ng 1,833 zip sa `LPDSI`.
+
+### 1. Relay setting table (MV / LV)
+
+- `SMGP\USBTRANSFER\FHI Drawing\PHASE 1\E1 Engineer data of electrical equipment\Electrical Engineering Drawing\`: K3AU2-E0-7010A-0 U3 Protection Relay Setting Table For 460V, K3AU2-E0-7010B-0 (U4), K3AU2-E0-7011A-0 U3 Calculation Sheets For MV System, K3AU2-E0-7011B-0, K3AU2-E0-7012A-0, K3AU2-E0-7012B-0
+- Generator protection: `Other AS builts\HITACHI Turbine-Generator\MHPS EI\(ML-GSE-2014-0018 R0)-Setting List of Gen. Protection Panel, Gen. Control Panel (FF).pdf`; P2 `419_DBE-16-0138_R1`
+- Unit 1 suporta: `E1\K1AU3-E1-0-304 RA Calculation for short circuit`, `-307 RA voltage dip of large motor starting`, `-302 RA load schedule`
+- Tala: walang K1AU3 file na "relay setting" ang pangalan (wala ang E1-0-305 / 306 sa set). Binuksan ang `L23-1 ...\4.MV\LIMAY MV OPERATION & MAINTENANCE GUIDE-20141209.docx`: maintenance lang, walang setting.
+
+### 2. Instrument at power cable schedule
+
+- `SMGP\E-LIBRARY\MH REFERENCES\CHS Drawings of Limay Power Plant\`: K1AU3U02-D-I03 Instrument cable schedule, K1AU3U02-D-I05 Instrument Connection List, K1AU3U02-D-E09 Power Cable Schedule
+- `SMGP\E-LIBRARY\MH REFERENCES\MH Phase 2\`: instrument\K3AU2U02-D-I03 R0 Instrument Cable Schedule, electrical\K3AU2U02-D-E06 R0 Power Cable Schedule
+- `SMGP\USBTRANSFER\FHI Drawing\PHASE 2\DRWG FOR PHASE 2\Drawings\572_TRE-16-006_R6 Cable List for Limay Phase 2.pdf` (TG)
+- `SMGP\LAPTOP_BACKUP_02062026\DESKTOP\TURN OVER FILES\DIAGRAMS\K1AU3U02-D-I05 Instrument  Connection List (Wiring List).pdf`
+- U2 JB at marshalling termination schedule: `LPDSI\DCS FEIL\IC\PLANT REFERENCES\Metrologyx Training\FOR METROLOGYX TRAINEES (NC-II Module-2)\4. LOOP CHECKING\4.4 Junction Box Wiring Termination Schedule\` at `\4.5 Marshalling Cabinet Wiring Termination Schedule\`
+
+### 3. 24 VDC / 110 VAC distribution
+
+- `SMGP\LAPTOP_BACKUP_02062026\DESKTOP\E-LIBRARY\DCS PLC\LMYP-1 #1-DOCUMENT(Hardware)\06.PDP\K1AU3-E2-0-111_20171012.pdf`
+- `SMGP\USBTRANSFER\something\♠FOR INFORMATION♠\Engineering Data of Instrument\K1AU3-E2-0-106~117 Hardware\07.PDP\PDP_20150626.pdf`
+- `SMGP\ARCHIVES\DCS TCS\RTS\ASSET POLICY\Asset Policy DCS\11. Power Distribution Panel (RED).xlsx`
+- `...\TURN OVER FILES\INVENTORY\DCS & HMI\DCS FCS\PDP.xlsx`
+- MH: K1AU3U02-D-E07 Power distribution panel; P2 K3AU2U02-D-E11 R0 Power Distribution System of Local Panel
+- UPS / DC: `E-LIBRARY\Operation and Maintenance Manuals\PHASE 1\L23-2 & L23-3 ...\1.UPS`, `\3.DC Charger`; E1-0-302 load schedule
+
+### 4. Control network / LAN
+
+- `SMGP\LAPTOP_BACKUP_02062026\DOCUMENTS\Technical Documentations and Procedures\LIMAY1 DCS - Updated Network Diagram.pdf` at `LIMAY2 DCS - Updated Network Diagram.pdf` (kopya rin sa `SMGP\Microsoft Teams Chat Files\`)
+- `...\K1AU3-E2-0-106~117 Hardware\02.UTILITY\System_Ethernet_Layout_20150626.pdf`
+- `...\TURN OVER FILES\DIAGRAMS\K1AU3-E2-0-204(I0-401~413) Office Information Network.pdf`
+- `...\TURN OVER FILES\DCS TCS\XSML#2 Network Diagram.pdf`
+- `SMGP\E-LIBRARY\DCS PLC\Fiber Optic Network Limay-1-2 asbuild.xlsx`
+- E1-0-129 Communication System Layout Diagram
+- FL-net card firmware at driver: `LPDSI\DCS FEIL\IC\PLANT REFERENCES\CX產品使用之FLnet PCI更新\`
+
+### 5. DCS hardware set E2-0-106 ~ 118
+
+- Unit 1 as-built 2017: `SMGP\LAPTOP_BACKUP_02062026\DESKTOP\E-LIBRARY\DCS PLC\LMYP-1 #1-DOCUMENT(Hardware)\01.System ... 12.Wiring\` (E2-0-106 System, -107 Layout, -108 Ground, -109 FCS, -110 COS, -111 PDP, -112 SER, -113 ANP, -114 ARPIRP, -115 GCS, -116 MPL, -117 FCS WIRING at IRP_ARP_SER). Kopya sa `DESKTOP\E-LIBRARY\DCS Reference\` at sa zip `LPDSI\LMYP-1 DCS TCS\LMYP-1 #1-DOCUMENT.zip`
+- Unit 1 2015 set: `SMGP\USBTRANSFER\something\♠FOR INFORMATION♠\Engineering Data of Instrument\K1AU3-E2-0-106~117 Hardware\01.BASE ... 13.Wiring\`
+- P2: `...\TURN OVER FILES\DCS TCS\K3AU2-E2-0-114_20190128 SECURED.pdf`, P2 E2-0-107 rack layout, P2 E2-0-118 DCS IO list folder (sa ilalim ng `E2 K3AU2-E2-0-119 Analog Control Logic Diagram\`), Unit 2 CES config backup `...\DCS TCS\UNIT 2 CES BACKUP\LMP2-101 ~ 104`
+
+### Bago rin galing sa laptop backup
+
+- `...\DESKTOP\TURN OVER FILES\DIAGRAMS\`: E2-0-101 hook-up, E2-0-102 location plans, E2-0-104 loop diagram #1 / #2, E2-0-105 instrument air, E2-0-107 rack room, E2-0-118 IO list, E2-0-201 instrument list, E2-0-202 wiring #1 / #2, E1-0-108 JB installation, MPW34021 LIMAY_SCADA_C1-20150610, Instrument List.xlsx, Instrument Conduit Layout (U2 as-built k1au3e2-2304 ~ 2324)
+- `...\TURN OVER FILES\DCS TCS\DCS Files\`: IO Card.xlsx, IO List\LMYP-1 #1_IO_Rev.1, Loop Test Report, DIGITAL INTERLOCK LIST-20160111.xls, GCS\LMYP-1 #1-Memory for Sub_System PLC MODBUS.xls, DCS References\DCS Hardware (英文).pdf
+- `...\TURN OVER FILES\INVENTORY\DCS & HMI\` at `DCS Inventory Compilation\`: FCS, PDP, SER, ARPIRP, GCS, DCS ROOM xlsx; SCADA IO.xlsx, SCADA RTU Material Specs
+
+## Natitirang tala
+
+- Bilang ng pahina ng bawat PDF: hindi binuksan (nagda-download ang OneDrive file).
+- Personal OneDrive (`C:\Users\Ronanski\OneDrive\`) 1 file pa lang ang naka-sync: i-scan ulit pag tapos na.
