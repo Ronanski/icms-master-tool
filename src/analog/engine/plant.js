@@ -1589,6 +1589,7 @@ function anStep(S, dt) {
         }
         if (s.fm === 'A') pickB = false;
         else if (s.fm === 'B') pickB = true;
+        const buLeft = b.buCmd && s.pk === 'B' && !pickB; /* this step the BU-CMD leg is released */
         s.pk = pickB ? 'B' : 'A';
         /* 3.2.1: a force of the drawing changes the station, so its mode status follows: ABC-007 M.018D needs FICFA1071.LOC after the force at house operation;
            .REM stayed 1 and the PA set point never went to 230 T/H (Mina turbine trip) */
@@ -1655,7 +1656,13 @@ function anStep(S, dt) {
           for (const u of b.upA) {
             const us = rt.st[u.id];
             if (us) {
-              us.bu = bu != null ? bu : pickB && b.buCmd ? y : null;
+              /* 3.2.3-beta.245 (live Cold load-up, ABC-004A): a selector on its BU-CMD leg outputs the back-up value, so the station before it
+                 follows THAT value (FIC-CM MV tracks SI0143 while M.0133 is 1; M.0133 TOF 2 s and FORCE REMOTE M.0132 TON 2 s overlap so the
+                 FIC-CF set point takes FIC-CM.MV = the feeder average). Before: the tracking of the FIC-CF SV switch further down (LOCAL,
+                 operator SV 0, locked in MANUAL) won, FIC-CM MV stayed 0 and when a feeder went AUTO the coal demand fell */
+              /* the step the back-up is released the station keeps that value: the tracking of a selector further down is one step old
+                 (ABC-004A: FORCE REMOTE M.0132 moves the FIC-CF SV switch to REMOTE in the same step, its LOCAL 0 was still in bu) */
+              us.bu = (pickB && b.buCmd) || buLeft ? y : bu != null ? bu : null;
               /* bumpless through a chain of selectors: when a selector further down is on its manual / other leg, the selectors before it and the PID follow its output */ us.tv =
                 pickB ? y : s.tv != null ? s.tv : null;
             }
