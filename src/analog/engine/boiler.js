@@ -47,7 +47,7 @@ const AN_DO = {
     return 1 / Math.sqrt(1.8 / this.q6 ** 2 - 1 / 13.1 ** 2);
   },
   get Kr() {
-    return this.q6 / (0.857 * Math.sqrt(11.0)) /* PCV-DO1009, 6.PNG */;
+    return this.q6 / (0.857 * Math.sqrt(11.0)); /* PCV-DO1009, 6.PNG */
   },
   g: 0.6144 * 0.980665 /* T/H per kg/cm2 at the gun: 614.4 kg/h per bar (M&S 1612 13-4-71) */,
   Kb:
@@ -102,7 +102,7 @@ function doSolve(Qc, xa, xf, xr, xb) {
   const K = AN_DO,
     sq = x => Math.sqrt(Math.max(0, x)),
     ring = P2 => K.Kr * xr * sq(P2) + xb.reduce((s, x) => s + doBurnerQ(P2, x), 0),
-    kf = xf > 0 ? 1 / Math.sqrt(1 / (K.Kf * xf) ** 2 + 1 / K.Kl ** 2) : 0 /* FCV-DO1012 and the line, in series */;
+    kf = xf > 0 ? 1 / Math.sqrt(1 / (K.Kf * xf) ** 2 + 1 / K.Kl ** 2) : 0; /* FCV-DO1012 and the line, in series */
   /* for a header P1: the ring pressure where the flow through FCV-DO1012 = return + burners */
   const p2Of = P1 => {
     if (!(xf > 0) || !(P1 > 0)) return 0;
@@ -254,7 +254,12 @@ function anDieselOilStep(U, dt) {
   /* the tank: the oil burnt leaves it (the recirculation, the ring return and the relief come back) */
   const burn = qb.reduce((s, q) => s + q, 0);
   U.doBurn = burn;
-  U.doLv = Math.max(0, U.doLv - (burn / K.rho / K.A / 3600) * dt);
+  /* 3.2.3 (live Cold start 2026-11-14: after about 24 h of oil firing T-0701 fell to the LL 0.2 m, both pumps tripped (DITL-31), all
+     four flames went out and DITL-03A tripped the boiler): the oil supply to T-0701 (receiving / storage) is outside the model
+     boundary, like the coal yard and the demin water (scope 2026-11-07: a level the DCS reads never empties). The receiving side
+     puts back what leaves: an unlimited supply (user 2026-11-14 "Unli supply"), the tank never falls below its level of the starting
+     state L0 (3.2.3-beta.233; beta.232 refilled at 25 T/H, slow after a low level) */
+  U.doLv = Math.max(K.L0, U.doLv - (burn / K.rho / K.A / 3600) * dt);
   /* the motors: current = no-load share + hydraulic share (Q x P), 25.4 A at 25 T/H and 12.8 kg/cm2 (6.PNG) */
   U.doI = sp.map((s, i) => (run[i] ? K.I0 * (K.fI + ((1 - K.fI) * (qi[i] * U.doP1)) / (K.Qp * 12.8)) : 0));
   /* write the transmitters */
@@ -410,7 +415,9 @@ function anFanStep(U, dt) {
   U.fnFaQ = qfa;
   /* a blower blowing through its open silencer: its current as if its damper flow went into the header (the blower curve to the
      atmosphere is NO-SOURCE; a centrifugal blower takes more flow there, not less, so no current drop is made up) */
-  const qi = g.map((x, i) => (sil[i] && g0[i] > 0 ? (K.fa.Q0 * g0[i]) / K.fa.z0 : g[0] + g[1] > 0 ? (qfa * x) / (g[0] + g[1]) : 0));
+  const qi = g.map((x, i) =>
+    sil[i] && g0[i] > 0 ? (K.fa.Q0 * g0[i]) / K.fa.z0 : g[0] + g[1] > 0 ? (qfa * x) / (g[0] + g[1]) : 0
+  );
   const cur = anFanI;
   U.fnI = U.fnI || [0, 0, 0, 0, 0];
   /* S160-2 (Mina beta.160: FA blower B STOPPED while it ran on its own at the 25 % line-up damper, then started again): the air power
@@ -457,12 +464,29 @@ function anFanStep(U, dt) {
    gi        gas entering at MCR; below it the duties of the air heater manual L20, anAphIn.
    eco       colder feedwater takes more from the gas: the economizer cools the gas 43 C of the 120 C between gas in (365, snapshot
              TIFG1110 / 1113) and feedwater 245.4 (Tab 3), so gas to the air heater falls 0.36 C per C of feedwater. */
-const AN_GAS = { afs: 5.46, gi: 322, ePA: 240.8 / 277, eSA: 262.6 / 283, kCp: 0.894, gm: 681 / 598, eco: 43 / 120, dtP: 10, dtS: 4, tauG: 60, tauR: 120 };
+const AN_GAS = {
+  afs: 5.46,
+  gi: 322,
+  ePA: 240.8 / 277,
+  eSA: 262.6 / 283,
+  kCp: 0.894,
+  gm: 681 / 598,
+  eco: 43 / 120,
+  dtP: 10,
+  dtS: 4,
+  tauG: 60,
+  tauR: 120
+};
 const anAphClamp = (x, a, b) => Math.max(a, Math.min(b, x));
 /* gas entering the air preheater: k = bed rise over its MCR rise, g = gas flow over the MCR flow */
 /* gas in by furnace rise, L20 air heater duties 322 / 285 / 272 C at 100 / 60 / 40 %, at the furnace rise of Fig 8 (1, 0.895, 0.778); to ambient below */
 const anAphIn = (amb, k, g, fwDrop) => {
-  const t = k >= 0.895 ? 285 + ((322 - 285) * (k - 0.895)) / 0.105 : k >= 0.778 ? 272 + ((285 - 272) * (k - 0.778)) / 0.117 : amb + ((272 - amb) * Math.max(0, k)) / 0.778;
+  const t =
+    k >= 0.895
+      ? 285 + ((322 - 285) * (k - 0.895)) / 0.105
+      : k >= 0.778
+        ? 272 + ((285 - 272) * (k - 0.778)) / 0.117
+        : amb + ((272 - amb) * Math.max(0, k)) / 0.778;
   return Math.max(amb, t - AN_GAS.eco * Math.max(0, fwDrop || 0));
 };
 /* air leaving the fans, with the square of the flow: Tab 3 ambient 35, PA 45, SA 39 C. kind 'p' or 's' */
@@ -491,7 +515,27 @@ function anAphStep(U, dt) {
   const pa = tpa + K.ePA * z.rot * Math.max(0, z.gi - tpa),
     sa = tsa + K.eSA * z.rot * Math.max(0, z.gi - tsa);
   U.aphGi = z.gi;
+  /* hot PA / SA into the furnace, read by the bed heat balance of unit.js (anUnitStep0, Cold path) */
+  U.aphPa = pa;
+  U.aphSa = sa;
   U.aphGo = anAphOut(z.gi, v[0], tpa, pa, v[1], tsa, sa, v[2]);
+  /* 3.2.3-beta.212 (live Cold sweep F16: TT-FG1110 / 1113, TT-FG1124 / 1125, TT-FG1132 / 1133, TT-FG1152 '-----'): no sheet of the logic
+     reads these transmitters, the page now reads the gas path here.
+     U.ecoGo  gas leaving the No.2 economizer (TT-FG1110 R / 1113 S, ahead of the No.1 economizer): the No.1 economizer takes eco = 43 / 120
+              of the gap between this gas and the feedwater it heats (AN_GAS.eco, Tab 3), so the gas ahead of it is
+              (gas to the air heater - eco x feedwater) / (1 - eco); the feedwater = the No.2 HP heater outlet U.hpT2 (unit.js anHpStep).
+              MCR check: (322 - 0.358 x 245.4) / 0.642 = 365 C (snapshot TIFG1110 / 1113 359 / 369). Never under the gas leaving.
+     U.idfGo  ID fan outlet to the stack (TT-FG1152): the gas leaving the air heater plus the heat of the fan, dT = dp / (rho cp eta),
+              dp = the fan pressure rise of the fan model (U.fnGo - U.fnGi, mmH2O), flue gas rho 0.85 kg/m3 at about 140 C and
+              cp 1.05 kJ/kg K (Tab 3 gas), eta 0.8 (NO-SOURCE: the ID fan efficiency is not in the fan manual pages read): about 10 C at
+              MCR (snapshot 148 - 146 = 2 C after the precipitator losses, which are not modelled). */
+  {
+    const tf = isFinite(U.hpT2) ? U.hpT2 : amb;
+    U.ecoGo = Math.max(z.gi, (z.gi - K.eco * tf) / (1 - K.eco));
+    const gi = Array.isArray(U.fnGi) ? (U.fnGi[0] + U.fnGi[1]) / 2 : 0,
+      dp = Math.max(0, (isFinite(U.fnGo) ? U.fnGo : 0) - (isFinite(gi) ? gi : 0));
+    U.idfGo = U.aphGo + (dp * 9.80665) / (0.85 * 1050 * 0.8);
+  }
   anUnitWrite(U.aphL.pa, pa);
   anUnitWrite(U.aphL.sa, sa);
 }
@@ -872,7 +916,8 @@ function anSoxStep(U, dt) {
   const K = AN_SOX;
   if (!isFinite(U.soxZ)) U.soxZ = K.z0;
   const c = U.Fc || 0;
-  if (c > 1) U.soxZ += ((((U.lmQ || 0) * 0.9366) / 100.09 / ((c * 0.0149) / 32.06) - U.soxZ) * Math.min(dt, K.tau)) / K.tau;
+  if (c > 1)
+    U.soxZ += ((((U.lmQ || 0) * 0.9366) / 100.09 / ((c * 0.0149) / 32.06) - U.soxZ) * Math.min(dt, K.tau)) / K.tau;
   U.soxF = Math.exp(-K.k * Math.max(0, U.soxZ));
   const cb = isFinite(U.cbn) ? U.cbn : (isFinite(U.burn) ? U.burn : 1) * c,
     fe = cb + (U.ao || 0) * (U.oilF || 0),

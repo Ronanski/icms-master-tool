@@ -3,7 +3,7 @@
 Every title = a link to its page. Values: generator MW GCP-AI1001, main steam PT-MS1002, TICMS1004 PV, ABC-001C SI0230 (the compensated flow, as the top bar), feedwater FICFW1007,
 drum level LICBR1001B PV (compensated, ABC-010), furnace PT-FG1085, coal FIC-CM, condenser PT-CD1110 (plant model cdP), turbine speed (plant model rpm), 52G1 /
 52L1 = DITL-03E inputs 3 / 2; the CCS controllers HIC-ULD, EIC-TM, PIC-COBM, HIC-BM, FIC-CM (PV / SV / mode of the logic).
-NO-SOURCE: total air flow (no single transmitter: a sum inside the ABC), load rate, high limit, load up rate. Run: python3 tools/hmi-mock/p00.py"""
+Total air flow = SI0060 (made inside ABC-006, read by name on ABC-002, the only sheet with the label: live sweep 2026-11-14 beta.212). NO-SOURCE: load rate, high limit, load up rate. Run: python3 tools/hmi-mock/p00.py"""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mock import Page
@@ -25,7 +25,7 @@ p.inner(552, 66, V('ABC-001C|SI0230', 1, ' T/H'))
 p.inner(724, 66, C('FICFW1007', 'pv', 1, ' T/H'))
 p.inner(896, 66, C('LICBR1001B', 'pv', 0, ' mm'))
 p.inner(1068, 66, V('PT-FG1085', 0, ' mmH2O'))
-p.inner(1240, 66, NS + ' T/H')
+p.inner(1240, 66, V('ABC-002|SI0060') + ' T/H')  # total air = ABC-006 SI0060 (PA + SA + FA, live sweep 2026-11-14)
 p.inner(1412, 66, C('FIC-CM', 'pv', 1, ' T/H'))
 p.inner(1412, 86, 'coal master ' + MODE('FIC-CM'))
 p.inner(1580, 118, 'values: the logic and the plant model')
@@ -37,7 +37,7 @@ p.inner(572, 342, 'drum ' + C('LICBR1001B', 'pv', 0, ' mm'))
 p.inner(72, 602, V('PT-CD1110', 3, ' kg/cm2 abs'))
 p.inner(572, 602, C('FICFW1007', 'pv', 1, ' T/H'))
 p.inner(832, 226, V('PT-FG1085', 0, ' mmH2O'))
-p.inner(1442, 482, NS + ' T/H')
+p.inner(1442, 482, V('ABC-002|SI0060') + ' T/H')
 p.inner(1042, 342, 'coal ' + C('FIC-CM', 'pv', 1, ' T/H'))
 p.inner(832, 618, 'oil master ' + MODE('FIC-OM'))
 # coordinated control

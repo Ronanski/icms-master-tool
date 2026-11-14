@@ -35,7 +35,10 @@
     CA: { n: 'COP-A', t: 'P-1931A', d: 'CONTROL OIL PUMP (A)', k: 'copA', ops: 1 },
     CB: { n: 'COP-B', t: 'P-1931B', d: 'CONTROL OIL PUMP (B)', k: 'copB', ops: 1 },
     VX: { n: 'VAPOUR EXTRACTOR', t: 'F-1937', d: 'MAIN OIL TANK VAPOUR EXTRACTOR', k: 'vex', ops: 0 },
-    PU: { n: 'OIL PURIFIER', t: 'P-1941', d: 'OIL PURIFIER PUMP (local panel)', k: 'pur', ops: 0, field: 1 }
+    PU: { n: 'OIL PURIFIER', t: 'P-1941', d: 'OIL PURIFIER PUMP (local panel)', k: 'pur', ops: 0, field: 1 },
+    /* live Cold start 2026-11-14: the turning gear had no operation on any page. TCS I/O list HMI_DI (iolist-tcs): TURBINE TURNING GEAR
+       RUNNING / STOPPED, TURNING GEAR ENGAGE / DIS-ENGAGE (ZS-LO1906-1 / -2) = a TCS CRT operation, START / STOP as the oil pumps */
+    TG: { n: 'TURNING GEAR', t: 'ZS-LO1906', d: 'TURBINE TURNING GEAR', k: 'tg', ops: 0 }
   };
   /* live test #53 (36.PNG shows three values): a redundant set of three transmitters (2oo3 trip) = three value boxes under one tag line;
      the three read the one header pressure of the plant model (tcs.js), so they show the same value */
@@ -43,7 +46,13 @@
     `<g class="hs-hit" data-vbx="${key}">${T(x, y - 5, tag + '  ' + unit, 'hs-tag')}${[0, 1, 2].map(i => `<rect x="${x + i * (w + 4)}" y="${y}" width="${w}" height="29" rx="2" fill="${C.box}" stroke="${C.boxs}"/>${T(x + i * (w + 4) + w - 5, y + 22, '-----', 'hs-val', `text-anchor="end" fill="${C.none}" data-v="${key}"`)}`).join('')}</g>`;
   /* name, state and mode of a machine (state / mode filled live) */
   const label = (x, y, id, a = 'middle') =>
-    T(x, y, MACH[id].n, 'hs-eq', `text-anchor="${a}" data-hit="${id}"`) + /* #48: the name opens what the symbol opens */
+    T(
+      x,
+      y,
+      MACH[id].n,
+      'hs-eq',
+      `text-anchor="${a}" data-hit="${id}"`
+    ) /* #48: the name opens what the symbol opens */ +
     T(x, y + 18, MACH[id].t, 'hs-tag', `text-anchor="${a}" data-hit="${id}"`) +
     T(x, y + 36, '-----', 'hs-st', `text-anchor="${a}" fill="${C.none}" data-st="${id}"`) +
     T(
@@ -186,11 +195,14 @@
     );
     /* turning gear (engages at standstill, about 3 rpm) */
     b.add(
-      `<g><title>turning gear: turns the shaft at about 3 rpm when no steam turns it (PR-OPE-5002 7955)</title><rect x="650" y="206" width="40" height="32" rx="3" fill="url(#${PX}-cs)" stroke="${C.edge}"/><line x1="670" y1="238" x2="670" y2="${CY - 44}" stroke="#9aa8b6" stroke-width="4"/>` +
+      `<g class="hs-hit" data-hit="TG"><title>turning gear: turns the shaft at about 3 rpm when no steam turns it, so the rotor heats and cools evenly and does not bow</title><rect x="644" y="200" width="52" height="44" rx="6" fill="none" stroke="${C.none}" stroke-width="4" data-ring="TG" class="hs-hl"/><rect x="650" y="206" width="40" height="32" rx="3" fill="url(#${PX}-cs)" stroke="${C.edge}"/><line x1="670" y1="238" x2="670" y2="${CY - 44}" stroke="#9aa8b6" stroke-width="4"/>` +
         `<g data-tg="1" data-cx="670" data-cy="${CY - 30}"><circle cx="670" cy="${CY - 30}" r="13" fill="#44505c" stroke="#9aa8b6" stroke-width="2" stroke-dasharray="4 3"/></g>` +
         `<rect x="659" y="${CY - 17}" width="6" height="34" fill="#9aa8b6"/><rect x="675" y="${CY - 17}" width="6" height="34" fill="#9aa8b6"/></g>`
     );
-    b.txt(T(670, 196, 'TURNING GEAR', 'hs-tag', 'text-anchor="middle"'));
+    b.txt(
+      T(670, 178, 'TURNING GEAR', 'hs-tag', 'text-anchor="middle" data-hit="TG"') +
+        T(670, 194, '-----', 'hs-st', 'text-anchor="middle" fill="' + C.none + '" data-st="TG"')
+    );
     /* generator: frame, laminated core, stator winding and end turns, rotor (field), main leads */
     let core = '';
     for (let i = 0; i < 33; i++)
@@ -379,7 +391,14 @@
     b.add(H.filter(1120, 440, 'FLT', PX, 'lube oil filter · DP switch DPISL01932'));
     b.txt(
       H.lamp(960, 440, 'DPF', 'DPISL01932') +
-        H.vbox(1134, 230, 'TILO10021', '°C', 'TE-LO1002-1', 72) /* #53: the DCS tag (36.PNG); the I/O line is TE-LO1002-1 */ +
+        H.vbox(
+          1134,
+          230,
+          'TILO10021',
+          '°C',
+          'TE-LO1002-1',
+          72
+        ) /* #53: the DCS tag (36.PNG); the I/O line is TE-LO1002-1 */ +
         H.vbox(1134, 290, 'TILO10022', '°C', 'TE-LO1002-2', 72) +
         H.vbox(640, 328, 'TILO1001 in', '°C', 'loTin', 72)
     );
@@ -419,7 +438,7 @@
         ) +
         T(cx + 200, cy + 86, '%', 'hs-unit') +
         `</g>` +
-        T(cx, cy + 128, 'ABC-053 · SOP: oil out 46 °C', 'hs-sub', 'style="font-size:12px"')
+        T(cx, cy + 128, 'ABC-053 · oil out 46 °C', 'hs-sub', 'style="font-size:12px"')
     );
     b.txt(
       H.legend(20, 752, [
@@ -615,6 +634,11 @@
         return f ? { run: !!f.pur } : null;
       }
       if (M.k === 'vex') return { run: !!U.loVex };
+      /* the gear motor runs while it is selected and the bearings have oil (tcs.js: no oil = the gear drops out) */
+      if (M.k === 'tg') {
+        const t = AN.tcs && AN.tcs();
+        return { run: !!(t && t.aux && t.aux.tg && V.loBrg > 0.3) };
+      }
       if (M.k === 'eop') return { run: !!U.loEopR };
       const m = /^(mop|cop)([AB])$/.exec(M.k),
         i = m[2] === 'A' ? 0 : 1,
@@ -732,8 +756,7 @@
         s = stOf(box.id);
       q('[data-k="obt"]').textContent = (M.field ? 'FIELD (LOCAL PANEL) · ' : 'TCS OPERATION · ') + M.n + '  ' + M.t;
       q('[data-k="obs"]').textContent =
-        M.d +
-        (M.field ? ' · field operator at the local panel (SOP)' : M.ops ? ' · CRT: select, EXECUTE (SOP 2620)' : '');
+        M.d + (M.field ? ' · field operator at the local panel' : M.ops ? ' · CRT: select, EXECUTE' : '');
       const stx = q('[data-k="obst"]');
       stx.textContent = !s
         ? 'no plant model: choose Cold or 150 MW (Plant model ON)'
@@ -770,7 +793,7 @@
       try {
         if (!(window.AN && AN.unit && AN.unit.on)) r = 'no plant model: choose Cold or 150 MW (Plant model ON)';
         else if (M.field) r = AN.field && AN.field('pur', op === 'start') ? '' : 'oil purifier: no plant model';
-        else if (M.k === 'vex') r = AN.turbine('vex', op === 'start' ? 1 : 0) || '';
+        else if (M.k === 'vex' || M.k === 'tg') r = AN.turbine(M.k, op === 'start' ? 1 : 0) || '';
         else r = AN.turbine('oil', { p: M.k, op }) || '';
       } catch (e) {
         r = String(e && e.message ? e.message : e);
@@ -862,8 +885,8 @@
       loTin: '1TELO1001',
       loTb3: '1TEGE1007',
       loTb4: '1TEGE1008',
-      loVac: 'PGLO1920 local gauge (SOP)',
-      loPur: 'local gauge of the purifier (SOP)',
+      loVac: 'PGLO1920 local gauge',
+      loPur: 'local gauge of the purifier',
       rpm: 'turbine speed (TCS)',
       m1: '1TEST1009 No.1 turbine journal bearing metal temp. (model, snapshot 035)',
       m2: '1TEST1010 No.2 turbine journal bearing metal temp. (model, snapshot 035)',

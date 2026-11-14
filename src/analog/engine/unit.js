@@ -30,9 +30,16 @@ const AN_UNIT = {
   /* sweep 34 (Mina beta.175: AN.unit.MW read NaN once right after a chip load): a load begins with the Reset (anStateInPlace back to
      this object), which had no MW, so MW was undefined until the starting state set it (MW0 / 0). The generator gives 0 MW until then */
   MW: 0,
-  a: (484 - 302) / (89.7 - 55.4) /* T/H of steam per T/H of coal: plant trends 2026-11-08 holds at 150 and 90 MW (5.31; the snapshots 03.png / 02.png gave 5.78, coal 3.6 % high at 90 MW in Mina's b6 run) */,
-  c: (149.8 - 90.3) / (481 - 304) /* MW per T/H of steam: plant trends 2026-11-08 (holds at 150 and 90 MW); the snapshots gave 0.3336 */,
-  mwK: 0.3362 * 481 - 149.8 /* MW lost at the anchor line: MW = c x steam - mwK on the plant trend (149.8 MW at 481 T/H); the snapshot anchor 150.5 at 474.1 was 3 MW above it */,
+  a:
+    (484 - 302) /
+    (89.7 -
+      55.4) /* T/H of steam per T/H of coal: plant trends 2026-11-08 holds at 150 and 90 MW (5.31; the snapshots 03.png / 02.png gave 5.78, coal 3.6 % high at 90 MW in Mina's b6 run) */,
+  c:
+    (149.8 - 90.3) /
+    (481 - 304) /* MW per T/H of steam: plant trends 2026-11-08 (holds at 150 and 90 MW); the snapshots gave 0.3336 */,
+  mwK:
+    0.3362 * 481 -
+    149.8 /* MW lost at the anchor line: MW = c x steam - mwK on the plant trend (149.8 MW at 481 T/H); the snapshot anchor 150.5 at 474.1 was 3 MW above it */,
   /* storage and firing lag from the TUNING OF THE PLANT (PID summary: PIC-COBM Kp 3.0, Ti 165 s, Td 7 s): the pressure of a drum
      whose steam flow the TCS holds is an integrator, and a PI on an integrator with a lag is stable only when the lag is well below
      Ti. With 700 / 150 s the loop of the plant tuning oscillated (MSP 70 ~ 126 kg/cm2 at 85 MW, the PID at +-25 %); with
@@ -78,7 +85,7 @@ const AN_UNIT = {
      the DCS drawings (the DCS only sees the TCS digital inputs of the I/O list and the TARGET MW feedback AI0420). State U.tb:
      st 'off' (stop valves shut) -> 'roll' (rpm ramps at rollRate, IP START MODE: the ICV lets roll steam from the hot reheat, icvRoll)
      -> 'sync' (3600 rpm, the TCS closes the GCB: I.0931 = 1 / I.0932 = 0, INITIAL LOAD 4.5 MW on the ICV) -> 'load' (LOAD UP
-     at rate MW/min = 5 % of 150 MW per minute; at MWxf = 20 MW or the ICV full open the HP control valves take over, ICV -> CV
+     at rate MW/min = 5 % of 150 MW per minute; the HP control valves open as the flow demand passes the CV opening bias (anTbFlow), ICV -> CV
      TRANSFER COMPLETE I.0418 = 1, "transfer at 20 MW or HP bypass closed"). While the generator is on the grid the MW is the HP
      steam (1 - cIP) + the IP / LP steam cIP (cIP below: 75 %, CALC from HEAT_BALANCE.md) less the anchor losses
      (c x m0 - MW0, fading out with a small IP flow). Before the transfer the IP / LP steam comes from the HP bypass through the
@@ -93,7 +100,14 @@ const AN_UNIT = {
   rollRate: 120 /* rpm/min, PR-OPE-5002 cold start (the holds at 1800 / 3600 rpm of the procedure are the operator's; not modelled) */,
   icvRoll: 0.13 /* ICV opening for the roll steam (about 14 T/H at 7.6 kg/cm2 reheat, NO-SOURCE: the SOP gives CV 10 / 3 % at 400 rpm, no ICV opening) */,
   cIP: 0.75 /* calculated: HP 38 MW, IP / LP 113 MW of the shaft, HEAT_BALANCE.md */,
-  MWxf: 20,
+  /* 3.2.3-beta.240 (live Cold start Load up): the TCS flow demand splits to the ICV and the CVs (TCE 331DM09784 p.141 TCE207 FLOW
+     CONTROL(2), A007 HEAT SOAK CONTROL: CV OPENING BIAS SG C008 K:20.0 %, ICV MIN OPENING K:-0.5 %, RI / RD 0.03 % per 30 ms cycle = 1 %/s;
+     p.144 TCE212 / p.145 TCE214: CV and ICV demand through FG (PARA-LIST, NO-SOURCE) to the VALVE CONTROL MT1, ICV opening speed SG C007
+     K:10.0 %/s). cvBias = the flow demand where the CVs start to open (IP START); fdRate = 1 %/s; vRate = 10 %/s (CV taken the same, NO-SOURCE) */
+  cvBias: 0.2,
+  fdRate: 0.01,
+  vRate: 0.1,
+  nlMW: 1.5 /* MW, the no-load (motoring) loss of the turbine generator shaft at 3600 rpm, NO-SOURCE (about 1 % of the rating) */,
   MWinit: 4.5 /* PR-OPE-5002: initial load 4.5 MW */,
   rateUp: 7.5 /* MW/min = 5 % / min (PR-OPE-5002 LOAD UP), AI0421 max load-up rate 0 ~ 5 %/min */,
   /* 3.2.3 (b4, MST 547 on the load up): the heat of the SH / RH banks follows the load with the lag of the CFB loop (bed, refractory,
@@ -120,10 +134,20 @@ const AN_UNIT = {
   ],
   /* natural steam temperature below the spray range, steam share of MCR: plant trends (90 MW MST 522, RHT 521, 2 h hold) and 02.png (60 MW
      MST 517, RHT 499); below 0.443 the FHI Fig 6 slope */
-  natSH: [[0.443, 517], [0.661, 522], [0.707, 541]],
-  natRH: [[0.443, 499], [0.661, 521], [0.707, 541]],
+  natSH: [
+    [0.443, 517],
+    [0.661, 522],
+    [0.707, 541]
+  ],
+  natRH: [
+    [0.443, 499],
+    [0.661, 521],
+    [0.707, 541]
+  ],
   /* temperature fall below 60 % MCR, C per unit of load share (02.png: MST 541 -> 517 and RHT 541 -> 499 at 0.443 MCR) */
-  slopeSH: (541 - 524) / (0.6 - 0.4) /* FHI Fig 6: 541 at 60 %, 524 at 40 %, one curve for SH and RH. Manual outranks the snapshot 02.png */,
+  slopeSH:
+    (541 - 524) /
+    (0.6 - 0.4) /* FHI Fig 6: 541 at 60 %, 524 at 40 %, one curve for SH and RH. Manual outranks the snapshot 02.png */,
   slopeRH: (541 - 524) / (0.6 - 0.4),
   /* 3.2.0-beta.38 (CHECKLIST 0.6, ATS 1.4 / 1.6 / 1.71 / 1.72 at the roll): the SH / RH outlet in a start-up versus the boiler load,
      FHI SECT_7 Fig. 2 COLD STARTUP (one curve "SH / RH Out. Temp."): about 415 C from the roll to the IP / HP transfer (15 % load),
@@ -191,9 +215,31 @@ const AN_UNIT = {
      - BED TEMPERATURE (no DCS transmitter: the bed thermocouples are on the DITL / local; model state U.Tb): first order (tauB) to
        Tamb + (Tb0 - Tamb) x (fuel share / air share) ^ 0.45 (Fig 8: furnace about 850 C at full load; two start-up burners at the
        light-off air give about 450 C = the coal batch permissive of PR-OPE-5002, 400 ~ 450 C; 600 C continuous).
-     - STEAM TEMPERATURE while cold: the superheaters cannot give more than the gas (plant.js pr.tcap = bed temperature) and not
+     - STEAM TEMPERATURE while cold: the superheaters cannot give more than the gas (plant.js pr.tcap = the SH / RH tube metal, F11) and not
        less than saturation (pr.tsat); TAB_9: SH outlet <= 535 C before synchronisation */
   Tamb: 30,
+  /* F11 (user 2026-11-13: the ratio of beta.206 / 207 was a curve fit, not a model). Superheater and reheater tube metal, heated by the flue
+     gas, cooled by the steam that flows (anUnitStep0, U.cold only):
+     - metal mass: GA p6 K1AU3A-201 rev 1 "PRESSURE PARTS EMPTY WEIGHT" (13-thermal-masses): SH = backpass walls 121.01 + in-furnace SH
+       80.58 + finishing SH 151.67 = 353.26 t; RH = 243.10 t. Steel specific heat 0.5 kJ/kg K (textbook carbon / low-alloy steel).
+     - gas side UA at MCR, CALC from the design heat balance (T1 / T3 / Fig 8): SH 460 T/H, drum 145 kg/cm2 g saturated vapour (h about
+       2,625 kJ/kg) to 541 C at 129 kg/cm2 g (h about 3,443): 104.5 MW; gas = furnace outlet 840 C (Fig 8, 100 %), metal about the mean
+       steam (340 + 541) / 2 = 440 C: UA = 104.5 MW / 400 K = 261 kW/K. RH 401 T/H (MB-012), 370 C / 36.6 (h about 3,145) to 541 C / 35.1
+       (h about 3,545): 44.6 MW, metal about 455 C: UA = 44.6 MW / 385 K = 116 kW/K.
+     - UA moves with the gas flow ^ 0.6 (forced convection over tube banks, Colburn / Grimison exponent, textbook); gas flow = the total
+       air (the fuel is under 10 % of the gas mass). The gas cannot give more than it carries: Q <= gas x 1.15 kJ/kg K (flue gas, textbook)
+       x (gas - metal). The gas temperature: the bed, less the upper furnace walls, then the cyclone refractory (AN_FG, beta.230).
+     - steam side: the steam leaves at the metal temperature (film coefficient far above the gas side); it takes steam x 2.2 kJ/kg K x
+       (metal - inlet), inlet = saturation (SH) / the cold reheat temperature, HP bypass outlet and HP exhaust mixed (RH, beta.227).
+       No steam flow: the metal and the stagnant steam heat from the gas alone. */
+  shM: 353.26e3 * 0.5 /* kJ/K */,
+  rhM: 243.1e3 * 0.5 /* kJ/K */,
+  shUA: 261 /* kW/K at the anchor air, CALC above */,
+  rhUA: 116 /* kW/K at the anchor air, CALC above */,
+  /* reheater outlet pipe at TT-HR1002 (outlet header and hot reheat pipe to the thermowell): 20 t steel x 0.5 kJ/kg K (NO-SOURCE: no
+     pipe weight in the docs), lagging loss 0.02 kW/K (NO-SOURCE, about 6 days to cool) */
+  rhPipeM: 10000 /* kJ/K */,
+  rhPipeUA: 0.02 /* kW/K */,
   ao: 2.55 /* PR-OPE-5002 4.3.x: "Approximately: 2.55 TPH coal = 1 TPH diesel" (2.2.0-beta.15; beta.14 had 2 ASSUMED) */,
   /* 2.2.0-beta.15 (M4 step 2, coal transfer): the coal burns only in a hot bed: burnt share 0 at 350 C, 1 at 600 C; the rest leaves
      unburnt. 3.2.3-beta.91 sources: Tburn1 600 = PR-OPE-5002 continuous feeding above 600 C. Tburn0 is bounded, not given: below 400 C,
@@ -309,6 +355,17 @@ function anUnitStop() {
   U.on = false;
 }
 /* start: the plant as it is now (end of "Start at 150 MW") is the steady state */
+/* 3.2.3-beta.244: the T/G Modbus valve position inputs of ABC-050 / ABC-051 (CV SI1812 ~ SI1817, ICV SI1821 ~ SI1823, SI1827 ~ SI1829) */
+function anVposOf() {
+  const lab = (k, t) => {
+    const x = AN.sheets.find(y => y.name === k);
+    if (!x || !x.S) return null;
+    const n = x.S.lab.findIndex(z => z && String(z.t).trim() === t);
+    return n >= 0 ? { S: x.S, n } : null;
+  };
+  const of = ts => ts.flatMap(t => [lab('ABC-050', t), lab('ABC-051', t)]).filter(Boolean);
+  return { cv: of(['SI1812', 'SI1813', 'SI1814', 'SI1815', 'SI1816', 'SI1817']), icv: of(['SI1821', 'SI1822', 'SI1823', 'SI1827', 'SI1828', 'SI1829']) };
+}
 function anUnitStart() {
   const U = AN_UNIT;
   anUnitStop();
@@ -346,12 +403,14 @@ function anUnitStart() {
   U.cdHwL = s31 && s31.S ? anUnitAIs(shStn(s31) + '|AI0640') : [];
   /* 3.2.1 (IRENE: HEATER LEVELS): the level transmitters of the five feedwater heaters (STN102 LT-HD110x-1 / -2) and the outputs of
      their primary / alternate drain level controllers (ABC-035 ~ 039): AN_HD writes the levels and reads the valves */
-  U.hd = AN_HD.h.map(([k, sh, ais, c1, c2]) => {
-    const s = AN.sheets.find(x => x.name === sh);
-    if (!s || !s.S) return null;
-    const L = ais.map(ai => anUnitAIs(shStn(s) + '|' + ai)).filter(l => l.length);
-    return { k, L, v1: null, v2: null, c1, c2, sh, y: NaN };
-  }).filter(Boolean);
+  U.hd = AN_HD.h
+    .map(([k, sh, ais, c1, c2]) => {
+      const s = AN.sheets.find(x => x.name === sh);
+      if (!s || !s.S) return null;
+      const L = ais.map(ai => anUnitAIs(shStn(s) + '|' + ai)).filter(l => l.length);
+      return { k, L, v1: null, v2: null, c1, c2, sh, y: NaN };
+    })
+    .filter(Boolean);
   /* the valve commands of the other outlets (output of their A / M station after the interlocks) */
   const ctlOut = (k, t) => {
     const x = AN.sheets.find(y => y.name === k),
@@ -460,7 +519,11 @@ function anUnitStart() {
     if (s52 && s52.S && s54 && s54.S) {
       const a = netOf(s52.S, 'SI0180'),
         b = netOf(s54.S, 'STN102017');
-      if (a >= 0 && b >= 0 && s54.S.ext.includes(b)) U.alink.push([{ S: s52.S, n: a }, { S: s54.S, n: b }]);
+      if (a >= 0 && b >= 0 && s54.S.ext.includes(b))
+        U.alink.push([
+          { S: s52.S, n: a },
+          { S: s54.S, n: b }
+        ]);
       /* 2.2.0-beta.20 (bug, fixed): ABC-054 has no drawn link to the set of ABC-001C (its PV comes through this alink), so the run
          loop never stepped it: the RH blow-off stayed at the value it had when the sheet was loaded (0 %) whatever the operator or
          the PIDV did, and the unit model read that 0 (CHECK bypass stage: "RH blow-off 0 %" in every run). The sheets the unit
@@ -517,15 +580,25 @@ function anUnitStart() {
     U.taf0 = taf0;
   }
   U.pa = ais('ABC-006', 'AI0166');
-  U.bedDp = [[ais('ABC-006', 'AI0134'), 1426], [ais('ABC-006', 'AI0262'), 1432]];
+  U.bedDp = [
+    [ais('ABC-006', 'AI0134'), 1426],
+    [ais('ABC-006', 'AI0262'), 1432]
+  ];
   U.soxAI = anUnitAIs('1|AI0466'); /* stack SOx, boiler.js anSoxStep */
-  U.bedSc = [['ABC-009A', 'SICL1060A'], ['ABC-009A', 'SICL1060B'], ['ABC-009A', 'SICL1060C'], ['ABC-009B', 'SICL1060D']].map(([k, t]) => {
-    /* MAN stations, in rpm (compile-step.js): their output pin */
-    const x = shOf(k),
-      b = x && x.S ? x.S.blk.find(q => q.k === 'MAN' && (q.txt || []).includes(t)) : null,
-      p = b && (b.pins || []).find(q => q.role === 'out');
-    return p ? { S: x.S, n: p.n } : null;
-  }).filter(Boolean);
+  U.bedSc = [
+    ['ABC-009A', 'SICL1060A'],
+    ['ABC-009A', 'SICL1060B'],
+    ['ABC-009A', 'SICL1060C'],
+    ['ABC-009B', 'SICL1060D']
+  ]
+    .map(([k, t]) => {
+      /* MAN stations, in rpm (compile-step.js): their output pin */
+      const x = shOf(k),
+        b = x && x.S ? x.S.blk.find(q => q.k === 'MAN' && (q.txt || []).includes(t)) : null,
+        p = b && (b.pins || []).find(q => q.role === 'out');
+      return p ? { S: x.S, n: p.n } : null;
+    })
+    .filter(Boolean);
   U.paNet = U.tafS ? netOf(U.tafS, 'FIFA1071.PV') : -1;
   U.pa0 = U.paNet >= 0 ? +U.tafS.rt.v[U.paNet] : NaN;
   /* ---- 2.2.0-beta.12 (M3): trips ---- */
@@ -595,6 +668,13 @@ function anUnitStart() {
       [labOf('ABC-039', 'I.029D'), 'H3', 140]
     ]
   };
+  /* 3.2.3-beta.244 (live Cold start 90 MW, user 2026-11-14 "DBA MORE THAN 2% NA OPENING NG CV"): the turbine valve positions of the
+     T/G Modbus (ABC-050: CONTROL VALVE(A) POSITION(A ~ C) SI1812 ~ SI1814 (30113 ~ 30115), CONTROL VALVE(B) SI1815 ~ SI1817
+     (30116 ~ 30118), INTERCEPT VALVE(A) SI1821 ~ SI1823 (30122 ~ 30124), INTERCEPT VALVE(B) SI1827 ~ SI1829 (30128 ~ 30130)) had no
+     writer and read 0: the CV average SI0226 / SI0227 never reached ">= 2 %" (M.070C), so the HP bypass close of ABC-050 (M.070D / M.070E,
+     PICMS1006 MV to 0 % after the ICV -> CV transfer with 52G1 closed) never came and the HP bypass stayed 69 % open at 90 MW. The
+     turbine model writes its valve positions there (three transmitters of one valve read the same) */
+  U.vpos = anVposOf();
   {
     const st2 = stOf('ABC-053');
     U.spd = st2 != null ? anUnitAIs(st2 + '|AI0534') : [];
@@ -611,7 +691,13 @@ function anUnitStart() {
   /* 3.2.1 (IRENE: FEEDWATER): the motor of the DITL drawing too (BFWP A / B = DITL-23A / #B): a FIELD TRIP (protection relay) stops the
      water although ABC-010 M.3343 (DITL-23A output 55 RUNNING) still reads 1 */
   U.mul[0].drw = U.mul[0].run.length === 2 ? ['DITL-23A', 'DITL-23A #B'] : null;
-  U.mul[0].dis = U.mul[0].run.length === 2 ? [['DITL-38 #MV-FW1001', 'DITL-38 #MV-FW1391'], ['DITL-38 #MV-FW1002', 'DITL-38 #MV-FW1392']] : null;
+  U.mul[0].dis =
+    U.mul[0].run.length === 2
+      ? [
+          ['DITL-38 #MV-FW1001', 'DITL-38 #MV-FW1391'],
+          ['DITL-38 #MV-FW1002', 'DITL-38 #MV-FW1392']
+        ]
+      : null;
   /* 2.2.0-beta.15 (M4 step 2): the start-up feedwater valve (ABC-010 LICBR1001B, single-element drum level control for the start-up,
      FCV-FW1060) is a second line into the drum beside the main valve of FICFW1007: its flow is added to the feedwater flow
      transmitter (plant.js pr.op of the FICFW1007 loop), its flow is from the valve sheet (anSuFw below, K1AU3-E2-0-123 p147);
@@ -729,8 +815,18 @@ function anUnitStart() {
     const t = 'HICFA10' + String(i).padStart(2, '0');
     ztMap.push([i <= 16 ? 'ABC-015' : 'ABC-016', t, null]);
   }
-  ztMap.push(['ABC-020', 'HICHR1002A', 'S4 AI0368'], ['ABC-020', 'HICHR1002A', 'S4 AI0369'], ['ABC-020', 'HICHR1002A', 'S4 AI0370'], ['ABC-020', 'HICHR1002A', 'S4 AI0371']);
-  ztMap.push(['ABC-020', 'HICHR1002B', 'S4 AI0372'], ['ABC-020', 'HICHR1002B', 'S4 AI0373'], ['ABC-020', 'HICHR1002B', 'S4 AI0374'], ['ABC-020', 'HICHR1002B', 'S4 AI0375']);
+  ztMap.push(
+    ['ABC-020', 'HICHR1002A', 'S4 AI0368'],
+    ['ABC-020', 'HICHR1002A', 'S4 AI0369'],
+    ['ABC-020', 'HICHR1002A', 'S4 AI0370'],
+    ['ABC-020', 'HICHR1002A', 'S4 AI0371']
+  );
+  ztMap.push(
+    ['ABC-020', 'HICHR1002B', 'S4 AI0372'],
+    ['ABC-020', 'HICHR1002B', 'S4 AI0373'],
+    ['ABC-020', 'HICHR1002B', 'S4 AI0374'],
+    ['ABC-020', 'HICHR1002B', 'S4 AI0375']
+  );
   U.zt = [];
   for (const [k, t, ai] of ztMap) {
     const x = shOf(k);
@@ -743,7 +839,8 @@ function anUnitStart() {
     for (const b of S2.blk) {
       if (b.k !== 'AI' || !b.o || b.o[0] == null) continue;
       const nm = (AN.nm(S2, b.o[0]) || '').trim();
-      if (ai ? nm === ai : (AN.descOf ? AN.descOf(x, nm) || '' : '').startsWith('ZT-FA' + t.slice(5) + ' ')) L.push([S2, b]);
+      if (ai ? nm === ai : (AN.descOf ? AN.descOf(x, nm) || '' : '').startsWith('ZT-FA' + t.slice(5) + ' '))
+        L.push([S2, b]);
     }
     if (L.length) U.zt.push({ src, L, y: NaN, t });
   }
@@ -769,11 +866,36 @@ function anUnitStart() {
   /* 3.2.1 the MV of TICLO1002 = TCV-CW1201 (STN102 AO0469), cooling water to the lube oil cooler (AN_LO) */
   U.loMv = ctlOut('ABC-053', 'TICLO1002') || manOut('ABC-053', 'TICLO1002');
   /* the transmitters this model writes: the plant model of a loop on them stops writing (ABC-001C PIC-COBM: main steam pressure) */
+  /* 3.2.3 live Cold start (AN_AS): the aux steam header PT-AS1004 / PT-AS1005 (ABC-030 AI0514 / AI0515) and the steam seal feed valve
+     PV-GS1031 to the DCS (ABC-034 AI0886) are written by the aux steam model */
+  U.asAI = [ais('ABC-030', 'AI0514'), ais('ABC-030', 'AI0515')].filter(l => l.length);
+  U.gsAI = ais('ABC-034', 'AI0886');
   const own = new Set();
   const lists = [U.msp, U.drum, U.msf, U.spd || []]
-    .concat(U.mw, U.tin, U.rhp, U.pist, U.o2, [U.pa], U.tbed, U.aphT, U.saP, U.idfS.length ? [U.idfS] : [], (U.bedDp || []).map(x => x[0]), [U.soxAI])
+    .concat(
+      U.mw,
+      U.tin,
+      U.rhp,
+      U.pist,
+      U.o2,
+      [U.pa],
+      U.tbed,
+      U.aphT,
+      U.saP,
+      U.idfS.length ? [U.idfS] : [],
+      (U.bedDp || []).map(x => x[0]),
+      [U.soxAI]
+    )
     .concat(...U.sh.map(h => h.L))
-    .concat([U.xt.cr, U.xt.hr, U.xt.aux, U.xt.fw, U.xt.lt2], U.xt.rhi, U.xt.fab, U.zt.map(z => z.L), U.lo || [])
+    .concat(
+      [U.xt.cr, U.xt.hr, U.xt.aux, U.xt.fw, U.xt.lt2],
+      U.xt.rhi,
+      U.xt.fab,
+      U.zt.map(z => z.L),
+      U.lo || [],
+      U.asAI,
+      [U.gsAI]
+    )
     .concat(...(U.hd || []).map(h => h.L));
   for (const l of lists) for (const [S2, b] of l) own.add(S2.rt.st[b.id]);
   U.own = own;
@@ -790,8 +912,13 @@ function anUnitStart() {
   U.hdSeedN = 0;
   for (const h of U.hd || []) h.w0 = NaN;
   U.frT = undefined;
+  /* 3.2.3 live Cold start: the aux steam / gland / condenser air volumes (AN_AS) start from their transmitters */
+  U.asP = U.gsP = U.gsY = U.cdAirP = NaN;
+  U.asT1 = U.asT3 = U.asT17 = NaN;
+  U.asTAI = null;
   U.tco = null; /* 3.2.0-beta.66: the oil-only state of the snapshot (tcs.js tcsOilState) starts again */
-  U.tc = null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
+  U.tc =
+    null; /* 3.2.0-beta.38: the snapshot of "Start at 150 MW": the TCS model only in a start-up / shutdown (Cold, warm, hot, live) */
   /* 3.2.0-beta.14: the snapshot plant has its diesel oil pump in service (source.js field equipment) */
   AN_SRC.field.hypo = true;
   AN_SRC.field.hypoB = false; /* live test 2026-11-04: dosing pump B standby, unloading pump stopped (field, HCDSP) */
@@ -805,15 +932,27 @@ function anUnitStart() {
   U.bedI = NaN; /* the bed inventory starts again (anBedStep) */
   U.soxZ = NaN; /* the lime in the bed too (boiler.js anSoxStep) */
   U.bedLeg = 0;
-  if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
+  if (AN_SRC.valve)
+    for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed while steaming */
   AN_SRC.lhdPct = 0;
   U.cwPrime = 1;
   AN_SRC.field.esp = true;
   /* 3.2.3 SOHEE: the dosing pumps A in service, B standby, agitator stopped (PR-OPE-5002 one pump each); the chemistry at its target */
-  Object.assign(AN_SRC.field, { tspA: true, tspB: false, amnA: true, amnB: false, chzA: true, chzB: false, agt: false });
+  Object.assign(AN_SRC.field, {
+    tspA: true,
+    tspB: false,
+    amnA: true,
+    amnB: false,
+    chzA: true,
+    chzB: false,
+    agt: false
+  });
   U.chC = U.chP = U.chS = U.chO = U.sp1006 = NaN;
-  U.sbTa = U.sbTb = U.hrT10 = NaN; /* SOHEE: the sootblower drains and TT-HR1010 start at their rest value (AN_SB.dr, AN_HRW) */
+  U.sbTa =
+    U.sbTb =
+    U.hrT10 =
+      NaN; /* SOHEE: the sootblower drains and TT-HR1010 start at their rest value (AN_SB.dr, AN_HRW) */
   U.chCold = 0;
   AN.unit = U;
 }
@@ -846,6 +985,10 @@ function anUnitCold() {
   });
   U.o2v = 21;
   U.frT = undefined;
+  /* 3.2.3 live Cold start (AN_AS): aux steam and gland headers empty at the atmosphere, the condenser full of air */
+  U.asP = U.gsP = U.gsY = 0;
+  U.asT1 = U.asT3 = U.asT17 = U.Tamb;
+  U.cdAirP = NaN;
   /* 3.2.0 roadmap 3: the temperatures of anUnitStepX start at their cold value (no lag from the 150 MW anchor) */
   if (U.xt) U.xt.T = {};
   U.Pmsv = 0; /* the main steam pipe after the stop MOV: no pressure in a cold plant */
@@ -864,15 +1007,27 @@ function anUnitCold() {
   U.lpT = undefined; /* 3.2.1 AN_LP: the LP heaters too */
   U.bedI = NaN; /* the bed inventory starts again (anBedStep) */
   U.soxZ = NaN; /* the lime in the bed too (boiler.js anSoxStep) */
-  if (AN_SRC.valve) for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
+  if (AN_SRC.valve)
+    for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
   AN_SRC.field.lhd = false; /* Mina H1: the lower ring header drains (PD-019) closed */
   AN_SRC.lhdPct = 0;
   U.cwPrime = 0;
   AN_SRC.field.esp = false;
   /* 3.2.3 SOHEE: cold = the dosing pumps stopped (PR-OPE-5002 starts them in the start-up); no phosphate yet, the cycle water conditioned */
-  Object.assign(AN_SRC.field, { tspA: false, tspB: false, amnA: false, amnB: false, chzA: false, chzB: false, agt: false });
+  Object.assign(AN_SRC.field, {
+    tspA: false,
+    tspB: false,
+    amnA: false,
+    amnB: false,
+    chzA: false,
+    chzB: false,
+    agt: false
+  });
   U.chC = U.chP = U.chS = U.chO = U.sp1006 = NaN;
-  U.sbTa = U.sbTb = U.hrT10 = NaN; /* SOHEE: the sootblower drains and TT-HR1010 start at their rest value (AN_SB.dr, AN_HRW) */
+  U.sbTa =
+    U.sbTb =
+    U.hrT10 =
+      NaN; /* SOHEE: the sootblower drains and TT-HR1010 start at their rest value (AN_SB.dr, AN_HRW) */
   U.chCold = 2; /* the water filled cold is not deaerated (air-saturated) until the deaerator is first pressurized (2 = until the transmitter reads the cold deaerator) */
   AN_SRC.t = -1;
   /* 3.2.0-beta.68: cold = the air compressors stopped, the air tanks empty (AN_AIR) */
@@ -930,10 +1085,26 @@ function anUnitLive() {
    answer went only to the status bar (the TCS / Field menu, the Training buttons), so the press looked silent; a Turbine trip that was not
    taken said nothing either. The engine writes every refused TCS command to the Event log with its reason (the engine only: a mirror
    page gets the line from the worker, like the trip lines of tcs-trip.js) */
-const AN_TCS_CMD = { roll: 'ROLL', sync: 'SYNC', loadup: 'LOAD UP', shutdown: 'SHUT-DOWN', holdoff: 'HOLD OFF', trip: 'TURBINE TRIP', tripreset: 'TURBINE RESET', normal: 'NORMAL OPERATION' };
+const AN_TCS_CMD = {
+  roll: 'ROLL',
+  sync: 'SYNC',
+  loadup: 'LOAD UP',
+  shutdown: 'SHUT-DOWN',
+  holdoff: 'HOLD OFF',
+  trip: 'TURBINE TRIP',
+  tripreset: 'TURBINE RESET',
+  normal: 'NORMAL OPERATION'
+};
 function anTurbine(cmd, arg) {
   const r = anTurbine0(cmd, arg);
-  if (typeof r === 'string' && r && AN_TCS_CMD[cmd] && typeof window !== 'undefined' && window.lsEventAdd && !(window.ENG && ENG.mode === 'mirror'))
+  if (
+    typeof r === 'string' &&
+    r &&
+    AN_TCS_CMD[cmd] &&
+    typeof window !== 'undefined' &&
+    window.lsEventAdd &&
+    !(window.ENG && ENG.mode === 'mirror')
+  )
     lsEventAdd('TCS', 'TCS', AN_TCS_CMD[cmd] + ' not taken: ' + r);
   return r;
 }
@@ -991,8 +1162,20 @@ function anTurbine0(cmd, arg) {
       /* plan c5: G-1B closes 52G1 only with 52L1 closed (elec.js): an open 52L1 timed the synchronizing out after 5 min with no word */
       if (U.el && U.el.l52 === false) return 'Line breaker 52L1 is open: close 52L1 first (Instructor console, Grid)';
       if (c.step >= 1 && c.step < 3 && tb.rpm > 3550) c.step = 3;
-      if (c.step < 3) return c.step < 1 ? 'Roll the turbine first' : 'Not at 3600 rpm / ACCELERATION not finished (' + tb.rpm.toFixed(0) + ' rpm)';
-      const r = c.cur >= 0 ? '' : tcsStepIn(U, c.step + 1);
+      if (c.step < 3)
+        return c.step < 1
+          ? 'Roll the turbine first'
+          : 'Not at 3600 rpm / ACCELERATION not finished (' + tb.rpm.toFixed(0) + ' rpm)';
+      /* live Cold start 2026-11-14 (3.2.3-beta.235, user: "excitation muna bago sync"): EXCITATION is its own step and push button
+         (310SC90-775 page 23, "EXCITATION" PB ON); SYNCH. & INITIAL LOAD needs EXCITATION FINISHED (page 24 program actuation 8). Before,
+         this button ran both steps */
+      if (c.step < 4)
+        return c.cur === 4
+          ? 'Excitation still running: generator voltage ' +
+              (13.8 * ((U.gen && U.gen.V) || 0)).toFixed(1) +
+              ' of 13.8 kV'
+          : 'Press EXCITATION first (ATS step 4, generator voltage up to 13.8 kV)';
+      const r = c.cur >= 0 ? '' : tcsStepIn(U, 5);
       if (r) return r;
       c.auto = true;
       c.autoTo = 5;
@@ -1000,7 +1183,14 @@ function anTurbine0(cmd, arg) {
     }
     if (cmd === 'loadup') {
       if (tb.st !== 'sync' && tb.st !== 'load') return 'Synchronise the generator first';
-      if (c.step < 5) return 'Waiting for the initial load hold (SYNCH. & INITIAL LOAD, ' + (c.tm / 60).toFixed(0) + ' / ' + (c.holdMin || 0) + ' min)';
+      if (c.step < 5)
+        return (
+          'Waiting for the initial load hold (SYNCH. & INITIAL LOAD, ' +
+          (c.tm / 60).toFixed(0) +
+          ' / ' +
+          (c.holdMin || 0) +
+          ' min)'
+        );
       return tcsStepIn(U, 6, arg);
     }
     const r = tcsCmd(U, cmd, arg);
@@ -1008,7 +1198,12 @@ function anTurbine0(cmd, arg) {
   }
   if (cmd === 'roll') {
     if (tb.st !== 'off') return 'The turbine is already turning (' + tb.st + ')';
-    if (!(U.vac >= 0.9)) return 'No condenser vacuum (' + Math.round(100 * (U.vac || 0)) + ' %): start the seawater pumps (SWP) and a condensate pump (CEP); VACUUM UP (ejectors, gland sealing) needs aux steam: main steam > 12 kg/cm2';
+    if (!(U.vac >= 0.9))
+      return (
+        'No condenser vacuum (' +
+        Math.round(100 * (U.vac || 0)) +
+        ' %): start the seawater pumps (SWP) and a condensate pump (CEP); VACUUM UP (ejectors, gland sealing) needs aux steam: main steam > 12 kg/cm2'
+      );
     Object.assign(tb, { st: 'roll', xfer: false, tgt: 0, aim: 0 });
     return '';
   }
@@ -1170,7 +1365,8 @@ const AN_SW = {
 };
 const swInterp = (X, Y, x) => {
   if (x <= X[0]) return Y[0] + ((Y[1] - Y[0]) * (x - X[0])) / (X[1] - X[0]);
-  for (let i = 1; i < X.length; i++) if (x <= X[i]) return Y[i - 1] + ((Y[i] - Y[i - 1]) * (x - X[i - 1])) / (X[i] - X[i - 1]);
+  for (let i = 1; i < X.length; i++)
+    if (x <= X[i]) return Y[i - 1] + ((Y[i] - Y[i - 1]) * (x - X[i - 1])) / (X[i] - X[i - 1]);
   const n = X.length - 1;
   return Y[n] + ((Y[n] - Y[n - 1]) * (x - X[n])) / (X[n] - X[n - 1]);
 };
@@ -1291,21 +1487,52 @@ function swSolve(st) {
      air (PD-023 Rev C): unit 1 header isolation V-IA1101 (IA) / V-PA1087 (PA), cross-tie PA -> IA tanks V-PA0013 (normally closed). */
 const AN_FV0 = {
   /* the water side of the feedwater heaters (PD-017, team-files/plant-study/11-heater-valves.md): manual gear valves, no DCS signal */
-  'V-FW1009': 100, 'V-FW1010': 100, 'V-FW1011': 0, 'V-FW1012': 100, 'V-FW1013': 100, 'V-FW1014': 0,
-  'V-CD1026': 100, 'V-CD1027': 100, 'V-CD1028': 0, 'V-CD1029': 100, 'V-CD1030': 100, 'V-CD1031': 0,
-  'V-CW1002': 100, 'V-CW1004': 100, 'V-CW1007': 100, 'V-CW1009': 100,
-  'V-CW1010': 100, 'V-CW1011': 100, 'V-CW1012': 0, 'V-CW1013': 100, 'V-CW1014': 100, 'V-CW1015': 0,
-  'V-MU0001': 100, 'V-MU0002': 100, 'V-MU0003': 100, 'V-MU0004': 100, 'V-MU0005': 100,
-  'V-MU0007': 100, 'V-MU0009': 100, 'V-MU0011': 100, 'V-MU0013': 100, 'V-MU0015': 100, 'V-MU0017': 100,
+  'V-FW1009': 100,
+  'V-FW1010': 100,
+  'V-FW1011': 0,
+  'V-FW1012': 100,
+  'V-FW1013': 100,
+  'V-FW1014': 0,
+  'V-CD1026': 100,
+  'V-CD1027': 100,
+  'V-CD1028': 0,
+  'V-CD1029': 100,
+  'V-CD1030': 100,
+  'V-CD1031': 0,
+  'V-CW1002': 100,
+  'V-CW1004': 100,
+  'V-CW1007': 100,
+  'V-CW1009': 100,
+  'V-CW1010': 100,
+  'V-CW1011': 100,
+  'V-CW1012': 0,
+  'V-CW1013': 100,
+  'V-CW1014': 100,
+  'V-CW1015': 0,
+  'V-MU0001': 100,
+  'V-MU0002': 100,
+  'V-MU0003': 100,
+  'V-MU0004': 100,
+  'V-MU0005': 100,
+  'V-MU0007': 100,
+  'V-MU0009': 100,
+  'V-MU0011': 100,
+  'V-MU0013': 100,
+  'V-MU0015': 100,
+  'V-MU0017': 100,
   /* the line to T-1109 MU-1-021 (PD-024): V-MU1031, XV-MU1109 with its bypass V-MU1033, V-MU1032. PR-OPE-5002 section 7 "Ensure Expansion
      tank inlet valve is open (V-MU1031 and V-MU1032)". XV-MU1109 is spring opening: with no instrument air these are the only way to stop the fill (Mina F33) */
-  'V-MU1031': 100, 'V-MU1032': 100,
-  'V-IA1101': 100, 'V-PA1087': 100, 'V-PA0013': 0,
+  'V-MU1031': 100,
+  'V-MU1032': 100,
+  'V-IA1101': 100,
+  'V-PA1087': 100,
+  'V-PA0013': 0,
   /* 3.2.1 (IRENE: FEEDWATER): the BFWP suction manual valves, PR-OPE-5002 19.16 "Fully OPEN BFPs suction (V-FW1002/V-FW1001) ...
      Check if the limit switch is touched" (IO list STN102 I.028F ZSO-FW1031 BFWP-A / I.032F ZSO-FW1032 BFWP-B suction manual valve
      open; V-FW1001 = A, V-FW1002 = B by the number order of the discharge MOVs MV-FW1001 A / MV-FW1002 B). Normal line-up: both open
      (the standby pump lined up for its auto start) */
-  'V-FW1001': 100, 'V-FW1002': 100
+  'V-FW1001': 100,
+  'V-FW1002': 100
 };
 /* the water of a heater: inlet, outlet, bypass openings (%) -> share through the tubes (s) and whether the line passes at all (p).
    The split between the tubes and the bypass by opening: bypass hydraulics NO-SOURCE */
@@ -1320,7 +1547,18 @@ const anFv = tag => {
   const V = (typeof AN_SRC !== 'undefined' && AN_SRC.valve) || {};
   return isFinite(V[tag]) ? V[tag] : tag in AN_FV0 ? AN_FV0[tag] : AN_SW_V0[tag];
 };
-const AN_SW_V0 = { 'V-SW1002': 100, 'V-SW1004': 100, 'V-SW1006': 100, 'V-SW1007': 100, 'V-SW1008': 100, 'V-SW1009': 40, 'V-SW1010': 40, 'V-SW1016': 100, 'V-SW1018': 100, 'V-SW1020': 100 };
+const AN_SW_V0 = {
+  'V-SW1002': 100,
+  'V-SW1004': 100,
+  'V-SW1006': 100,
+  'V-SW1007': 100,
+  'V-SW1008': 100,
+  'V-SW1009': 40,
+  'V-SW1010': 40,
+  'V-SW1016': 100,
+  'V-SW1018': 100,
+  'V-SW1020': 100
+};
 function anSeawaterStep(U, dt) {
   const K = AN_SW,
     c = swCal(),
@@ -1358,13 +1596,24 @@ function anSeawaterStep(U, dt) {
     dirt: U.swDirt1
   };
   /* the network is solved again only when a speed, a valve, the forebay or the dirt (0.01) changed */
-  const key = [st.s.map(x => x.toFixed(3)), st.sb.map(x => x.toFixed(3)), st.vd, st.vi, st.vo, st.vb, st.L, st.dirt.toFixed(2)].join('|');
+  const key = [
+    st.s.map(x => x.toFixed(3)),
+    st.sb.map(x => x.toFixed(3)),
+    st.vd,
+    st.vi,
+    st.vo,
+    st.vb,
+    st.L,
+    st.dirt.toFixed(2)
+  ].join('|');
   if (!U._swR || U._swK !== key) {
     U._swR = swSolve(st);
     U._swK = key;
   }
   const r = U._swR;
-  U.swRunout = r.q.map(q => (q > K.Qmax ? 1 : 0)) /* above the max flow of the curve (22,680 m3/h): the curve is extrapolated */;
+  U.swRunout = r.q.map(q =>
+    q > K.Qmax ? 1 : 0
+  ); /* above the max flow of the curve (22,680 m3/h): the curve is extrapolated */
   /* flows (m3/h), for the HMI and the loop check */
   r.q.forEach((q, i) => (U['swQa' + i] = Math.round(q)));
   r.b.q.forEach((q, i) => (U['swQb' + i] = Math.round(q)));
@@ -1425,7 +1674,10 @@ function anSeawaterStep(U, dt) {
       PN = Math.max(0, r.PN || 0);
     lag('swBs' + i, PN, K.tauP);
     lag('swBd' + i, s > 0 && PN > 0 ? PN + K.kP * swbH(q, s) : PN, K.tauP);
-    const Pw = s > 0 ? Math.max(0.4 * 50.87, (1020 * 9.80665 * (q / 3600) * swbH(q, s)) / 1000 / Math.max(0.25, swEb(K, q / K.bBep))) : 0; /* floor 40 % of the rated 50.87 kW at low flow: NO-SOURCE */
+    const Pw =
+      s > 0
+        ? Math.max(0.4 * 50.87, (1020 * 9.80665 * (q / 3600) * swbH(q, s)) / 1000 / Math.max(0.25, swEb(K, q / K.bBep)))
+        : 0; /* floor 40 % of the rated 50.87 kW at low flow: NO-SOURCE */
     const I = K.bIsop + ((K.bI100 - K.bIsop) * (Pw - c.bPsop)) / (K.bkW - c.bPsop);
     if (s <= 0) U['swIb' + i] = 0;
     else lag('swIb' + i, s < 1 ? K.bIst : Math.max(0, I), K.tauI);
@@ -1651,10 +1903,20 @@ function acwSolve(s, kv, kA) {
     qOf = (si, dp, i) => {
       const v = (kv && kv[i]) || 0;
       if (!(si > 0) || !(v < Infinity) || K.rho * si * si * K.cH[0] <= dp) return 0;
-      return swBisect(q => K.rho * si * si * swInterp(K.cQ, K.cH, q / si) - v * q * q - dp, 0, 1.6 * K.cQ[K.cQ.length - 1] * si, 40);
+      return swBisect(
+        q => K.rho * si * si * swInterp(K.cQ, K.cH, q / si) - v * q * q - dp,
+        0,
+        1.6 * K.cQ[K.cQ.length - 1] * si,
+        40
+      );
     };
   if (!s.some(x => x > 0) || !(k < Infinity)) return { Q: 0, q: s.map(() => 0) };
-  const Q = swBisect(x => s.reduce((a, si, i) => a + qOf(si, k * x * x, i), 0) - x, 0, 2 * 1.6 * K.cQ[K.cQ.length - 1], 40);
+  const Q = swBisect(
+    x => s.reduce((a, si, i) => a + qOf(si, k * x * x, i), 0) - x,
+    0,
+    2 * 1.6 * K.cQ[K.cQ.length - 1],
+    40
+  );
   return { Q, q: s.map((si, i) => qOf(si, k * Q * Q, i)) };
 }
 function anAcwStep(U, dt) {
@@ -1680,7 +1942,9 @@ function anAcwStep(U, dt) {
     fx = 0.571 / 1.2,
     sc = hxo.reduce((a, o) => a + o * o, 0) /* parallel paths: flow area ~ opening^2 */,
     kA = nHx ? c.kA * (1 - fx + fx * Math.pow(K.hxN / sc, 2)) : Infinity,
-    kv = dis.map(o => (o > 0 ? (K.kd100 / (K.dQ * K.dQ)) * (1 / Math.pow(o, 4) - 1) : Infinity)) /* 100 % = the calibration (27.PNG) */,
+    kv = dis.map(o =>
+      o > 0 ? (K.kd100 / (K.dQ * K.dQ)) * (1 / Math.pow(o, 4) - 1) : Infinity
+    ) /* 100 % = the calibration (27.PNG) */,
     sp = U.acSpd.map((x, i) => (suc[i] > 0 ? x : 0));
   U.acHxN = nHx;
   const key = sp.map(x => x.toFixed(3)).join(',') + '|' + dis.join(',') + '|' + hxo.join(',');
@@ -1723,7 +1987,11 @@ function anAcwStep(U, dt) {
   U.acCool = n && hx > 0 ? 1 : 0;
   if (Ch > 0) {
     /* the return (pump discharge, TT-CW1152) is the node; the first step after a starting state starts at its steady value */
-    if (first || !isFinite(U.acT1)) U.acT1 = hx > 0 && Q > 0.5 * K.dQ ? K.Tsw + Qload / hx : Math.min(60, K.Tamb + 10); /* 3.2.1: a throttled first step does not start hot */
+    if (first || !isFinite(U.acT1))
+      U.acT1 =
+        hx > 0 && Q > 0.5 * K.dQ
+          ? K.Tsw + Qload / hx
+          : Math.min(60, K.Tamb + 10); /* 3.2.1: a throttled first step does not start hot */
     U.acT1 += ((Qload - hx * (U.acT1 - K.Tsw)) * dt) / K.M;
     U.acT1 = Math.max(K.Tsw, Math.min(99, U.acT1));
     U.acT2 = U.acT1 - (hx * (U.acT1 - K.Tsw)) / Ch;
@@ -1818,14 +2086,73 @@ const AN_PA_FURN = 328.2 / 354.0;
    carry-over gives. tau itself is NO-SOURCE inside that bound. At a hot bed (bf = 1) with no coal held, the burn is the fed coal, as
    before. Module level (never a function on U: SAVE / LOAD). */
 const AN_CBED = { tau: 60 };
-const AN_BED = { s: [0.43, 0.525, 0.626, 0.715, 0.86, 1], t: [798, 819, 840, 840, 840, 840], a: [0.612, 0.557, 0.622, 0.716, 0.861, 1] };
+/* live Cold start 2026-11-14 (user: "Code ang gawin ... WALANG DAYAIN"): THE GAS THAT REACHES THE SUPERHEATER / REHEATER (Cold path).
+   The furnace exit gas U.tgF comes from the bed heat balance (AN_BB below). It then crosses the refractory of the cyclone inlet ducts,
+   the cyclones and their outlet ducts before the backpass (03-boiler; P2S4): inlet ducts 98.8 ~ 118.3 t + cyclones 373.7 ~ 450.2 t +
+   outlet ducts 214.4 ~ 303.9 t (13-thermal-masses A6, K1AU3-C-0-007), centre 780 t x 1.0 kJ/kg K (textbook refractory) = 780 MJ/K,
+   one lump the gas heats or cools on its way. The gas leaves the cyclones at the lining temperature (exchange effectiveness 1:
+   NO-SOURCE, the lining area and film coefficient are not in the documents). Flue gas cp 1.15 kJ/kg K (textbook), coal ash 6.82 % (T3).
+   live Cold start 2026-11-14 (beta.243, MS 439 C and RH 381 C flat from 45 to 70 MW, cyclone outlet 544 C under a furnace of 800 C):
+   one 780 t lump with effectiveness 1 made the gas leave at the temperature of the WHOLE lining, so the backpass saw the lining that
+   heats in tens of hours. A refractory heats from its hot face and conducts inward (textbook, semi-infinite wall: about 75 mm in 1 h
+   at 5e-7 m2/s), and the gas only touches the hot face through its film. Two layers:
+   - lining area A 1,200 m2: two cyclones ID 7.89 m x about 24.5 m high (03-boiler, P2S4 p2-4-10: cylinder, cone and roof about 520 m2
+     each, CALC) + outlet ducts (about 160 m2, ASSUMED: duct size not in the docs).
+   - gas film h 0.1 kW/m2 K (NO-SOURCE, textbook dusty gas at 800 C, convection + radiation 50 ~ 200 W/m2 K): hA 120 kW/K.
+   - hot face layer 50 mm (the depth that follows the gas within about an hour): 1,200 m2 x 0.05 m x 2.3 t/m3 x 1.0 kJ/kg K = 138 MJ/K;
+     the back of the lining = the rest of the 780 MJ/K (642 MJ/K).
+   - face to back: fireclay k 1.2 W/m K (textbook) over 0.15 m between the layer centres: 1.2 x 1,200 / 0.15 = 9.6 kW/K.
+   Lining fully soaked: the gas leaves at the furnace exit temperature (no loss term: 75 mm calcium silicate behind, P4S1) */
+const AN_FG = { cpG: 1.15, ash: 0.0682, mCy: 780e3, hA: 120, mF: 138e3, mB: 642e3, kAB: 9.6 };
+/* live Cold start 2026-11-14 (user: "WALANG DAYAIN", no curve fits): THE BED HEAT BALANCE of the Cold path. Before, the bed went first
+   order to a law fitted on the plant trend (start-up exponent kBedSU 0.168 and the AN_BED table), and the water walls took
+   min(firing line, uaW x (bed - water)): a patch. Now one lump of the lower furnace (bed solids + the refractory of the lower furnace)
+   takes the fuel heat and gives it to the gas that crosses it and to the water walls:
+     Cb dTb/dt = fuel heat - air x cp x (Tb - air in) - fuel gas x cp x (Tb - ambient) - wall heat (solids + lower refractory walls)
+   - fuel heat: coal burnt x LHV 3,662 kcal/kg (T3) + oil x the diesel LHV 42.7 MJ/kg (textbook; the design data Tab_1 heating values
+     are an image without text). Check: 42.7 / 15.33 = 2.79 t of coal per t of oil, against the plant figure 2.55 (PR-OPE-5002).
+   - air in: PA / SA at the hot air temperatures of the air heater model (boiler.js anAphStep), FA at the ambient; air cp 1.005
+     kJ/kg K (textbook). All the air crosses the bed zone (PA grate, SA nozzles of the lower furnace, FA through the seal pots; P2S4).
+   - Cb: bed solids (U.bedI, t, the bed inventory model) x 0.84 kJ/kg K (sand / ash, textbook) + the lower furnace refractory 191.1 ~
+     218.2 t, centre 204.65 t x 1.0 kJ/kg K (13-thermal-masses A6, textbook refractory).
+   - wall heat by the circulating solids: (ua0 - uag) x phi x (Tb - water). ua0 = the design wall conductance uaW 0.976 T/H per K
+     (AN_UNIT, CALC from the design heat balance) x 554 kW per T/H (the unit of Cw / Qs) = 541 kW/K. phi = the solids that the gas
+     carries up the furnace relative to full load = bed inventory share x (gas velocity share)^2: the entrainment rises with the
+     gas velocity (P2S6, qualitative); the exponent 2 is NO-SOURCE (circulation rate not in the documents, 03-boiler). The gas
+     velocity share = total air / anchor air x (Tb + 273) / (Tb0 + 273) (the gas expands with its temperature).
+   - wall heat through the refractory of the lower furnace: 25 mm refractory over the tubes (13-thermal-masses), k 1.5 W/m K
+     (textbook castable) = 60 W/m2 K, in series with a dense bed film 300 W/m2 K (textbook) = 50 W/m2 K, over the lower walls 46.38 m
+     perimeter x 7.75 m = 359 m2 (T2, P2S4) = 18 kW/K.
+   - upper furnace, gas alone: the gas leaves the bed at Tb and gives heat to the bare upper walls with uag = 27 W/m2 K (textbook gas
+     radiation about 17 + convection about 10, NO-SOURCE) x 1,199 m2 (upper walls 46.38 x 25.85 m) = 32 kW/K; the gas cools
+     exponentially along the walls: q = gas x cp x (Tb - water) x (1 - e^(-uag / (gas x cp))). The circulating solids hold the gas at
+     the bed temperature in the share phi (capped 1).
+   Steady check at the anchor (coal 87.5 T/H, air 593 T/H, hot air about 285 C, drum 145 kg/cm2): bed about 820 C, steam about
+   470 T/H, against the design 850 C (FHI design data) and 476 T/H: not fitted, the result of the balance. */
+const AN_BB = {
+  lhvC: (3662 * 4.1868) / 3.6,
+  lhvO: 42700 / 3.6,
+  cpA: 1.005,
+  cpS: 0.84,
+  mRef: 204650,
+  ua0: 0.976 * 554,
+  uaL: 18,
+  uag: 32,
+  kW: 554
+};
+const AN_BED = {
+  s: [0.43, 0.525, 0.626, 0.715, 0.86, 1],
+  t: [798, 819, 840, 840, 840, 840],
+  a: [0.612, 0.557, 0.622, 0.716, 0.861, 1]
+};
 function anBedSS(U, fs, as) {
   const K = AN_BED,
     start = U.Tamb + (U.Tb0 - U.Tamb) * Math.pow(Math.min(3, fs / as), U.kBedSU != null ? U.kBedSU : 0.45),
     x = Math.min(1.1, fs),
     ip = Y => {
       if (x <= K.s[0]) return Y[0];
-      for (let i = 1; i < K.s.length; i++) if (x <= K.s[i]) return Y[i - 1] + ((Y[i] - Y[i - 1]) * (x - K.s[i - 1])) / (K.s[i] - K.s[i - 1]);
+      for (let i = 1; i < K.s.length; i++)
+        if (x <= K.s[i]) return Y[i - 1] + ((Y[i] - Y[i - 1]) * (x - K.s[i - 1])) / (K.s[i] - K.s[i - 1]);
       return Y[Y.length - 1] + ((x - 1) * (Y[Y.length - 1] - Y[Y.length - 2])) / (1 - K.s[K.s.length - 2]);
     };
   const tab = U.Tamb + (ip(K.t) * (U.Tb0 / 840) - U.Tamb) * Math.pow(ip(K.a) / as, 0);
@@ -1853,7 +2180,7 @@ function anBedStep(U, dt, rpm, pa, fa) {
   U.bedI = Math.max(0, U.bedI + ((U.bedIn - U.bedOut) * dt) / 3600);
   /* the solids held in the cyclone legs (t) */
   U.bedLeg = U.bedLeg || 0;
-  const mv = ((K.loop * (pa > 106 ? 1 : 0)) * dt) / 3600,
+  const mv = (K.loop * (pa > 106 ? 1 : 0) * dt) / 3600,
     seal = fa == null || fa >= K.faLL;
   U.bedSeal = seal ? 1 : 0;
   if (!seal) {
@@ -1874,7 +2201,8 @@ function anVacMW(U) {
   U.dMWv = (6 * dT * 0.7 * U.ms) / 3600;
   return U.dMWv;
 }
-const anPsat = T => (Math.pow(10, 8.07131 - 1730.63 / (233.426 + T)) * 1.33322) / 980.665; /* kg/cm2A, Antoine (water) */
+const anPsat = T =>
+  (Math.pow(10, 8.07131 - 1730.63 / (233.426 + T)) * 1.33322) / 980.665; /* kg/cm2A, Antoine (water) */
 function anCondStep(U, dt) {
   const K = AN_CD,
     sw = AN_SW,
@@ -1893,12 +2221,21 @@ function anCondStep(U, dt) {
     Ps = Math.min(1.033, anPsat(U.cdTs));
   U.cdQ = Math.round(Q / 100) / 10; /* MW */
   U.cdT = U.cdTs;
-  U.cdP = Ps + (1.033 - Ps) * (1 - vac);
+  /* 3.2.3 live Cold start: the air in the condenser is its own mass balance (anAuxStep U.cdAirP); the vacuum share is what is left of the
+     room between the saturation and the atmosphere (the screens and the hood model read it) */
+  if (isFinite(U.cdAirP)) {
+    U.cdP = Ps + U.cdAirP;
+    U.vac = Math.max(0, Math.min(1, (1.033 - U.cdP) / Math.max(1e-3, 1.033 - Ps)));
+  } else U.cdP = Ps + (1.033 - Ps) * (1 - vac);
   /* the condensate pumps */
   const run = [srcBit(['M.3350']) > 0.5 ? 1 : 0, srcBit(['M.3351']) > 0.5 ? 1 : 0],
     n = run[0] + run[1],
     u = (typeof AN_CYC !== 'undefined' && AN_CYC.u) || {},
-    Qt = n ? (Math.min(520, typeof anDaQ === 'function' ? anDaQ(u.da) : 21.7 * Math.max(0, u.da || 0)) + 2.5 * Math.max(0, Math.min(100, u.cf || 0))) / 0.9926 : 0,
+    Qt = n
+      ? (Math.min(520, typeof anDaQ === 'function' ? anDaQ(u.da) : 21.7 * Math.max(0, u.da || 0)) +
+          2.5 * Math.max(0, Math.min(100, u.cf || 0))) /
+        0.9926
+      : 0,
     q = n ? Qt / n : 0,
     hw = anUnitVal(U.cdHwL || []),
     Psuc = U.cdP - 1.033 + 0.09926 * (K.zS + (isFinite(hw) ? hw : 0) / 1000);
@@ -1942,7 +2279,10 @@ function anFwStep(U, dt) {
   const K = AN_FW,
     dr = d => (typeof anDitlRun === 'function' ? anDitlRun(d) : null),
     /* a running pump with its suction manual valve closed (V-FW1001 / 1002) gives no head (dry: the motor protection is not modelled) */
-    run = [['DITL-23A', 'M.3343', 'V-FW1001'], ['DITL-23A #B', 'M.3344', 'V-FW1002']].map(([d, m, v]) => (anFv(v) < 5 ? 0 : dr(d) != null ? (dr(d) === 1 ? 1 : 0) : srcBit([m]) > 0.5 ? 1 : 0)),
+    run = [
+      ['DITL-23A', 'M.3343', 'V-FW1001'],
+      ['DITL-23A #B', 'M.3344', 'V-FW1002']
+    ].map(([d, m, v]) => (anFv(v) < 5 ? 0 : dr(d) != null ? (dr(d) === 1 ? 1 : 0) : srcBit([m]) > 0.5 ? 1 : 0)),
     n = run[0] + run[1],
     ffw = typeof AN_CYC !== 'undefined' && isFinite(AN_CYC.ffw) ? Math.max(0, AN_CYC.ffw) : 0,
     q = n ? Math.max(K.qMin, ffw / K.sg / n) : 0,
@@ -1952,7 +2292,10 @@ function anFwStep(U, dt) {
   U.fwRun = run;
   U.fwQp = Math.round(q);
   /* the pump inlet = the suction header less its branch loss (strainer + line, 0.4 kg/cm2 at q0: 03.png, see anFwTagStep) */
-  U.fwPd = Math.max(0, Math.min(250, n ? Ps - 0.4 * (q / K.q0) * (q / K.q0) + (K.sg / 10) * swInterp(K.qQ, K.qH, q) - K.kz : Ps));
+  U.fwPd = Math.max(
+    0,
+    Math.min(250, n ? Ps - 0.4 * (q / K.q0) * (q / K.q0) + (K.sg / 10) * swInterp(K.qQ, K.qH, q) - K.kz : Ps)
+  );
   run.forEach((r, i) => {
     U['fwI' + i] = r ? Math.round((10 * K.I0 * swInterp(K.pQ, K.pP, q)) / P0) / 10 : 0;
     U['fwDp' + i] = r ? Math.round(1000 * K.dp0 * (q / K.q0) * (q / K.q0)) / 1000 : 0;
@@ -1968,7 +2311,25 @@ function anFwStep(U, dt) {
    repository or on the PC); a shut-off MOV less than 20 % open throttles it (NO-SOURCE). The heater gives FW out = saturation of its
    shell + TTD, never below FW in; the extraction (= drain) flow from its heat duty, scaled on the design point. Metal / water lag 120 s
    (NO-SOURCE). The water side valves: AN_FV0, anHtrPath. */
-const AN_HP = { dhX: [1160.1, 917.1, 454.8, 311.4, 257.2] /* kJ/kg down to the exhaust 2378.4: No.2 HPH hot reheat 3538.5, No.1 HPH 3295.5, No.3 LPH 2833.2, No.2 LPH 2689.8, No.1 LPH saturated 2635.6 (HEAT_BALANCE.md) */, cpFw: 4.6 /* kJ/kg per C, feedwater 195.7 to 245.4 C */, dhB: 2382 /* kJ/kg, main steam 3446.7 less feedwater 1064.4 */, F0: 458.684, P1: 37.48 - 1.0332, P2: 14.12 - 1.0332, ttd1: 1.07, ttd2: 0.05, dT1: 195.7 - 158.4, dT2: 245.4 - 195.7, m1: 25.33, m2: 45.147, dca1: 166.3 - 158.4, dca2: 201.3 - 195.7, tau: 120 };
+const AN_HP = {
+  dhX: [
+    1160.1, 917.1, 454.8, 311.4, 257.2
+  ] /* kJ/kg down to the exhaust 2378.4: No.2 HPH hot reheat 3538.5, No.1 HPH 3295.5, No.3 LPH 2833.2, No.2 LPH 2689.8, No.1 LPH saturated 2635.6 (HEAT_BALANCE.md) */,
+  cpFw: 4.6 /* kJ/kg per C, feedwater 195.7 to 245.4 C */,
+  dhB: 2382 /* kJ/kg, main steam 3446.7 less feedwater 1064.4 */,
+  F0: 458.684,
+  P1: 37.48 - 1.0332,
+  P2: 14.12 - 1.0332,
+  ttd1: 1.07,
+  ttd2: 0.05,
+  dT1: 195.7 - 158.4,
+  dT2: 245.4 - 195.7,
+  m1: 25.33,
+  m2: 45.147,
+  dca1: 166.3 - 158.4,
+  dca2: 201.3 - 195.7,
+  tau: 120
+};
 function anHphStep(U, dt) {
   const K = AN_HP,
     ms = Math.max(0, +U.ms || 0),
@@ -2010,7 +2371,13 @@ function anHphStep(U, dt) {
     e2o = ffw > 1 ? (K.m2 * f * Math.max(0, t2o - t1o)) / K.dT2 : 0,
     ls = U.lpS || {},
     sh = k => (isFinite(ls[k]) ? ls[k] : 1),
-    x = [Math.max(0, e2o - e2), Math.max(0, e1o - e1), (15.25 * ms * (1 - (pos('DITL-97') / 100) * sh('H3'))) / K.F0, (12.27 * ms * (1 - (pos('DITL-98') / 100) * sh('H2'))) / K.F0, (8.42 * ms * (1 - sh('H1'))) / K.F0];
+    x = [
+      Math.max(0, e2o - e2),
+      Math.max(0, e1o - e1),
+      (15.25 * ms * (1 - (pos('DITL-97') / 100) * sh('H3'))) / K.F0,
+      (12.27 * ms * (1 - (pos('DITL-98') / 100) * sh('H2'))) / K.F0,
+      (8.42 * ms * (1 - sh('H1'))) / K.F0
+    ];
   U.xtra = x[0] + x[1] + x[2] + x[3]; /* T/H more to the condenser */
   U.dMWx = (x.reduce((a, q, i) => a + q * K.dhX[i], 0) * 0.985) / 3600;
   U.fwDrop = Math.max(0, t2o - U.hpT2); /* feedwater colder than with both heaters in: boiler.js anAphIn */
@@ -2042,11 +2409,81 @@ const AN_HD = {
   /* key, ABC sheet, level AIs, primary / alternate controller, design extraction t/h, heater before (cascade), H.H. mm, shell ID m,
      length m, water kg/m3, primary capacity t/h at 100 % (150 MW), extraction MOV (DITL) */
   h: [
-    ['H6', 'ABC-036', ['AI0677', 'AI0853'], 'LICHD11061', 'LICHD11062', 45.147, null, 140, 1.25, 9.1385, 864, 45.147 / 0.5, 'DITL-94'],
-    ['H5', 'ABC-035', ['AI0676', 'AI0852'], 'LICHD11051', 'LICHD11052', 25.33, 'H6', 140, 1.156, 9.595, 900, 91 /* LCV-HD1105 sheet, E2-0-123 */, 'DITL-95'],
-    ['H3', 'ABC-039', ['AI0675', 'AI0851'], 'LICHD11031', 'LICHD11032', 15.246, null, 140, 1.03, 10.674, 961, 21.3 /* LCV sheet, E2-0-123 */, 'DITL-97'],
-    ['H2', 'ABC-038', ['AI0674', 'AI0850'], 'LICHD11021', 'LICHD11022', 12.27, 'H3', 140, 1.08, 10.679, 974, 35.3 /* LCV sheet, E2-0-123 */, 'DITL-98'],
-    ['H1', 'ABC-037', ['AI0673', 'AI0849'], 'LICHD11011', 'LICHD11012', 17.861, 'H2', 140, 1.13, 13.612, 990, 69.9 /* LCV sheet, E2-0-123 */, null]
+    [
+      'H6',
+      'ABC-036',
+      ['AI0677', 'AI0853'],
+      'LICHD11061',
+      'LICHD11062',
+      45.147,
+      null,
+      140,
+      1.25,
+      9.1385,
+      864,
+      45.147 / 0.5,
+      'DITL-94'
+    ],
+    [
+      'H5',
+      'ABC-035',
+      ['AI0676', 'AI0852'],
+      'LICHD11051',
+      'LICHD11052',
+      25.33,
+      'H6',
+      140,
+      1.156,
+      9.595,
+      900,
+      91 /* LCV-HD1105 sheet, E2-0-123 */,
+      'DITL-95'
+    ],
+    [
+      'H3',
+      'ABC-039',
+      ['AI0675', 'AI0851'],
+      'LICHD11031',
+      'LICHD11032',
+      15.246,
+      null,
+      140,
+      1.03,
+      10.674,
+      961,
+      21.3 /* LCV sheet, E2-0-123 */,
+      'DITL-97'
+    ],
+    [
+      'H2',
+      'ABC-038',
+      ['AI0674', 'AI0850'],
+      'LICHD11021',
+      'LICHD11022',
+      12.27,
+      'H3',
+      140,
+      1.08,
+      10.679,
+      974,
+      35.3 /* LCV sheet, E2-0-123 */,
+      'DITL-98'
+    ],
+    [
+      'H1',
+      'ABC-037',
+      ['AI0673', 'AI0849'],
+      'LICHD11011',
+      'LICHD11012',
+      17.861,
+      'H2',
+      140,
+      1.13,
+      13.612,
+      990,
+      69.9 /* LCV sheet, E2-0-123 */,
+      null
+    ]
   ],
   F0: 458.684,
   fA: 0.7,
@@ -2139,13 +2576,13 @@ function anHdStep(U, dt) {
     /* 3.2.1 the drain valves have an airlock (AN_AV): below 3.5 kg/cm2 of instrument air they stay where they are */
     let w1 = cap1 * sq * (anAv(h.c1, h.fx && h.fx.p ? fxv(h.fx.p, mv(h.v1)) : mv(h.v1)) / 100),
       w2 = c2 * (anAv(h.c2, mv(h.v2)) / 100);
-    const M = (rho * D * Ls * K.fA) / 1000 /* kg per mm */;
+    const M = (rho * D * Ls * K.fA) / 1000; /* kg per mm */
     if (h.y <= -300 && w1 + w2 > win) {
-      const f = (w1 + w2) > 0 ? win / (w1 + w2) : 0;
+      const f = w1 + w2 > 0 ? win / (w1 + w2) : 0;
       w1 *= f;
       w2 *= f;
     }
-    h.y = Math.max(-320, Math.min(350, h.y + ((win - w1 - w2) * 1000 / 3600 * dt) / M));
+    h.y = Math.max(-320, Math.min(350, h.y + ((((win - w1 - w2) * 1000) / 3600) * dt) / M));
     h.win = win;
     h.w1 = w1;
     h.w2 = w2;
@@ -2287,7 +2724,8 @@ function anCdTagStep(U, ld) {
     'TT-CD1110-4': r1(hw + 2 * L),
     'FT-CD1122': f ? r1(f.fda) : null,
     'PT-CD1122': isFinite(Pda) ? r1(Pda + 1.6) : null,
-    'TT-CD1104': isFinite(Pda) && Pda > 0.05 ? r1(steamTsat(Pda)) : isFinite(Pda) ? r1(isFinite(U.Tamb) ? U.Tamb : 30) : null,
+    'TT-CD1104':
+      isFinite(Pda) && Pda > 0.05 ? r1(steamTsat(Pda)) : isFinite(Pda) ? r1(isFinite(U.Tamb) ? U.Tamb : 30) : null,
     'FT-CD1115': isFinite(mv) && isFinite(uf) ? r1((68 * anAv('TICHR1012', mv) * uf) / 100) : null
   });
 }
@@ -2354,7 +2792,7 @@ function anAsTagStep(U, dt) {
     c = U.tc,
     Ta = isFinite(U.Tamb) ? U.Tamb : 30,
     L = Math.max(0, Math.min(1, (+U.MW || 0) / 150)),
-    gland = c ? !!c.gland : (U.tb && U.tb.rpm > 100) || (+U.MW || 0) > 0,
+    gland = isFinite(U.gsP) ? U.gsP >= 0.1 : c ? !!c.gland : (U.tb && U.tb.rpm > 100) || (+U.MW || 0) > 0,
     Ps = isFinite(U.cdP) ? anTsatA(U.cdP) : NaN,
     hood = c && isFinite(c.Tx) ? c.Tx : isFinite(Ps) ? Ps : Ta;
   /* PIC-AS1005 MV -> the two valves (ABC-030 F(X)) */
@@ -2392,13 +2830,333 @@ function anAsTagStep(U, dt) {
     'ZT-AS1020-1': r1(fx(C.f1)),
     'ZT-AS1020-2': r1(fx(C.f2)),
     'TT-AS1015': r1(U.asT15),
-    PTGS10011: gland ? 0.32 : 0,
-    PTGS10012: gland ? 0.32 : 0,
+    PTGS10011: isFinite(U.gsP) ? r3(U.gsP) : gland ? 0.32 : 0,
+    PTGS10012: isFinite(U.gsP) ? r3(U.gsP) : gland ? 0.32 : 0,
     TEGS1002: r1(U.asTgs),
     TEGS1003: r1(U.asTgs - 2 * L),
-    'PV-GS1034': gland ? r1(42.6 * L) : 0,
+    'PV-GS1034': isFinite(U.gsV34) ? r1(U.gsV34) : gland ? r1(42.6 * L) : 0,
+    'PV-GS1031': isFinite(U.gsV31) ? r1(U.gsV31) : 0,
     'ZT-AS1011': c && c.cur === 0 && c.ph === 'warm' ? 40 : 0
   });
+}
+/* 3.2.3 live Cold start (user 2026-11-14 "Bkt patch lng? Code ang gawin. Hnd temporary fix!"): the auxiliary steam header, the gland
+   steam seal header and the air in the condenser as mass balances. Before: the header pressure was a first-order lag toward
+   min(10.5, drum - 1) (tcs.js TCS.tauAux), the gland seal a switch (tcs.js c.gland) with its header written 0.32 / 0, and the vacuum a
+   share that rose at a fixed rate (AN_UNIT vacUp) once the TCS flags said so. Now each one is the pressure of its own volume, from the
+   flows of the valves and machines that are on it.
+   Sources (document-references, read 2026-11-14):
+     valve flow       ISA-75.01 compressible: W = 27.3 Cv Y sqrt(x P1 rho1) kg/h (P bar a, rho kg/m3), x = dP / P1 not above Fk xT
+                      (Fk = 1.3 / 1.4, xT 0.7 globe), Y = 1 - x / (3 Fk xT); rho1 = IF97 region 2 (steam.js steamRho). Checked against the
+                      valve sheets: PV-GS1031 NOR 2170 kg/h at Cv 17.4 (model 2136), MAX 3600 at Cv 47.9 (3554); PCV-AS1020-1 COND 1
+                      10000 kg/h at Cv 255 (10042); PV-GS1034 NOR 460 kg/h at Cv 38.5 (451); PCV-AS1030 COND 1 22059 kg/h at Cv 190
+                      (18900: Raven trim, its xT is not on the sheet);
+     aux header       in: PCV-AS1010 (PICAS1004 MV, ABC-030) from the main steam through the MOV MV-AS1391 (DITL-51), Cv 93 (plant study
+                      04 from the L21 sheet: 45,500 kg/h, 60.2 -> 11.4 kg/cm2 G); PCV-AS1020-1 Cv 341.5 linear and PCV-AS1020-2 Cv 9 linear
+                      (E2-0-123 p32 / p37) from the cold reheat, their openings = F(X) LN17 / LN16 of the PICAS1005 MV (ABC-030);
+                      out: deaerator pegging PCV-AS1030 (PICCD1104 MV, ABC-056) Cv 253.7 (E2-0-123 p42, linear: NO-SOURCE characteristic)
+                      to the deaerator pressure PT-CD1104; the steam jet air ejector MV-AS1396 (DITL-55) 223 + 202 = 425 kg/h and the
+                      start-up ejector MV-AS1395 (DITL-54) 1477 kg/h at 11 kg/cm2 G (ED 066 p6 / p9), a choked nozzle: x (P / 12.03 abs);
+                      the steam seal feed valve PV-GS1031; the volume 6 m3 is NO-SOURCE (the 12-inch header and branches are only on
+                      the scanned P&ID PD-014); the header steam at 350 C (MB-014 items 2 / 5 operating 11 kg/cm2 G, 350 C);
+     gland header     PV-GS1031 Cv 75 linear DN80 (TG maintenance manual p2385 ~ 2394) from the aux header, PV-GS1034 unloading Cv 375
+                      equal % (p2395 ~ 2404) to the No.1 LP heater; one PI on PT-GS1001 (p103: feed at vacuum up / low load, unloading
+                      spills the surplus on load), split at 0; set point 0.32 kg/cm2 G (29.PNG 150 MW; the feed valve sheet NOR outlet
+                      1.31 kg/cm2 A = 0.28 G); PI gains NO-SOURCE; the glands take K sqrt(P^2 - Pc^2) (labyrinth), K from the NOR case
+                      2170 kg/h at 1.31 abs into a condenser at 0.07 abs; on load the HP / IP packing leaks into the header with the cold
+                      reheat pressure (CALC: 2694 kg/h at 150 MW = the glands 2243 + the unloading valve 451 at 42.6 %, 29.PNG); volume
+                      1.5 m3 NO-SOURCE; "in service" (ATS 1.10) = header >= 0.10 kg/cm2 G (IBD TD-3 LOW alarm);
+     condenser air    the evacuated volume 338 m3 (ED 066 p15) at the condenser temperature; in: the air in-leakage, an orifice that passes
+                      the design 25.5 kg/h (ED 066 p6) at the design 0.055 kg/cm2 A, the LP glands while their steam is below the
+                      atmosphere (orifice CdA 0.00072 m2, NO-SOURCE: 610 kg/h into full vacuum, the gland clearances are not in the docs),
+                      the vacuum breaker MV-AV1391 (DITL-56, CdA 0.0195 m2 = an 8-inch valve, NO-SOURCE size); out: the ejectors as
+                      volume pumps, S(P) m3/h from their curves (start-up ejector ED 066 p16 air kg/h / air density; steam jet air
+                      ejector p14 total kg/h / mixture density of the design point 25.5 air + 61.3 steam), the air taken = S x the air
+                      density at its partial pressure; the capacity goes with the motive steam (choked nozzle: P / 12.03 abs); the steam
+                      jet air ejector needs its inter / after condenser cooled by the condensate (a condensate pump running);
+                      condenser pressure = air partial pressure + saturation of the condensing temperature (anCondStep).
+     Check: the start-up ejector alone takes the condenser from 1.03 to 0.345 kg/cm2 A in about 14 min in this model; ED 066 p15 gives
+     20 min (its p16 capacity curve, read from the plot, is higher than the p15 pump-down needs). */
+const AN_AS = {
+  Va: 6 /* m3, NO-SOURCE */,
+  Vg: 1.5 /* m3, NO-SOURCE */,
+  Ta: 350,
+  Tg: 260 /* PV-GS1031 sheet 260 C */,
+  cv1010: 93,
+  cv1020: [341.5, 9],
+  cv1030: 253.7,
+  cvGf: 75,
+  cvGu: 375,
+  ej: { sjae: 425, start: 1477, Pm: 12.0332 },
+  gSv: 0.32,
+  gKp: 60 /* % per kg/cm2, NO-SOURCE */,
+  gTi: 15 /* s, NO-SOURCE */,
+  Kseal: 2170 / Math.sqrt(1.31 * 1.31 - 0.07 * 0.07),
+  Whp0: 2694,
+  Vc: 338,
+  cdaLeak: 25.5 / 3600 / 235 /* m2, the orifice that passes 25.5 kg/h into the design vacuum */,
+  cdaGl: 0.00072,
+  cdaVb: 0.0195,
+  /* P abs kg/cm2 -> S m3/h (see the head) */
+  sStart: [
+    [0.1, 0],
+    [0.1767, 1204],
+    [0.2175, 1631],
+    [0.2474, 1792],
+    [0.2787, 1909],
+    [0.3331, 1863],
+    [0.4011, 1769],
+    [0.4758, 1677],
+    [0.5574, 1591],
+    [0.6295, 1549]
+  ],
+  sSjae: [
+    [0.015, 0],
+    [0.0272, 1027],
+    [0.0551, 2003],
+    [0.0816, 2177],
+    [0.0952, 2133],
+    [0.1319, 1925],
+    [0.1496, 1867]
+  ],
+  /* 3.2.3-beta.223 (live Cold start F37 / F38): the steam temperatures of the aux and gland lines are energy balances of the pipe
+     metal, M c dT/dt = w cp (T steam in - T) + G (T neighbour - T) - UA (T - T ambient), with the steam in from the IF97 enthalpy:
+     PCV-AS1010 throttles the main steam at constant enthalpy, the spray TCV-CD1124 (MV of TICAS1001) mixes condensate into it
+     (TT-AS1001, IO list S2 AI0641 "main steam desuperheater downstream"); the header TT-AS1003 (S2 AI0642) mixes that steam with
+     the cold reheat through PCV-AS1020-1 / -2; TT-AS1017 (S2 AI0902 "gland steam turbine side") is fed by PV-GS1031 from the
+     header and the gland desuperheater spray (MV of TICAS1017). Spray capacities, metal heat capacities and losses: NO-SOURCE
+     (not in the docs). Two numbers are set by 29.PNG at 150 MW (not a fit of a curve, the one unknown of each balance):
+     UA3 gives TT-AS1003 236 C with the header steam of that load; with PV-GS1031 shut (self-sealing) the TT-AS1017 pipe sits
+     between the gland header (TEGS1002 364 C) and the room, 185 C = G17 about UA17 */
+  sprA: 1000 /* kg/h TCV-CD1124 full open, NO-SOURCE */,
+  sprG: 300 /* kg/h gland desuperheater spray full open, NO-SOURCE */,
+  cps: 2.2 /* kJ/kg K steam */,
+  Mc1: 300 /* kJ/K, NO-SOURCE */,
+  UA1: 0.05 /* kW/K, NO-SOURCE */,
+  Mc3: 2000 /* kJ/K, NO-SOURCE */,
+  UA3: 0.131 /* kW/K, 29.PNG: the SJAE steam 397 kg/h of cold reheat at 347 C after PCV-AS1020 holds 236 C (the other header users are not modelled yet) */,
+  Mc17: 300 /* kJ/K, NO-SOURCE */,
+  UA17: 0.05 /* kW/K, NO-SOURCE */,
+  G17: 0.0433 /* kW/K, 29.PNG (see above) */,
+  k: { sh: null }
+};
+/* steam through a control valve, kg/h (ISA-75.01, see AN_AS): P kg/cm2 G, T C */
+function anStmW(Cv, P1, P2, T1) {
+  if (!(Cv > 0) || !(P1 > P2)) return 0;
+  const p1 = (P1 + 1.0332) * 0.980665,
+    p2 = Math.max(0, (P2 + 1.0332) * 0.980665),
+    xc = (1.3 / 1.4) * 0.7,
+    x = Math.min(xc, (p1 - p2) / p1),
+    Y = 1 - x / (3 * xc);
+  return 27.3 * Cv * Y * Math.sqrt(x * p1 * steamRho(P1, T1));
+}
+/* air through an orifice (isentropic nozzle), kg/s from the side at P1 to the side at P2 (Pa abs); negative = the other way */
+function anAirOr(CdA, P1, P2, T) {
+  if (!(CdA > 0) || P1 === P2) return 0;
+  const s = P1 > P2 ? 1 : -1,
+    Pu = Math.max(P1, P2),
+    r = Math.max(Math.min(P1, P2) / Pu, 0.5283),
+    g = 1.4;
+  return (
+    s *
+    CdA *
+    Pu *
+    Math.sqrt(((2 * g) / ((g - 1) * 287 * (T + 273.15))) * (Math.pow(r, 2 / g) - Math.pow(r, (g + 1) / g)))
+  );
+}
+function anAsTab(L, x) {
+  if (!(x > L[0][0])) return L[0][1];
+  for (let i = 1; i < L.length; i++)
+    if (x <= L[i][0]) return L[i - 1][1] + ((L[i][1] - L[i - 1][1]) * (x - L[i - 1][0])) / (L[i][0] - L[i - 1][0]);
+  return L[L.length - 1][1];
+}
+/* the output of the A / M station of a controller (sheet links kept out of the unit state: no functions or sheets on U) */
+function anAsCtl(sheet, tag) {
+  const K = AN_AS.k;
+  if (K.sh !== AN.sheets) {
+    K.sh = AN.sheets;
+    K.c = {};
+  }
+  if (!(tag in K.c)) {
+    const x = AN.sheets.find(y => y.name === sheet),
+      c = x && x.S && AN.hmiCtrls ? (AN.hmiCtrls(x.S) || []).find(q => q.tag === tag) : null;
+    K.c[tag] = c && c.out != null ? { S: x.S, n: c.out } : null;
+  }
+  const o = K.c[tag];
+  return o ? +o.S.rt.v[o.n] : NaN;
+}
+/* the AI blocks of one address on one sheet (as anUnitStart's ais) */
+function anAsAIs(k, a) {
+  const x = AN.sheets.find(y => y.name === k);
+  let st = null;
+  try {
+    st = x && x.S ? shStn(x) : null;
+  } catch (e) {}
+  return anUnitAnchor(st != null ? anUnitAIs(st + '|' + a) : []);
+}
+function anAuxStep(U, dt) {
+  /* 3.2.3-beta.223 (live Cold start): a save point made before beta.222 has no transmitter lists of this model and its U.own does
+     not hold them, so the loop model kept writing PT-AS1004 / 1005 (PICAS1004 PV frozen at 9.57 while the header drained): the lists
+     are made here once and owned */
+  if (!U.asAI || !U.gsAI) {
+    U.asAI = [anAsAIs('ABC-030', 'AI0514'), anAsAIs('ABC-030', 'AI0515')].filter(l => l.length);
+    U.gsAI = anAsAIs('ABC-034', 'AI0886');
+    if (U.own) for (const l of U.asAI.concat([U.gsAI])) for (const [S2, b] of l) U.own.add(S2.rt.st[b.id]);
+  }
+  const K = AN_AS,
+    c = U.tc,
+    pos = (d, dflt) => {
+      const p = typeof anDitlPos === 'function' ? anDitlPos(d, 0) : null;
+      return Math.max(0, Math.min(1, (p != null && isFinite(p) ? p : dflt) / 100));
+    },
+    cl = x => (isFinite(x) ? Math.max(0, Math.min(100, x)) / 100 : 0),
+    onLoad = (U.tb && U.tb.rpm > 100) || (+U.MW || 0) > 0;
+  /* the state of a save made before this model: from the transmitters */
+  if (!isFinite(U.asP)) {
+    const a = anUnitVal(U.asAI && U.asAI[0] ? U.asAI[0] : []);
+    U.asP = isFinite(a) ? a : c && isFinite(c.Pa) ? c.Pa : 0;
+  }
+  const gsOn = c ? (c.gsOn != null ? !!c.gsOn : !!c.gland || !!c.fromLoad) : onLoad;
+  if (c && c.gsOn == null) c.gsOn = gsOn;
+  if (!isFinite(U.gsP)) U.gsP = gsOn ? K.gSv : 0;
+  if (!isFinite(U.gsY)) U.gsY = gsOn && onLoad ? -42.6 * Math.max(0, Math.min(1, (+U.MW || 0) / 150)) : 0;
+  const Tc = isFinite(U.cdTs) ? U.cdTs : isFinite(U.Tamb) ? U.Tamb : 30,
+    Psc = Math.min(1.033, anPsat(Tc));
+  if (!isFinite(U.cdAirP))
+    U.cdAirP = Math.max(0, (1.033 - Psc) * (1 - (isFinite(U.vac) ? Math.max(0, Math.min(1, U.vac)) : 1)));
+  /* sources and valve openings */
+  const Pms = isFinite(U.Pms) ? U.Pms : 0,
+    X = U.xt || {},
+    mst = X.mst && X.mst.c && X.mst.c.q && X.mst.c.q.pv != null ? +X.mst.S.rt.v[X.mst.c.q.pv] : NaN,
+    Tms = isFinite(mst) ? mst : 538,
+    Pcr = (isFinite(U.Prh) ? U.Prh : 0) * (36.6 / 35.1),
+    tcr = anUnitVal(X.cr || []),
+    Tcr = isFinite(tcr) ? tcr : 370,
+    pdea = anUnitVal(X.dea || []),
+    Pdea = isFinite(pdea) ? pdea : 0,
+    o1004 = cl(anAsCtl('ABC-030', 'PICAS1004')),
+    o1030 = cl(anAsCtl('ABC-056', 'PICCD1104')),
+    tt = U.tt || {},
+    o1020 = [cl(tt['ZT-AS1020-1']), cl(tt['ZT-AS1020-2'])],
+    m1391 = pos('DITL-51', c ? (c.asv ? 100 : 0) : 100),
+    m1395 = pos('DITL-54', 0),
+    m1396 = pos('DITL-55', onLoad ? 100 : 0),
+    mVb = pos('DITL-56', 0),
+    cep = srcBit(['M.3350', 'M.3351']) ? 1 : 0,
+    L = Math.max(0, Math.min(1, (+U.MW || 0) / 150)),
+    Pcr0 = 34.4 * (36.6 / 35.1) + 1.033,
+    Patm = 1.033;
+  const n = Math.max(1, Math.ceil(dt / 0.1)),
+    h = dt / n,
+    F = {};
+  for (let i = 0; i < n; i++) {
+    const Pa = U.asP,
+      Pg = U.gsP,
+      fm = Math.max(0, Math.min(1, (Pa + 1.0332) / K.ej.Pm)),
+      /* MV-AS1391 in series with PCV-AS1010: the MOV is a shut-off, its stroke opens the gate area (1 / Cv^2 in series, gate Cv
+         1500 for a 6-inch gate, NO-SOURCE: it only matters near its closed seat) */
+      cvA =
+        m1391 > 0 && o1004 > 0 ? 1 / Math.sqrt(1 / Math.pow(K.cv1010 * o1004, 2) + 1 / Math.pow(1500 * m1391, 2)) : 0,
+      w1010 = anStmW(cvA, Pms, Pa, Tms),
+      w1020 = anStmW(K.cv1020[0] * o1020[0] + K.cv1020[1] * o1020[1], Pcr, Pa, Tcr),
+      w1030 = anStmW(K.cv1030 * o1030, Pa, Pdea, K.Ta),
+      wej = (K.ej.sjae * m1396 + K.ej.start * m1395) * fm,
+      /* gland PI (split range at 0: + opens the feed valve, - opens the unloading valve) */
+      e = K.gSv - Pg;
+    if (gsOn) U.gsY = Math.max(-100, Math.min(100, U.gsY + (K.gKp * e * h) / K.gTi));
+    else U.gsY = 0;
+    const yP = gsOn ? Math.max(-100, Math.min(100, U.gsY + K.gKp * e)) : 0,
+      oF = Math.max(0, yP) / 100,
+      oU = Math.max(0, -yP) / 100,
+      wGf = anStmW(K.cvGf * oF, Pa, Pg, K.Tg),
+      Pga = Pg + 1.0332,
+      Pc = Psc + U.cdAirP,
+      wSeal = Pga > Pc ? K.Kseal * Math.sqrt(Pga * Pga - Pc * Pc) : 0,
+      Pcra = Pcr + 1.0332,
+      wHp =
+        onLoad && Pcra > Pga
+          ? (K.Whp0 * Math.sqrt(Pcra * Pcra - Pga * Pga)) / Math.sqrt(Pcr0 * Pcr0 - 1.353 * 1.353)
+          : 0,
+      wGu = oU > 0 ? anStmW(K.cvGu * Math.pow(50, oU - 1), Pg, Math.max(Pc, 0.366 * L) - 1.0332, 364) : 0;
+    /* header pressures: dm = V drho/dP dP (drho/dP of IF97 at the header state) */
+    const dRa = Math.max(0.05, (steamRho(Pa + 0.05, K.Ta) - steamRho(Pa - 0.05, K.Ta)) / 0.1),
+      dRg = Math.max(0.05, (steamRho(Pg + 0.05, K.Tg) - steamRho(Pg - 0.05, K.Tg)) / 0.1);
+    U.asP = Math.max(-1, Pa + ((w1010 + w1020 - w1030 - wej - wGf) / 3600) * (h / (K.Va * dRa)));
+    U.gsP = Math.max(Pc - 1.0332, Pg + ((wGf + wHp - wSeal - wGu) / 3600) * (h / (K.Vg * dRg)));
+    /* condenser air */
+    const PaP = Patm * 98066.5,
+      PcP = Pc * 98066.5,
+      Pin = Math.max(Pc, Pga) * 98066.5,
+      ain =
+        anAirOr(K.cdaLeak, PaP, PcP, Tc) +
+        (Pga < Patm ? anAirOr(K.cdaGl, PaP, Pin, Tc) : 0) +
+        anAirOr(K.cdaVb * mVb, PaP, PcP, Tc),
+      rhoA = (U.cdAirP * 98066.5) / (287 * (Tc + 273.15)),
+      sS = anAsTab(K.sStart, Pc) * m1395 * fm,
+      sJ = anAsTab(K.sSjae, Pc) * m1396 * fm * cep,
+      aout = ((sS + sJ) * rhoA) / 3600;
+    U.cdAirP = Math.max(0, U.cdAirP + ((ain - aout) * h * 287 * (Tc + 273.15)) / K.Vc / 98066.5);
+    Object.assign(F, { w1010, w1020, w1030, wej, wGf, wSeal, wHp, wGu, ain: ain * 3600, aout: aout * 3600, oF, oU });
+  }
+  for (const k in F) F[k] = Math.round(F[k] * 1000) / 1000;
+  U.asF = F;
+  U.gsV31 = F.oF * 100;
+  U.gsV34 = F.oU * 100;
+  /* pipe and header steam temperatures (AN_AS sprA ...): one step of dt, the flows of the last substep */
+  {
+    /* the transmitters of these temperatures (made once; a save before beta.223 has none) and the start of a run or of an old
+       save: the metal at the reading of its transmitter */
+    if (!U.asTAI) {
+      U.asTAI = [anAsAIs('ABC-033', 'AI0641'), anAsAIs('ABC-034', 'AI0902')];
+      if (U.own) for (const l of U.asTAI) for (const [S2, b] of l) U.own.add(S2.rt.st[b.id]);
+    }
+    if (!isFinite(U.asT1)) U.asT1 = anUnitVal(U.asTAI[0]);
+    if (!isFinite(U.asT17)) U.asT17 = anUnitVal(U.asTAI[1]);
+    if (!isFinite(U.asT3)) U.asT3 = anUnitVal((U.xt && U.xt.aux) || []);
+    const Ta0 = isFinite(U.Tamb) ? U.Tamb : 30,
+      Tw = Math.max(Ta0, Tc) /* spray water: the condensate */,
+      hw = 4.19 * Tw,
+      Pa = U.asP,
+      Pg = U.gsP,
+      tsA = Pa > -0.9 ? steamTsat(Pa) : Ta0,
+      tsG = Pg > -0.9 ? steamTsat(Pg) : Ta0,
+      /* steam in -> temperature at the pipe pressure, not below its saturation (wet steam) */
+      tOf = (P, hm, ts) => Math.max(ts, steamTph(P, hm)),
+      metal = (k, Tin, w, Mc, UA, G, Tn) => {
+        let T = isFinite(U[k]) ? U[k] : Ta0;
+        const n = Math.max(1, Math.ceil(dt / 1));
+        for (let i = 0; i < n; i++) {
+          const q = (w / 3600) * K.cps * ((isFinite(Tin) ? Tin : T) - T) + G * (Tn - T) - UA * (T - Ta0);
+          T += (q * (dt / n)) / Mc;
+        }
+        U[k] = T;
+        return T;
+      },
+      wA = F.w1010 || 0,
+      sA =
+        cl(anAsCtl('ABC-033', 'TICAS1001')) *
+        K.sprA *
+        (wA > 0 ? 1 : 0) /* no steam = no spray (it would flood the pipe) */,
+      h1 = steamH(Pms, Tms),
+      T1in = wA > 0 ? tOf(Pa, (wA * h1 + sA * hw) / (wA + sA), tsA) : NaN,
+      T1 = metal('asT1', T1in, wA + sA, K.Mc1, K.UA1, 0, Ta0),
+      wR = F.w1020 || 0,
+      hR = steamH(Pcr, Tcr),
+      hA = wA > 0 ? steamH(Pa, T1in) : 0,
+      T3in = wA + sA + wR > 0 ? tOf(Pa, ((wA + sA) * hA + wR * hR) / (wA + sA + wR), tsA) : NaN,
+      T3 = metal('asT3', T3in, wA + sA + wR, K.Mc3, K.UA3, 0, Ta0),
+      wG = F.wGf || 0,
+      sG = cl(anAsCtl('ABC-034', 'TICAS1017')) * K.sprG * (wG > 0 ? 1 : 0),
+      hG = steamH(Pa, Math.max(tsA, T3)),
+      T17in = wG > 0 ? tOf(Pg, (wG * hG + sG * hw) / (wG + sG), tsG) : NaN,
+      Tgs = isFinite(U.asTgs) ? U.asTgs : Ta0;
+    metal('asT17', T17in, wG + sG, K.Mc17, K.UA17, K.G17, Tgs);
+    U.asT1 = T1;
+    U.asT3 = T3;
+    anUnitWrite(U.asTAI[0], U.asT1);
+    anUnitWrite(U.asTAI[1], U.asT17);
+  }
+  if (U.asAI) for (const l of U.asAI) anUnitWrite(l, U.asP);
+  if (U.gsAI) anUnitWrite(U.gsAI, U.gsV31);
 }
 const AN_FWT = {
   ms0: 472.7,
@@ -2406,10 +3164,32 @@ const AN_FWT = {
   ts17: 5.3,
   K: 35000 / (9.49 * Math.sqrt(165.3 - 142.2)) / 1000,
   cv: {
-    a1: [[0, 0], [2, 0.17], [25, 3.29], [68, 9.49], [100, 14]],
-    a2: [[0, 0], [6, 0.05], [59, 0.99], [100, 1.67]],
-    b1: [[0, 0], [10, 0.17], [48, 2.46], [75, 8.84], [100, 15]],
-    b2: [[0, 0], [19, 0.05], [90, 0.99], [100, 1.5]]
+    a1: [
+      [0, 0],
+      [2, 0.17],
+      [25, 3.29],
+      [68, 9.49],
+      [100, 14]
+    ],
+    a2: [
+      [0, 0],
+      [6, 0.05],
+      [59, 0.99],
+      [100, 1.67]
+    ],
+    b1: [
+      [0, 0],
+      [10, 0.17],
+      [48, 2.46],
+      [75, 8.84],
+      [100, 15]
+    ],
+    b2: [
+      [0, 0],
+      [19, 0.05],
+      [90, 0.99],
+      [100, 1.5]
+    ]
   },
   k2: 2.94
 };
@@ -2450,7 +3230,8 @@ function anFwTagStep(U) {
     },
     cv = (L, x) => {
       if (!isFinite(x)) return NaN;
-      for (let i = 1; i < L.length; i++) if (x <= L[i][0]) return L[i - 1][1] + ((L[i][1] - L[i - 1][1]) * (x - L[i - 1][0])) / (L[i][0] - L[i - 1][0]);
+      for (let i = 1; i < L.length; i++)
+        if (x <= L[i][0]) return L[i - 1][1] + ((L[i][1] - L[i - 1][1]) * (x - L[i - 1][0])) / (L[i][0] - L[i - 1][0]);
       return L[L.length - 1][1];
     },
     drum = (() => {
@@ -2485,8 +3266,14 @@ function anFwTagStep(U) {
     w2 = K.k2 * K.K * (cv(K.cv.b1, z21) * pos('DITL-33') + cv(K.cv.b2, z22) * pos('DITL-33 #B')) * sq(drum - 9.3 * lf),
     Prh = isFinite(U.Prh) ? U.Prh : 0,
     dr = isFinite(pd) ? Math.sqrt(Math.max(0, pd - Prh) / (165.4 - 34.9)) : NaN,
-    wrh = (29.5 * held('TICHR1002', mvOf('ABC-019', 'TICHR1002'))) / 100 * pos('DITL-35') * dr /* 29.5 T/H at 100 %, Cv 6.2, dp 34, L21 */,
-    whp = (67 * held('TICMS1022', mvOf('ABC-051', 'TICMS1022'))) / 100 * pos('DITL-79') * dr /* 67 T/H at 100 %, Cv 10.3, dp 61, L21 */,
+    wrh =
+      ((29.5 * held('TICHR1002', mvOf('ABC-019', 'TICHR1002'))) / 100) *
+      pos('DITL-35') *
+      dr /* 29.5 T/H at 100 %, Cv 6.2, dp 34, L21 */,
+    whp =
+      ((67 * held('TICMS1022', mvOf('ABC-051', 'TICMS1022'))) / 100) *
+      pos('DITL-79') *
+      dr /* 67 T/H at 100 %, Cv 10.3, dp 61, L21 */,
     cr = U.xt && U.xt.T ? U.xt.T.cr : NaN;
   Object.assign(U.tt || (U.tt = {}), {
     'PT-TS1013': ms > 0 ? r2(Math.max(-1, stage(K.ts13))) : r2(0),
@@ -2523,7 +3310,10 @@ function anLubeCoolStep(U, dt) {
     const cmin = Math.min(K.Co, Cw),
       cr = cmin / Math.max(K.Co, Cw),
       ntu = K.UA / cmin,
-      e = Math.abs(1 - cr) > 1e-6 ? (1 - Math.exp(-ntu * (1 - cr))) / (1 - cr * Math.exp(-ntu * (1 - cr))) : ntu / (1 + ntu);
+      e =
+        Math.abs(1 - cr) > 1e-6
+          ? (1 - Math.exp(-ntu * (1 - cr))) / (1 - cr * Math.exp(-ntu * (1 - cr)))
+          : ntu / (1 + ntu);
     return Math.max(0, e * cmin * (Ti - Tw));
   };
   /* the first step after a starting state: at its steady value (bisection on the return temperature) */
@@ -2663,7 +3453,12 @@ function anMotorStep(U, dt) {
     mt = U.mt || (U.mt = {}),
     lag = (k, x, tau) => (mt[k] = isFinite(mt[k]) ? mt[k] + ((x - mt[k]) * Math.min(dt, tau)) / tau : x);
   for (const [id, ad, base, brg, vib, v1] of K.m) {
-    const run = ad === 'IDF' ? !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5 : /^DITL/.test(ad) ? anDitlRun(ad) === 1 : srcBit([ad]) > 0.5,
+    const run =
+        ad === 'IDF'
+          ? !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5
+          : /^DITL/.test(ad)
+            ? anDitlRun(ad) === 1
+            : srcBit([ad]) > 0.5,
       mo = K.mot[id],
       I = mo ? +U[mo[1]] : NaN,
       cw = K.cw[id],
@@ -2680,10 +3475,12 @@ function anMotorStep(U, dt) {
       K.los[id]
         ? lag('TT-' + base + e, (run ? anLosRet(Tc, fq) : (+U.acQ || 0) > 0 ? Tc : T0) + 0.5 * i, K.tauB)
         : mo && i >= 2
-        ? lag('TT-' + base + e, run ? T0 + K.rB + 1.2 * (i - 2) : T0, run ? K.tauMB : 2 * K.tauMB)
-        : lag('TT-' + base + e, run ? K.Tb + 1.2 * i : T0, run ? K.tauB : 2 * K.tauB)
+          ? lag('TT-' + base + e, run ? T0 + K.rB + 1.2 * (i - 2) : T0, run ? K.tauMB : 2 * K.tauMB)
+          : lag('TT-' + base + e, run ? K.Tb + 1.2 * i : T0, run ? K.tauB : 2 * K.tauB)
     );
-    ['U', 'V', 'W'].forEach((e, i) => lag('TT-' + base + e, run ? wT + 1.0 * i : cw ? Tc : T0, run ? K.tauW : 2 * K.tauW)); /* a stopped IC81W motor goes to its water */
+    ['U', 'V', 'W'].forEach((e, i) =>
+      lag('TT-' + base + e, run ? wT + 1.0 * i : cw ? Tc : T0, run ? K.tauW : 2 * K.tauW)
+    ); /* a stopped IC81W motor goes to its water */
     vib.forEach((e, i) => (mt['VT-' + base + e] = run ? v1 + 0.1 * i : K.vib0));
   }
 }
@@ -2734,8 +3531,34 @@ const AN_AIR = {
   fU: 0.5 /* NO-SOURCE: the share of unit 1 in the use (unit 1, unit 2, utility area; no consumption list in the docs) */,
   Kx: 1500 /* free air m3/h at 1 kg/cm2 difference, V-PA0013 6" fully open (NO-SOURCE) */,
   sys: {
-    ia: { c: 'DITL-113', d: '@14', iso: 'V-IA1101', V: 10, Qc: 1500, Qd: 1200, kW: 176, I100: 286, kW100: 190, Ist: 286 * 5.32, tSt: 3, Imax: 500 },
-    pa: { c: 'DITL-114', d: '@3', iso: 'V-PA1087', V: 20, Qc: 5100, Qd: 1500, kW: 600, I100: 69.9, kW100: 671, Ist: 3 * 69.9, tSt: 10, Imax: 140 }
+    ia: {
+      c: 'DITL-113',
+      d: '@14',
+      iso: 'V-IA1101',
+      V: 10,
+      Qc: 1500,
+      Qd: 1200,
+      kW: 176,
+      I100: 286,
+      kW100: 190,
+      Ist: 286 * 5.32,
+      tSt: 3,
+      Imax: 500
+    },
+    pa: {
+      c: 'DITL-114',
+      d: '@3',
+      iso: 'V-PA1087',
+      V: 20,
+      Qc: 5100,
+      Qd: 1500,
+      kW: 600,
+      I100: 69.9,
+      kW100: 671,
+      Ist: 3 * 69.9,
+      tSt: 10,
+      Imax: 140
+    }
   },
   rows: [5, 12, 19],
   dry: ['DITL-45', 'DITL-45 #B', 'DITL-45 #C'],
@@ -2768,7 +3591,17 @@ const AN_AIR = {
    to 0. The flow of a liquid goes with the square root of the dP: W = 120 T/H x Cv(x) / 11.7 x sqrt((214.5 - drum pressure) / 149.9),
    P1 = the inlet pressure of the sheet. Before: 30 % of the anchor feedwater at 100 %, linear, no dP (150 T/H full, 15 T/H at 10 %,
    75 T/H at 50 % against the sheet 6 and about 36 T/H) */
-const AN_SUFW = { pts: [[10, 0.585], [76, 11.7], [100, 15.58]], cv76: 11.7, w76: 120, p1: 214.5, dp76: 149.9 };
+const AN_SUFW = {
+  pts: [
+    [10, 0.585],
+    [76, 11.7],
+    [100, 15.58]
+  ],
+  cv76: 11.7,
+  w76: 120,
+  p1: 214.5,
+  dp76: 149.9
+};
 function anSuFwCv(x) {
   const P = AN_SUFW.pts;
   if (!(x > 0)) return 0;
@@ -3043,6 +3876,63 @@ function anUnitOwnsPv(S, n) {
 function anDb(x, b) {
   return x > b ? x - b : x < -b ? x + b : 0;
 }
+/* 3.2.3-beta.240 (live Cold start, ICV to CV transfer; user 2026-11-14: per the TCS drawings, the normal ATS load up, no GOV manual):
+   the TCS load loop on the grid. FLOW DEMAND (TCE206 p.140: GOV.SET through the low select with LLM SET, which the ATS has at its upper
+   limit) = the TCS target load as a share of the rating (feedforward, the target MW of TCE195) + the integral of the MW error (TCE195 GOV
+   CONTROL PI on TARGET MW - GEN. MW; the gain is NO-SOURCE, U.tcs), moved at most 1 %/s (TCE207 A007 RI / RD). TCE207: ICV demand =
+   flow demand / CV OPENING BIAS (full open at 20 %), CV demand = (flow demand - 20 %) / 80 % (the FG curves of TCE212 / TCE214 are
+   PARA-LIST, NO-SOURCE: linear here). The valves follow at 10 %/s (TCE214 SG C007). TRANSFER (ICV TO CV TRANSFER COMPLETE I.0418) =
+   the CV demand over 0.5 % (TCE207 CV OPEN CMP C004). So the CVs open as the demand rises past the ICV range, the same demand that
+   opened the ICV: no step at the transfer (was: the ICV integrator, then a switch to a slow CV integrator from 2 %, beta.239) */
+function anTbFlow(U, tb, D, dt, dirt) {
+  const B = U.cvBias || 0.2,
+    M0 = U.MW0 || 150,
+    L = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+  if (!isFinite(tb.fd)) {
+    tb.fd = tb.xfer ? B + (1 - B) * L(+U.gv || 0, 0, 1.4) : B * L(+tb.icv || 0, 0, 1);
+    tb.fi = tb.fd - D / M0;
+  }
+  if (!isFinite(tb.fi)) tb.fi = tb.fd - D / M0;
+  tb.fi = L(tb.fi + (dt * (D - U.MW)) / (U.tcs * M0), -0.5, 0.5);
+  const r = (U.fdRate || 0.01) * dt;
+  tb.fd = L(tb.fd + L(L(D / M0 + tb.fi, 0, 1.4) - tb.fd, -r, r), 0, 1.4);
+  const s = (U.vRate || 0.1) * dt,
+    icvD = L(tb.fd / B, 0, 1),
+    cvD = L((tb.fd - B) / (1 - B), 0, 1.4),
+    i0 = tb.icv == null ? icvD : tb.icv;
+  tb.icv = L(i0 + L(icvD - i0, -s, s), 0, 1);
+  U.gv = L((+U.gv || 0) + L(cvD - (+U.gv || 0), -s, s), 0, 1.4);
+  if (!tb.xfer && cvD > 0.005) {
+    tb.xfer = true;
+    if (U.cold) dirt(U.di.xfer, 1);
+  }
+}
+/* 3.2.3-beta.240 (user 2026-11-14): the 32 REVERSE POWER relay of the generator protection panel (Beckwith M-3425A, GEE-2015-0173 R1
+   SITE TEST PROCEDURE OF GEN. PROTECTION RELAY PANEL, PDF p.16 (PAGE 14) 32A: #1 (Alarm) pickup -0.008 pu, delay 300 cycles (5.0 s); #2
+   (Trip) pickup -0.013 pu, delay 600 cycles (10.0 s); over / under power "Over"; 1 pu = 115 V / 3.69 A secondary, taken as the generator
+   rating 176.5 MVA (AN_GEN.S): alarm at -1.4 MW, trip at -2.3 MW. Sequence test PDF p.7 (P.5) rows 12 / 13: both with 52G closed; #1 =
+   "1st REVERSE POWER (32) OPERATED"; #2 = "2nd REVERSE POWER (32) OPERATED", lockout relay 86G-A: 52G and 41 open and the turbine trips
+   (ANN & ST TRIP). Here the 86G-A drives the TA-9 input GEN./UNIT TRANS. PROTECTION A & GEN. LOCKOUT RELAY A (tcs-trip.js); the turbine
+   trip opens 52G and 41 (tcsGenTrip). The 86G-A is reset with the TURBINE RESET (NO-SOURCE: the hand reset of the lockout relay is on the
+   protection panel, not on the app). Other relays of the panel are not modelled */
+const AN_RP32 = { a: -0.008, t1: 5, b: -0.013, t2: 10 };
+function anRp32(U, on, dt) {
+  const r = U.rp32 || (U.rp32 = { t1: 0, t2: 0, al: false, lo: false }),
+    p = on ? (+U.MW || 0) / AN_GEN.S : 0,
+    ev = m => {
+      if (typeof window !== 'undefined' && window.lsEventAdd && !(window.ENG && ENG.mode === 'mirror'))
+        lsEventAdd('GEN', 'GEN', m);
+    };
+  r.t1 = on && p <= AN_RP32.a ? r.t1 + dt : 0;
+  r.t2 = on && p <= AN_RP32.b ? r.t2 + dt : 0;
+  const al = r.t1 >= AN_RP32.t1;
+  if (al && !r.al) ev('1st REVERSE POWER (32) OPERATED: ' + (+U.MW).toFixed(1) + ' MW');
+  r.al = al;
+  if (r.t2 >= AN_RP32.t2 && !r.lo) {
+    r.lo = true;
+    ev('2nd REVERSE POWER (32) OPERATED: generator lockout relay 86G-A, turbine trip');
+  }
+}
 function anTbSpeed(U, tb, dt, on, Pm, Pe) {
   if (!(U.el && U.el.l52 === false)) {
     if (tb.st === 'sync' || tb.st === 'load') tb.rpm = 3600;
@@ -3052,8 +3942,22 @@ function anTbSpeed(U, tb, dt, on, Pm, Pe) {
   const w = Math.max(0.5, (tb.rpm || 3600) / 3600);
   tb.rpm = Math.max(0, (w + (dt * (Pm - Pe)) / (2 * U.Hgen * AN_GEN.S * w)) * 3600);
 }
-const AN_GEN = { kV: 13.8, Hz: 60, S: 176.5, xd: 1.99, pf: 0.977, If: 8.7, Vf: 46.0, E0: 0, MWh: 7266257, MVArh: 882996 };
-AN_GEN.E0 = Math.hypot(1 + (AN_GEN.xd * 151.1 * Math.tan(Math.acos(AN_GEN.pf))) / AN_GEN.S, (AN_GEN.xd * 151.1) / AN_GEN.S);
+const AN_GEN = {
+  kV: 13.8,
+  Hz: 60,
+  S: 176.5,
+  xd: 1.99,
+  pf: 0.977,
+  If: 8.7,
+  Vf: 46.0,
+  E0: 0,
+  MWh: 7266257,
+  MVArh: 882996
+};
+AN_GEN.E0 = Math.hypot(
+  1 + (AN_GEN.xd * 151.1 * Math.tan(Math.acos(AN_GEN.pf))) / AN_GEN.S,
+  (AN_GEN.xd * 151.1) / AN_GEN.S
+);
 function anGenEl() {
   const U = AN.unit;
   if (!U || !U.on) return null;
@@ -3061,16 +3965,24 @@ function anGenEl() {
     c = U.tc,
     syn = tb.st === 'sync' || tb.st === 'load',
     fcb = syn || !!(c && c.exc),
-    P = syn ? Math.max(0, +U.MW || 0) : 0,
-    Q = syn ? P * Math.tan(Math.acos(AN_GEN.pf)) : 0,
+    /* beta.240: P negative = reverse power (motoring); the reactive power follows the positive load only */
+    P = syn ? +U.MW || 0 : 0,
+    Q = syn ? Math.max(0, P) * Math.tan(Math.acos(AN_GEN.pf)) : 0,
     p = P / AN_GEN.S,
     q = Q / AN_GEN.S,
-    E = fcb ? Math.hypot(1 + AN_GEN.xd * q, AN_GEN.xd * p) / AN_GEN.E0 : 0,
+    /* 3.2.3-beta.235: before 52G the voltage builds up after the field breaker 41 closes (tcs-gen.js g.V, 30 s); was 13.8 kV at once */
+    vb = syn ? 1 : U.gen && isFinite(U.gen.V) ? U.gen.V : fcb ? 1 : 0,
+    /* beta.236: before 52G the exciter output of the field model (tcs-gen.js g.efd, 1 = no load field) */
+    E = !fcb
+      ? 0
+      : syn || !(U.gen && isFinite(U.gen.efd))
+        ? (vb * Math.hypot(1 + AN_GEN.xd * q, AN_GEN.xd * p)) / AN_GEN.E0
+        : U.gen.efd / AN_GEN.E0,
     kA = Math.hypot(P, Q) / (Math.sqrt(3) * AN_GEN.kV),
     g = U.genE || (U.genE = { MWh: AN_GEN.MWh, MVArh: AN_GEN.MVArh });
   return {
     fcb: fcb ? 1 : 0,
-    kV: fcb ? (AN_GEN.kV * Math.min(tb.rpm || 0, 3600)) / 3600 : 0,
+    kV: fcb ? (vb * AN_GEN.kV * Math.min(tb.rpm || 0, 3600)) / 3600 : 0,
     Hz: syn && !(U.el && U.el.l52 === false) ? AN_GEN.Hz : ((tb.rpm || 0) / 3600) * AN_GEN.Hz,
     MVAr: Q,
     pf: syn && P > 0 ? AN_GEN.pf : null,
@@ -3157,7 +4069,15 @@ function anGenInt(dt) {
    tied to the 200 L). Alarm AL2-SP01 (analyzer common alarm) = a modelled analyzer beyond its H / L of the alarm list; AL1-SP01, AL3-SP01,
    AL-Z1110 = 0 (no fault in the model). Only numbers on U (the save is JSON: no function on U, Chaewon beta.108). */
 const AN_CHEM = {
-  pumps: { tspA: 'Z1107A', tspB: 'Z1107B', amnA: 'Z1108A', amnB: 'Z1108B', chzA: 'Z1109A', chzB: 'Z1109B', agt: 'Z1101A' },
+  pumps: {
+    tspA: 'Z1107A',
+    tspB: 'Z1107B',
+    amnA: 'Z1108A',
+    amnB: 'Z1108B',
+    chzA: 'Z1109A',
+    chzB: 'Z1109B',
+    agt: 'Z1101A'
+  },
   Fbd0: 15,
   pH0: 9.0,
   pHmu: 7.5,
@@ -3169,10 +4089,27 @@ const AN_CHEM = {
   Pda: 0.7,
   o2da: 10,
   o2air: 100,
-  po4: [[0, 0], [1, 8.85], [2.5, 9.2], [5, 9.5], [7.5, 9.65], [10, 9.77], [15, 9.93], [20, 10.0]],
+  po4: [
+    [0, 0],
+    [1, 8.85],
+    [2.5, 9.2],
+    [5, 9.5],
+    [7.5, 9.65],
+    [10, 9.77],
+    [15, 9.93],
+    [20, 10.0]
+  ],
   lam: { na: 50.1, oh: 198.0, hpo4: 114, po4: 207, h: 349.8 },
   /* alarm list "Alarm List _20160912" sheet AT, H / L (dcs) */
-  al: { sp1004: [20, null], sp1009: [9.6, 8.8], sp1010: [4.2, null], sp1011: [9.5, 8.8], sp1012: [10, null], sp1016: [null, 7.0], sp1020: [10, null] }
+  al: {
+    sp1004: [20, null],
+    sp1009: [9.6, 8.8],
+    sp1010: [4.2, null],
+    sp1011: [9.5, 8.8],
+    sp1012: [10, null],
+    sp1016: [null, 7.0],
+    sp1020: [10, null]
+  }
 };
 /* 3.2.3 (SOHEE): the steam the sootblowers take. Diamond Power N11639-SC1 "Sootblower steam data" (IK4M manual N11639 - IK4M-EL-,
    o&m-package-phase-1 L10-2, page 93), one row per location: head pressure (kg/cm2 g, set by the poppet valve of the blower), blowing
@@ -3353,7 +4290,7 @@ function anChemStep(U, dt) {
   }
   /* the feedwater tank residence (h): water mass / feedwater flow; no flow = nothing moves */
   const res = ffw > 1 ? K.fwt / ffw : Infinity,
-    lag = (x, y) => (res === Infinity ? x : x + ((y - x) * Math.min(1, h / res))),
+    lag = (x, y) => (res === Infinity ? x : x + (y - x) * Math.min(1, h / res)),
     Pda = U.xt && U.xt.dea ? anUnitVal(U.xt.dea) : NaN,
     o2t = isFinite(Pda) && Pda >= K.Pda ? K.o2da : K.o2air;
   U.chPda = isFinite(Pda) ? Math.round(Pda * 100) / 100 : null;
@@ -3366,15 +4303,16 @@ function anChemStep(U, dt) {
     pc = (() => {
       const T = K.po4;
       if (P <= T[1][0]) return null;
-      for (let i = 2; i < T.length; i++) if (P <= T[i][0]) return T[i - 1][1] + ((T[i][1] - T[i - 1][1]) * (P - T[i - 1][0])) / (T[i][0] - T[i - 1][0]);
+      for (let i = 2; i < T.length; i++)
+        if (P <= T[i][0]) return T[i - 1][1] + ((T[i][1] - T[i - 1][1]) * (P - T[i - 1][0])) / (T[i][0] - T[i - 1][0]);
       return T[T.length - 1][1];
     })(),
     ohP = pc == null ? 0 : Math.pow(10, pc - 14),
     pHd = pc == null ? pHfw : Math.max(pc, pHfw),
     L = K.lam,
-    C = P / 1000 / 94.97, /* mol/L of PO4 */
+    C = P / 1000 / 94.97 /* mol/L of PO4 */,
     oh = Math.pow(10, pHd - 14),
-    x = Math.max(0, Math.min(C, 0.6 * C - ohP)), /* PO4--- */
+    x = Math.max(0, Math.min(C, 0.6 * C - ohP)) /* PO4--- */,
     kd = 1000 * (L.na * 2.6 * C + L.hpo4 * (C - x) + L.po4 * x + L.oh * oh),
     cat = 1000 * (L.h + L.oh) * 1e-7,
     r = (v, d) => Math.round(v * d) / d;
@@ -3407,6 +4345,23 @@ function anUnitStep(dt) {
     if (M) M.on = 0;
   }
 }
+/* 3.2.3-beta.212 (F16): snapshot values of the furnace / cyclone / seal pot thermocouples (hmi-op.js AN_HMI_AI), kept off U */
+let AN_GAS_A0 = null;
+function anGasA0() {
+  if (AN_GAS_A0) return AN_GAS_A0;
+  const by = re =>
+      Object.values(AN_HMI_AI)
+        .filter(x => re.test(x[1]))
+        .map(x => +x[0]),
+    avg = a => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN),
+    one = tg => avg(by(new RegExp('^' + tg + '$')));
+  return (AN_GAS_A0 = {
+    u: avg(by(/^TIFG1091[A-I]$/)),
+    l: avg(by(/^TIFG1090[A-I]$/)),
+    cy: [one('TIFG1095A'), one('TIFG1095B')],
+    sp: [one('TIFG1009A'), one('TIFG1009B')]
+  });
+}
 function anUnitStep0(dt) {
   const U = AN_UNIT;
   if (!U.on || !(dt > 0)) return;
@@ -3430,7 +4385,7 @@ function anUnitStep0(dt) {
   U.burn = bf;
   U.cbn = Fb;
   U.cbed = Math.max(0, cb0 + (((1 - bf) * F - cbB) * dt) / 3600);
-  U.unb = F - Fb /* fed minus burnt: negative while held coal burns out */;
+  U.unb = F - Fb; /* fed minus burnt: negative while held coal burns out */
   U.Fc = F; /* 3.2.0-beta.14: coal of the feeders (source.js: SOx) */
   U.Qs += ((Qss * (isFinite(U.hpFac) ? U.hpFac : 1) - U.Qs) * dt) / U.tauF;
   /* ---- 2.2.0-beta.12 (M3): station wiring S2 -> S1, turbine trip ---- */
@@ -3445,9 +4400,6 @@ function anUnitStep0(dt) {
   }
   /* 3.2.0-beta.15: condenser vacuum (see AN_UNIT vacUp): with no seawater or condensate pump the TCS trips the turbine on LOW VACUUM */
   {
-    const sea = srcBit(['M.3353', 'M.3354', 'M.3355']) ? 1 : 0,
-      cep = srcBit(['M.3350', 'M.3351']) ? 1 : 0,
-      cw = sea && cep ? 1 : 0;
     if (!isFinite(U.vac)) U.vac = 1;
     /* raised by the vacuum pumps at a steady rate, lost first order. 3.2.0-beta.37 (CHECKLIST 0.5, user 2026-10-25 "bakit wala ang
        vacuum up at gland steam at auxiliary steam"): PR-OPE-5002 VACUUM UP needs the steam ejectors and the gland sealing, both on
@@ -3469,34 +4421,26 @@ function anUnitStep0(dt) {
         tcx.ej = p54 > 50 || p55 > 50;
       }
     }
-    const aux = tcx ? tcx.ej && !tcx.vb && tcx.Pa > 10 && tcx.gland : U.Pd > 12,
-      cw2 = tcx && tcx.vb ? 0 : cw;
-    U.aux = aux ? 1 : 0;
-    /* Mina beta.136 (normal shutdown, 47 MW): CEP-A stopped on hotwell low and the turbine tripped on LOW VACUUM 17 s later (vacDn 60 s).
-       With the seawater on the steam still condenses; only the air ejector stops (its inter / after condensers are cooled by the
-       condensate, ED 066 p2 flowsheet: cooling water 362.6 t/h normal, 80 t/h design). The condenser then gains its air in-leakage:
-       25.5 kg/h (ED 066 p2, design air of the SJAE suction) in the evacuated volume 338 m3 (ED 066 p15, starting ejector curve), at
-       40 C: dP/dt = 25.5 / 3600 x 287 x 313 / 338 = 1.88 Pa/s = 0.0000192 kg/cm2 per s (about 1.1 mbar per minute; from 0.07 to the
-       0.26 trip in about 2.7 h). No seawater or an open vacuum breaker: lost in vacDn as before */
-    const Ps0 = isFinite(U.cdTs) ? Math.min(1.033, anPsat(U.cdTs)) : 0.07,
-      airR = (25.5 / 3600) * 287 * 313 / 338 / 98066.5;
-    U.vac = Math.max(
-      0,
-      Math.min(
-        1,
-        sea && !cep && !(tcx && tcx.vb)
-          ? U.vac - (airR * dt) / Math.max(0.1, 1.033 - Ps0)
-          : cw2 > U.vac
-            ? aux
-              ? U.vac + dt / U.vacUp
-              : U.vac
-            : U.vac + ((cw2 - U.vac) * dt) / U.vacDn
-      )
-    );
+    /* 3.2.3 live Cold start (user 2026-11-14 "Code ang gawin"): the aux steam header, the gland header and the air in the condenser are
+       mass balances (AN_AS, anAuxStep); the condenser pressure is its air plus the saturation of the condensing temperature (anCondStep).
+       Before: the vacuum share rose at dt / vacUp while the TCS flags said ejector + gland + aux > 10, and fell in vacDn */
+    anAuxStep(U, dt);
+    U.aux = U.asF && U.asF.aout > 0 ? 1 : 0;
+    /* Mina beta.136 (CEP-A stopped at 47 MW): the steam jet air ejector needs a condensate pump (its inter / after condensers, ED 066
+       p2); the air in-leakage then raises the condenser pressure (anAuxStep), no fixed decay time any more */
     const tb0 = U.tb,
       l = U.vtrip;
     /* I.0400 follows the valves (IBD TA-6, tcsI0400); a model without a vacuum value keeps its own rule */
-    if (tb0 && tb0.st !== 'off' && !isFinite(U.cdP) && U.vac < 0.6 && l && l.S.rt.force[l.n] === undefined && l.S.ext.includes(l.n) && l.S.rt.ext[l.n] !== 1) {
+    if (
+      tb0 &&
+      tb0.st !== 'off' &&
+      !isFinite(U.cdP) &&
+      U.vac < 0.6 &&
+      l &&
+      l.S.rt.force[l.n] === undefined &&
+      l.S.ext.includes(l.n) &&
+      l.S.rt.ext[l.n] !== 1
+    ) {
       l.S.rt.ext[l.n] = 1;
     }
   }
@@ -3566,7 +4510,8 @@ function anUnitStep0(dt) {
     for (const l of U.di.warm || []) w(l, m === 'warm' ? 1 : 0);
     for (const l of U.di.hot || []) w(l, m === 'hot' ? 1 : 0);
     w(U.di.tg, c && c.tg && tb.rpm < 4 ? 1 : 0);
-    if (U.lpbSp && U.lpbSp.n != null) w(U.di.lpbZso, anAv('TICHR1012', Math.max(0, Math.min(100, +U.lpbSp.S.rt.v[U.lpbSp.n] || 0))) >= 99 ? 1 : 0);
+    if (U.lpbSp && U.lpbSp.n != null)
+      w(U.di.lpbZso, anAv('TICHR1012', Math.max(0, Math.min(100, +U.lpbSp.S.rt.v[U.lpbSp.n] || 0))) >= 99 ? 1 : 0);
     for (const [l, k, sp] of U.di.hd || []) if (isFinite(H[k])) w(l, H[k] >= sp ? 1 : 0);
   }
   U.turb = tb.st !== 'off';
@@ -3610,15 +4555,8 @@ function anUnitStep0(dt) {
     U.gv = 0;
     U.tcsT = 0;
   } else if (!tb.xfer) {
-    /* IP start mode: the ICV controls the load, the HP control valves are shut; ICV -> CV transfer at MWxf or ICV full open */
-    U.gv = 0;
-    tb.icv = Math.max(0, Math.min(1, tb.icv + (dt * (D - U.MW)) / (2 * U.tcs * U.MWxf)));
-    if (tb.icv >= 1 || U.MW >= U.MWxf) {
-      tb.xfer = true;
-      tb.icv = 1;
-      U.gv = 0.02;
-      if (U.cold) dirt(U.di.xfer, 1);
-    }
+    /* IP start mode (TCE207): the one flow demand opens the ICV first; the CVs stay shut until it passes the CV OPENING BIAS (20 %) */
+    anTbFlow(U, tb, D, dt, dirt);
   } else {
     /* 3.2.3 PLU (POWER LOAD UNBALANCE, TG manual 2-2 TURBINE CONTROL SYSTEM_R1 5.3.2.4): the fast acting solenoid valves of the CVs and
        ICVs are energized when the generator current falls faster than 40 % / 10 ms and the power (reheat bowl pressure) minus the load
@@ -3631,8 +4569,17 @@ function anUnitStep0(dt) {
          as soon as the ICV closes); before, the lagged U.MW kept the valves shut about 7 s and the speed fell to 95.8 % */
       plu = U.el && U.el.l52 === false && ((isFinite(U.Pm) ? U.Pm : U.MW) - ld) / U.MW0 > 0.4;
     if (plu && !tb.plu && typeof window !== 'undefined' && window.lsEventAdd && !(window.ENG && ENG.mode === 'mirror'))
-      lsEventAdd('TCS', 'TCS', 'PLU (power load unbalance): CV and ICV fast closing, turbine ' + Math.round(U.MW) + ' MW against ' + Math.round(ld) + ' MW load');
+      lsEventAdd(
+        'TCS',
+        'TCS',
+        'PLU (power load unbalance): CV and ICV fast closing, turbine ' +
+          Math.round(U.MW) +
+          ' MW against ' +
+          Math.round(ld) +
+          ' MW load'
+      );
     tb.plu = plu;
+    if (plu || (U.el && U.el.l52 === false)) tb.fd = NaN;
     if (plu) {
       U.gv = Math.max(0.02, U.gv - dt / U.tauTrip);
       tb.icv = Math.max(0, tb.icv - dt / U.tauTrip);
@@ -3649,17 +4596,25 @@ function anUnitStep0(dt) {
       tb.hlT = (tb.hlT || 0) + dt;
       if (tb.hlT <= U.rbT || !isFinite(tb.gs)) tb.gs = U.rbIP;
       else tb.gs = Math.max(0, Math.min(1.4, tb.gs + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
-      const dem = Math.max(0.02, Math.min(1.4, tb.gs - (U.flowSpan * anDb((tb.rpm || 3600) - 3600, U.dbRpm || 0)) / ((U.droop || 0.06) * 3600))),
+      const dem = Math.max(
+          0.02,
+          Math.min(1.4, tb.gs - (U.flowSpan * anDb((tb.rpm || 3600) - 3600, U.dbRpm || 0)) / ((U.droop || 0.06) * 3600))
+        ),
         r = dt / U.tauTrip;
       U.gv += Math.max(-r, Math.min(r, dem - U.gv));
       /* the ICV takes the same flow demand (TCE p.141 TCE207: the CV and ICV demands come from the one flow demand; the ICV curve itself
          is NO-SOURCE, here ICV = flow demand): with the HP bypass open the reheater feeds the IP turbine (75 % of the shaft, cIP) */
-      tb.icv = Math.max(0, Math.min(1, (tb.icv == null ? 1 : tb.icv) + Math.max(-r, Math.min(r, Math.min(1, dem) - (tb.icv == null ? 1 : tb.icv)))));
+      tb.icv = Math.max(
+        0,
+        Math.min(
+          1,
+          (tb.icv == null ? 1 : tb.icv) + Math.max(-r, Math.min(r, Math.min(1, dem) - (tb.icv == null ? 1 : tb.icv)))
+        )
+      );
     } else {
       tb.gs = NaN;
       tb.hlT = 0;
-      tb.icv = Math.min(1, (tb.icv == null ? 1 : tb.icv) + dt / U.tcs);
-      U.gv = Math.max(0.02, Math.min(1.4, U.gv + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
+      anTbFlow(U, tb, D, dt, dirt);
     }
   }
   /* steam flow through the valves: m = Kt x gv x MSP, MSP = drum - kdp x m^2 */
@@ -3708,26 +4663,61 @@ function anUnitStep0(dt) {
        water the draft carries the bed heat away (the bed lag below) and takes none from the water: Fig 4. Once the bed is under the
        water (Fig 5 cold shutdown, furnace 840 -> 100 C in 8 h) the draft cools the water as before. kcool / kamb unchanged; the ambient
        loss (kamb) stays on Tw - Tamb */
-    Qloss = unf * (U.kcool * asC * Math.max(0, (U.Tw - Math.max(U.Tamb, U.Tb)) / 300) + U.kamb * Math.max(0, (U.Tw - U.Tamb) / 300));
+    Qloss =
+      unf *
+      (U.kcool * asC * Math.max(0, (U.Tw - Math.max(U.Tamb, U.Tb)) / 300) +
+        U.kamb * Math.max(0, (U.Tw - U.Tamb) / 300));
   if (U.cold) {
-    const ts = tsatOf(U.Pd),
-      /* the water can only take heat from a hotter furnace (Mina item 12d: water 147 C with bed 141 C) */
-      qW = Math.min(U.Qs, U.uaW * Math.max(0, U.Tb - U.Tw));
+    /* the bed heat balance (AN_BB above): the bed, the furnace exit gas and the heat of the water walls, no fitted law */
+    const B = AN_BB,
+      ts = tsatOf(U.Pd),
+      av = U.tafS && U.taf.length === 3 ? U.taf.map(n => Math.max(0, +U.tafS.rt.v[n] || 0)) : [taf, 0, 0],
+      tPa = isFinite(U.aphPa) ? U.aphPa : U.Tamb,
+      tSa = isFinite(U.aphSa) ? U.aphSa : U.Tamb,
+      dW = U.Tb - U.Tw /* bed over the wall water, both signs */,
+      fg = (Fb * (1 - AN_FG.ash) + oil) / 3.6 /* fuel gas, kg/s */,
+      gcp = ((av[0] + av[1] + av[2]) / 3.6) * B.cpA + fg * AN_FG.cpG /* kW/K */,
+      uRel = U.taf0 > 0 ? (taf / U.taf0) * ((U.Tb + 273) / (U.Tb0 + 273)) : 0,
+      phi = Math.min(1.2, Math.max(0, isFinite(U.bedI) ? U.bedI / AN_BI.t0 : 1)) * Math.min(1.44, uRel * uRel),
+      qSol = ((B.ua0 - B.uag) * phi + B.uaL) * dW /* kW, from the bed lump */,
+      qGas = gcp > 0.01 ? gcp * dW * (1 - Math.exp(-B.uag / gcp)) : 0 /* kW, from the gas over the upper walls */,
+      qFuel = Fb * B.lhvC + oil * B.lhvO,
+      qAirG =
+        (av[0] / 3.6) * B.cpA * (U.Tb - tPa) +
+        (av[1] / 3.6) * B.cpA * (U.Tb - tSa) +
+        (av[2] / 3.6) * B.cpA * (U.Tb - U.Tamb) +
+        fg * AN_FG.cpG * (U.Tb - U.Tamb),
+      Cb = Math.max(0, isFinite(U.bedI) ? U.bedI : AN_BI.tCold) * 1000 * B.cpS + B.mRef;
+    U.Tb = Math.max(U.Tamb, U.Tb + ((qFuel - qAirG - qSol) * dt) / Cb);
+    /* the furnace exit gas: the bed less the upper walls, held at the bed by the circulating solids in the share phi */
+    U.tgF = gcp > 0.01 ? U.Tb - (1 - Math.min(1, phi)) * (qGas / gcp) : U.Tb;
+    U.gcp = gcp;
+    U.phi = phi;
+    /* water walls, T/H of steam-equivalent (the unit of Cw / C): both ways, a bed under the water cools it. The air cooling of the
+       unfired boiler (kcool) is inside this balance now; the loss to the room (kamb) stays */
+    const qW = (qSol + qGas) / B.kW,
+      qL = U.kamb * Math.max(0, (U.Tw - U.Tamb) / 300);
+    U.qW = qW;
+    U.Qs = Math.max(0, qW); /* the steam made, read by the firing ratio of the steam temperatures */
     if (U.Tw < ts - 0.01) {
-      U.Tw = Math.max(U.Tamb, Math.min(ts, U.Tw + ((qW - Qloss) * dt) / U.Cw));
+      U.Tw = Math.max(U.Tamb, Math.min(ts, U.Tw + ((qW - qL) * dt) / U.Cw));
       U.Pd = Math.max(0, U.Pd - ((U.ms + U.mb + (U.msb || 0)) * dt) / U.C);
     } else {
-      U.Pd = Math.max(0, U.Pd + ((qW - Qloss - U.ms - U.mb - (U.msb || 0)) * dt) / (U.C + U.Cw * steamDTsat(U.Pd)));
+      U.Pd = Math.max(0, U.Pd + ((qW - qL - U.ms - U.mb - (U.msb || 0)) * dt) / (U.C + U.Cw * steamDTsat(U.Pd)));
       U.Tw = tsatOf(U.Pd);
     }
   } else {
     /* S163-6: unfired, the saturated water gives its heat too (C + Cw x dTsat/dP, as the U.cold path); fired (unf = 0) the load path
        keeps its steam storage C alone */
-    U.Pd = Math.max(0, U.Pd + ((U.Qs - Qloss - U.ms - U.mb - (U.msb || 0)) * dt) / (U.C + unf * U.Cw * steamDTsat(U.Pd)));
+    U.Pd = Math.max(
+      0,
+      U.Pd + ((U.Qs - Qloss - U.ms - U.mb - (U.msb || 0)) * dt) / (U.C + unf * U.Cw * steamDTsat(U.Pd))
+    );
     U.Tw = tsatOf(U.Pd);
   }
-  /* bed temperature: firing share over air share, first order */
-  {
+  /* bed temperature: firing share over air share, first order. The load path only ("Start at 150 MW"); the Cold path has the bed
+     heat balance above (AN_BB) */
+  if (!U.cold) {
     const /* fuel share (coal-equivalent, burnt) over air share, exponent 0.45 (ASSUMED, calibrated: 850 C at full load, Fig 8; about
          450 C with two start-up burners at 60 % and the light-off air, the coal batch permissive of PR-OPE-5002 400 ~ 450 C; coal
          alone at O2 4 ~ 5 % about 800 C). 2.2.0-beta.15: on the fuel, not on the steam made (the fixed loss of the firing line
@@ -3754,6 +4744,21 @@ function anUnitStep0(dt) {
     const k = Math.max(0, (U.Tb - U.Tamb) / Math.max(1, U.Tb0 - U.Tamb));
     for (const L of U.tbed) anUnitWrite(L, i => U.Tamb + (L.a0[i] - U.Tamb) * k);
   }
+  /* 3.2.3-beta.212 (live Cold sweep F16: AIR AND FLUE GAS page '-----' for the furnace, cyclone outlet and seal pot temperatures with
+     the bed at 220 C): the cyclone outlet TT-FG1095-A / B (I/O list 1|AI0660 / 0661) and the seal pots TT-FG1009-A / B (1|AI0594 /
+     0662) are read by no sheet of the logic, so the line above never reached them. They are the same solids loop as the bed (the gas
+     and the circulating ash leave the furnace through the cyclone and come back through the seal pot): the same rule as the bed
+     thermocouples, each on its own snapshot value (hmi-op.js AN_HMI_AI). U.gFu / U.gFl = the average of the nine lower layer above /
+     under thermocouples TT-FG1091-A ~ I / TT-FG1090-A ~ I the page shows as one value. Numbers only on U (SAVE keeps U as JSON) */
+  {
+    const k = Math.max(0, (U.Tb - U.Tamb) / Math.max(1, U.Tb0 - U.Tamb)),
+      a0 = anGasA0(),
+      t = x => (isFinite(x) ? U.Tamb + (x - U.Tamb) * k : NaN);
+    U.gFu = t(a0.u);
+    U.gFl = t(a0.l);
+    U.gCy = a0.cy.map(t);
+    U.gSp = a0.sp.map(t);
+  }
   /* 3.2.1 (LISA, Mina Normal shutdown on beta.115: PIFA1085 LOW-LOW at 65 MW, SA 160 T/H): the SA pressures are the bed back pressure at
      the SA ports plus the duct / air preheater / nozzle drop. Before, all of it went with the square of the SA flow (805 mmH2O at 160 T/H).
      Split 600 / 827 of the 1427 anchor from the SAF start procedure ("SAF pressure above 1200 mmH2O with bed, above 600 mmH2O without bed",
@@ -3774,21 +4779,37 @@ function anUnitStep0(dt) {
   U.Pms = Pms; /* 3.2.0-beta.14: source of the reducing stations (source.js) */
   /* generator. 2.2.0-beta.17: HP steam (1 - cIP) + IP / LP steam cIP (qip = the reheat pressure x the ICV opening, = the HP steam
      when the bypass is shut and the ICV full open: the same line MW0 + c x (ms - m0) as before) less the anchor losses; 0 off the grid */
+  /* 3.2.3-beta.240 (user 2026-11-14, reverse power): on the grid the MW is not held at 0 or above. With too little steam the generator
+     takes power from the grid to keep the shaft at 3600 rpm (motoring): the no-load loss of the shaft (windage, bearings, U.nlMW, NO-SOURCE)
+     stays when the IP steam is gone, where the anchor line loss (mwK) fades out. The 32 relay (anRp32) sees the negative power */
   const qip = U.m0 * U.rr * tb.icv,
+    fq = Math.min(1, qip / (0.3 * U.m0)),
     MWss = onGrid
-      ? Math.max(
-          0,
-          U.c * ((1 - U.cIP) * U.ms + U.cIP * qip) - (U.mwK != null ? U.mwK : U.c * U.m0 - U.MW0) * Math.min(1, qip / (0.3 * U.m0)) - anVacMW(U) + (U.dMWx || 0)
-        )
+      ? U.c * ((1 - U.cIP) * U.ms + U.cIP * qip) -
+        (U.mwK != null ? U.mwK : U.c * U.m0 - U.MW0) * fq -
+        (U.nlMW || 0) * (1 - fq) -
+        anVacMW(U) +
+        (U.dMWx || 0)
       : 0;
   U.MW += ((MWss - U.MW) * dt) / U.tauMW;
   U.Pm = MWss;
+  anRp32(U, onGrid && !trip, dt);
   anTbSpeed(U, tb, dt, onGrid && !trip && tb.xfer, MWss, D);
   /* 52G open: no load on the machine */
   if (U.tc && (tb.st === 'off' || tb.st === 'roll')) U.MW = 0;
   U.rpm = tb.rpm;
   U.icvp = 100 * tb.icv;
-  U.tbn = { off: 0, roll: 1, sync: 2, load: 3 }[tb.st];
+  if (U.vpos === undefined) U.vpos = anVposOf(); /* a save point from before 3.2.3-beta.244 */
+  if (U.vpos) {
+    /* T/G Modbus valve positions (U.vpos above): CV = the governor valve lift U.gv (0 ~ 100 %), ICV = tb.icv; a tripped or stopped
+       machine has its valves shut */
+    const run = tb.st !== 'off',
+      cvp = run ? Math.max(0, Math.min(100, 100 * (+U.gv || 0))) : 0,
+      icp = Math.max(0, Math.min(100, 100 * (+tb.icv || 0)));
+    for (const l of U.vpos.cv) dirt(l, cvp);
+    for (const l of U.vpos.icv) dirt(l, icp);
+  }
+  U.tbn ={ off: 0, roll: 1, sync: 2, load: 3 }[tb.st];
   /* the TCS inputs of the DCS in a start-up (the snapshot of "Start at 150 MW" keeps its own) */
   if (U.cold) {
     /* TCE p.127 TCE180: permissive = NOT (52G not closed, TURBINE TRIP, FORCED CLOSE by HOUSE LOAD OPERATION, IP START before the
@@ -3802,7 +4823,9 @@ function anUnitStep0(dt) {
   U.t += dt;
   /* transmitters */
   anUnitWrite(U.msp, Pms);
-  for (const l of U.tin) anUnitWrite(l, Math.max(0, Pms - U.kln * U.ms * U.ms));
+  /* live Cold start sweep (user 2026-11-13): written as exactly 0 the SELECT CIRCUIT of ABC-050 took PT-MS1006-1 / -2 as lost and held
+     122.0 kg/cm2 on the HP bypass PV with the main steam at 0. A live transmitter at 0 kg/cm2 is a healthy 4 mA signal: not exactly 0 */
+  for (const l of U.tin) anUnitWrite(l, Math.max(1e-3, Pms - U.kln * U.ms * U.ms));
   anUnitWrite(U.drum, U.Pd);
   for (const l of U.mw) anUnitWrite(l, U.MW);
   anUnitWrite(U.tgt, U.tcsT);
@@ -3821,7 +4844,11 @@ function anUnitStep0(dt) {
   /* reheat pressure: proportional to the steam through the IP / LP turbine = turbine steam + HP bypass, less what the LP bypass
      takes (its size lpb x the anchor flow at the anchor pressure); first stage pressure: proportional to the turbine steam */
   const olp = qOn(U.qo && U.qo.lp) ? 100 : U.lpv ? Math.max(0, Math.min(100, +U.lpv.S.rt.v[U.lpv.n] || 0)) : 0;
-  if (!tb.xfer) {
+  /* 3.2.3-beta.239: one mass balance of the reheater at every load (was: this balance until the ICV to CV transfer, then a steady
+     state law (ms + mhp) / (m0 (1 + LP bypass)) with a 10 s lag that took the reheater pressure from 19 to 5.7 kg/cm2 at the transfer
+     while the ICV was thrown open). In = HP turbine exhaust (the CV steam U.ms) + HP bypass; out = ICV (qip) + LP bypass + RH blow-off.
+     Its steady state is the old law with the ICV full open: the 150 MW point does not move */
+  {
     /* 2.2.0-beta.16 (M4 step 3): turbine shut (no IP / LP turbine flow): the hot reheat pressure is the steam stored in the
        reheater: in = HP bypass (U.mhp), out = LP bypass + RH blow-off, each = size x anchor flow x opening x pressure / anchor
        pressure (as the outlets of the main steam line). 2.2.0-beta.17: + the ICV flow (roll steam, initial load) until the transfer */
@@ -3829,11 +4856,11 @@ function anUnitStep0(dt) {
       orb = U.rhbv ? Math.max(0, Math.min(100, +U.rhbv.S.rt.v[U.rhbv.n] || 0)) : 0,
       qout = (U.m0 * U.rr * (U.lpb * olp + U.rhb * orb)) / 100 + qip;
     U.rr = Math.max(0, U.rr + ((U.mhp + U.ms - qout) * dt) / (U.Crh * Prh0));
-  } else {
-    const rrs = (U.ms + U.mhp) / (U.m0 * (1 + (U.lpb * olp) / 100));
-    U.rr += ((rrs - U.rr) * dt) / U.tauRH;
   }
-  for (const L of U.rhp) scaled(L, U.rr);
+  /* live Cold start F12 (user 2026-11-13 "may steam naba sa reheat line?"): an empty reheater reads 0 kg/cm2 on PT-HR1003-1 / -2, a live
+     4 mA signal. Written as exactly 0 the SELECT CIRCUIT of ABC-052 (SI0180) took both as lost and held its last value 0.6 kg/cm2 on
+     the hot reheat pressure. Not exactly 0, as the first stage pressure below */
+  for (const L of U.rhp) scaled(L, Math.max(1e-3, U.rr));
   /* 3.2.0-beta.14 (source.js): hot reheat pressure and LP bypass flow, the source of the LP bypass desuperheater */
   {
     const Prh0 = U.rhp.length && U.rhp[0].a0.length && U.rhp[0].a0[0] > 0 ? U.rhp[0].a0[0] : 34;
@@ -3882,12 +4909,75 @@ function anUnitStep0(dt) {
        cold boiler (water 30 C, no steam) the saturation temperature of 0 kg/cm2 is 99.97 C: the SH / RH steam temperatures
        (TICBR1130 / 1140 / 1150, TICMS1004, TICHR1002) read 99.97 C instead of the ambient. Once the water boils Tw = saturation */
     tsat = Math.min(tsatOf(U.Pd), isFinite(U.Tw) ? U.Tw : 1e9);
+  /* F11: superheater / reheater tube metal (see AN_UNIT.shM). Gas into the backpass = the bed less the upper furnace walls, then the cyclone
+     refractory (AN_FG, beta.229 / 230) */
+  if (U.cold) {
+    /* start value (a save without the metal state): the tube metal is at least as hot as the steam held in its headers (h.x of
+       TT-BR1140 / TT-MS1004), not below the water. beta.208 started it at the water (57 C) under 135 C steam: a false drop live */
+    let tw0 = Math.max(U.Tamb, isFinite(U.Tw) ? U.Tw : U.Tamb);
+    if (!isFinite(U.TmS)) for (const h of U.sh || []) if (isFinite(h.x)) tw0 = Math.max(tw0, Math.min(U.Tb, h.x));
+    const rq = U.xt && U.xt.rhPv && U.xt.rhPv.c && U.xt.rhPv.c.q,
+      rh0 =
+        rq && rq.pv != null
+          ? +U.xt.rhPv.S.rt.v[rq.pv]
+          : NaN; /* the RH tubes: the steam held in them, PV of TICHR1002 */
+    if (!isFinite(U.TmR))
+      U.TmR = isFinite(rh0) ? Math.max(Math.max(U.Tamb, isFinite(U.Tw) ? U.Tw : U.Tamb), Math.min(U.Tb, rh0)) : tw0;
+    if (!isFinite(U.TmS)) U.TmS = tw0;
+    /* the furnace exit gas U.tgF and the gas flow x cp U.gcp: the bed heat balance above (AN_BB) */
+    const K = AN_FG,
+      gcp = isFinite(U.gcp) ? U.gcp : 0;
+    if (!isFinite(U.tgF)) U.tgF = U.Tb;
+    /* the cyclone refractory (AN_FG): the gas touches only the hot face (U.Tcy) through the film hA (effectiveness 1 - exp(-hA / gas
+       cp)); the hot face conducts into the back of the lining (U.TcyB) */
+    if (!isFinite(U.Tcy)) U.Tcy = U.tgF;
+    if (!isFinite(U.TcyB)) U.TcyB = U.Tcy;
+    const eCy = gcp > 0.01 ? 1 - Math.exp(-K.hA / gcp) : 1,
+      qCy = gcp * eCy * (U.tgF - U.Tcy) /* kW, gas to the hot face */,
+      qCyB = K.kAB * (U.Tcy - U.TcyB); /* kW, hot face to the back */
+    U.Tcy += ((qCy - qCyB) * dt) / K.mF;
+    U.TcyB += (qCyB * dt) / K.mB;
+    const tG = gcp > 0.01 ? U.tgF - qCy / gcp : U.Tcy; /* gas into the backpass: SH / RH */
+    U.tgB = tG;
+    const gr = U.taf0 > 0 ? Math.max(0, taf / U.taf0) : 0,
+      kg = Math.pow(gr, 0.6);
+    let qS = (U.shUA || 261) * kg * Math.max(0, tG - U.TmS),
+      qR = (U.rhUA || 116) * kg * Math.max(0, tG - U.TmR);
+    const qMax = gcp * Math.max(0, tG - Math.min(U.TmS, U.TmR));
+    if (qS + qR > qMax) {
+      const k = qMax / (qS + qR);
+      qS *= k;
+      qR *= k;
+    }
+    const sS = ((U.ms + U.mb + (U.msb || 0)) / 3.6) * 2.2 * Math.max(0, U.TmS - tsat),
+      /* live Cold start 2026-11-14: the reheater inlet is the cold reheat line (P4S3: cold reheat -> R-1 -> R-2), the mix of the HP
+         exhaust and the HP bypass outlet of anUnitStepX (X.T.cr, last scan), not the drum saturation (293 C against 331 C live) */
+      tcr = U.xt && U.xt.T && isFinite(U.xt.T.cr) ? U.xt.T.cr : tsat,
+      sR = (((U.mhp || 0) + U.ms) / 3.6) * 2.2 * Math.max(0, U.TmR - tcr);
+    U.TmS = Math.max(U.Tamb, U.TmS + ((qS - sS) * dt) / (U.shM || 176630));
+    U.TmR = Math.max(U.Tamb, U.TmR + ((qR - sR) * dt) / (U.rhM || 121550));
+    /* live Cold start (user 2026-11-14 "Ang sabe kasi ay RH steam temp eh?"): TT-HR1002 is on the reheater outlet pipe, outside the gas
+       path. With the HP bypass shut and no reheat pressure no steam flows: the thermowell reads the outlet pipe, not the tube metal in
+       the gas (it read 474 C, floored at the drum saturation 332 C). The outlet pipe is heated only by the steam that flows out of the
+       tubes (steam x 2.2 kJ/kg K x (tube metal - pipe)) and loses to the room through its lagging (rhPipeUA) */
+    const wR = Math.max(0, (U.mhp || 0) + U.ms);
+    if (!isFinite(U.TpR)) U.TpR = wR > 1 && isFinite(rh0) ? Math.min(rh0, U.TmR) : U.Tamb;
+    U.TpR +=
+      (((wR / 3.6) * 2.2 * (U.TmR - U.TpR) - (U.rhPipeUA || 0.02) * (U.TpR - U.Tamb)) * dt) / (U.rhPipeM || 10000);
+    U.TpR = Math.max(U.Tamb, Math.min(Math.max(U.TmR, U.Tamb), U.TpR));
+    U.wR = wR;
+    /* the cyclone outlet thermocouples TT-FG1095-A / B read the gas leaving the cyclones (beta.212 scaled them on the bed) */
+    U.gCy = [tG, tG];
+  } else U.TmS = U.TmR = U.TpR = U.Tcy = U.TcyB = U.tgB = U.tgF = undefined;
   for (const e of U.ld) {
     const pr = e.pr,
       p = e.b.p || {};
     pr.fr = fr;
-    pr.tsat = tsat;
-    pr.tcap = U.cold ? U.Tb : undefined;
+    /* the reheater is not on the drum: its steam is at the reheat pressure, and with no steam flowing the pipe has no saturation floor */
+    pr.tsat = e.r || !U.cold ? tsat : U.wR > 1 ? Math.min(tsatOf(Math.max(0, U.Prh || 0)), U.TpR) : U.Tamb;
+    /* live Cold start F11 (user 2026-11-13 "Bkt same si bed temp at ms temp?"): in Cold the steam leaves at its tube metal temperature
+       (the SH / RH metal model above), not at the bed. e.r undefined = the reheater (TICHR1002): its outlet pipe (TpR above) */
+    pr.tcap = U.cold ? (e.r ? U.TmS : U.TpR) : undefined;
     if (!pr.hop || !(pr.Ka > 0)) {
       pr.ld = 0;
       continue;
@@ -3906,10 +4996,20 @@ function anUnitStep0(dt) {
       const N = e.r ? U.natSH : U.natRH;
       let T = N[N.length - 1][1];
       if (xs < N[0][0]) T = N[0][1] - e.s * (N[0][0] - xs);
-      else for (let i = 1; i < N.length; i++) if (xs <= N[i][0]) { T = N[i - 1][1] + ((N[i][1] - N[i - 1][1]) * (xs - N[i - 1][0])) / (N[i][0] - N[i - 1][0]); break; }
+      else
+        for (let i = 1; i < N.length; i++)
+          if (xs <= N[i][0]) {
+            T = N[i - 1][1] + ((N[i][1] - N[i - 1][1]) * (xs - N[i - 1][0])) / (N[i][0] - N[i - 1][0]);
+            break;
+          }
       dn = Math.max(0, 541 - T);
     }
-    if ((U.cold || (U.tc && U.tc.step < 7)) && e.s > 0) {
+    /* live Cold start 2026-11-14 (no curve fits, user rule): in Cold the steam leaves the superheater / reheater at its tube metal
+       temperature, the heat balance of the metal model above (gas in, steam out): SH = U.TmS, RH = its outlet pipe U.TpR. The FHI
+       Fig. 2 curve is a check only; the curve stays for a Warm / Hot turbine start out of Cold, where there is no metal model */
+    const Tm = U.cold ? (e.r ? U.TmS : U.TpR) : NaN;
+    if (U.cold && e.s > 0 && isFinite(Tm)) dn = 541 - Tm;
+    else if ((U.cold || (U.tc && U.tc.step < 7)) && e.s > 0) {
       const p0 = (U.tc && U.suRoll[U.tc.mode]) || U.suCurve[0][1],
         c = U.suCurve.map(([a, b]) => [a, Math.max(b, p0)]),
         x = Math.max(c[0][0], xl);
@@ -3953,7 +5053,8 @@ function anUnitStep0(dt) {
     h.d = pk * fr - h.pk0;
     /* 2.2.0-beta.14 (cold): the header after the spray cannot be above the gas (bed) nor below saturation either */
     if (U.cold) {
-      const cap = Math.max(tsat, U.Tb);
+      /* F11: the superheater tube metal (model above), not the bed */
+      const cap = Math.max(tsat, isFinite(U.TmS) ? U.TmS : U.Tb);
       for (const L of h.L) anUnitWrite(L, i => Math.max(tsat, Math.min(cap, L.a0[i] + h.x - h.pv0 + h.d)));
     } else for (const L of h.L) shifted(L, h.x - h.pv0 + h.d);
   }
@@ -3968,8 +5069,22 @@ function anUnitStep0(dt) {
   /* bed inventory and the furnace pressure drop */
   if (U.paNet >= 0) {
     /* only a running cooler takes ash out (DITL-21A and its instances); 16.PNG: all four stopped at 150 MW */
-    const rpm = (U.bedSc || []).reduce((a, o, i) => a + (typeof anDitlRun === 'function' && anDitlRun(['DITL-21A', 'DITL-21A #B', 'DITL-21A #C', 'DITL-21A #D'][i]) === 1 ? Math.max(0, Math.min(5, +o.S.rt.v[o.n] || 0)) : 0), 0),
-      k = anBedStep(U, dt, rpm, Math.max(0, +U.tafS.rt.v[U.paNet]), U.taf && U.taf.length === 3 ? Math.max(0, +U.tafS.rt.v[U.taf[2]]) : null);
+    const rpm = (U.bedSc || []).reduce(
+        (a, o, i) =>
+          a +
+          (typeof anDitlRun === 'function' &&
+          anDitlRun(['DITL-21A', 'DITL-21A #B', 'DITL-21A #C', 'DITL-21A #D'][i]) === 1
+            ? Math.max(0, Math.min(5, +o.S.rt.v[o.n] || 0))
+            : 0),
+        0
+      ),
+      k = anBedStep(
+        U,
+        dt,
+        rpm,
+        Math.max(0, +U.tafS.rt.v[U.paNet]),
+        U.taf && U.taf.length === 3 ? Math.max(0, +U.tafS.rt.v[U.taf[2]]) : null
+      );
     for (const [L, a] of U.bedDp || []) if (L.length) anUnitWrite(L, a * k);
   }
   /* PA to the furnace follows the PAF flow */
@@ -4041,7 +5156,10 @@ function anUnitStep0(dt) {
            PR-OPE-5002 IDF START-UP: about -15 at 13 %). A hot bed with no fire and no air is the same gas path as the cold furnace: the
            loop model anchored at 150 MW (its air term taf / taf0 - 1 = -1 with no air) takes over only with the air too, fully from half
            the purge air of the SOP (203 of 406 T/H), so the Hot / Warm restart starts the fans like the Cold one */
-        ia = idf && U.idf && U.idf.S.rt.pm ? Math.max(0, Math.min(1, (tb - 100) / 200)) * Math.max(0, Math.min(1, taf / 203)) : 1;
+        ia =
+          idf && U.idf && U.idf.S.rt.pm
+            ? Math.max(0, Math.min(1, (tb - 100) / 200)) * Math.max(0, Math.min(1, taf / 203))
+            : 1;
       if (ia < 1 && !p.pr.src) {
         const m = U.idfV ? Math.max(0, Math.min(100, +U.idfV.S.rt.v[U.idfV.n] || 0)) : 0,
           sp = anIdfN(m) / AN_IDF_CRV[2][1],
@@ -4079,7 +5197,15 @@ function anUnitStepX(dt, mso) {
       thx = isFinite(X.cr0) ? X.cr0 + (isFinite(mst) ? mst - X.MST0 : 0) : NaN,
       tby = val(X.byo),
       w = (U.ms || 0) + (U.mhp || 0);
-    const tcr = lag('cr', w > 1 ? ((U.ms || 0) * Math.max(U.Tamb, thx) + (U.mhp || 0) * (isFinite(tby) ? tby : U.Tamb)) / w : (X.T.cr != null ? X.T.cr + ((U.Tamb - X.T.cr) * dt) / (20 * U.tauT) : U.Tamb), U.tauT);
+    const tcr = lag(
+      'cr',
+      w > 1
+        ? ((U.ms || 0) * Math.max(U.Tamb, thx) + (U.mhp || 0) * (isFinite(tby) ? tby : U.Tamb)) / w
+        : X.T.cr != null
+          ? X.T.cr + ((U.Tamb - X.T.cr) * dt) / (20 * U.tauT)
+          : U.Tamb,
+      U.tauT
+    );
     if (isFinite(tcr)) {
       anUnitWrite(X.cr, tcr);
       /* after the RH spray: the cooling of the anchor spray, in the share of the spray MV that reaches the water (block valve) */
@@ -4087,17 +5213,22 @@ function anUnitStepX(dt, mso) {
         sp = U.spr && U.spr.find(z => z.v[0] === 'DITL-35'),
         uf = sp && sp.pr.uf != null ? sp.pr.uf : 1,
         k = X.rhv0 > 1 ? Math.min(2, (mv * uf) / X.rhv0) : 0;
-      X.rhi.forEach((L, i) => anUnitWrite(L, Math.max(U.Tamb, tcr - (isFinite(X.rhi0[i]) && isFinite(X.cr0) ? (X.cr0 - X.rhi0[i]) * k * (w > 1 ? 1 : 0) : 0))));
+      X.rhi.forEach((L, i) =>
+        anUnitWrite(
+          L,
+          Math.max(
+            U.Tamb,
+            tcr - (isFinite(X.rhi0[i]) && isFinite(X.cr0) ? (X.cr0 - X.rhi0[i]) * k * (w > 1 ? 1 : 0) : 0)
+          )
+        )
+      );
     }
     /* hot reheat temperature: the reheater outlet */
     const rht = pvOf(X.rhPv);
     if (isFinite(rht)) anUnitWrite(X.hr, rht + X.hrOff * Math.max(0, Math.min(1, (rht - U.Tamb) / 300)));
-    /* aux steam header: in service with its pressure */
-    const pa = val(X.auxP);
-    if (X.aux && X.aux.length) {
-      const a0 = X.aux.a0[0];
-      anUnitWrite(X.aux, lag('aux', U.Tamb + (a0 - U.Tamb) * Math.max(0, Math.min(1, (pa || 0) / 10.2)), 300));
-    }
+    /* aux steam header TT-AS1003: the header metal of the aux steam model (anAuxStep, AN_AS UA3; it was a lag to 236 C scaled by
+       the header pressure before beta.223) */
+    if (X.aux && X.aux.length && isFinite(U.asT3)) anUnitWrite(X.aux, U.asT3);
     /* feedwater to the economizer: deaerator water + HP heaters (with the turbine load) */
     if (X.fw && X.fw.length && isFinite(X.fw0)) {
       const pd = val(X.dea),

@@ -94,7 +94,6 @@ const TCS = {
      30 + 390 x exp(8 / 71.9) = 466 C). Before 72,000 s (20 h, NO-SOURCE): a turbine was Warm after about 3 h */
   tauCool: 258900,
   tauX: 600 /* s, LP exhaust hood */,
-  tauAux: 120 /* s, aux steam header */,
   names: [
     'HP TURBINE WARMING',
     'TURBINE PREPARATION',
@@ -120,7 +119,12 @@ const tcsLin = (pts, x) => {
 function tcsDitl(L) {
   try {
     /* the press in the engine (src/world/dock-eng.js; the page dock in a page without it) */
-    const P = window.WORLD && WORLD.dpress ? (nm, r) => WORLD.dpress(nm, r) : window.LS_DOCK && LS_DOCK.dpress ? (nm, r) => LS_DOCK.dpress(nm, r) : null;
+    const P =
+      window.WORLD && WORLD.dpress
+        ? (nm, r) => WORLD.dpress(nm, r)
+        : window.LS_DOCK && LS_DOCK.dpress
+          ? (nm, r) => LS_DOCK.dpress(nm, r)
+          : null;
     if (P) for (const [nm, r] of L) P(nm, r - 1);
   } catch (e) {}
 }
@@ -280,15 +284,25 @@ function tcsCrit(U) {
       s.rht >= f3l && s.rht <= f3u,
       s.rht
     ),
-    '1.10': f('1.10', 'GLAND STEAM SEAL HEADER PRESS. NOT LOW', c.gland && c.Pa > 7),
-    1.11: f('1.11', 'CONDENSER VACUUM OK', isFinite(U.cdP) ? tcsBand(c, '1.11', U.cdP, 0.14, 0.12) : U.vac >= 0.9, isFinite(U.cdP) ? U.cdP : U.vac),
+    '1.10': f('1.10', 'GLAND STEAM SEAL HEADER PRESS. NOT LOW', isFinite(U.gsP) ? U.gsP >= 0.1 : c.gland && c.Pa > 7),
+    1.11: f(
+      '1.11',
+      'CONDENSER VACUUM OK',
+      isFinite(U.cdP) ? tcsBand(c, '1.11', U.cdP, 0.14, 0.12) : U.vac >= 0.9,
+      isFinite(U.cdP) ? U.cdP : U.vac
+    ),
     1.12: f('1.12', 'LP TURBINE EXHAUST HOOD STEAM TEMP. NOT HIGH (≤ 80 C)', tcsBand(c, '1.12', c.Tx, 80, 77), c.Tx),
     1.14: f('1.14', 'CONTROL OIL PRESS. NOT LOW', tcsBand(c, '1.14', U.loCtl, 133, 138), U.loCtl),
     1.15: f('1.15', 'BEARING OIL PRESS. NOT LOW', tcsBand(c, '1.15', U.loBrg, 1.05, 1.33), U.loBrg),
     /* c3 (3.2.3): IBD TD-1 (page 84) is the logic of 1.16: lube oil cooler outlet (MAX of TE-LO1002-1 / -2) 27 ~ 40 C on the turning gear,
        27 ~ 50 C while rolling, 40 ~ 50 C at rated speed (after 60 s), net 14 (PR-OPE-5002: bearing oil at least 40 C before synchronizing).
        Before the IBD has run once: the old reading (oil in service) */
-    1.16: f('1.16', 'BEARING OIL TEMP. OK', c.ib && c.ib.v['TD-1'] ? c.ib.v['TD-1'][14] > 0.5 : c.brgOk !== undefined ? c.brgOk : c.lop, U.loTout),
+    1.16: f(
+      '1.16',
+      'BEARING OIL TEMP. OK',
+      c.ib && c.ib.v['TD-1'] ? c.ib.v['TD-1'][14] > 0.5 : c.brgOk !== undefined ? c.brgOk : c.lop,
+      U.loTout
+    ),
     1.17: f('1.17', 'MAIN OIL TANK LEVEL OK', true),
     1.18: f('1.18', 'MAIN OIL TANK VAPOUR EXTRACTOR RUNNING', c.vex),
     1.19: f(
@@ -480,14 +494,16 @@ function tcsCmd(U, cmd, arg) {
       c.asv = on;
       return '';
     case 'gland':
+      /* 3.2.3: the command puts the gland steam controller (PV-GS1031 / PV-GS1034 PI on PT-GS1001) in or out of service; the seal is in
+         service when the header pressure comes up (unit.js anAuxStep) */
       if (!on) {
+        c.gsOn = false;
         c.gland = false;
         return '';
       }
-      if (!(c.Pa > 7)) return 'gland sealing: aux steam > 7 kg/cm2 (PR-OPE-5002 6164), ngayon ' + c.Pa.toFixed(1);
       if (!(tb && tb.rpm >= 1)) return 'Gland sealing: the turbine must turn on the turning gear (PR-OPE-5002 6219)';
       if (!c.vb) return 'Gland sealing: the vacuum breaker MV-AV1391 must be open (PR-OPE-5002 6197)';
-      c.gland = true;
+      c.gsOn = true;
       return '';
     case 'vacuum':
       if (!on) {
@@ -547,15 +563,7 @@ function tcsStepIn(U, k, arg) {
      (page 14 Fig. 1: complete when not ambient cold / cold 1, PR-OPE-5002 8267) */
   const need = k === 1 ? -1 : k === 3 && !(c.mode === 'amb' || c.mode === 'c1') ? 1 : k - 1;
   if (c.step < need)
-    return (
-      'Finish step ' +
-      need +
-      ' ' +
-      TCS.names[need] +
-      ' (ATS page ' +
-      [13, 14, 17, 19, 23, 24, 26, 28][need] +
-      ')'
-    );
+    return 'Finish step ' + need + ' ' + TCS.names[need] + ' (ATS page ' + [13, 14, 17, 19, 23, 24, 26, 28][need] + ')';
   if (c.step >= k) return 'Already done: ' + TCS.names[k];
   const miss = k === 8 ? '' : tcsMiss(U, TCS_A[k]);
   if (miss) return 'CRITERIA A' + k + ' (' + TCS.names[k] + ') missing: ' + miss;
@@ -586,9 +594,11 @@ function tcsStep(U, dt) {
     const p51 = typeof anDitlPos === 'function' ? anDitlPos('DITL-51', 0) : null;
     if (p51 != null) c.asv = p51 > 0;
   }
-  const PaSS = c.asv ? Math.max(0, Math.min(10.5, U.Pd - 1)) : 0;
-  c.Pa += ((PaSS - c.Pa) * dt) / TCS.tauAux;
-  if (c.Pa < 7) c.gland = c.gland && c.Pa > 5;
+  /* 3.2.3 live Cold start (user 2026-11-14 "Code ang gawin"): the aux steam header and the gland header are mass balances (unit.js
+     AN_AS anAuxStep): Pa = PT-AS1004, the gland seal is in service while its header holds >= 0.10 kg/cm2 G (ATS 1.10, IBD TD-3 LOW).
+     Before: a lag toward min(10.5, drum - 1) and a switch */
+  if (isFinite(U.asP)) c.Pa = U.asP;
+  if (isFinite(U.gsP)) c.gland = !!c.gsOn && U.gsP >= 0.1;
   if (!c.brgOk) c.tg = false;
   /* turning gear: about 3 rpm (PR-OPE-5002 7955); disengages above 4 rpm and engages again at zero speed */
   const steam = tb.st !== 'off' && (tb.icv > 0.001 || U.gv > 0.001);
@@ -611,12 +621,17 @@ function tcsStep(U, dt) {
   c.sexp = Math.max(0, (c.Thp - Ta) * 0.02);
   /* LP exhaust hood: windage of the blades with little steam, the hood spray below 15 % load (PR-OPE-5002 9195), the vacuum
      (NO-SOURCE law, limits 80 / 52 C sourced, ambient 30 C: with the spray about 56 C at 3600 rpm with no load, about 49 C at the initial load 4.5 MW, about 58 C on load: under the 80 C of 1.12) */
+  /* live Cold start sweep (user 2026-11-13): the 15 C of the windage counts with the speed: a turbine at rest makes no heat, the hood
+     sat at 45 C with no steam and 0 rpm (the condenser TEST11101 ~ 3 too). At 3600 rpm the values above are unchanged */
   const sp = Math.min(1, (tb.rpm || 0) / 3600),
     /* 3.2.0-beta.38: the hood spray FVCD1904 in AUTO (PR-OPE-5002 6307, put in AUTO at the vacuum up) sprays below 15 % load (22.5
        MW, 9195) and takes 70 % of the windage heat (NO-SOURCE share; the spray itself is sourced: FV-CD1904 full open below 15 % load, IBD TC-28, 5226 kg/h, TG maintenance manual p104 and p2520 ~ 2521). Without it: 82 C at 3600 rpm with no load, over the 80 C of 1.12 (hold) */
     hs = c.hsp && (U.MW || 0) < 22.5 ? 0.3 : 1,
     XSS =
-      Ta + 15 + 37 * hs * sp * sp * Math.max(0.35, 1 - (U.MW || 0) / 7.5) + 120 * Math.max(0, 0.9 - (U.vac || 0)) * sp,
+      Ta +
+      15 * sp +
+      37 * hs * sp * sp * Math.max(0.35, 1 - (U.MW || 0) / 7.5) +
+      120 * Math.max(0, 0.9 - (U.vac || 0)) * sp,
     /* 3.2.1 (IRENE, 29.PNG 151 MW: TEST11101 ~ 3 38 / 38 / 37 C = the saturation of the condenser 0.056 kg/cm2A): on load the steam
        carries the windage away and the hood is wet steam at the condenser saturation. NO-SOURCE blend: from the windage value at 7.5 MW to the
        saturation at 22.5 MW (15 % load, the hood spray limit of PR-OPE-5002 9195), linear; below 7.5 MW unchanged */
@@ -727,7 +742,8 @@ function tcsStep(U, dt) {
         const g = tcsGen(U);
         g.ex = true;
         c.exc = g.f41;
-        if (g.f41 && g.V >= 1) tcsDone(U, 4);
+        /* beta.236: the voltage comes from the field physics (tcs-gen.js): GENERATOR VOLTAGE OK = inside the ASD window, 2 % */
+        if (g.f41 && Math.abs(g.V - 1) <= TCS_GEN.dV) tcsDone(U, 4);
       }
       break;
     case 5 /* SYNCH. & INITIAL LOAD (page 24 ~ 25): ASD closes 52G, initial load, hold timer (Fig. 3) */:
@@ -747,7 +763,8 @@ function tcsStep(U, dt) {
       } else if (c.ph === 'init' && U.MW >= 0.9 * tb.aim && c.tm >= c.holdMin * 60) {
         /* plan c3: PR-OPE-5002 9082 ~ 9088 / 9123: the initial load is held also until the LP exhaust hood is below 52 C (the hood spray
            cools it below 15 % load); before, only the 80 C of criterion 1.12 was checked */
-        if (isFinite(c.Tx) && c.Tx >= 52) c.hold = 'Waiting: LP exhaust hood ' + c.Tx.toFixed(0) + ' C, below 52 C before load up (PR-OPE-5002)';
+        if (isFinite(c.Tx) && c.Tx >= 52)
+          c.hold = 'Waiting: LP exhaust hood ' + c.Tx.toFixed(0) + ' C, below 52 C before load up (PR-OPE-5002)';
         else {
           if (/LP exhaust hood/.test(c.hold || '')) c.hold = '';
           tcsDone(U, 5);
@@ -816,7 +833,11 @@ function tcsStep(U, dt) {
      vapour extractor  F-1937 (main oil tank vacuum PGLO1920 -20 ~ -50 mmH2O);
      oil purifier      P-1941, local panel (AN_SRC.field.pur), discharge ~ 2.96 kg/cm2 (SOP).
    Values (36.PNG at 149 MW, SOP limits; the rest NO-SOURCE and marked):
-     MOP discharge     6.1 kg/cm2g while running (SOP 5.6 ~ 6.6; 36.PNG shows 6.9, UNUSUAL: above the SOP range, so the SOP mid value);
+     MOP discharge     6.63 kg/cm2g while running = 0.65 MPa(g), the design MAIN OIL PUMP DISCHARGE OIL of the TG lube oil system
+                       drawing 310SD14-354 (TG maintenance manual 2-1-2, legend; bearing oil 0.18 MPa(g) there). The header is held by
+                       the LUBE OIL PRESSURE CONTROL VALVE V-LOn004 (valve list), so a set value; no pump curve in the docs (the pump
+                       datasheet is a scan). 36.PNG shows 6.9, SOP 5.6 ~ 6.6. beta.212 had 6.1, the SOP mid value: IBD TB-1 / TB-2 resets the
+                       LOW of the running pump only ABOVE 6.1 (CMP 5.6 / 6.1), so the LOW stayed on and the standby in AUTO started;
      bearing oil       3.3 (36.PNG PILO10031 ~ 33) with a MOP; 1.6 with the EOP only (NO-SOURCE, above its 1.05 start); else 0;
      EOP discharge     1.6 while running (NO-SOURCE);
      COP discharge     163.2 while running (SOP "163.2 ksc"; 36.PNG 164.2); control oil header = discharge - 0.6 (the filter, 36.PNG
@@ -825,7 +846,7 @@ function tcsStep(U, dt) {
      bearing outlet    TIGE1007 / 1008 = the cooler outlet + 9 / 10 C x speed / 3600 (36.PNG 55 / 56 C);
      pressures follow with a lag of 1.5 s (NO-SOURCE), so a stopped running pump lets the header fall and the standby in AUTO start. */
 const TCS_OIL = {
-  mop: 6.1,
+  mop: 6.63,
   brg: 3.3,
   brgEop: 1.6 /* kg/cm2, NO-SOURCE inside sourced bounds: above the EOP LOW OFF 1.33 and below the 5.0 design (V-LOn005) */,
   eop: 1.6 /* same bounds */,
@@ -870,7 +891,8 @@ function tcsOilCmd(c, a) {
   if (op === 'start') c[k][i] = true;
   else if (op === 'stop') {
     /* SOP 2620: the standby to MANUAL first, then STOP; a pump in AUTO cannot be stopped */
-    if (c[k + 'Au'][i]) return (k === 'mop' ? 'MOP' : 'COP') + '-' + m[2] + ' is in AUTO: set MANUAL first, then STOP (SOP)';
+    if (c[k + 'Au'][i])
+      return (k === 'mop' ? 'MOP' : 'COP') + '-' + m[2] + ' is in AUTO: set MANUAL first, then STOP (SOP)';
     c[k][i] = false;
   } else if (op === 'auto') c[k + 'Au'][i] = true;
   else if (op === 'man') c[k + 'Au'][i] = false;
@@ -899,14 +921,30 @@ function tcsIO(U) {
     now = +U.t || 0,
     held = (p, op) => !!(c.do && c.do[p] && c.do[p].op === op && now - c.do[p].t <= 3),
     st = (pfx, run, au) => {
-      Object.assign(o, { [pfx + '_YIR']: run ? 1 : 0, [pfx + '_YIP']: run ? 0 : 1, [pfx + '_ABN']: 0, [pfx + '_IEP']: 0, [pfx + '_IES']: 0, [pfx + '_IET']: 0, [pfx + '_IYP']: 1, [pfx + '_YEE']: 0, [pfx + '_IYS']: 1 });
+      Object.assign(o, {
+        [pfx + '_YIR']: run ? 1 : 0,
+        [pfx + '_YIP']: run ? 0 : 1,
+        [pfx + '_ABN']: 0,
+        [pfx + '_IEP']: 0,
+        [pfx + '_IES']: 0,
+        [pfx + '_IET']: 0,
+        [pfx + '_IYP']: 1,
+        [pfx + '_YEE']: 0,
+        [pfx + '_IYS']: 1
+      });
       if (au != null) Object.assign(o, { [pfx + '_IIA']: au ? 1 : 0, [pfx + '_IIH']: au ? 0 : 1 });
     };
   ['A', 'B'].forEach((L, i) => {
     const p = '1P1931' + L,
       k = 'cop' + L;
     st(p, c.cop[i], c.copAu[i]);
-    Object.assign(o, { [p + '_JYS']: held(k, 'start') ? 1 : 0, [p + '_JYP']: held(k, 'stop') ? 1 : 0, [p + '_IKA']: held(k, 'auto') ? 1 : 0, [p + '_IKH']: held(k, 'man') ? 1 : 0, [p + '_IKR']: 0 });
+    Object.assign(o, {
+      [p + '_JYS']: held(k, 'start') ? 1 : 0,
+      [p + '_JYP']: held(k, 'stop') ? 1 : 0,
+      [p + '_IKA']: held(k, 'auto') ? 1 : 0,
+      [p + '_IKH']: held(k, 'man') ? 1 : 0,
+      [p + '_IKR']: 0
+    });
     o['1PTLO1931' + L + '_PV'] = +U['loC' + L.toLowerCase()] || 0;
   });
   o['1PTLO1931AA_XA'] = c.cop[1] && o['1PTLO1931B_PV'] <= TCS_OIL.copLo ? 1 : 0;
@@ -1083,7 +1121,7 @@ function tcsState() {
     tmMin: c.tm / 60,
     soakMin: c.soakMin,
     holdMin: c.holdMin,
-    gen: U.gen ? { f41: U.gen.f41, volt: U.gen.V >= 1, sync: U.gen.x25, on25: U.gen.on25, msg: U.gen.last } : null,
+    gen: U.gen ? { f41: U.gen.f41, volt: Math.abs(U.gen.V - 1) <= 0.02, slip: U.gen.slip, th: U.gen.th, sync: U.gen.x25, on25: U.gen.on25, msg: U.gen.last } : null,
     hold: c.hold,
     rpm: U.tb ? U.tb.rpm : 0,
     Pa: c.Pa,

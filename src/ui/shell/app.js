@@ -1663,17 +1663,19 @@
       /* Mina beta.154: the plant minutes of the name did not match the clock of the app; the name is the load and the time of day */
       return (U.on ? (+U.MW || 0).toFixed(1) + ' MW' : 'plant') + ' · ' + tm.toTimeString().slice(0, 5);
     };
+    /* F30 (live Cold start, beta.215): the built-in browser has no prompt() / confirm(): SAVE threw "prompt() is not supported" and
+       nothing was saved. The questions of SAVE, LOAD and Delete are asked in the page (lsAskText / lsAsk, shellc-ask.js) */
+    const svAsk = (q, d) => (window.lsAskText ? lsAskText(q, d) : Promise.resolve(prompt(q, d)));
     const svPick = (L, what) => {
-      if (!L.length) return msg('No save point yet: press SAVE first.'), null;
-      const x = prompt(what + ': type its number\n' + L.map((e, i) => i + 1 + '. ' + e.name).join('\n'), String(L.length));
-      const i = +x - 1;
-      return x && L[i] ? L[i] : null;
+      if (!L.length) return msg('No save point yet: press SAVE first.'), Promise.resolve(null);
+      return svAsk(what + ': type its number\n' + L.map((e, i) => i + 1 + '. ' + e.name).join('\n'), String(L.length)).then(x => {
+        const i = +x - 1;
+        return x && L[i] ? L[i] : null;
+      });
     };
     btn('savenow', 'SAVE the plant now', 'Keeps the whole plant at this moment (ABC, DITL, turbine, plant model, modes, Training) in this browser under a name. LOAD puts it back.', () => {
       if (AN._loading) return msg('Wait: a starting state is still loading.');
-      const nm = prompt('Name of this save point:', svName());
-      if (!nm) return;
-      svSave(nm);
+      svAsk('Name of this save point:', svName()).then(nm => nm && svSave(nm));
     });
     /* Mina beta.210: the save itself, apart from the name question (prompt() is blocked in some browsers and app views: the Instructor
        console of the new layout asks the name in the page) */
@@ -1721,22 +1723,21 @@
     };
     btn('loadsave', 'LOAD a save point…', 'Puts the whole plant back as it was saved, then pauses: press Run to go on.', () =>
       svList()
-        .then(L => {
-          const e = svPick(L, 'Load which save point');
-          if (!e) return;
-          return svLoad(e);
-        })
+        .then(L => svPick(L, 'Load which save point').then(e => e && svLoad(e)))
         .catch(x => msg('Could not load: ' + x.message))
     );
     btn('delsave', 'Delete a save point…', 'Removes one save point from this browser.', () =>
       svList()
-        .then(L => {
-          const e = svPick(L, 'Delete which save point');
-          if (!e) return;
-          /* Mina beta.154: a confirm before a delete (it cannot be undone) */
-          if (!confirm('Delete the save point "' + e.name + '"? It cannot be undone.')) return;
-          return svDo('readwrite', st => st.delete(e.id)).then(() => msg('Deleted: ' + e.name));
-        })
+        .then(L =>
+          svPick(L, 'Delete which save point').then(e => {
+            if (!e) return;
+            /* Mina beta.154: a confirm before a delete (it cannot be undone); asked in the page (F30) */
+            const q = 'Delete the save point "' + e.name + '"? It cannot be undone.';
+            return (window.lsAsk ? lsAsk({ q, ok: 'Delete', danger: true }) : Promise.resolve(confirm(q))).then(y =>
+              y ? svDo('readwrite', st => st.delete(e.id)).then(() => msg('Deleted: ' + e.name)) : null
+            );
+          })
+        )
         .catch(x => msg('Could not delete: ' + x.message))
     );
     /* 3.2.1 trend recorder (live.js REC): one row per minute of plant time; the CSV goes to the PC comparison script */
@@ -1797,7 +1798,8 @@
         }
       });
     tcs('tcsroll', 'Turbine ROLL', 'TCS panel: open the stop valves, IP start mode, 120 rpm/min to 3600 rpm (PR-OPE-5002 4.4). Needs Start cold and the plant running.', 'roll', null, 'TCS: turbine rolling, 120 rpm/min to 3600 (OPERATE > UNIT shows the speed).');
-    tcs('tcssync', 'SYNC + initial load 4.5 MW', 'TCS panel at 3600 rpm: GCB 52G1 closed (ABC-050 I.0931 = 1, I.0932 = 0), initial load 4.5 MW on the ICV (PR-OPE-5002 4.5).', 'sync', null, 'TCS: generator synchronised, initial load 4.5 MW.');
+    tcs('tcsexc', 'EXCITATION', 'ATS step 4 at 3600 rpm (ATS sequence page 23): field breaker 41 closes, the AVR builds the generator voltage up to 13.8 kV. Needed before SYNC.', 'excite', null, 'TCS: EXCITATION started, generator voltage building up to 13.8 kV.');
+    tcs('tcssync', 'SYNC + initial load 4.5 MW', 'TCS panel after EXCITATION: auto synchronizing (speed and voltage matched), GCB 52G1 closed (ABC-050 I.0931 = 1, I.0932 = 0), initial load 4.5 MW on the ICV (PR-OPE-5002 4.5).', 'sync', null, 'TCS: generator synchronised, initial load 4.5 MW.');
     /* S149-3: ATS step 7 (310SC90-775 page 28); SHUT-DOWN (step 8) is taken only after it */
     tcs('tcsnormal', 'NORMAL OPERATION', 'ATS step 7 at 45 MW (ATS sequence page 28). The SHUT-DOWN (step 8) needs it done.', 'normal', undefined, 'TCS: NORMAL OPERATION (ATS step 7) done.');
     tcs('tcsshut', 'Turbine SHUT-DOWN', 'ATS step 8: below 20 % load: 52G open, 41 open, turbine trip (ATS sequence page 29)', 'shutdown', undefined, () => true);

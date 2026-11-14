@@ -21,6 +21,12 @@
       FB: { n: 'FA BLOWER-B', t: 'F-1055B', ad: 'DITL-28A #B', d: 'DITL-28A #B', io: 'MIR-F1055B' },
       FCA: { n: 'FICFA1055A', t: 'Fluidizing air blower A inlet damper FCV-FA1055-A1', ctl: 'FICFA1055A', io: 'FICFA1055A' },
       FCB: { n: 'FICFA1055B', t: 'Fluidizing air blower B inlet damper FCV-FA1055-B1', ctl: 'FICFA1055B', io: 'FICFA1055B' },
+      SVA: { n: 'XV-FA1055-A2', t: 'Fluidizing air blower A surge (to silencer) SOV', mov: 'DITL-28C', tg: '~TO SILENCE' },
+      SVB: { n: 'XV-FA1055-B2', t: 'Fluidizing air blower B surge (to silencer) SOV', mov: 'DITL-28C #B', tg: '~TO SILENCE' },
+      OVA: { n: 'XV-FA1055-A3', t: 'Fluidizing air blower A outlet SOV', mov: 'DITL-28C', tg: '~OUTLET SOV' },
+      OVB: { n: 'XV-FA1055-B3', t: 'Fluidizing air blower B outlet SOV', mov: 'DITL-28C #B', tg: '~OUTLET SOV' },
+      LOA: { n: 'PAF LUBE OIL PUMP A', t: 'Primary air fan lube oil pump A', ad: 'DITL-24', d: 'DITL-24' },
+      LOB: { n: 'PAF LUBE OIL PUMP B', t: 'Primary air fan lube oil pump B', ad: 'DITL-24 #B', d: 'DITL-24 #B' },
       APH: { n: 'AIR PREHEATER', t: 'H-1052', ad: 'DITL-43', d: 'DITL-43' },
       CPA: { n: 'FICFA1071', t: 'Primary air flow', ctl: 'FICFA1071', io: 'FICFA1071' },
       CSA: { n: 'FICFA1081', t: 'Secondary air flow', ctl: 'FICFA1081', io: 'FICFA1081' },
@@ -45,7 +51,24 @@
       'PT-FA1055-B': 'ux:fnFaP.1',
       'PT-FG1141-A': 'ux:fnGi.0',
       'PT-FG1141-B': 'ux:fnGi.1',
-      'PT-FG1151': 'fnGo'
+      'PT-FG1151': 'fnGo',
+      /* 3.2.3-beta.212 (live Cold sweep F16): gas temperatures no sheet of the logic reads. unit.js: the furnace lower layer average
+         above / under (TT-FG1091-A ~ I / TT-FG1090-A ~ I), cyclone outlet, seal pots; boiler.js anAphStep: No.2 economizer outlet,
+         air heater gas in / out, ID fan outlet (stack) */
+      'TT-FG1091': 'gFu',
+      'TT-FG1090': 'gFl',
+      'TT-FG1095-A': 'ux:gCy.0',
+      'TT-FG1095-B': 'ux:gCy.1',
+      'TT-FG1009-A': 'ux:gSp.0',
+      'TT-FG1009-B': 'ux:gSp.1',
+      'TT-FG1110': 'ecoGo',
+      'TT-FG1113': 'ecoGo',
+      'TT-FG1124': 'aphGi',
+      'TT-FG1125': 'aphGi',
+      'TT-FG1132': 'aphGo',
+      'TT-FG1133': 'aphGo',
+      'TT-FG1152': 'idfGo',
+      'TT-FG1057-8': 'idfGo'
     }
   });
 })();
