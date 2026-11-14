@@ -2307,10 +2307,41 @@ function anFwStep(U, dt) {
      No.2 HPH  extraction 37.48 kgf/cm2A (sat 245.37 C), FW 195.7 -> 245.4 C, TTD -0.05, drain 45.147 t/h 201.3 C (DCA 5.6 over FW in)
      No.1 HPH  extraction 14.12 kgf/cm2A (sat 194.63 C), FW out = sat + 1.07 (TTD -1.07) = 195.7 C, extraction 7.035 kg/s = 25.33 t/h;
                the drains of both to the deaerator: deaerator O&M (L15-2 p14) "HPH condensate" 69.35 t/h 166.3 C (FW in 158.4 C)
-   The extraction pressure goes with the turbine steam (U.ms / 458.684, a turbine stage: NO-SOURCE shape, no turbine heat balance in the
-   repository or on the PC); a shut-off MOV less than 20 % open throttles it (NO-SOURCE). The heater gives FW out = saturation of its
+   The extraction pressure goes with the turbine steam by the MHPS heat balance (AN_HB / anHb above; before: U.ms / 458.684, NO-SOURCE); a shut-off MOV less than 20 % open throttles it (NO-SOURCE). The heater gives FW out = saturation of its
    shell + TTD, never below FW in; the extraction (= drain) flow from its heat duty, scaled on the design point. Metal / water lag 120 s
    (NO-SOURCE). The water side valves: AN_FV0, anHtrPath. */
+/* 3.2.3 SAKURA (user 2026-11-14: the turbine is MHPS, Phase 2 design data are valid for Unit 1): the turbine heat balance, MHPS
+   PPE-14-0725 Rev.1 "Heat Balance Diagram" (SMC Limay Phase II 2 x 150 MW, As Build 2019-01-16; the same Hitachi HB set as SMC Davao
+   PPE-13-0138 R4, read on the PC, not in the repository), pages 6 ~ 12: 30 / 40 / 50 / 60 / 70 / 85 / 100 % load. Main steam kg/h, the
+   stage (extraction) pressures ata and the LP extraction flows kg/h. Cross-check with the repository (mass balance / HEAT_BALANCE.md /
+   FHI heater O&M): 100 % MS 458,327 kg/h, final FW 245.4 C 458,684 kg/h, No.6 45,147, No.3 15,246, No.2 12,270 kg/h, No.5 enthalpy
+   787.1 kcal/kg = 3295.5 kJ/kg, No.3 676.7 = 2833.2, the same as the app. Before, every stage pressure and flow went with main steam / 458.684
+   (NO-SOURCE shape); the HB gives that ratio within 1 ~ 3 % at the HP end and up to 9 % low at 30 % load at the LP end (No.1: 0.357, flow 0.133).
+   anHb(k, ms) = the value of row k at ms over its 100 % value; below 30 % load straight to 0 at no flow, above 100 % on the 85 -> 100 % slope */
+const AN_HB = {
+  ms: [149954, 190769, 231940, 273360, 318817, 387587, 458327],
+  x6: [12.79, 16.35, 19.9, 23.48, 27.25, 32.89, 38.64] /* HP exhaust = No.6 (No.2 HPH) extraction */,
+  x5: [5.0, 6.38, 7.75, 9.13, 10.56, 12.7, 14.87] /* No.5 (No.1 HPH) */,
+  xd: [2.173, 2.769, 3.355, 3.943, 4.553, 5.457, 6.369] /* deaerator */,
+  x3: [0.658, 0.837, 1.014, 1.19, 1.373, 1.643, 1.914] /* No.3 LPH */,
+  x2: [0.286, 0.364, 0.44, 0.516, 0.594, 0.71, 0.826] /* No.2 LPH */,
+  x1: [0.133, 0.167, 0.201, 0.234, 0.269, 0.321, 0.373] /* No.1 LPH */,
+  f3: [4251, 5603, 6963, 8422, 10009, 12531, 15246],
+  f2: [3426, 4525, 5685, 6871, 8190, 10192, 12270],
+  f1: [2243, 4184, 6060, 7935, 10093, 13357, 16834]
+};
+function anHb(k, msT) {
+  const X = AN_HB.ms,
+    Y = AN_HB[k],
+    n = X.length - 1,
+    m = Math.max(0, +msT || 0) * 1000,
+    y = m <= X[0] ? (Y[0] * m) / X[0] : m >= X[n] ? Y[n] + ((Y[n] - Y[n - 1]) * (m - X[n])) / (X[n] - X[n - 1]) : (() => {
+      let i = 1;
+      while (X[i] < m) i++;
+      return Y[i - 1] + ((Y[i] - Y[i - 1]) * (m - X[i - 1])) / (X[i] - X[i - 1]);
+    })();
+  return Math.max(0, y / Y[n]);
+}
 const AN_HP = {
   dhX: [
     1160.1, 917.1, 454.8, 311.4, 257.2
@@ -2339,8 +2370,8 @@ function anHphStep(U, dt) {
     },
     thr = p => Math.max(0, Math.min(1, p / 20)),
     /* shell pressures (kg/cm2 g): extraction x turbine steam x MOV */
-    Ps2 = (K.P1 + 1.0332) * (ms / K.F0) * thr(pos('DITL-94')) - 1.0332,
-    Ps1 = (K.P2 + 1.0332) * (ms / K.F0) * thr(pos('DITL-95')) - 1.0332,
+    Ps2 = (K.P1 + 1.0332) * anHb('x6', ms) * thr(pos('DITL-94')) - 1.0332,
+    Ps1 = (K.P2 + 1.0332) * anHb('x5', ms) * thr(pos('DITL-95')) - 1.0332,
     /* deaerator pressure PT-CD1104 (ABC-056 AI0417): the water to the BFWP is at its saturation */
     Pda = U.xt && U.xt.dea ? anUnitVal(U.xt.dea) : NaN,
     Tin = isFinite(Pda) && Pda > 0.05 ? steamTsat(Pda) : isFinite(U.Tamb) ? U.Tamb : 30,
@@ -2365,8 +2396,8 @@ function anHphStep(U, dt) {
   U.hpMov = [pos('DITL-95'), pos('DITL-94')]; /* MV-TS1002 / MV-TS1001 position % */
   /* docs/versions/v3.2.1/HEAT_BALANCE.md: an extraction that is shut stays in the turbine and works down to the condenser, and colder
      feedwater takes more of the boiler heat per kg of steam. Measured from the same heaters with the MOVs open, so the start-up curves stay */
-  const t1o = Math.max(Tin, sat((K.P2 + 1.0332) * (ms / K.F0) - 1.0332) + K.ttd1),
-    t2o = Math.max(t1o, sat((K.P1 + 1.0332) * (ms / K.F0) - 1.0332) + K.ttd2),
+  const t1o = Math.max(Tin, sat((K.P2 + 1.0332) * anHb('x5', ms) - 1.0332) + K.ttd1),
+    t2o = Math.max(t1o, sat((K.P1 + 1.0332) * anHb('x6', ms) - 1.0332) + K.ttd2),
     e1o = ffw > 1 ? (K.m1 * f * Math.max(0, t1o - Tin)) / K.dT1 : 0,
     e2o = ffw > 1 ? (K.m2 * f * Math.max(0, t2o - t1o)) / K.dT2 : 0,
     ls = U.lpS || {},
@@ -2533,7 +2564,7 @@ function anHdStep(U, dt) {
     let ein;
     if (k === 'H6') ein = isFinite(U.hpF2) ? U.hpF2 : 0;
     else if (k === 'H5') ein = isFinite(U.hpF1) && isFinite(U.hpF2) ? U.hpF1 - U.hpF2 : 0;
-    else ein = ext * ld * thr(pos(mov)) * (U.lpS && isFinite(U.lpS[k]) ? U.lpS[k] : 1);
+    else ein = ext * anHb('f' + k.slice(1), ms) * thr(pos(mov)) * (U.lpS && isFinite(U.lpS[k]) ? U.lpS[k] : 1);
     const win = ein + (from && out[from] ? out[from] : 0);
     const c2 = (K.alt[k] != null ? K.alt[k] : cap1) * sq;
     /* the split range of the drawing (ABC-035 ~ 039): the primary controller MV goes to the primary valve by an F(X) (LN38 ...) and,
@@ -2668,7 +2699,7 @@ function anLphStep(U, dt) {
   let tin = lag('in', hw + K.rise * Math.max(0, Math.min(1, ld)));
   const t = { in1: tin };
   for (const [k, P0, ttd, dca, mov] of K.h) {
-    const Ps = P0 * ld * thr(pos(mov)),
+    const Ps = P0 * anHb('x' + k.slice(1), ms) * thr(pos(mov)),
       ts = anTsatA(Ps),
       tout = lag(k, tin + (wL[k] ? wL[k].s : 1) * Math.max(0, ts - ttd - tin)),
       h = hd.find(x => x.k === k),
