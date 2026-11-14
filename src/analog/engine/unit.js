@@ -355,6 +355,17 @@ function anUnitStop() {
   U.on = false;
 }
 /* start: the plant as it is now (end of "Start at 150 MW") is the steady state */
+/* 3.2.3-beta.244: the T/G Modbus valve position inputs of ABC-050 / ABC-051 (CV SI1812 ~ SI1817, ICV SI1821 ~ SI1823, SI1827 ~ SI1829) */
+function anVposOf() {
+  const lab = (k, t) => {
+    const x = AN.sheets.find(y => y.name === k);
+    if (!x || !x.S) return null;
+    const n = x.S.lab.findIndex(z => z && String(z.t).trim() === t);
+    return n >= 0 ? { S: x.S, n } : null;
+  };
+  const of = ts => ts.flatMap(t => [lab('ABC-050', t), lab('ABC-051', t)]).filter(Boolean);
+  return { cv: of(['SI1812', 'SI1813', 'SI1814', 'SI1815', 'SI1816', 'SI1817']), icv: of(['SI1821', 'SI1822', 'SI1823', 'SI1827', 'SI1828', 'SI1829']) };
+}
 function anUnitStart() {
   const U = AN_UNIT;
   anUnitStop();
@@ -657,6 +668,13 @@ function anUnitStart() {
       [labOf('ABC-039', 'I.029D'), 'H3', 140]
     ]
   };
+  /* 3.2.3-beta.244 (live Cold start 90 MW, user 2026-11-14 "DBA MORE THAN 2% NA OPENING NG CV"): the turbine valve positions of the
+     T/G Modbus (ABC-050: CONTROL VALVE(A) POSITION(A ~ C) SI1812 ~ SI1814 (30113 ~ 30115), CONTROL VALVE(B) SI1815 ~ SI1817
+     (30116 ~ 30118), INTERCEPT VALVE(A) SI1821 ~ SI1823 (30122 ~ 30124), INTERCEPT VALVE(B) SI1827 ~ SI1829 (30128 ~ 30130)) had no
+     writer and read 0: the CV average SI0226 / SI0227 never reached ">= 2 %" (M.070C), so the HP bypass close of ABC-050 (M.070D / M.070E,
+     PICMS1006 MV to 0 % after the ICV -> CV transfer with 52G1 closed) never came and the HP bypass stayed 69 % open at 90 MW. The
+     turbine model writes its valve positions there (three transmitters of one valve read the same) */
+  U.vpos = anVposOf();
   {
     const st2 = stOf('ABC-053');
     U.spd = st2 != null ? anUnitAIs(st2 + '|AI0534') : [];
@@ -4781,7 +4799,17 @@ function anUnitStep0(dt) {
   if (U.tc && (tb.st === 'off' || tb.st === 'roll')) U.MW = 0;
   U.rpm = tb.rpm;
   U.icvp = 100 * tb.icv;
-  U.tbn = { off: 0, roll: 1, sync: 2, load: 3 }[tb.st];
+  if (U.vpos === undefined) U.vpos = anVposOf(); /* a save point from before 3.2.3-beta.244 */
+  if (U.vpos) {
+    /* T/G Modbus valve positions (U.vpos above): CV = the governor valve lift U.gv (0 ~ 100 %), ICV = tb.icv; a tripped or stopped
+       machine has its valves shut */
+    const run = tb.st !== 'off',
+      cvp = run ? Math.max(0, Math.min(100, 100 * (+U.gv || 0))) : 0,
+      icp = Math.max(0, Math.min(100, 100 * (+tb.icv || 0)));
+    for (const l of U.vpos.cv) dirt(l, cvp);
+    for (const l of U.vpos.icv) dirt(l, icp);
+  }
+  U.tbn ={ off: 0, roll: 1, sync: 2, load: 3 }[tb.st];
   /* the TCS inputs of the DCS in a start-up (the snapshot of "Start at 150 MW" keeps its own) */
   if (U.cold) {
     /* TCE p.127 TCE180: permissive = NOT (52G not closed, TURBINE TRIP, FORCED CLOSE by HOUSE LOAD OPERATION, IP START before the
