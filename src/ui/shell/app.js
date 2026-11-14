@@ -1798,7 +1798,8 @@
         }
       });
     tcs('tcsroll', 'Turbine ROLL', 'TCS panel: open the stop valves, IP start mode, 120 rpm/min to 3600 rpm (PR-OPE-5002 4.4). Needs Start cold and the plant running.', 'roll', null, 'TCS: turbine rolling, 120 rpm/min to 3600 (OPERATE > UNIT shows the speed).');
-    tcs('tcssync', 'SYNC + initial load 4.5 MW', 'TCS panel at 3600 rpm: GCB 52G1 closed (ABC-050 I.0931 = 1, I.0932 = 0), initial load 4.5 MW on the ICV (PR-OPE-5002 4.5).', 'sync', null, 'TCS: generator synchronised, initial load 4.5 MW.');
+    tcs('tcsexc', 'EXCITATION', 'ATS step 4 at 3600 rpm (ATS sequence page 23): field breaker 41 closes, the AVR builds the generator voltage up to 13.8 kV. Needed before SYNC.', 'excite', null, 'TCS: EXCITATION started, generator voltage building up to 13.8 kV.');
+    tcs('tcssync', 'SYNC + initial load 4.5 MW', 'TCS panel after EXCITATION: auto synchronizing (speed and voltage matched), GCB 52G1 closed (ABC-050 I.0931 = 1, I.0932 = 0), initial load 4.5 MW on the ICV (PR-OPE-5002 4.5).', 'sync', null, 'TCS: generator synchronised, initial load 4.5 MW.');
     /* S149-3: ATS step 7 (310SC90-775 page 28); SHUT-DOWN (step 8) is taken only after it */
     tcs('tcsnormal', 'NORMAL OPERATION', 'ATS step 7 at 45 MW (ATS sequence page 28). The SHUT-DOWN (step 8) needs it done.', 'normal', undefined, 'TCS: NORMAL OPERATION (ATS step 7) done.');
     tcs('tcsshut', 'Turbine SHUT-DOWN', 'ATS step 8: below 20 % load: 52G open, 41 open, turbine trip (ATS sequence page 29)', 'shutdown', undefined, () => true);
