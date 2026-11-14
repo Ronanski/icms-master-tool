@@ -1596,7 +1596,10 @@ function anStep(S, dt) {
         /* 3.2.3-beta.92 (Mina B89-1): FICFW1007 too: ABC-010 M.0228 (feedwater < 100 T/H, TON 60 s) forces it MANUAL, and M.0226 (LICBR1001B
            AUTO allowed) reads FICFW1007.MAN: the start-up loop stayed refused until the operator pressed M on a station already MANUAL
            (CLAUDE.md rule 10: a BU-CMD station is MANUAL, .MAN = 1, for the other logic) */
-        if (s.rmSw != null && s.al && /^(FICFA10[78]1|FICFW1007)$/.test(s.mtag || '') && AN.unit && AN.unit.on && +AN.unit.t > 5) {
+        /* 3.2.3-beta.247 (live Cold load-up, ABC-004A): every station with a REMOTE leg, not only these three. FIC-CF went to REMOTE by
+           FORCE REMOTE M.0132 (all feeders AUTO) but FIC-CF.REM stayed 0, so the coal master permissive M.0130 (OR NOT FIC-CF.REM) stayed 1
+           and FIC-CM could never go REMOTE: the mode status of a real DCS station is its mode, however it got there */
+        if (s.rmSw != null && s.al && s.mtag && AN.unit && AN.unit.on && +AN.unit.t > 5) {
           if (s.fman) s.lf = 1;
           if (s.lf) {
             const q = rt.st[s.rmSw],
