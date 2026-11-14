@@ -313,11 +313,26 @@
     const g = U.gen;
     if (!g || !tb.st) return '—';
     if (gcb) return 'on the grid, 13.8 kV, 60 Hz';
-    const kV = (13.8 * (g.V || 0) * Math.min(+tb.rpm || 0, 3600)) / 3600,
-      v = kV.toFixed(1) + ' kV';
-    if (g.x25) return v + ', auto synchronizing: matching speed and voltage ' + Math.min(60, Math.round(g.ty || 0)) + ' / 60 s';
-    if (g.f41) return v + (g.V < 1 ? ', field breaker closed, voltage building up' : ', excited, ready to synchronize');
+    const v = (13.8 * (g.V || 0)).toFixed(2) + ' kV, ' + (+tb.rpm / 60 || 0).toFixed(2) + ' Hz';
+    if (g.x25)
+      return (
+        v + ' · grid ' + (+g.fgr || 60).toFixed(2) + ' Hz · slip ' + ((g.slip || 0) >= 0 ? '+' : '') + (g.slip || 0).toFixed(3) + ' Hz · phase ' +
+        Math.round(g.th || 0) + '° · auto synchronizing' + (g.cmd ? ', CLOSE command' : '')
+      );
+    if (g.f41) return v + (Math.abs((g.V || 0) - 1) > 0.02 ? ', field breaker closed, voltage building up' : ', excited, ready to synchronize');
     return 'not excited (field breaker open)';
+  }
+  /* beta.236: synchroscope (phase angle of the generator against the grid; the pointer turns clockwise when the generator is fast) */
+  function scope(g) {
+    const s = E('span', 'sctscope');
+    const a = (((g && g.th) || 0) * Math.PI) / 180,
+      x = (12 + 9 * Math.sin(a)).toFixed(1),
+      y = (12 - 9 * Math.cos(a)).toFixed(1);
+    s.innerHTML =
+      '<svg width="24" height="24" viewBox="0 0 24 24" aria-label="synchroscope"><circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" stroke-width="1"/><path d="M12 1 V4" stroke="currentColor" stroke-width="2"/><line x1="12" y1="12" x2="' +
+      x + '" y2="' + y + '" stroke="currentColor" stroke-width="2"/></svg>';
+    s.style.cssText = 'display:inline-flex;vertical-align:middle;margin-left:6px';
+    return s;
   }
   function tickTsp() {
     if (!tsp) return;
@@ -341,6 +356,7 @@
       kv('Hold', S ? (S.hold ? 'on' : 'off') : '—'),
       kv('Generator', genTxt(U, tb, gcb))
     );
+    if (U.gen && U.gen.x25 && !gcb) tsv.append(scope(U.gen));
     for (const x of tsb) {
       const o = $(x.id);
       x.b.disabled = !o || o.disabled;
