@@ -4461,9 +4461,12 @@ function anUnitStep0(dt) {
     U.gv = 0;
     tb.icv = Math.max(0, Math.min(1, tb.icv + (dt * (D - U.MW)) / (2 * U.tcs * U.MWxf)));
     if (tb.icv >= 1 || U.MW >= U.MWxf) {
+      /* 3.2.3-beta.239 (live Cold start, ICV to CV transfer at 19.9 MW: the ICV stepped 69.7 -> 100 % in one scan, the hot reheat
+         pressure fell 19 -> 5.7 kg/cm2 and the load 21.6 -> 9.7 MW in 20 s): the ICV is no longer thrown full open here. From the
+         transfer the CVs open from their minimum with the TCS load loop and the ICV goes on to full open at the TCS rate (branch below);
+         the reheater keeps its own mass balance (below), so the IP steam is what the reheater holds and gets, not a new formula */
       tb.xfer = true;
-      tb.icv = 1;
-      U.gv = 0.02;
+      U.gv = Math.max(U.gv, 0.02);
       if (U.cold) dirt(U.di.xfer, 1);
     }
   } else {
@@ -4740,7 +4743,11 @@ function anUnitStep0(dt) {
   /* reheat pressure: proportional to the steam through the IP / LP turbine = turbine steam + HP bypass, less what the LP bypass
      takes (its size lpb x the anchor flow at the anchor pressure); first stage pressure: proportional to the turbine steam */
   const olp = qOn(U.qo && U.qo.lp) ? 100 : U.lpv ? Math.max(0, Math.min(100, +U.lpv.S.rt.v[U.lpv.n] || 0)) : 0;
-  if (!tb.xfer) {
+  /* 3.2.3-beta.239: one mass balance of the reheater at every load (was: this balance until the ICV to CV transfer, then a steady
+     state law (ms + mhp) / (m0 (1 + LP bypass)) with a 10 s lag that took the reheater pressure from 19 to 5.7 kg/cm2 at the transfer
+     while the ICV was thrown open). In = HP turbine exhaust (the CV steam U.ms) + HP bypass; out = ICV (qip) + LP bypass + RH blow-off.
+     Its steady state is the old law with the ICV full open: the 150 MW point does not move */
+  {
     /* 2.2.0-beta.16 (M4 step 3): turbine shut (no IP / LP turbine flow): the hot reheat pressure is the steam stored in the
        reheater: in = HP bypass (U.mhp), out = LP bypass + RH blow-off, each = size x anchor flow x opening x pressure / anchor
        pressure (as the outlets of the main steam line). 2.2.0-beta.17: + the ICV flow (roll steam, initial load) until the transfer */
@@ -4748,9 +4755,6 @@ function anUnitStep0(dt) {
       orb = U.rhbv ? Math.max(0, Math.min(100, +U.rhbv.S.rt.v[U.rhbv.n] || 0)) : 0,
       qout = (U.m0 * U.rr * (U.lpb * olp + U.rhb * orb)) / 100 + qip;
     U.rr = Math.max(0, U.rr + ((U.mhp + U.ms - qout) * dt) / (U.Crh * Prh0));
-  } else {
-    const rrs = (U.ms + U.mhp) / (U.m0 * (1 + (U.lpb * olp) / 100));
-    U.rr += ((rrs - U.rr) * dt) / U.tauRH;
   }
   /* live Cold start F12 (user 2026-11-13 "may steam naba sa reheat line?"): an empty reheater reads 0 kg/cm2 on PT-HR1003-1 / -2, a live
      4 mA signal. Written as exactly 0 the SELECT CIRCUIT of ABC-052 (SI0180) took both as lost and held its last value 0.6 kg/cm2 on
