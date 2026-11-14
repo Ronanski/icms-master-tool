@@ -62,7 +62,6 @@ const AN_DO = {
               2016-09-12) gives A <= 300 / 7.5 = 40 m2; the tank height is not in the docs */,
   rho: 0.85 /* t/m3, NO-SOURCE */,
   L0: 4.978 /* m, 6.PNG */,
-  Qfill: 25 /* T/H, the oil receiving into T-0701 (outside the model boundary), NO-SOURCE: one pump capacity */,
   /* the field valves of the diesel oil line-up (SOP 20, PD-022 1/5 Rev D): tank outlet V-DO0003, strainer inlet V-DO0004, pump A
      suction V-DO0015 / discharge V-DO0007, pump B suction V-DO0016 / discharge V-DO0009 (SOP 20 names the discharge "V-DO0017": not
      on PD-022, the drawing is used); open in service */
@@ -258,9 +257,9 @@ function anDieselOilStep(U, dt) {
   /* 3.2.3 (live Cold start 2026-11-14: after about 24 h of oil firing T-0701 fell to the LL 0.2 m, both pumps tripped (DITL-31), all
      four flames went out and DITL-03A tripped the boiler): the oil supply to T-0701 (receiving / storage) is outside the model
      boundary, like the coal yard and the demin water (scope 2026-11-07: a level the DCS reads never empties). The receiving side
-     puts back what leaves and brings the tank back to its level of the starting state L0 (refill rate K.Qfill, NO-SOURCE) */
-  const fill = U.doLv < K.L0 ? Math.min(K.Qfill, burn + ((K.L0 - U.doLv) * K.A * K.rho * 3600) / Math.max(dt, 1)) : burn;
-  U.doLv = Math.max(0, U.doLv + ((fill - burn) / K.rho / K.A / 3600) * dt);
+     puts back what leaves: an unlimited supply (user 2026-11-14 "Unli supply"), the tank never falls below its level of the starting
+     state L0 (3.2.3-beta.233; beta.232 refilled at 25 T/H, slow after a low level) */
+  U.doLv = Math.max(K.L0, U.doLv - (burn / K.rho / K.A / 3600) * dt);
   /* the motors: current = no-load share + hydraulic share (Q x P), 25.4 A at 25 T/H and 12.8 kg/cm2 (6.PNG) */
   U.doI = sp.map((s, i) => (run[i] ? K.I0 * (K.fI + ((1 - K.fI) * (qi[i] * U.doP1)) / (K.Qp * 12.8)) : 0));
   /* write the transmitters */
