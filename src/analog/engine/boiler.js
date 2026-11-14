@@ -510,6 +510,9 @@ function anAphStep(U, dt) {
   const pa = tpa + K.ePA * z.rot * Math.max(0, z.gi - tpa),
     sa = tsa + K.eSA * z.rot * Math.max(0, z.gi - tsa);
   U.aphGi = z.gi;
+  /* hot PA / SA into the furnace, read by the furnace gas balance of unit.js (live Cold start 2026-11-14) */
+  U.aphPa = pa;
+  U.aphSa = sa;
   U.aphGo = anAphOut(z.gi, v[0], tpa, pa, v[1], tsa, sa, v[2]);
   /* 3.2.3-beta.212 (live Cold sweep F16: TT-FG1110 / 1113, TT-FG1124 / 1125, TT-FG1132 / 1133, TT-FG1152 '-----'): no sheet of the logic
      reads these transmitters, the page now reads the gas path here.
