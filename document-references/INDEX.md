@@ -48,7 +48,7 @@ Folder: `C:\Users\Ronanski\Downloads\app-projects-ai-collections\projects\icms-m
 - Kopya ng CW vendor PDFs (14): project files `cw-plant-model/vendor/`.
 - Idinagdag ng user 2026-11-06 (PC lang, FHI property, huwag i-commit):
   - `Boiler Pressure Parts/`: K1AU3-B-0-001 ~ 008 as-built (general arrangement, panel erection, superheater, steam drum, economizer, risers, supports, reheater).
-  - `Boiler Non-Pressure Parts/`: K1AU3-C-0-001 ~ 008 (buckstay, seal pot at cyclone vortex finder, casing, air at flue gas duct, lagging, sootblower support, refractory, TG noise cover). Ang K3AU2 files ay Phase 2: huwag gamiting source sa Unit 1.
+  - `Boiler Non-Pressure Parts/`: K1AU3-C-0-001 ~ 008 (buckstay, seal pot at cyclone vortex finder, casing, air at flue gas duct, lagging, sootblower support, refractory, TG noise cover). Ang K3AU2 files ay Phase 2 (Unit 3 at 4): ayon sa user 2026-11-14, kakambal ito ng Unit 1 at tag lang ang iba, kaya source ito para sa equipment data pero hindi para sa tag. Buong index ng lokasyon: `docs/DOCUMENT_INDEX.md`.
   - `Equipment List/`: K1AU3-L1-0-002 R0 at RA. `Boiler Hydrostatic Test Procedure/`: K1AU3-R3-0-101, 102. `Boiler Structural Steel Drawing/`: K1AU3-S1-0-001, K3AU2-S1-0-001.
   - `Turbine Generator/`: generator data sheet GAE-2013-0136, site test procedures, wiring diagrams.
   - Hiwa-hiwalay: BFP motor data sheet, MV-BD1001 at MV-BD1002 valve drawings, Chimney K1AU3-D1-0-058, Plant Air Compressor manual.
