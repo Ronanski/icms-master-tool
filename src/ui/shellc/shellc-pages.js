@@ -322,17 +322,77 @@
     if (g.f41) return v + (Math.abs((g.V || 0) - 1) > 0.02 ? ', field breaker closed, voltage building up' : ', excited, ready to synchronize');
     return 'not excited (field breaker open)';
   }
-  /* beta.236: synchroscope (phase angle of the generator against the grid; the pointer turns clockwise when the generator is fast) */
-  function scope(g) {
-    const s = E('span', 'sctscope');
-    const a = (((g && g.th) || 0) * Math.PI) / 180,
-      x = (12 + 9 * Math.sin(a)).toFixed(1),
-      y = (12 - 9 * Math.cos(a)).toFixed(1);
-    s.innerHTML =
-      '<svg width="24" height="24" viewBox="0 0 24 24" aria-label="synchroscope"><circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" stroke-width="1"/><path d="M12 1 V4" stroke="currentColor" stroke-width="2"/><line x1="12" y1="12" x2="' +
-      x + '" y2="' + y + '" stroke="currentColor" stroke-width="2"/></svg>';
-    s.style.cssText = 'display:inline-flex;vertical-align:middle;margin-left:6px';
+  /* beta.237 (live Cold start, user: "nasaan ang synchroscope?", "ipakita niyo"): the 24 px dial in the status line was too small. A sync panel
+     under the buttons while the generator is excited and 52G1 is open: a 120 px synchroscope (the pointer is the phase angle of the
+     generator against the grid, clockwise = generator fast, top = in phase; the marked arc is the check synchronizing relay 25 window
+     +-10 deg, GEE-2015-0141 p.26), generator and grid voltage and frequency, slip, voltage difference, phase angle and three lamps:
+     auto synchronizing (25X1), sync check 25 permit (dV 5 %, dF 0.15 Hz, dTheta 10 deg), close command. The grid is 13.8 kV (1.0 pu, NO-SOURCE). */
+  let syp = null;
+  const SYN = TCS_GEN_R25();
+  function TCS_GEN_R25() {
+    return typeof TCS_GEN === 'object' && TCS_GEN.r25 ? TCS_GEN.r25 : { dV: 0.05, dF: 0.15, dTh: 10 };
+  }
+  function buildSyp() {
+    syp = E('div', 'scsync');
+    syp.setAttribute('aria-label', 'Synchronizing panel');
+    let tk = '';
+    for (let a = 0; a < 360; a += 30) {
+      const r = (a * Math.PI) / 180,
+        r1 = a === 0 ? 40 : 46;
+      tk +=
+        '<line x1="' + (60 + r1 * Math.sin(r)).toFixed(1) + '" y1="' + (60 - r1 * Math.cos(r)).toFixed(1) + '" x2="' + (60 + 52 * Math.sin(r)).toFixed(1) +
+        '" y2="' + (60 - 52 * Math.cos(r)).toFixed(1) + '" stroke-width="' + (a === 0 ? 2.5 : 1) + '"/>';
+    }
+    const w = (SYN.dTh * Math.PI) / 180,
+      ax = (52 * Math.sin(w)).toFixed(2),
+      ay = (60 - 52 * Math.cos(w)).toFixed(2);
+    syp.innerHTML =
+      '<svg class="scdial" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="synchroscope">' +
+      '<circle cx="60" cy="60" r="56" class="rim"/>' +
+      '<path class="win" d="M' + (60 - ax) + ' ' + ay + ' A52 52 0 0 1 ' + (60 + +ax) + ' ' + ay + '"/>' +
+      '<g class="tk">' + tk + '</g>' +
+      '<text x="24" y="98" class="lb">SLOW</text><text x="96" y="98" class="lb">FAST</text>' +
+      '<g class="ptr"><line x1="60" y1="66" x2="60" y2="12"/><circle cx="60" cy="60" r="4"/></g></svg>' +
+      '<div class="scsv"></div><div class="scsl"></div>';
+    tsp.append(syp);
+  }
+  function lamp(t, on) {
+    const s = E('span', 'scl' + (on ? ' on' : ''));
+    s.append(E('i', '', on ? 'Y' : 'N'), document.createTextNode(t));
     return s;
+  }
+  function tickSyp() {
+    if (!tsp || tsp.hidden) return;
+    const U = call(() => AN.unit, null) || {},
+      tb = U.tb || {},
+      g = U.gen,
+      gcb = tb.st === 'sync' || tb.st === 'load',
+      show = !!(g && tb.st && g.f41 && !gcb) && !tsp.classList.contains('fold');
+    if (!show) {
+      if (syp) syp.hidden = true;
+      return;
+    }
+    if (!syp) buildSyp();
+    syp.hidden = false;
+    const th = +g.th || 0,
+      slip = +g.slip || 0,
+      dv = +g.dv || 0,
+      sg = (x, d) => (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(d),
+      p25 = Math.abs(dv) <= SYN.dV && Math.abs(slip) <= SYN.dF && Math.abs(th) <= SYN.dTh;
+    syp.querySelector('.ptr').setAttribute('transform', 'rotate(' + th.toFixed(1) + ' 60 60)');
+    const v = syp.querySelector('.scsv');
+    v.replaceChildren(
+      kv('Generator', (13.8 * (+g.V || 0)).toFixed(2) + ' kV · ' + ((+tb.rpm || 0) / 60).toFixed(3) + ' Hz'),
+      kv('Grid', '13.80 kV · ' + (+g.fgr || 60).toFixed(3) + ' Hz'),
+      kv('Slip', sg(slip, 3) + ' Hz' + (Math.abs(slip) < 1e-3 ? '' : slip > 0 ? ' (generator fast)' : ' (generator slow)')),
+      kv('Voltage difference', sg(dv * 100, 1) + ' %'),
+      kv('Phase angle', sg(th, 0) + '°')
+    );
+    syp.querySelector('.scsl').replaceChildren(
+      lamp('Auto synchronizing', !!g.x25),
+      lamp('Sync check permit', p25),
+      lamp('Breaker close command', !!(g.cmd || g.close))
+    );
   }
   function tickTsp() {
     if (!tsp) return;
@@ -356,7 +416,6 @@
       kv('Hold', S ? (S.hold ? 'on' : 'off') : '—'),
       kv('Generator', genTxt(U, tb, gcb))
     );
-    if (U.gen && U.gen.x25 && !gcb) tsv.append(scope(U.gen));
     for (const x of tsb) {
       const o = $(x.id);
       x.b.disabled = !o || o.disabled;
@@ -377,6 +436,7 @@
       clearInterval(iv);
       narrow();
       setInterval(() => (tickBar(), tickTsp()), 1000);
+      setInterval(tickSyp, 250);
       tickBar();
       tickTsp();
     }

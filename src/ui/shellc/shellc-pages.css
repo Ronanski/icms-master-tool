@@ -125,3 +125,19 @@ body.sc #plantws #pllive{display:none!important}
   html body.sc #plantws .plbar > button,html body.sc #plantws .plbar > select,html body.sc #plantws .plbar .plnav > button,html body.sc #plantws .plbar .crop .g-op button:not(.ddm *),html body.sc #plantws .plbar .crop .g-op select{min-height:40px!important;border-radius:20px!important}
   html body.sc #plantws .plbar .plstep{width:40px!important;min-width:40px!important}
 }
+/* beta.237: the sync panel (synchroscope 120 px, values, lamps) under the turbine start buttons while the generator is excited and 52G1 is open */
+#sctsp .scsync{flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;padding:8px 0 0;border-top:1px solid var(--sc-line2)}
+#sctsp .scsync[hidden],#sctsp.fold .scsync{display:none}
+#sctsp .scdial{flex:none}
+#sctsp .scdial .rim{fill:var(--sc-white);stroke:var(--sc-ink2);stroke-width:1.5}
+#sctsp .scdial .tk line{stroke:var(--sc-ink2)}
+#sctsp .scdial .win{fill:none;stroke:var(--sc-run);stroke-width:5;opacity:.55}
+#sctsp .scdial .lb{font:600 9px var(--sc-ui);fill:var(--sc-ink2);text-anchor:middle}
+#sctsp .scdial .ptr line{stroke:var(--sc-ink);stroke-width:3;stroke-linecap:round}
+#sctsp .scdial .ptr circle{fill:var(--sc-ink)}
+#sctsp .scsv{display:grid;grid-template-columns:auto;gap:4px;font-size:12px;color:var(--sc-ink2)}
+#sctsp .scsv b{font:600 13px var(--sc-num);color:var(--sc-ink)}
+#sctsp .scsl{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--sc-ink)}
+#sctsp .scl{display:flex;align-items:center;gap:8px}
+#sctsp .scl i{width:20px;line-height:20px;border-radius:4px;text-align:center;font:700 12px var(--sc-ui);font-style:normal;color:var(--sc-white);background:var(--sc-stop)}
+#sctsp .scl.on i{background:var(--sc-run)}
