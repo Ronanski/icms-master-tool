@@ -323,7 +323,7 @@
     return 'not excited (field breaker open)';
   }
   /* beta.237 (live Cold start, user: "nasaan ang synchroscope?", "ipakita niyo"): the 24 px dial in the status line was too small. A sync panel
-     under the buttons while the generator is excited and 52G1 is open: a 120 px synchroscope (the pointer is the phase angle of the
+     under the buttons while the generator is excited and 52G1 is open: a synchroscope (80 px since beta.238: a global svg rule made the 120 px one fill the page) (the pointer is the phase angle of the
      generator against the grid, clockwise = generator fast, top = in phase; the marked arc is the check synchronizing relay 25 window
      +-10 deg, GEE-2015-0141 p.26), generator and grid voltage and frequency, slip, voltage difference, phase angle and three lamps:
      auto synchronizing (25X1), sync check 25 permit (dV 5 %, dF 0.15 Hz, dTheta 10 deg), close command. The grid is 13.8 kV (1.0 pu, NO-SOURCE). */
@@ -347,7 +347,7 @@
       ax = (52 * Math.sin(w)).toFixed(2),
       ay = (60 - 52 * Math.cos(w)).toFixed(2);
     syp.innerHTML =
-      '<svg class="scdial" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="synchroscope">' +
+      '<svg class="scdial" width="80" height="80" viewBox="0 0 120 120" role="img" aria-label="synchroscope">' +
       '<circle cx="60" cy="60" r="56" class="rim"/>' +
       '<path class="win" d="M' + (60 - ax) + ' ' + ay + ' A52 52 0 0 1 ' + (60 + +ax) + ' ' + ay + '"/>' +
       '<g class="tk">' + tk + '</g>' +
