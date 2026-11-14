@@ -2052,47 +2052,49 @@ const AN_PA_FURN = 328.2 / 354.0;
    carry-over gives. tau itself is NO-SOURCE inside that bound. At a hot bed (bf = 1) with no coal held, the burn is the fed coal, as
    before. Module level (never a function on U: SAVE / LOAD). */
 const AN_CBED = { tau: 60 };
-/* live Cold start 2026-11-14 (user: "Code ang gawin ... WALANG DAYAIN"): THE FURNACE GAS THAT REACHES THE SUPERHEATER / REHEATER.
-   beta.229 built the gas from a fuel + air heat balance; with no fuel (fans purging after an MFT, bed 524 C) it gave 170 C gas: wrong,
-   the hot bed heats every kg of air that crosses it. Physics used now (no curve, no trend):
-   - all the air enters the lower furnace through the bed zone: PA through the grate, SA through the 22 nozzles of the refractory-lined
-     lower furnace, FA through the seal pots with the returning solids (03-boiler; P2S4 p2-4-9). Gas and solids exchange heat within
-     centimetres in a fluidized bed (textbook), so the gas leaves the lower furnace at the bed temperature U.Tb; the fuel heat is
-     already inside U.Tb.
-   - the upper furnace: bare evaporative walls take heat from the gas. The wall heat is the drum model (qW, T/H of steam) x the latent
-     heat of the drum pressure hfg = hg - hf (hg: IF97 region 2 of steam.js at saturation; hf: AN_HF below). Share taken in the upper
-     furnace = its wall area: grate 15.507 x 7.684 m, volume 4,000 m3 -> height 33.6 m; lower refractory zone 7.75 m (T2; P2S4 p2-4-8 /
-     9) -> upper 25.8 / 33.6 = 0.77 (wall total 1,558 m2 against the stated heating surface 1,510 m2). The refractory zone share is
-     taken from the bed, not the gas. Not counted: the in-furnace panels, the economizer subcooling share of qW (NO-SOURCE).
-   - gas: total air + burnt coal less its ash (6.82 %, T3) + oil, cp 1.15 kJ/kg K (the flue gas cp of the metal model, textbook);
-     never above the bed, never under the water of the walls or the ambient.
-   - cyclone refractory: inlet ducts 98.8 ~ 118.3 t + cyclones 373.7 ~ 450.2 t + outlet ducts 214.4 ~ 303.9 t (13-thermal-masses A6,
-     K1AU3-C-0-007), centre 780 t x 1.0 kJ/kg K (textbook refractory) = 780 MJ/K, one lump the gas heats or cools on its way. The gas
-     leaves the cyclones at the lining temperature (exchange effectiveness 1: NO-SOURCE, the lining area and film coefficient are
-     not in the documents). */
-const AN_FG = { up: 0.77, cpG: 1.15, ash: 0.0682, mCy: 780e3 };
-/* saturated liquid enthalpy, IAPWS-IF97 steam tables: [bar abs, kJ/kg] */
-const AN_HF = [
-  [1, 417.4],
-  [5, 640.1],
-  [10, 762.6],
-  [20, 908.6],
-  [40, 1087.4],
-  [60, 1213.7],
-  [80, 1317.1],
-  [100, 1408.0],
-  [120, 1491.3],
-  [140, 1571.0],
-  [160, 1649.7]
-];
-function anHfSat(Pkg) {
-  const b = (Math.max(-1, +Pkg || 0) + 1.0332) * 0.980665,
-    T = AN_HF;
-  if (b <= T[0][0]) return T[0][1];
-  for (let i = 1; i < T.length; i++)
-    if (b <= T[i][0]) return T[i - 1][1] + ((T[i][1] - T[i - 1][1]) * (b - T[i - 1][0])) / (T[i][0] - T[i - 1][0]);
-  return T[T.length - 1][1];
-}
+/* live Cold start 2026-11-14 (user: "Code ang gawin ... WALANG DAYAIN"): THE GAS THAT REACHES THE SUPERHEATER / REHEATER (Cold path).
+   The furnace exit gas U.tgF comes from the bed heat balance (AN_BB below). It then crosses the refractory of the cyclone inlet ducts,
+   the cyclones and their outlet ducts before the backpass (03-boiler; P2S4): inlet ducts 98.8 ~ 118.3 t + cyclones 373.7 ~ 450.2 t +
+   outlet ducts 214.4 ~ 303.9 t (13-thermal-masses A6, K1AU3-C-0-007), centre 780 t x 1.0 kJ/kg K (textbook refractory) = 780 MJ/K,
+   one lump the gas heats or cools on its way. The gas leaves the cyclones at the lining temperature (exchange effectiveness 1:
+   NO-SOURCE, the lining area and film coefficient are not in the documents). Flue gas cp 1.15 kJ/kg K (textbook), coal ash 6.82 % (T3). */
+const AN_FG = { cpG: 1.15, ash: 0.0682, mCy: 780e3 };
+/* live Cold start 2026-11-14 (user: "WALANG DAYAIN", no curve fits): THE BED HEAT BALANCE of the Cold path. Before, the bed went first
+   order to a law fitted on the plant trend (start-up exponent kBedSU 0.168 and the AN_BED table), and the water walls took
+   min(firing line, uaW x (bed - water)): a patch. Now one lump of the lower furnace (bed solids + the refractory of the lower furnace)
+   takes the fuel heat and gives it to the gas that crosses it and to the water walls:
+     Cb dTb/dt = fuel heat - air x cp x (Tb - air in) - fuel gas x cp x (Tb - ambient) - wall heat (solids + lower refractory walls)
+   - fuel heat: coal burnt x LHV 3,662 kcal/kg (T3) + oil x the diesel LHV 42.7 MJ/kg (textbook; the design data Tab_1 heating values
+     are an image without text). Check: 42.7 / 15.33 = 2.79 t of coal per t of oil, against the plant figure 2.55 (PR-OPE-5002).
+   - air in: PA / SA at the hot air temperatures of the air heater model (boiler.js anAphStep), FA at the ambient; air cp 1.005
+     kJ/kg K (textbook). All the air crosses the bed zone (PA grate, SA nozzles of the lower furnace, FA through the seal pots; P2S4).
+   - Cb: bed solids (U.bedI, t, the bed inventory model) x 0.84 kJ/kg K (sand / ash, textbook) + the lower furnace refractory 191.1 ~
+     218.2 t, centre 204.65 t x 1.0 kJ/kg K (13-thermal-masses A6, textbook refractory).
+   - wall heat by the circulating solids: (ua0 - uag) x phi x (Tb - water). ua0 = the design wall conductance uaW 0.976 T/H per K
+     (AN_UNIT, CALC from the design heat balance) x 554 kW per T/H (the unit of Cw / Qs) = 541 kW/K. phi = the solids that the gas
+     carries up the furnace relative to full load = bed inventory share x (gas velocity share)^2: the entrainment rises with the
+     gas velocity (P2S6, qualitative); the exponent 2 is NO-SOURCE (circulation rate not in the documents, 03-boiler). The gas
+     velocity share = total air / anchor air x (Tb + 273) / (Tb0 + 273) (the gas expands with its temperature).
+   - wall heat through the refractory of the lower furnace: 25 mm refractory over the tubes (13-thermal-masses), k 1.5 W/m K
+     (textbook castable) = 60 W/m2 K, in series with a dense bed film 300 W/m2 K (textbook) = 50 W/m2 K, over the lower walls 46.38 m
+     perimeter x 7.75 m = 359 m2 (T2, P2S4) = 18 kW/K.
+   - upper furnace, gas alone: the gas leaves the bed at Tb and gives heat to the bare upper walls with uag = 27 W/m2 K (textbook gas
+     radiation about 17 + convection about 10, NO-SOURCE) x 1,199 m2 (upper walls 46.38 x 25.85 m) = 32 kW/K; the gas cools
+     exponentially along the walls: q = gas x cp x (Tb - water) x (1 - e^(-uag / (gas x cp))). The circulating solids hold the gas at
+     the bed temperature in the share phi (capped 1).
+   Steady check at the anchor (coal 87.5 T/H, air 593 T/H, hot air about 285 C, drum 145 kg/cm2): bed about 820 C, steam about
+   470 T/H, against the design 850 C (FHI design data) and 476 T/H: not fitted, the result of the balance. */
+const AN_BB = {
+  lhvC: (3662 * 4.1868) / 3.6,
+  lhvO: 42700 / 3.6,
+  cpA: 1.005,
+  cpS: 0.84,
+  mRef: 204650,
+  ua0: 0.976 * 554,
+  uaL: 18,
+  uag: 32,
+  kW: 554
+};
 const AN_BED = {
   s: [0.43, 0.525, 0.626, 0.715, 0.86, 1],
   t: [798, 819, 840, 840, 840, 840],
@@ -4563,15 +4565,42 @@ function anUnitStep0(dt) {
       (U.kcool * asC * Math.max(0, (U.Tw - Math.max(U.Tamb, U.Tb)) / 300) +
         U.kamb * Math.max(0, (U.Tw - U.Tamb) / 300));
   if (U.cold) {
-    const ts = tsatOf(U.Pd),
-      /* the water can only take heat from a hotter furnace (Mina item 12d: water 147 C with bed 141 C) */
-      qW = Math.min(U.Qs, U.uaW * Math.max(0, U.Tb - U.Tw));
-    U.qW = qW; /* the water walls' heat, read by the furnace gas balance below */
+    /* the bed heat balance (AN_BB above): the bed, the furnace exit gas and the heat of the water walls, no fitted law */
+    const B = AN_BB,
+      ts = tsatOf(U.Pd),
+      av = U.tafS && U.taf.length === 3 ? U.taf.map(n => Math.max(0, +U.tafS.rt.v[n] || 0)) : [taf, 0, 0],
+      tPa = isFinite(U.aphPa) ? U.aphPa : U.Tamb,
+      tSa = isFinite(U.aphSa) ? U.aphSa : U.Tamb,
+      dW = U.Tb - U.Tw /* bed over the wall water, both signs */,
+      fg = (Fb * (1 - AN_FG.ash) + oil) / 3.6 /* fuel gas, kg/s */,
+      gcp = ((av[0] + av[1] + av[2]) / 3.6) * B.cpA + fg * AN_FG.cpG /* kW/K */,
+      uRel = U.taf0 > 0 ? (taf / U.taf0) * ((U.Tb + 273) / (U.Tb0 + 273)) : 0,
+      phi = Math.min(1.2, Math.max(0, isFinite(U.bedI) ? U.bedI / AN_BI.t0 : 1)) * Math.min(1.44, uRel * uRel),
+      qSol = ((B.ua0 - B.uag) * phi + B.uaL) * dW /* kW, from the bed lump */,
+      qGas = gcp > 0.01 ? gcp * dW * (1 - Math.exp(-B.uag / gcp)) : 0 /* kW, from the gas over the upper walls */,
+      qFuel = Fb * B.lhvC + oil * B.lhvO,
+      qAirG =
+        (av[0] / 3.6) * B.cpA * (U.Tb - tPa) +
+        (av[1] / 3.6) * B.cpA * (U.Tb - tSa) +
+        (av[2] / 3.6) * B.cpA * (U.Tb - U.Tamb) +
+        fg * AN_FG.cpG * (U.Tb - U.Tamb),
+      Cb = Math.max(0, isFinite(U.bedI) ? U.bedI : AN_BI.tCold) * 1000 * B.cpS + B.mRef;
+    U.Tb = Math.max(U.Tamb, U.Tb + ((qFuel - qAirG - qSol) * dt) / Cb);
+    /* the furnace exit gas: the bed less the upper walls, held at the bed by the circulating solids in the share phi */
+    U.tgF = gcp > 0.01 ? U.Tb - (1 - Math.min(1, phi)) * (qGas / gcp) : U.Tb;
+    U.gcp = gcp;
+    U.phi = phi;
+    /* water walls, T/H of steam-equivalent (the unit of Cw / C): both ways, a bed under the water cools it. The air cooling of the
+       unfired boiler (kcool) is inside this balance now; the loss to the room (kamb) stays */
+    const qW = (qSol + qGas) / B.kW,
+      qL = U.kamb * Math.max(0, (U.Tw - U.Tamb) / 300);
+    U.qW = qW;
+    U.Qs = Math.max(0, qW); /* the steam made, read by the firing ratio of the steam temperatures */
     if (U.Tw < ts - 0.01) {
-      U.Tw = Math.max(U.Tamb, Math.min(ts, U.Tw + ((qW - Qloss) * dt) / U.Cw));
+      U.Tw = Math.max(U.Tamb, Math.min(ts, U.Tw + ((qW - qL) * dt) / U.Cw));
       U.Pd = Math.max(0, U.Pd - ((U.ms + U.mb + (U.msb || 0)) * dt) / U.C);
     } else {
-      U.Pd = Math.max(0, U.Pd + ((qW - Qloss - U.ms - U.mb - (U.msb || 0)) * dt) / (U.C + U.Cw * steamDTsat(U.Pd)));
+      U.Pd = Math.max(0, U.Pd + ((qW - qL - U.ms - U.mb - (U.msb || 0)) * dt) / (U.C + U.Cw * steamDTsat(U.Pd)));
       U.Tw = tsatOf(U.Pd);
     }
   } else {
@@ -4583,8 +4612,9 @@ function anUnitStep0(dt) {
     );
     U.Tw = tsatOf(U.Pd);
   }
-  /* bed temperature: firing share over air share, first order */
-  {
+  /* bed temperature: firing share over air share, first order. The load path only ("Start at 150 MW"); the Cold path has the bed
+     heat balance above (AN_BB) */
+  if (!U.cold) {
     const /* fuel share (coal-equivalent, burnt) over air share, exponent 0.45 (ASSUMED, calibrated: 850 C at full load, Fig 8; about
          450 C with two start-up burners at 60 % and the light-off air, the coal batch permissive of PR-OPE-5002 400 ~ 450 C; coal
          alone at O2 4 ~ 5 % about 800 C). 2.2.0-beta.15: on the fuel, not on the steam made (the fixed loss of the firing line
@@ -4777,14 +4807,10 @@ function anUnitStep0(dt) {
     if (!isFinite(U.TmR))
       U.TmR = isFinite(rh0) ? Math.max(Math.max(U.Tamb, isFinite(U.Tw) ? U.Tw : U.Tamb), Math.min(U.Tb, rh0)) : tw0;
     if (!isFinite(U.TmS)) U.TmS = tw0;
-    /* the furnace gas (AN_FG above): leaves the lower furnace at the bed, the upper bare walls take their share of the wall heat */
+    /* the furnace exit gas U.tgF and the gas flow x cp U.gcp: the bed heat balance above (AN_BB) */
     const K = AN_FG,
-      hfg = Math.max(0, steamH(U.Pd, tsatOf(U.Pd)) - anHfSat(U.Pd)),
-      qUp = K.up * (Math.max(0, U.qW || 0) / 3.6) * hfg /* kW */,
-      mg = taf + (U.cbn || 0) * (1 - K.ash) + (U.oilF || 0) /* T/H */,
-      gcp = (mg / 3.6) * K.cpG; /* kW/K */
-    const gLo = Math.min(U.Tb, Math.max(U.Tamb, isFinite(U.Tw) ? U.Tw : U.Tamb));
-    U.tgF = gcp > 1 ? Math.max(gLo, U.Tb - qUp / gcp) : Math.max(U.Tamb, U.Tb); /* furnace exit gas */
+      gcp = isFinite(U.gcp) ? U.gcp : 0;
+    if (!isFinite(U.tgF)) U.tgF = U.Tb;
     /* the cyclone refractory lump: the gas gives it heat (or takes it back) and leaves at its temperature */
     if (!isFinite(U.Tcy)) U.Tcy = U.tgF;
     U.Tcy += (gcp * (U.tgF - U.Tcy) * dt) / K.mCy;
