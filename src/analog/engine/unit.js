@@ -2073,8 +2073,19 @@ const AN_CBED = { tau: 60 };
    the cyclones and their outlet ducts before the backpass (03-boiler; P2S4): inlet ducts 98.8 ~ 118.3 t + cyclones 373.7 ~ 450.2 t +
    outlet ducts 214.4 ~ 303.9 t (13-thermal-masses A6, K1AU3-C-0-007), centre 780 t x 1.0 kJ/kg K (textbook refractory) = 780 MJ/K,
    one lump the gas heats or cools on its way. The gas leaves the cyclones at the lining temperature (exchange effectiveness 1:
-   NO-SOURCE, the lining area and film coefficient are not in the documents). Flue gas cp 1.15 kJ/kg K (textbook), coal ash 6.82 % (T3). */
-const AN_FG = { cpG: 1.15, ash: 0.0682, mCy: 780e3 };
+   NO-SOURCE, the lining area and film coefficient are not in the documents). Flue gas cp 1.15 kJ/kg K (textbook), coal ash 6.82 % (T3).
+   live Cold start 2026-11-14 (beta.243, MS 439 C and RH 381 C flat from 45 to 70 MW, cyclone outlet 544 C under a furnace of 800 C):
+   one 780 t lump with effectiveness 1 made the gas leave at the temperature of the WHOLE lining, so the backpass saw the lining that
+   heats in tens of hours. A refractory heats from its hot face and conducts inward (textbook, semi-infinite wall: about 75 mm in 1 h
+   at 5e-7 m2/s), and the gas only touches the hot face through its film. Two layers:
+   - lining area A 1,200 m2: two cyclones ID 7.89 m x about 24.5 m high (03-boiler, P2S4 p2-4-10: cylinder, cone and roof about 520 m2
+     each, CALC) + outlet ducts (about 160 m2, ASSUMED: duct size not in the docs).
+   - gas film h 0.1 kW/m2 K (NO-SOURCE, textbook dusty gas at 800 C, convection + radiation 50 ~ 200 W/m2 K): hA 120 kW/K.
+   - hot face layer 50 mm (the depth that follows the gas within about an hour): 1,200 m2 x 0.05 m x 2.3 t/m3 x 1.0 kJ/kg K = 138 MJ/K;
+     the back of the lining = the rest of the 780 MJ/K (642 MJ/K).
+   - face to back: fireclay k 1.2 W/m K (textbook) over 0.15 m between the layer centres: 1.2 x 1,200 / 0.15 = 9.6 kW/K.
+   Lining fully soaked: the gas leaves at the furnace exit temperature (no loss term: 75 mm calcium silicate behind, P4S1) */
+const AN_FG = { cpG: 1.15, ash: 0.0682, mCy: 780e3, hA: 120, mF: 138e3, mB: 642e3, kAB: 9.6 };
 /* live Cold start 2026-11-14 (user: "WALANG DAYAIN", no curve fits): THE BED HEAT BALANCE of the Cold path. Before, the bed went first
    order to a law fitted on the plant trend (start-up exponent kBedSU 0.168 and the AN_BED table), and the water walls took
    min(firing line, uaW x (bed - water)): a patch. Now one lump of the lower furnace (bed solids + the refractory of the lower furnace)
@@ -4889,10 +4900,17 @@ function anUnitStep0(dt) {
     const K = AN_FG,
       gcp = isFinite(U.gcp) ? U.gcp : 0;
     if (!isFinite(U.tgF)) U.tgF = U.Tb;
-    /* the cyclone refractory lump: the gas gives it heat (or takes it back) and leaves at its temperature */
+    /* the cyclone refractory (AN_FG): the gas touches only the hot face (U.Tcy) through the film hA (effectiveness 1 - exp(-hA / gas
+       cp)); the hot face conducts into the back of the lining (U.TcyB) */
     if (!isFinite(U.Tcy)) U.Tcy = U.tgF;
-    U.Tcy += (gcp * (U.tgF - U.Tcy) * dt) / K.mCy;
-    const tG = U.Tcy; /* gas into the backpass: SH / RH */
+    if (!isFinite(U.TcyB)) U.TcyB = U.Tcy;
+    const eCy = gcp > 0.01 ? 1 - Math.exp(-K.hA / gcp) : 1,
+      qCy = gcp * eCy * (U.tgF - U.Tcy) /* kW, gas to the hot face */,
+      qCyB = K.kAB * (U.Tcy - U.TcyB); /* kW, hot face to the back */
+    U.Tcy += ((qCy - qCyB) * dt) / K.mF;
+    U.TcyB += (qCyB * dt) / K.mB;
+    const tG = gcp > 0.01 ? U.tgF - qCy / gcp : U.Tcy; /* gas into the backpass: SH / RH */
+    U.tgB = tG;
     const gr = U.taf0 > 0 ? Math.max(0, taf / U.taf0) : 0,
       kg = Math.pow(gr, 0.6);
     let qS = (U.shUA || 261) * kg * Math.max(0, tG - U.TmS),
@@ -4921,8 +4939,8 @@ function anUnitStep0(dt) {
     U.TpR = Math.max(U.Tamb, Math.min(Math.max(U.TmR, U.Tamb), U.TpR));
     U.wR = wR;
     /* the cyclone outlet thermocouples TT-FG1095-A / B read the gas leaving the cyclones (beta.212 scaled them on the bed) */
-    U.gCy = [U.Tcy, U.Tcy];
-  } else U.TmS = U.TmR = U.TpR = U.Tcy = U.tgF = undefined;
+    U.gCy = [tG, tG];
+  } else U.TmS = U.TmR = U.TpR = U.Tcy = U.TcyB = U.tgB = U.tgF = undefined;
   for (const e of U.ld) {
     const pr = e.pr,
       p = e.b.p || {};
