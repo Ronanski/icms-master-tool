@@ -85,7 +85,7 @@ const AN_UNIT = {
      the DCS drawings (the DCS only sees the TCS digital inputs of the I/O list and the TARGET MW feedback AI0420). State U.tb:
      st 'off' (stop valves shut) -> 'roll' (rpm ramps at rollRate, IP START MODE: the ICV lets roll steam from the hot reheat, icvRoll)
      -> 'sync' (3600 rpm, the TCS closes the GCB: I.0931 = 1 / I.0932 = 0, INITIAL LOAD 4.5 MW on the ICV) -> 'load' (LOAD UP
-     at rate MW/min = 5 % of 150 MW per minute; at MWxf = 20 MW or the ICV full open the HP control valves take over, ICV -> CV
+     at rate MW/min = 5 % of 150 MW per minute; the HP control valves open as the flow demand passes the CV opening bias (anTbFlow), ICV -> CV
      TRANSFER COMPLETE I.0418 = 1, "transfer at 20 MW or HP bypass closed"). While the generator is on the grid the MW is the HP
      steam (1 - cIP) + the IP / LP steam cIP (cIP below: 75 %, CALC from HEAT_BALANCE.md) less the anchor losses
      (c x m0 - MW0, fading out with a small IP flow). Before the transfer the IP / LP steam comes from the HP bypass through the
@@ -100,7 +100,14 @@ const AN_UNIT = {
   rollRate: 120 /* rpm/min, PR-OPE-5002 cold start (the holds at 1800 / 3600 rpm of the procedure are the operator's; not modelled) */,
   icvRoll: 0.13 /* ICV opening for the roll steam (about 14 T/H at 7.6 kg/cm2 reheat, NO-SOURCE: the SOP gives CV 10 / 3 % at 400 rpm, no ICV opening) */,
   cIP: 0.75 /* calculated: HP 38 MW, IP / LP 113 MW of the shaft, HEAT_BALANCE.md */,
-  MWxf: 20,
+  /* 3.2.3-beta.240 (live Cold start Load up): the TCS flow demand splits to the ICV and the CVs (TCE 331DM09784 p.141 TCE207 FLOW
+     CONTROL(2), A007 HEAT SOAK CONTROL: CV OPENING BIAS SG C008 K:20.0 %, ICV MIN OPENING K:-0.5 %, RI / RD 0.03 % per 30 ms cycle = 1 %/s;
+     p.144 TCE212 / p.145 TCE214: CV and ICV demand through FG (PARA-LIST, NO-SOURCE) to the VALVE CONTROL MT1, ICV opening speed SG C007
+     K:10.0 %/s). cvBias = the flow demand where the CVs start to open (IP START); fdRate = 1 %/s; vRate = 10 %/s (CV taken the same, NO-SOURCE) */
+  cvBias: 0.2,
+  fdRate: 0.01,
+  vRate: 0.1,
+  nlMW: 1.5 /* MW, the no-load (motoring) loss of the turbine generator shaft at 3600 rpm, NO-SOURCE (about 1 % of the rating) */,
   MWinit: 4.5 /* PR-OPE-5002: initial load 4.5 MW */,
   rateUp: 7.5 /* MW/min = 5 % / min (PR-OPE-5002 LOAD UP), AI0421 max load-up rate 0 ~ 5 %/min */,
   /* 3.2.3 (b4, MST 547 on the load up): the heat of the SH / RH banks follows the load with the lag of the CFB loop (bed, refractory,
@@ -3840,6 +3847,63 @@ function anUnitOwnsPv(S, n) {
 function anDb(x, b) {
   return x > b ? x - b : x < -b ? x + b : 0;
 }
+/* 3.2.3-beta.240 (live Cold start, ICV to CV transfer; user 2026-11-14: per the TCS drawings, the normal ATS load up, no GOV manual):
+   the TCS load loop on the grid. FLOW DEMAND (TCE206 p.140: GOV.SET through the low select with LLM SET, which the ATS has at its upper
+   limit) = the TCS target load as a share of the rating (feedforward, the target MW of TCE195) + the integral of the MW error (TCE195 GOV
+   CONTROL PI on TARGET MW - GEN. MW; the gain is NO-SOURCE, U.tcs), moved at most 1 %/s (TCE207 A007 RI / RD). TCE207: ICV demand =
+   flow demand / CV OPENING BIAS (full open at 20 %), CV demand = (flow demand - 20 %) / 80 % (the FG curves of TCE212 / TCE214 are
+   PARA-LIST, NO-SOURCE: linear here). The valves follow at 10 %/s (TCE214 SG C007). TRANSFER (ICV TO CV TRANSFER COMPLETE I.0418) =
+   the CV demand over 0.5 % (TCE207 CV OPEN CMP C004). So the CVs open as the demand rises past the ICV range, the same demand that
+   opened the ICV: no step at the transfer (was: the ICV integrator, then a switch to a slow CV integrator from 2 %, beta.239) */
+function anTbFlow(U, tb, D, dt, dirt) {
+  const B = U.cvBias || 0.2,
+    M0 = U.MW0 || 150,
+    L = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+  if (!isFinite(tb.fd)) {
+    tb.fd = tb.xfer ? B + (1 - B) * L(+U.gv || 0, 0, 1.4) : B * L(+tb.icv || 0, 0, 1);
+    tb.fi = tb.fd - D / M0;
+  }
+  if (!isFinite(tb.fi)) tb.fi = tb.fd - D / M0;
+  tb.fi = L(tb.fi + (dt * (D - U.MW)) / (U.tcs * M0), -0.5, 0.5);
+  const r = (U.fdRate || 0.01) * dt;
+  tb.fd = L(tb.fd + L(L(D / M0 + tb.fi, 0, 1.4) - tb.fd, -r, r), 0, 1.4);
+  const s = (U.vRate || 0.1) * dt,
+    icvD = L(tb.fd / B, 0, 1),
+    cvD = L((tb.fd - B) / (1 - B), 0, 1.4),
+    i0 = tb.icv == null ? icvD : tb.icv;
+  tb.icv = L(i0 + L(icvD - i0, -s, s), 0, 1);
+  U.gv = L((+U.gv || 0) + L(cvD - (+U.gv || 0), -s, s), 0, 1.4);
+  if (!tb.xfer && cvD > 0.005) {
+    tb.xfer = true;
+    if (U.cold) dirt(U.di.xfer, 1);
+  }
+}
+/* 3.2.3-beta.240 (user 2026-11-14): the 32 REVERSE POWER relay of the generator protection panel (Beckwith M-3425A, GEE-2015-0173 R1
+   SITE TEST PROCEDURE OF GEN. PROTECTION RELAY PANEL, PDF p.16 (PAGE 14) 32A: #1 (Alarm) pickup -0.008 pu, delay 300 cycles (5.0 s); #2
+   (Trip) pickup -0.013 pu, delay 600 cycles (10.0 s); over / under power "Over"; 1 pu = 115 V / 3.69 A secondary, taken as the generator
+   rating 176.5 MVA (AN_GEN.S): alarm at -1.4 MW, trip at -2.3 MW. Sequence test PDF p.7 (P.5) rows 12 / 13: both with 52G closed; #1 =
+   "1st REVERSE POWER (32) OPERATED"; #2 = "2nd REVERSE POWER (32) OPERATED", lockout relay 86G-A: 52G and 41 open and the turbine trips
+   (ANN & ST TRIP). Here the 86G-A drives the TA-9 input GEN./UNIT TRANS. PROTECTION A & GEN. LOCKOUT RELAY A (tcs-trip.js); the turbine
+   trip opens 52G and 41 (tcsGenTrip). The 86G-A is reset with the TURBINE RESET (NO-SOURCE: the hand reset of the lockout relay is on the
+   protection panel, not on the app). Other relays of the panel are not modelled */
+const AN_RP32 = { a: -0.008, t1: 5, b: -0.013, t2: 10 };
+function anRp32(U, on, dt) {
+  const r = U.rp32 || (U.rp32 = { t1: 0, t2: 0, al: false, lo: false }),
+    p = on ? (+U.MW || 0) / AN_GEN.S : 0,
+    ev = m => {
+      if (typeof window !== 'undefined' && window.lsEventAdd && !(window.ENG && ENG.mode === 'mirror'))
+        lsEventAdd('GEN', 'GEN', m);
+    };
+  r.t1 = on && p <= AN_RP32.a ? r.t1 + dt : 0;
+  r.t2 = on && p <= AN_RP32.b ? r.t2 + dt : 0;
+  const al = r.t1 >= AN_RP32.t1;
+  if (al && !r.al) ev('1st REVERSE POWER (32) OPERATED: ' + (+U.MW).toFixed(1) + ' MW');
+  r.al = al;
+  if (r.t2 >= AN_RP32.t2 && !r.lo) {
+    r.lo = true;
+    ev('2nd REVERSE POWER (32) OPERATED: generator lockout relay 86G-A, turbine trip');
+  }
+}
 function anTbSpeed(U, tb, dt, on, Pm, Pe) {
   if (!(U.el && U.el.l52 === false)) {
     if (tb.st === 'sync' || tb.st === 'load') tb.rpm = 3600;
@@ -3872,14 +3936,19 @@ function anGenEl() {
     c = U.tc,
     syn = tb.st === 'sync' || tb.st === 'load',
     fcb = syn || !!(c && c.exc),
-    P = syn ? Math.max(0, +U.MW || 0) : 0,
-    Q = syn ? P * Math.tan(Math.acos(AN_GEN.pf)) : 0,
+    /* beta.240: P negative = reverse power (motoring); the reactive power follows the positive load only */
+    P = syn ? +U.MW || 0 : 0,
+    Q = syn ? Math.max(0, P) * Math.tan(Math.acos(AN_GEN.pf)) : 0,
     p = P / AN_GEN.S,
     q = Q / AN_GEN.S,
     /* 3.2.3-beta.235: before 52G the voltage builds up after the field breaker 41 closes (tcs-gen.js g.V, 30 s); was 13.8 kV at once */
     vb = syn ? 1 : U.gen && isFinite(U.gen.V) ? U.gen.V : fcb ? 1 : 0,
     /* beta.236: before 52G the exciter output of the field model (tcs-gen.js g.efd, 1 = no load field) */
-    E = !fcb ? 0 : syn || !(U.gen && isFinite(U.gen.efd)) ? (vb * Math.hypot(1 + AN_GEN.xd * q, AN_GEN.xd * p)) / AN_GEN.E0 : U.gen.efd / AN_GEN.E0,
+    E = !fcb
+      ? 0
+      : syn || !(U.gen && isFinite(U.gen.efd))
+        ? (vb * Math.hypot(1 + AN_GEN.xd * q, AN_GEN.xd * p)) / AN_GEN.E0
+        : U.gen.efd / AN_GEN.E0,
     kA = Math.hypot(P, Q) / (Math.sqrt(3) * AN_GEN.kV),
     g = U.genE || (U.genE = { MWh: AN_GEN.MWh, MVArh: AN_GEN.MVArh });
   return {
@@ -4457,18 +4526,8 @@ function anUnitStep0(dt) {
     U.gv = 0;
     U.tcsT = 0;
   } else if (!tb.xfer) {
-    /* IP start mode: the ICV controls the load, the HP control valves are shut; ICV -> CV transfer at MWxf or ICV full open */
-    U.gv = 0;
-    tb.icv = Math.max(0, Math.min(1, tb.icv + (dt * (D - U.MW)) / (2 * U.tcs * U.MWxf)));
-    if (tb.icv >= 1 || U.MW >= U.MWxf) {
-      /* 3.2.3-beta.239 (live Cold start, ICV to CV transfer at 19.9 MW: the ICV stepped 69.7 -> 100 % in one scan, the hot reheat
-         pressure fell 19 -> 5.7 kg/cm2 and the load 21.6 -> 9.7 MW in 20 s): the ICV is no longer thrown full open here. From the
-         transfer the CVs open from their minimum with the TCS load loop and the ICV goes on to full open at the TCS rate (branch below);
-         the reheater keeps its own mass balance (below), so the IP steam is what the reheater holds and gets, not a new formula */
-      tb.xfer = true;
-      U.gv = Math.max(U.gv, 0.02);
-      if (U.cold) dirt(U.di.xfer, 1);
-    }
+    /* IP start mode (TCE207): the one flow demand opens the ICV first; the CVs stay shut until it passes the CV OPENING BIAS (20 %) */
+    anTbFlow(U, tb, D, dt, dirt);
   } else {
     /* 3.2.3 PLU (POWER LOAD UNBALANCE, TG manual 2-2 TURBINE CONTROL SYSTEM_R1 5.3.2.4): the fast acting solenoid valves of the CVs and
        ICVs are energized when the generator current falls faster than 40 % / 10 ms and the power (reheat bowl pressure) minus the load
@@ -4491,6 +4550,7 @@ function anUnitStep0(dt) {
           ' MW load'
       );
     tb.plu = plu;
+    if (plu || (U.el && U.el.l52 === false)) tb.fd = NaN;
     if (plu) {
       U.gv = Math.max(0.02, U.gv - dt / U.tauTrip);
       tb.icv = Math.max(0, tb.icv - dt / U.tauTrip);
@@ -4525,8 +4585,7 @@ function anUnitStep0(dt) {
     } else {
       tb.gs = NaN;
       tb.hlT = 0;
-      tb.icv = Math.min(1, (tb.icv == null ? 1 : tb.icv) + dt / U.tcs);
-      U.gv = Math.max(0.02, Math.min(1.4, U.gv + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
+      anTbFlow(U, tb, D, dt, dirt);
     }
   }
   /* steam flow through the valves: m = Kt x gv x MSP, MSP = drum - kdp x m^2 */
@@ -4691,18 +4750,21 @@ function anUnitStep0(dt) {
   U.Pms = Pms; /* 3.2.0-beta.14: source of the reducing stations (source.js) */
   /* generator. 2.2.0-beta.17: HP steam (1 - cIP) + IP / LP steam cIP (qip = the reheat pressure x the ICV opening, = the HP steam
      when the bypass is shut and the ICV full open: the same line MW0 + c x (ms - m0) as before) less the anchor losses; 0 off the grid */
+  /* 3.2.3-beta.240 (user 2026-11-14, reverse power): on the grid the MW is not held at 0 or above. With too little steam the generator
+     takes power from the grid to keep the shaft at 3600 rpm (motoring): the no-load loss of the shaft (windage, bearings, U.nlMW, NO-SOURCE)
+     stays when the IP steam is gone, where the anchor line loss (mwK) fades out. The 32 relay (anRp32) sees the negative power */
   const qip = U.m0 * U.rr * tb.icv,
+    fq = Math.min(1, qip / (0.3 * U.m0)),
     MWss = onGrid
-      ? Math.max(
-          0,
-          U.c * ((1 - U.cIP) * U.ms + U.cIP * qip) -
-            (U.mwK != null ? U.mwK : U.c * U.m0 - U.MW0) * Math.min(1, qip / (0.3 * U.m0)) -
-            anVacMW(U) +
-            (U.dMWx || 0)
-        )
+      ? U.c * ((1 - U.cIP) * U.ms + U.cIP * qip) -
+        (U.mwK != null ? U.mwK : U.c * U.m0 - U.MW0) * fq -
+        (U.nlMW || 0) * (1 - fq) -
+        anVacMW(U) +
+        (U.dMWx || 0)
       : 0;
   U.MW += ((MWss - U.MW) * dt) / U.tauMW;
   U.Pm = MWss;
+  anRp32(U, onGrid && !trip, dt);
   anTbSpeed(U, tb, dt, onGrid && !trip && tb.xfer, MWss, D);
   /* 52G open: no load on the machine */
   if (U.tc && (tb.st === 'off' || tb.st === 'roll')) U.MW = 0;

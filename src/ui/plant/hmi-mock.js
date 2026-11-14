@@ -586,7 +586,136 @@
           e.setAttribute('fill', ok == null ? C.none : ok ? C.run : C.stop);
           qa(`[data-uyr="${e.dataset.uy}"]`).forEach(r => r.setAttribute('stroke', ok == null ? C.none : ok ? C.run : C.stop));
         });
+        tickAts();
       };
+      /* 3.2.3 live Cold start (user 2026-11-14: "kung sync, active card n dpat yan si synch and initial load"; "kada step s ats may
+         checklist yan na tatlo"): the ATS step cards of page 13 follow the TCS model, no more the fixed frame of step 8 (snapshot 37.PNG).
+         A card is DONE (the step finished), ACTIVE (the step running: its background colour changed, 310SC90-775 "STEP-IN COLOR"), NEXT
+         (finished before, waiting for its push button) or WAITING. Under each card, three items of the sequential flow of its page of
+         310SC90-775 (the program actuation sheets 13 ~ 28), Y red = complete, N green, with the live value of the step running */
+      const ATS_CK = [
+        /* 13 HP TURBINE WARMING: warming start, question 1st stage metal <= 150 C (*1), criteria D0 */
+        (t, u) => [
+          ['Warming start', t.cur === 0],
+          ['Metal > 150 C', t.Thp > 150, fmt(t.Thp, 0) + ' C'],
+          ['Criteria D0', false]
+        ],
+        /* 14 TURBINE PREPARATION: CV chest warming (*1 inner or outer > 150 C), turbine reset (1.20), MSV open (1.21) */
+        t => [
+          ['Chest warming', t.cur === 1 && t.ph !== 'chest', fmt(Math.max(t.Tcvi, t.Tcvo), 0) + ' C'],
+          ['Turbine reset', !!t.rst],
+          ['MSV open', !!t.rst]
+        ],
+        /* 17 ~ 18 TURBINE RUB CHECK: target speed 200 rpm, all valves close, coast down */
+        t => [
+          ['Speed 200 rpm', t.cur === 2 && t.ph === 'coast', fmt(t.rpm, 0) + ' rpm'],
+          ['Valves close', t.cur === 2 && t.ph === 'coast'],
+          ['Below 100 rpm', false]
+        ],
+        /* 19 ~ 22 ACCELERATION: heat soak 1800 rpm (cold modes), 3600 rpm, heat soak 3600 rpm */
+        t => {
+          const s = t.cur === 3 ? t.ph : '',
+            left = isFinite(t.soakMin) ? Math.max(0, t.soakMin - t.tmMin) : NaN;
+          return [
+            ['Soak 1800 rpm', s === 'to3600' || s === 'soak3600', s === 'soak1800' ? fmt(left, 0) + ' min' : ''],
+            ['Speed 3600 rpm', s === 'soak3600', s && s !== 'soak3600' ? fmt(t.rpm, 0) + ' rpm' : ''],
+            ['Soak 3600 rpm', false, s === 'soak3600' ? fmt(left, 0) + ' min' : '']
+          ];
+        },
+        /* 23 EXCITATION: excitation start (AVR, field switch 41), generator voltage, criteria D4 */
+        (t, u, g) => [
+          ['Excitation on', !!(t.gen && t.gen.f41)],
+          ['Rated voltage', !!(t.gen && t.gen.f41 && t.gen.volt), g && t.cur === 4 ? fmt(g.kV, 2) + ' kV' : ''],
+          ['Criteria D4', false]
+        ],
+        /* 24 ~ 25 SYNCH. & INITIAL LOAD: ASD start 52G, GCB closed (1.48), initial load hold timer (Fig. 3) then criteria D5 */
+        (t, u) => {
+          const on = t.cur === 5 && t.ph === 'init',
+            left = isFinite(t.holdMin) ? Math.max(0, t.holdMin - t.tmMin) : NaN;
+          return [
+            ['Auto sync', on || !!(t.gen && t.gen.sync), t.cur === 5 && !on && t.gen ? fmt(t.gen.slip, 2) + ' Hz' : ''],
+            ['52G closed', on],
+            ['Initial load hold', false, on ? fmt(left, 1) + ' / ' + fmt(t.holdMin, 0) + ' min' : '']
+          ];
+        },
+        /* 26 ~ 27 LOAD UP: load up start (ICV to CV transfer), load up 5 %/min to the target, criteria D6 */
+        (t, u) => {
+          const tb = (u && u.tb) || {},
+            on = t.cur === 6;
+          return [
+            ['ICV to CV', !!tb.xfer, on && !tb.xfer && isFinite(tb.icv) ? 'ICV ' + fmt(tb.icv * 100, 1) + ' %' : ''],
+            ['Load to target', false, on && u ? fmt(u.MW, 1) + ' / ' + fmt(tb.aim, 0) + ' MW' : ''],
+            ['Criteria D6', false]
+          ];
+        },
+        /* 28 NORMAL OPERATION: no hold condition, load up / down rate limit to the DCS (CRI. SH-20 no.43), criteria D7 */
+        t => [
+          ['No hold', t.cur === 7 && !t.hold],
+          ['Rate limit', false],
+          ['Criteria D7', false]
+        ]
+      ];
+      let atsUi = null;
+      const atsMk = (tag, at, par) => {
+        const e = document.createElementNS(NS, tag);
+        for (const [a, v] of Object.entries(at)) e.setAttribute(a, v);
+        par.append(e);
+        return e;
+      };
+      function tickAts() {
+        if (atsUi === false) return;
+        if (!atsUi) {
+          const ys = [...qa('[data-uyr^="tcs.step|"]')];
+          if (ys.length < 8) return (atsUi = false);
+          atsUi = ys.map(r => {
+            const card = r.previousElementSibling,
+              x = +card.getAttribute('x'),
+              y = +card.getAttribute('y'),
+              h = +card.getAttribute('height');
+            /* the two grey lines of the mockup under the card give their place to the checklist */
+            [...qa('text')].forEach(e => {
+              if (+e.getAttribute('x') === x + 12 && Math.abs(+e.getAttribute('y') - (y + h + 35)) <= 14) e.setAttribute('display', 'none');
+            });
+            const fill = atsMk('rect', { x, y, width: card.getAttribute('width'), height: h, rx: 4, fill: C.run, 'fill-opacity': 0, stroke: 'none' }, card.parentNode);
+            card.parentNode.insertBefore(fill, card);
+            const gi = atsMk('g', { 'font-size': 11 }, r.parentNode),
+              rows = [0, 1, 2].map(i => {
+                const yy = y + h + 18 + i * 17;
+                return {
+                  b: atsMk('rect', { x: x + 1, y: yy - 9, width: 10, height: 10, rx: 2, 'stroke-width': 1.2 }, gi),
+                  t: atsMk('text', { x: x + 17, y: yy, fill: C.dim, stroke: 'none' }, gi),
+                  v: atsMk('text', { x: x + 160, y: yy, fill: C.val, stroke: 'none', 'text-anchor': 'end' }, gi)
+                };
+              });
+            return { card, fill, rows };
+          });
+        }
+        const U = window.AN && AN.unit,
+          t = U && U.on ? call(() => AN.tcs(), null) : null,
+          g = t ? call(() => AN.gen(), null) : null,
+          /* the 150 MW snapshot has no TCS state: NORMAL OPERATION done (as uPath) */
+          step = t ? t.step : U && U.on && U.tb && U.tb.st !== 'off' && +U.MW > 0 ? 7 : -1,
+          cur = t ? t.cur : -1;
+        atsUi.forEach((ui, k) => {
+          const done = step >= k && cur !== k,
+            act = cur === k,
+            next = !act && cur < 0 && k === step + 1;
+          ui.card.setAttribute('stroke', act || next ? C.run : done ? '#e6e6e6' : C.none);
+          ui.card.setAttribute('stroke-width', act ? 2.4 : 1.6);
+          ui.card.setAttribute('stroke-dasharray', next ? '6 4' : 'none');
+          ui.fill.setAttribute('fill-opacity', act ? 0.14 : 0);
+          const it = t ? ATS_CK[k](t, U, g) : [['-----'], ['-----'], ['-----']];
+          ui.rows.forEach((r, i) => {
+            const [txt, ok0, val] = it[i] || [],
+              ok = t ? ok0 || step >= k : null;
+            r.t.textContent = txt || '';
+            r.t.setAttribute('fill', act ? C.val : C.dim);
+            r.v.textContent = act && val ? val : '';
+            r.b.setAttribute('fill', ok == null ? 'none' : ok ? C.run : 'none');
+            r.b.setAttribute('stroke', ok == null ? C.none : ok ? C.run : C.stop);
+          });
+        });
+      }
       /* motor operated / on-off valves of a DITL sheet: [data-mov="SHEET|TAG|pct"] = position %, "SHEET|TAG|oc" = OPEN / CLOSED */
       const tickMov = () =>
         qa('[data-mov]').forEach(e => {
