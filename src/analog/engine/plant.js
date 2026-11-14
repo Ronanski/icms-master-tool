@@ -1881,7 +1881,7 @@ function anStep(S, dt) {
       case 'RAMPB': {
         if (b.tpar !== undefined) {
           const T = rd(b.tpar);
-          P.rate = T > 0 && isFinite(T) ? b.span / (T * 0.036) : 1e-12;
+          P.rate = T > 0 && isFinite(T) ? (b.tsec ? b.span / T : b.span / (T * 0.036)) : 1e-12;
         }
         if (b.main !== undefined) {
           const x = rd(b.main);
