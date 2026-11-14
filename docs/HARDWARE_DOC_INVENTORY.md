@@ -174,6 +174,25 @@ Batayan: magkakambal ang Units 1, 2, 3 at 4 (user 2026-11-14). Valid ang dokumen
 - `SMGP\LAPTOP_BACKUP_02062026\DESKTOP\TURN OVER FILES\DIAGRAMS\K1AU3U02-D-I05 Instrument  Connection List (Wiring List).pdf`
 - U2 JB at marshalling termination schedule: `LPDSI\DCS FEIL\IC\PLANT REFERENCES\Metrologyx Training\FOR METROLOGYX TRAINEES (NC-II Module-2)\4. LOOP CHECKING\4.4 Junction Box Wiring Termination Schedule\` at `\4.5 Marshalling Cabinet Wiring Termination Schedule\`
 
+### 2b. DCS instrument cable schedule (boiler + TG): nasa WIRING workbook
+
+Ang `LMYP-1(#1) WIRING.xls` mismo ang cable schedule. May column na CABLE NO, CABLE SPEC, CABLE CORD1 / 2, CROSS CABLE, CROSS CABLE SPEC, JB-NO., MJB-NO., MJB-PAN, IO TBNO, TBNO2, EBTB (field device, JB, MJB / marshalling, IO terminal). Binuksan ang local copy sa D (walang download).
+
+- `LPDSI\DCS FEIL\IC\DCS\DCS\PLC\LMYP-1 #1-DOCUMENT(Hardware)\12.Wiring\Copy of LMYP-1(#1) WIRING.xls`
+- `LPDSI\DCS FEIL\DCS & TCS\DCS\Wiring Diagrams\LMYP-1\#1\LMYP-1(#1) WIRING_v0_20161121(曾至豪修改).xls` (U1)
+- `LPDSI\DCS FEIL\DCS & TCS\DCS\Wiring Diagrams\LMYP-1\#2\LMYP-1(u2) WIRING_v0_20161107.xls` (U2)
+- `...\#1\試車期間吹管結線資料(試車完刪除)\LMYP-1(#1) WIRING_v0_for吹管用` AI / DI / DO pdf at xls (pansamantalang wiring sa blow-out)
+- OneDrive: `SMGP\ARCHIVES\DCS TCS\DCS REFERENCE\LMYP-1 #1-DOCUMENT(Hardware)\` at `SMGP\LAPTOP_BACKUP_02062026\DESKTOP\TURN OVER FILES\DCS TCS\DCS Files\Wiring Diagrams\LMYP-1\`
+
+### 2c. Electrical to DCS / TCS / GCP cable schedule: 6003 set
+
+Header ng sheet: Equipment, Tag No., Terminal No., Cable Code, TB Strip, Function, Type, CWD Type (hal. #1 TCS-7, #1 GCP-I8-1, M-1941-C6).
+
+- U1: K1AU3E1-6003A-1 HV, K1AU3E1-6003B-1 LV, K1AU3E1-6003C-1 TG. U2: K1AU3E2-6003A / B / C-1. Common: K1AU3E0-6003-1 RCP / HBT, -6003B-1 water treatment, -6003C-1 coal handling
+- `SMGP\USBTRANSFER\FHI Drawing\PHASE 1\E1 Engineer data of electrical equipment\Electrical Connection Wiring Diagram\` at `LPDSI\LMYP-1 PLC\PLC References\MH\MH1 Drawings and Layouts\Electrical Connection Wiring Diagram\`
+- TCS: MHPS EI `(ML-TEQ-14-197 RB)-Cable from_ to List for Turbine Control System`; TG: `(ML-TRE-14-010 R4)-Cable List For Malita` (kambal), P2 `572_TRE-16-006_R6`
+- Water treatment package: `LPDSI\...\K1AU3-D1-0-062 R0\Document for Construction Rev. 0\6.EICA\140LMYP-1-E2-001 Cable Connection List-Rev_0.pdf`; P2 `146. LMYP-2-E2-001-r2_Cable Connection List.pdf`
+
 ### 3. 24 VDC / 110 VAC distribution
 
 - `SMGP\LAPTOP_BACKUP_02062026\DESKTOP\E-LIBRARY\DCS PLC\LMYP-1 #1-DOCUMENT(Hardware)\06.PDP\K1AU3-E2-0-111_20171012.pdf`
