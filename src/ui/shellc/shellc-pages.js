@@ -254,6 +254,7 @@
   /* ---------- (c) the turbine start panel on the Steam and turbine page (MK13 TURBINE START) ---------- */
   const TSB = [
     ['tcsroll', 'Roll to 3600 rpm'],
+    ['tcsexc', 'Excitation'] /* beta.235: ATS step 4, its own push button (310SC90-775 page 23) */,
     ['tcssync', 'Synchronize, 4.5 MW'],
     ['tcsload', 'Load up to 45 MW'],
     ['tcstarget', 'Target MW…'],
@@ -305,6 +306,19 @@
     s.append(k + ' ', E('b', '', v));
     return s;
   };
+  /* beta.235 (live Cold start, user: "wala ako napansin" on SYNC, "dapat makita ang 13.8 kV sa excitation"): the generator side of the
+     ATS steps 4 and 5 in words: field breaker 41 and the voltage build-up (tcs-gen.js, AVR 30 s), then the automatic synchronizing
+     (G-1B: 25X1 seal-in 3 s, the ASD matches speed and voltage 60 s, then the 52G close order) */
+  function genTxt(U, tb, gcb) {
+    const g = U.gen;
+    if (!g || !tb.st) return '—';
+    if (gcb) return 'on the grid, 13.8 kV, 60 Hz';
+    const kV = (13.8 * (g.V || 0) * Math.min(+tb.rpm || 0, 3600)) / 3600,
+      v = kV.toFixed(1) + ' kV';
+    if (g.x25) return v + ', auto synchronizing: matching speed and voltage ' + Math.min(60, Math.round(g.ty || 0)) + ' / 60 s';
+    if (g.f41) return v + (g.V < 1 ? ', field breaker closed, voltage building up' : ', excited, ready to synchronize');
+    return 'not excited (field breaker open)';
+  }
   function tickTsp() {
     if (!tsp) return;
     const pk = document.querySelector('#plantws .plpick'),
@@ -324,7 +338,8 @@
       kv('Generator breaker', tb.st ? (gcb ? 'closed' : 'open') : '—'),
       kv('Target', dcs ? 'DCS unit load demand' : aim == null ? '—' : (Math.round(aim * 10) / 10) + ' MW'),
       E('span', 'sctsn', dcs ? '' : 'at 7.5 MW/min'),
-      kv('Hold', S ? (S.hold ? 'on' : 'off') : '—')
+      kv('Hold', S ? (S.hold ? 'on' : 'off') : '—'),
+      kv('Generator', genTxt(U, tb, gcb))
     );
     for (const x of tsb) {
       const o = $(x.id);

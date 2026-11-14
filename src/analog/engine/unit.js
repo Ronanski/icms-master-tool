@@ -1141,7 +1141,16 @@ function anTurbine0(cmd, arg) {
         return c.step < 1
           ? 'Roll the turbine first'
           : 'Not at 3600 rpm / ACCELERATION not finished (' + tb.rpm.toFixed(0) + ' rpm)';
-      const r = c.cur >= 0 ? '' : tcsStepIn(U, c.step + 1);
+      /* live Cold start 2026-11-14 (3.2.3-beta.235, user: "excitation muna bago sync"): EXCITATION is its own step and push button
+         (310SC90-775 page 23, "EXCITATION" PB ON); SYNCH. & INITIAL LOAD needs EXCITATION FINISHED (page 24 program actuation 8). Before,
+         this button ran both steps */
+      if (c.step < 4)
+        return c.cur === 4
+          ? 'Excitation still running: generator voltage ' +
+              (13.8 * ((U.gen && U.gen.V) || 0)).toFixed(1) +
+              ' of 13.8 kV'
+          : 'Press EXCITATION first (ATS step 4, generator voltage up to 13.8 kV)';
+      const r = c.cur >= 0 ? '' : tcsStepIn(U, 5);
       if (r) return r;
       c.auto = true;
       c.autoTo = 5;
@@ -3867,12 +3876,14 @@ function anGenEl() {
     Q = syn ? P * Math.tan(Math.acos(AN_GEN.pf)) : 0,
     p = P / AN_GEN.S,
     q = Q / AN_GEN.S,
-    E = fcb ? Math.hypot(1 + AN_GEN.xd * q, AN_GEN.xd * p) / AN_GEN.E0 : 0,
+    /* 3.2.3-beta.235: before 52G the voltage builds up after the field breaker 41 closes (tcs-gen.js g.V, 30 s); was 13.8 kV at once */
+    vb = syn ? 1 : U.gen && isFinite(U.gen.V) ? U.gen.V : fcb ? 1 : 0,
+    E = fcb ? (vb * Math.hypot(1 + AN_GEN.xd * q, AN_GEN.xd * p)) / AN_GEN.E0 : 0,
     kA = Math.hypot(P, Q) / (Math.sqrt(3) * AN_GEN.kV),
     g = U.genE || (U.genE = { MWh: AN_GEN.MWh, MVArh: AN_GEN.MVArh });
   return {
     fcb: fcb ? 1 : 0,
-    kV: fcb ? (AN_GEN.kV * Math.min(tb.rpm || 0, 3600)) / 3600 : 0,
+    kV: fcb ? (vb * AN_GEN.kV * Math.min(tb.rpm || 0, 3600)) / 3600 : 0,
     Hz: syn && !(U.el && U.el.l52 === false) ? AN_GEN.Hz : ((tb.rpm || 0) / 3600) * AN_GEN.Hz,
     MVAr: Q,
     pf: syn && P > 0 ? AN_GEN.pf : null,
