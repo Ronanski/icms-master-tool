@@ -160,6 +160,11 @@ const TCS_IBD_NET = {
      position (ZT-STn905 above). TC-17 net 5 HP TURBINE HEAT SOAK EXECUTE stays unbound: its source is the TCS soft logic TCE163 (I/O list
      HMI_DI HEAT SOAK SET / RESET), not in the repository (docs/tcs/IBD_UNBOUND.md) */
   'TC-18': { 0: U => (U.tb && U.tb.icv > 0.001 ? 1 : 0) },
+  /* 3.2.3-beta.264 (SAKURA): TC-17 VENTILATOR VALVE (IBD page 71) net 6 TURBINE FLOW DEMAND (EL) (CV FULL CLOSE), contact ON <= 20 % on the
+     sheet = the TCS flow demand of the model (U.tb.fd, 1 = 100 %, anTbFlow in unit.js) <= 20 %. Its OR with HEAT SOAK EXECUTE, DT 5 s, gives the
+     VENTILATOR VALVE OPEN COMMAND that also closes the cold reheat NRV (TC-19 page 73). Before the flow demand runs (tb.fd not set) the label
+     itself says CV FULL CLOSE: the CV position of the model (U.gv) */
+  'TC-17': { 6: U => (U.tb && isFinite(U.tb.fd) ? (U.tb.fd <= 0.2 ? 1 : 0) : U.gv > 0.001 ? 0 : 1) },
   'TA-42': { 27: (U, c) => (c.ib && c.ib.v['TA-41'] ? c.ib.v['TA-41'][23] || 0 : 0) },
   /* c2 batch 3 (3.2.3): the inputs of the IBD that the model already has a value for. A contact of the TSI with its set point written on the
      sheet is 1 at that set point. TA-18 (IBD page 37): SHAFT VIBRATION HIGH ON >= 0.125 mm; TA-17 (page 36): VERY HIGH ON >= 0.200 mm, X = -1,
