@@ -86,7 +86,11 @@ const AN_HX = {
   gE2s: [0.0508, 0.1143, 0.1016, 10, 106, 3.0289],
   gE3: [0.0508, 0.1143, 0.1016, 40, 106, 3.0289],
   wA: 1130 /* m2, steam-cooled backpass walls */,
-  uaP: 59 /* kW/K each SH panel, CALC above */,
+  /* beta.262: the CALC above had NO spray, but the FHI design (02 Fig 10, P4S1) has 2.7 % SH spray at MCR = 12.4 T/H (0 at 60 %,
+     1.1 % at 70, 1.95 % at 85): with 59 the 150 MW steady of the model took no spray (541 C only by the outer loop tracking at 0) and
+     every load change had no spray margin. CALC in the app at the 150 MW steady of the plant model (bed 830 C from its heat balance,
+     460 T/H, both dampers as the logic sets them): uaP 59 -> 0 T/H, 70 -> 7.3, 75 -> 11.5 ~ 12.9 T/H; 75 = the FHI design spray */
+  uaP: 75 /* kW/K each SH panel, CALC above */,
   /* [metal kJ/K, design steam / water flow T/H] */
   wl: [17663, 447.6],
   p1: [70652, 447.6],
