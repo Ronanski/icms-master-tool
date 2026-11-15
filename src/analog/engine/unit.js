@@ -3652,8 +3652,13 @@ function anSuFwCv(x) {
     }
   return P[P.length - 1][1];
 }
-function anSuFw(x, pd) {
-  const dp = Math.max(0, AN_SUFW.p1 - Math.max(0, +pd || 0));
+/* 3.2.3-beta.266 (SOHEE): P1 = the BFWP discharge of the plant model (U.fwPd = PT-FW1011, anFwStep: suction + KSB curve head at
+   the pump flow) when it is known, as the main feedwater path; the sheet P1 214.5 only before the first pump step. At the Cold hold
+   (one pump at the ARC minimum 151 m3/h, head about 2245 m) P1 is about 206 kg/cm2 instead of 214.5 (2 ~ 3 % less flow at drum 37).
+   The loss of the line between the pump and the valve is not modelled (NO-SOURCE; at start-up flows it is small). */
+function anSuFw(x, pd, p1) {
+  const P1 = isFinite(p1) && p1 > 0 ? p1 : AN_SUFW.p1,
+    dp = Math.max(0, P1 - Math.max(0, +pd || 0));
   return ((AN_SUFW.w76 * anSuFwCv(x)) / AN_SUFW.cv76) * Math.sqrt(dp / AN_SUFW.dp76);
 }
 const AN_AV = {
@@ -4993,7 +4998,7 @@ function anUnitStep0(dt) {
   /* ---- 2.2.0-beta.15 (M4 step 2): the start-up feedwater valve adds to the feedwater flow ---- */
   if (U.suv && U.fwp && U.fwp.pr) {
     const o = Math.max(0, Math.min(100, anAv('LICBR1001B', +U.suv.S.rt.v[U.suv.n] || 0)));
-    U.fwp.pr.op = anSuFw(o, U.Pd);
+    U.fwp.pr.op = anSuFw(o, U.Pd, U.fwPd);
   }
   /* ---- 2.2.0-beta.12 (M3): machines stopped, furnace pressure ---- */
   for (const m of U.mul || []) {

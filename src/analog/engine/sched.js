@@ -117,6 +117,7 @@ const anSteps = dt => {
   return Math.max(1, Math.min(want, Math.max(fit, Math.ceil(dt / AN_STEP_MAX))));
 };
 AN.anSteps = anSteps;
+AN.suFw = anSuFw; /* the start-up feedwater valve formula (unit.js), read by tests/regress/sufw_p1.js */
 setInterval(() => {
   if (!live() || !AN.run || AN._loading || anMirror()) return void (anLastT = 0);
   const sh = cs();
