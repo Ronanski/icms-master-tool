@@ -2538,7 +2538,8 @@ function anInit(S) {
         if (t.amt && rt.st[t.amt.id]) {
           rt.st[t.amt.id].al = t.autoLeg;
           /* 3.2.3-beta.253: every A/M station knows its tag, so its mode status can follow a force (plant.js) */
-          rt.st[t.amt.id].mtag = (b.txt || [])[1];
+          /* beta.255: also on the block: a LOAD of a save point replaces rt.st and dropped the tag */
+          rt.st[t.amt.id].mtag = t.amt.mtag = (b.txt || [])[1];
         }
         /* the SV switch is a station too: leg A = REMOTE (its auto leg), leg B = LOCAL; REMOTE locks the A/M station to AUTO (see plant.js) */ if (
           sw &&

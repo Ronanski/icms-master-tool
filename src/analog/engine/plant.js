@@ -1601,6 +1601,7 @@ function anStep(S, dt) {
            and FIC-CM could never go REMOTE: the mode status of a real DCS station is its mode, however it got there */
         /* 3.2.3-beta.253 (live load-up 77 MW, ABC-001C): stations without a REMOTE leg too. PIC-COBM left its force manual (x76) for AUTO
            but the wire "BOILER PRESSURE CONTROL IN MANUAL" (PIC-COBM.MAN) stayed 1, so O.0178 (DCS mode ON to the TCS) could never pulse */
+        if (!s.mtag && b.mtag) s.mtag = b.mtag;
         if (s.al && s.mtag && AN.unit && AN.unit.on && +AN.unit.t > 5) {
           /* beta.254: a station without a REMOTE leg has only MAN / AUTO, so its status always follows (also after LOAD of a save point
              made before beta.253, where PIC-COBM.MAN was left at 1) */
