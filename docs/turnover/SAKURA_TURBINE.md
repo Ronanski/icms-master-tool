@@ -8,7 +8,6 @@ Written 2026-11-15 8:45 PM PHT, before the weekly usage limit. Thread: SAKURA : 
 - 2026-11-09 ICV to CV transfer event (MS flow and RH pressure to 0): explained up to one open question; waiting for the user's trend (planned 2026-11-16 at work).
 - 2026-10-03 event (same transfer, earlier): read from the user's photos; same pattern.
 - Teaching page "HP-IP Turbine at Control Valves": v4 live, https://claude.ai/artifact/NRX6XetGGHB3XWh69oZqz8. Not yet checked on the user's phone.
-  The HTML copy is kept in project files (`tutor-2026-11-11/turbine-page-v4.html`), not in this public repo, because it traces MHPS drawings.
 - App replay of the transfer: blocked (no start-up reaches sync in the app; see section 5).
 
 ## 2. Turbine MW model (beta.260)
@@ -22,32 +21,12 @@ Written 2026-11-15 8:45 PM PHT, before the weekly usage limit. Thread: SAKURA : 
 
 ## 3. The transfer events (11/9 and 10/3)
 
-Full notes: `/mnt/project-files/trip-audit/SCENARIO_2026-11-09_ICV_CV_TRANSFER_RH_LOSS.md` (event list, logic, NO-SOURCE items, stop note).
+Event data from the plant (alarm history, trend photos) is private: see `/mnt/project-files/turnover/sakura/SAKURA_TURBINE_full.md` and the scenario file there.
+In short: at the ICV to CV transfer the CVs read open, ABC-050 closed the HP bypass on CV position > 2 % (as drawn), but no steam passed the HP turbine, so the boiler lost its outlet and the reheater drained. The 1st stage pressure separates the suspects: about 0 = MSV, CV disc or MSV strainer; high with high HP exhaust = cold reheat NRV not open. Waiting for the user's trend. No change to ABC-050 without engineering / MHPS approval.
 
-What is known:
-- ABC-050: HP bypass closes when CV(A) or CV(B) position > 2 % (M.070C) and GCB closed, through TPS 2 s and RATE 5 %/s (about 14 s from 69 %). This is as drawn. It reads CV position, not steam flow.
-- 11/9: CV crack 8:50:47, HP bypass closed 8:50:59, "Cold reheat NRV open" 8:50:54, 1st stage 0.6 and HP exhaust 0.4 kg/cm2 after the CVs opened, HRH 0.0 at 8:52:24.
-- 10/3 (photos, trend 192.STN104): CV(A) 9 to 20 %, CV(B) 0 to 13 %; HP bypass 60 to 1 %; MS flow 120 to 28 to 0 t/h while MSP rose 82 to about 127; HRH to 0.6; MW 3 ~ 7. Manual trip at about 11:02. The user says CV(A) passed stroking and calibration and has a local lift indicator; all valves have local indicators.
+## 4. Sources
 
-Reading (told to the user):
-- The CVs read open but no steam passed the HP turbine. The bypass closed on position, so the boiler lost its outlet and the reheater drained through the full-open ICVs.
-- The 1st stage pressure separates the suspects:
-  - about 0: steam did not reach the HP. MSV not open, CV disc not following the stem, or a blocked MSV strainer (14 mesh, MAINT p470 ~ 476; usually blocks slowly).
-  - high, with high HP exhaust pressure: steam entered but had no outlet. Cold reheat NRV not open (logic IBD TC-19 p73 can hold it closed).
-- 11/9: NRV opened and 1st stage was 0.6, so it is not the NRV.
-- 10/3: no 1st stage data yet; both are still open.
-- CV(B) has no pilot (MAINT p565); a CV(A) pilot-only fault still passes some flow, so it cannot explain a flow of 0.
-- Recommendation given: no change to ABC-050 without engineering / MHPS approval.
-
-Trend asked from the user (10/3 10:10 ~ 11:05 and 11/9 8:45 ~ 9:00): 1st stage PT-ST1001, HP exhaust PT-CR1901, MSV position ZT-ST1903, CV position ZT-ST1904 and CV POS DEMAND TCE212_A1/A2, NRV ZSC-CR1901, ventilator ZSC/ZSO-CR1902, FLOW DEMAND, MSP, MSF, MW.
-
-## 4. Sources found (on the user's PC, not in the repo)
-
-- TG maintenance manual `document-references/o&m-package-phase-1/L2 TG/tg-2-1-2-maintenance.pdf` (2160 pages, Davao copy XZ-DPC551, same MHPS 150 MW design). Key pages: p66 outline 310PB64-391, p67 cross-section 310PB65-413 (26 parts; HP stages 1 ~ 11, IP 12 ~ 21, LP 22 ~ 24; bearing spans 1717 / 5555 / 1600 mm), p68 clearances, p72 ~ 79 control mechanism 310SD14-354, p84 steam P&ID 310PB61-986, p85 gland 310PB61-987, p470 ~ 477 valves description, p522 MSV section, p526 ~ 531 CV, p803 ~ 852 combined reheat valve, p853 ~ 872 emergency trip device.
-- TCS IBD 310SC90-794: TC-17 ventilator valve, TC-19 cold reheat NRV (p73). Gates not traced yet.
-- TCS Modbus point list (in the app: Library > All signals): MSV ZT-ST1903, CV ZT-ST1904, RSV / ICV ZT-ST1905, 1st stage PT-ST1001, HP exhaust PT-CR1901, master trip solenoid ZS-ST1001.
-- MHPS 503 (IP start-up curves: transfer flow = load + 3 ~ 5 %, RH falls to about 3 ata, not 0), 505 (valve chart, conceptual).
-- NO-SOURCE: CV lift vs flow curve (TCE212 PARA-LIST), Part 8 turbine drain description ("Later").
+TG O&M package (MHPS maintenance manual), TCS IBD TC-17 / TC-19, TCS Modbus list, MHPS 503 / 505. Page-level list in the private full file.
 
 ## 5. Blocked
 
@@ -59,3 +38,26 @@ Trend asked from the user (10/3 10:10 ~ 11:05 and 11/9 8:45 ~ 9:00): 1st stage P
 2. Trace the TC-19 and TC-17 gates.
 3. Check the teaching page on the user's phone; fix what the user names.
 4. If the cause is a TCS curve, ask MHPS for the TCE212 CV lift vs flow.
+
+## 7. Decisions log (user's own words, PHT)
+
+Only decisions on my work, with the user's words as written. Project-wide rules are in `CLAUDE.md` and project memory; the whole conversation is in the SAKURA : TURBINE thread.
+
+- 2026-11-10 7:05 PM: SOP vs TCS drawing for the 3600 rpm soak and the initial load hold. After my answer "follow the TCS drawing": "Yun nmn pla e". Decision: the TCS drawing (ATS sheet 23 Fig. 2, sheet 26 Fig. 3) is followed.
+- 2026-11-10 night (overnight mode, team decision, no user words): warm-up heating rate 60 C/h from PR-OPE-5002, passed to Jennie. Superseded by the user rule of 2026-11-14 8:16 AM (no SOP as model basis).
+- 2026-11-13 11:42 PM: "NO PATCHES": every model fix must be real physics, never a clamp or a curve fit. Applied: the MW trend fit was replaced by the heat balance (beta.260).
+- 2026-11-14 8:16 AM: one whole physics plant; manuals and design docs only; HMI snapshots, trends, SOP and FHI start-up curves are not a basis or a check.
+- 2026-11-14 9:38 PM: Units 1 to 4 are identical (only tags differ); the turbine is MHPS; PPE-14-0725 is the Unit 1 heat balance.
+- 2026-11-15: on the 11/9 event: "Cge nga imbestigahan nio", "Kaya nio isimulate ung nangyari pra mapin point ntn ano naging problema?", "Specific kasi tlga na sa transfer operation sya nangyayari e. Worst case. Dropped to zero ang RHP at MS FLOW". The alarm history is an event to explain and a scenario to reproduce, not a tuning basis.
+- 2026-11-15: on 10/3: "Nagmanual trip kmi dito kasi first time mangyari ito pra matest ang CV A. Pero pasok naman sya sa manual stroking namin, calibration, within standard." Then: "Yung CV A kasi makikita mo ang lift nya sa actual e. May metro doon..", "Oo meron lahat local indicator at lahat may kanya2 na lift".
+- 2026-11-15 7:29 PM: "So ano ba. Wala akong maintindihan. May bagong suspect nanaman ba". Rule taken: one consolidated answer per message, no drip of suspects.
+- 2026-11-15 7:31 PM: "Ituro mo nga sakin ang hp ip turbine namin, yung parts nito ... Kahit 2d lang. Tapos yung in depth details s explanation ng operation ng mga control valves." 7:45 PM on v2: "Ang pangit. Masyado rin simple. Marami wala." Result: v3 / v4 traced from the MHPS section drawings.
+- 2026-11-15 8:37 PM: "Hndi pwede ngayon na?" Turnover started at once (this file).
+
+## 8. Where the private files are
+
+Plant event data, OEM-based pages, screenshots and the PDF / HTML copies are NOT in this repo (it may be public). They are in project files `/mnt/project-files/turnover/sakura/`:
+- `SAKURA_TURBINE_full.md`, `.html`, `.pdf`: this file plus the event details.
+- `turbine-page-v4.html`: the teaching page (artifact https://claude.ai/artifact/NRX6XetGGHB3XWh69oZqz8).
+- `SCENARIO_2026-11-09_ICV_CV_TRANSFER_RH_LOSS.md`: the event notes.
+- `files/`: screenshots and notes from this thread (c4 electrical, roll / initial load, trips since beta.180, NO-SOURCE lists).
