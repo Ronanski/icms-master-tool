@@ -8,6 +8,7 @@ Written 2026-11-15 8:45 PM PHT, before the weekly usage limit. Thread: SAKURA : 
 - 2026-11-09 ICV to CV transfer event (MS flow and RH pressure to 0): explained up to one open question; waiting for the user's trend (planned 2026-11-16 at work).
 - 2026-10-03 event (same transfer, earlier): read from the user's photos; same pattern.
 - Teaching page "HP-IP Turbine at Control Valves": v4 live, https://claude.ai/artifact/NRX6XetGGHB3XWh69oZqz8. Not yet checked on the user's phone.
+  The HTML copy is kept in project files (`tutor-2026-11-11/turbine-page-v4.html`), not in this public repo, because it traces MHPS drawings.
 - App replay of the transfer: blocked (no start-up reaches sync in the app; see section 5).
 
 ## 2. Turbine MW model (beta.260)
