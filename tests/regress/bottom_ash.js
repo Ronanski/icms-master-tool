@@ -31,7 +31,7 @@ const html =
     const C1 = AN.sheets.find(s => s.name === 'ABC-001C');
     const run = async sec => {
       for (let i = 0; i < sec * 2; i++) {
-        AN.stepSet(C1, 0.5);
+        WORLD.live=true;AN.stepSet(C1, 0.5);
         WORLD.tick(0.5);
         if (i % 100 === 99) await new Promise(r => setTimeout(r, 0));
       }

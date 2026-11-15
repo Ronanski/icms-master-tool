@@ -10,9 +10,9 @@ const r=await page.evaluate(async()=>{
   const all=AN.sheets.filter(s=>s.S&&!/ABC-000/.test(s.name));
   const lev=()=>AN_CYC.levels();
   const K=AN_CYC.kgmm;const o={K:{...K}};
-  for(let k=0;k<120;k++){for(const s of all)AN.stepSet(s,.5);WORLD.tick(.5)}
+  for(let k=0;k<120;k++){WORLD.live=true;AN.stepSet(AN.sheets.find(z=>z.name==='ABC-001C'),.5);WORLD.tick(.5)}
   const a=lev();let ext=0;const dt=.5,N=240;
-  for(let k=0;k<N;k++){for(const s of all)AN.stepSet(s,dt);WORLD.tick(dt);ext+=AN_CYC.net()*dt/3.6}
+  for(let k=0;k<N;k++){WORLD.live=true;AN.stepSet(AN.sheets.find(z=>z.name==='ABC-001C'),dt);WORLD.tick(dt);ext+=AN_CYC.net()*dt/3.6}
   const b=lev();o.a=a;o.b=b;o.dm=['hw','da','dr'].reduce((m,x)=>m+(b[x]-a[x])*K[x](),0);o.ext=ext;o.P=AN.unit.Pd;return o});
 console.log(JSON.stringify(r));
 ck(Math.abs(r.dm-r.ext)<Math.max(100,.1*Math.abs(r.ext)),'inventory change '+r.dm.toFixed(0)+' kg, net flow into the cycle '+r.ext.toFixed(0)+' kg');

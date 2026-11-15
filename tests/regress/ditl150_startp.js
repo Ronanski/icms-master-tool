@@ -8,7 +8,7 @@ const r=await page.evaluate(async()=>{
   const o={};WORLD.set(true);DITL150.on=false;document.getElementById('load150').click();await AN._startP;
   o.on=DITL150.on;if(!o.on){for(let k=0;k<100&&!DITL150.on;k++)await new Promise(r=>setTimeout(r,100));o.late=DITL150.on}
   o.mft=out('03A',63);o.saf=out('27A',55);
-  const all=AN.sheets.filter(s=>s.S&&!/ABC-000/.test(s.name));for(let k=0;k<120;k++){for(const s of all)AN.stepSet(s,.5);WORLD.tick(.5)}
+  const all=AN.sheets.filter(s=>s.S&&!/ABC-000/.test(s.name));for(let k=0;k<120;k++){WORLD.live=true;AN.stepSet(AN.sheets.find(z=>z.name==='ABC-001C'),.5);WORLD.tick(.5)}
   o.mft60=out('03A',63);o.saf60=out('27A',55);WORLD.set(false);return o});
 console.log(JSON.stringify(r));
 ck(r.on===true,'DITL in service when the start promise resolves');

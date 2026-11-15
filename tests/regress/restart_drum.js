@@ -7,7 +7,7 @@ const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist
 await page.evaluate(async()=>{await AN.ades();WORLD.set(true)});
 for(const k of ['warm','hot']){
  const r=await page.evaluate(async k=>{await AN.loadStart(k,true);const L=window.LS_LIVE,pv=t=>{try{const f=L.fp(t);return +f.S.rt.v[f.c.q.pv]}catch(e){return NaN}};
-  const a={lvl:pv('LICBR1001'),Pd:AN.unit.Pd,Tb:AN.unit.Tb};const cs=AN.sheets.find(s=>s.name==='ABC-001C');for(let t=0;t<120;t+=.5){AN.stepSet(cs,.5);WORLD.tick(.5)}
+  const a={lvl:pv('LICBR1001'),Pd:AN.unit.Pd,Tb:AN.unit.Tb};const cs=AN.sheets.find(s=>s.name==='ABC-001C');for(let t=0;t<120;t+=.5){WORLD.live=true;AN.stepSet(cs,.5);WORLD.tick(.5)}
   a.lvl2=pv('LICBR1001');return a},k);
  console.log(k+': drum level '+r.lvl.toFixed(0)+' mm at load, '+r.lvl2.toFixed(0)+' mm after 2 min; drum pressure '+(+r.Pd).toFixed(1)+'; bed '+(+r.Tb).toFixed(0));
  ck(Math.abs(r.lvl-200)<40,k+' restart drum level near +200 mm (PR-OPE-5004 bottle-up)');
