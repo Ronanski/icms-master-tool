@@ -347,6 +347,8 @@
       });
       qa('[data-go]').forEach(e => {
         e.style.cursor = 'pointer';
+        /* F76: the title groups of the OVERVIEW carry pointer-events none from the art: the link takes the click itself */
+        e.style.pointerEvents = 'all';
         const ti = document.createElementNS(NS, 'title');
         ti.textContent = 'click = open this page';
         e.append(ti);
