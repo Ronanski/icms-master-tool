@@ -110,58 +110,9 @@ const AN_UNIT = {
   nlMW: 1.5 /* MW, the no-load (motoring) loss of the turbine generator shaft at 3600 rpm, NO-SOURCE (about 1 % of the rating) */,
   MWinit: 4.5 /* PR-OPE-5002: initial load 4.5 MW */,
   rateUp: 7.5 /* MW/min = 5 % / min (PR-OPE-5002 LOAD UP), AI0421 max load-up rate 0 ~ 5 %/min */,
-  /* 3.2.3 (b4, MST 547 on the load up): the heat of the SH / RH banks follows the load with the lag of the CFB loop (bed, refractory,
-     circulating solids): the load share of the spray curve (Fig 10) and of the natural temperature (natSH / natRH) is lagged by tauQ.
-     Not in the FHI documents (plant study 03: "loop kinetics not in docs"): fitted to the plant DCS trend of 2026-11-08 (scenario 1,
-     150 -> 105 -> 90 -> 150 MW at about 1 MW/min). Lag 0: MST 543 C at 109 MW on the way up (plant 531), 531 C at 105 MW on the way
-     down (plant 537); 900 s: 529 / 537. Error over 14 plant points 8.2 C (lag 0), 5.4 (600 s), 4.4 (900 s), 4.0 (1200 s), 4.8 (1800 s);
-     1200 s held 533 C for 30 min at 90 MW where the plant fell to 528 in 20 min. Start-up and shutdown (U.cold, turbine not yet in
-     NORMAL OPERATION) use the load as it is */
-  tauQ: 900,
   tauT: 362 /* metal over steam: SH steel 232 t (B-0-001) x 0.5 kJ/kg K = 116 MJ/K, over 128 kg/s x 2.5 kJ/kg K = 0.32 MW/K */,
-  /* 3.2.0-beta.39 (roadmap 2): share of the low-load / start-up fall of the SH temperature (dn) at the spray 1 outlet, the SH no.2 pickup and the
-     finishing SH pickup (ASSUMED: superheat of each stage at the anchor, 61 / 68 / 80 C of the 209 C over saturation) */
-  fsh: [0.3, 0.3, 0.4],
-  frDb: 0.75,
   tauO2: 20,
   mcr: 460 /* T/H, boiler MCR (SECT_7) */,
-  /* SH spray versus load (Fig 10), as a share of the spray at MCR: [load share of MCR, spray share] */
-  /* 3.2.1 b6: plant trends 2026-11-08: spray 2 MV 30 at 150 MW, 10 to 13 at 105 MW (MSF 351 = 0.763 MCR), 0 at 90 MW (0.661); zero near 0.707 */
-  sprayCurve: [
-    [0.707, 0],
-    [0.85, 0.722],
-    [1, 1]
-  ],
-  /* natural steam temperature below the spray range, steam share of MCR: plant trends (90 MW MST 522, RHT 521, 2 h hold) and 02.png (60 MW
-     MST 517, RHT 499); below 0.443 the FHI Fig 6 slope */
-  natSH: [
-    [0.443, 517],
-    [0.661, 522],
-    [0.707, 541]
-  ],
-  natRH: [
-    [0.443, 499],
-    [0.661, 521],
-    [0.707, 541]
-  ],
-  /* temperature fall below 60 % MCR, C per unit of load share (02.png: MST 541 -> 517 and RHT 541 -> 499 at 0.443 MCR) */
-  slopeSH:
-    (541 - 524) /
-    (0.6 - 0.4) /* FHI Fig 6: 541 at 60 %, 524 at 40 %, one curve for SH and RH. Manual outranks the snapshot 02.png */,
-  slopeRH: (541 - 524) / (0.6 - 0.4),
-  /* 3.2.0-beta.38 (CHECKLIST 0.6, ATS 1.4 / 1.6 / 1.71 / 1.72 at the roll): the SH / RH outlet in a start-up versus the boiler load,
-     FHI SECT_7 Fig. 2 COLD STARTUP (one curve "SH / RH Out. Temp."): about 415 C from the roll to the IP / HP transfer (15 % load),
-     505 C at 30 % (start coal), 541 C from 60 %. Read off the chart (+-5 C); 418 at the roll keeps the steam inside the ATS window
-     (MS 400 ~ 420, RH 415 ~ 425 C). The slope of the snapshots (slopeSH) extrapolated to 12 % load gave 468 C: no roll possible.
-     The plateau from the roll to the transfer goes with the start-up mode of the turbine (tcs.js): Fig. 3 WARM STARTUP 430 C; Fig. 4
-     HOT STARTUP reads 455 ~ 475 C, the ATS HOT mode asks MS >= 455 and RH >= 485 C (PR-OPE-5002 8407): 500 (the reheat reads about 10 C under
-     the curve with the start-up biasing damper), the turbine wins */
-  suCurve: [
-    [0.15, 418],
-    [0.3, 505],
-    [0.6, 541]
-  ],
-  suRoll: { warm: 430, hot: 500 },
   /* 2.2.0-beta.12 (M3, trips). The DCS drawings give the LOGIC of a trip (force manual, BU-CMD, interlock); the plant answers:
      - TURBINE TRIP (STN102 I.0400 TCS-DI1003 "#1 Turbine trip", FROM ARP; memory list STN101 M.3200 "T/B TRIP (BC FROM S2)" and
        M.3220 "52G1 OPENED (BC FROM S2)" <- I.0932 "GCB 52G1 off"): the station wiring broadcasts the S2 inputs to S1 (bcast below,
@@ -328,7 +279,7 @@ function anUnitStop() {
   for (const e of U.ld || [])
     if (e.pr) {
       e.pr.ld = 0;
-      e.pr.fr = e.pr.tsat = e.pr.tcap = undefined;
+      e.pr.fr = e.pr.tsat = e.pr.tcap = e.pr.hx = undefined;
     }
   U.cold = false;
   U.turb = true;
@@ -545,9 +496,9 @@ function anUnitStart() {
      at 129 kg/cm2), and the spray 2 need of the load (Fig 10) is the finishing SH pickup growing with the load (122 C at the anchor,
      less the spray 2 authority at <= 60 % MCR): the main steam with the sprays shut is the same as before */
   U.ld = [
-    [procOf('ABC-011', 'TICBR1130'), U.slopeSH, 'sh1'],
-    [procOf('ABC-012', 'TICBR1150'), U.slopeSH, 'up'],
-    [procOf('ABC-019', 'TICHR1002'), U.slopeRH]
+    [procOf('ABC-011', 'TICBR1130'), 0, 'sh1'],
+    [procOf('ABC-012', 'TICBR1150'), 0, 'up'],
+    [procOf('ABC-019', 'TICHR1002'), 0]
   ]
     .filter(([p]) => p)
     .map(([p, s, r]) => Object.assign({ s, r }, p));
@@ -912,6 +863,8 @@ function anUnitStart() {
   U.hdSeedN = 0;
   for (const h of U.hd || []) h.w0 = NaN;
   U.frT = undefined;
+  U.hxM = null; /* beta.258: the heat transfer chain (hx.js) starts at the design metal, settled on the plant */
+  U.hxT0 = NaN;
   /* 3.2.3 live Cold start: the aux steam / gland / condenser air volumes (AN_AS) start from their transmitters */
   U.asP = U.gsP = U.gsY = U.cdAirP = NaN;
   U.asT1 = U.asT3 = U.asT17 = NaN;
@@ -985,6 +938,9 @@ function anUnitCold() {
   });
   U.o2v = 21;
   U.frT = undefined;
+  U.hxM = null; /* beta.258: every bank of the heat transfer chain (hx.js) at the room */
+  U.hxT0 = U.Tamb;
+  U.TpR = U.Tamb;
   /* 3.2.3 live Cold start (AN_AS): aux steam and gland headers empty at the atmosphere, the condenser full of air */
   U.asP = U.gsP = U.gsY = 0;
   U.asT1 = U.asT3 = U.asT17 = U.Tamb;
@@ -1048,7 +1004,7 @@ function anUnitCold() {
    100 kg/cm2. The bed of the model is the furnace curve scaled to the anchor (850 C model at the Fig 8 840 C). Turbine metal: inside
    the TCS mode band (tcs.js modes: warm 230 ~ 420 C, hot above 420 C), 350 / 460 C (exact metal NO-SOURCE; the steam of Fig 3 / 4 at
    the restart is 315 / 430 C). Warm needs the furnace purge (bed below 700 C, PR-OPE-5002 SU:129); hot is the logic's to decide */
-const AN_RESTART = { warm: { Pd: 40, Tf: 360, Tm: 350 }, hot: { Pd: 100, Tf: 700, Tm: 460 } };
+const AN_RESTART = { warm: { Pd: 40, Tf: 360, Tm: 350, Tsh: 315 }, hot: { Pd: 100, Tf: 700, Tm: 460, Tsh: 430 } };
 function anUnitRestart(kind) {
   const U = AN_UNIT,
     K = AN_RESTART[kind];
@@ -1056,6 +1012,10 @@ function anUnitRestart(kind) {
   U.Pd = K.Pd;
   U.Tw = steamTsat(U.Pd);
   U.Tb = U.Tamb + ((K.Tf - U.Tamb) * (U.Tb0 - U.Tamb)) / (840 - U.Tamb);
+  /* beta.258: the SH / RH banks at the SH / RH temperature of Fig 3 / 4 at the restart (the economizer at the water, hx.js) */
+  U.hxM = null;
+  U.hxT0 = K.Tsh;
+  U.TpR = K.Tsh;
   if (U.tc) {
     const c = U.tc;
     c.Thp = c.Trh = c.Tcvi = c.Tcvo = K.Tm;
@@ -2136,6 +2096,9 @@ const AN_BB = {
   cpS: 0.84,
   mRef: 204650,
   ua0: 0.976 * 554,
+  /* beta.258: the furnace water walls alone (the in-furnace SH panels and the backpass are the heat transfer chain, hx.js): CALC from
+     the design heat balance, evaporator 157.2 MW at bed 850 C, drum 338.5 C, phi 1 (with uaL and the gas share uag) */
+  ua0w: 289.3,
   uaL: 18,
   uag: 32,
   kW: 554
@@ -3236,7 +3199,10 @@ function anFwTagStep(U) {
       if (C[t] !== undefined) return C[t];
       const x = sh(n),
         c = x && x.S && AN.hmiCtrls ? (AN.hmiCtrls(x.S) || []).find(q => q.tag === t) : null;
-      return (C[t] = c && c.out != null ? { S: x.S, n: c.out } : null);
+      if (c && c.out != null) return (C[t] = { S: x.S, n: c.out });
+      /* a hand station (MAN block, ABC-020 HICHR1002A / B biasing dampers) is not in the controller list: its output net */
+      const b = x && x.S ? x.S.blk.find(z => z.k === 'MAN' && (z.tag === t || (z.txt || []).includes(t))) : null;
+      return (C[t] = b && b.o && b.o[0] != null && b.o[0] >= 0 ? { S: x.S, n: b.o[0] } : null);
     },
     mvOf = (n, t) => {
       const c = ctl(n, t);
@@ -3306,6 +3272,17 @@ function anFwTagStep(U) {
       pos('DITL-79') *
       dr /* 67 T/H at 100 %, Cv 10.3, dp 61, L21 */,
     cr = U.xt && U.xt.T ? U.xt.T.cr : NaN;
+  /* beta.258: the spray water, the feedwater and the flue gas biasing dampers (ABC-020 HICHR1002A RH / HICHR1002B SH) for the heat
+     transfer chain (hx.js); numbers only on U */
+  U.w1s = isFinite(w1) ? Math.max(0, w1) : 0;
+  U.w2s = isFinite(w2) ? Math.max(0, w2) : 0;
+  U.wrhs = isFinite(wrh) ? Math.max(0, wrh) : 0;
+  U.mEco = ffw;
+  U.tSp = isFinite(Pda) && Pda > 0.05 ? steamTsat(Pda) : isFinite(U.Tamb) ? U.Tamb : 30;
+  const dA = mvOf('ABC-020', 'HICHR1002A'),
+    dB = mvOf('ABC-020', 'HICHR1002B');
+  U.dmpR = isFinite(dA) ? dA / 100 : NaN;
+  U.dmpS = isFinite(dB) ? dB / 100 : NaN;
   Object.assign(U.tt || (U.tt = {}), {
     'PT-TS1013': ms > 0 ? r2(Math.max(-1, stage(K.ts13))) : r2(0),
     'PT-TS1017': ms > 0 ? r2(Math.max(-1, stage(K.ts17))) : r2(0),
@@ -4672,33 +4649,10 @@ function anUnitStep0(dt) {
   /* air share (total air over the anchor), used by the cooling below and by the bed temperature */
   const taf = U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0),
     as = U.taf0 > 0 ? Math.max(0.05, taf / U.taf0) : 1;
-  /* 2.2.0-beta.21 (M5 shutdown to bottle-up, PR-OPE-5004): an UNFIRED boiler is cooled by the air the fans push through it (boiler
-     manual SECT_7 Fig. 5 BOILER COLD SHUTDOWN: burners off at 3.6 h, SH outlet pressure 95 -> 60 kg/cm2 in 1 h, 20 at 6 h, 0 at
-     8 h with the draft running) and, bottled (fans off), by the ambient. Steam-equivalent heat loss: kcool (T/H at the anchor air
-     and 300 C above the ambient; air x 0.24 kcal/kg C x dT / 500 kcal/kg, ASSUMED 60) x air share + kamb (ASSUMED 1 T/H: about
-     1.5 kg/cm2 per hour bottled), times (Tw - Tamb) / 300, fading in as the firing falls below 10 % of the anchor fuel (a fired
-     boiler already carries its flue gas loss in the fuel -> steam line).
-     3.2.3-beta.N S163-6 (Mina beta.163, Normal shutdown from "At 150 MW"): the cooling was for U.cold only, so a boiler loaded at 150 MW
-     (U.cold false) and then shut down held its drum at 101.07 kg/cm2 for 140 min with the bed falling 578 -> 234 C and the PA / SA air
-     still blowing. An unfired boiler cools the same whatever start it came from: the loss now applies in both paths (at load unf = 0,
-     no change) */
-  /* Sakura beta.175 (Hot restart, pressure 100 -> 81 before light-off): the cooling read the air share with the 0.05 floor of the bed
-     (as), so a bottled boiler with every fan stopped lost kcool x 0.05 + kamb = 4 T/H, not the kamb 1 T/H of its own note (about 1.5
-     kg/cm2 per hour): about 4.6 kg/cm2 per hour in the headless Hot run. The cooling reads the air that flows (0 with the fans off) */
-  const asC = U.taf0 > 0 ? Math.max(0, taf / U.taf0) : 1,
-    unf = Math.max(0, 1 - Fe / (0.1 * U.F0)),
-    /* Mina S179-2 (beta.179 Hot restart: fans on, boiler unfired, drum 99.4 -> 73.1 kg/cm2 and bed 673 -> 439 C before light-off; FHI
-       SECT_7 Fig 4 HOT STARTUP: fans and blowers started at 0.0 h, furnace 700 -> 650 C at 0.1 h, the pressure stays at 100): the draft
-       cooling took the air at the ambient. The air the fans push goes through the bed first and reaches the water walls at the bed
-       temperature: it can only cool the water by Tw - Tgas, Tgas = the bed (not under the ambient). While the bed is hotter than the
-       water the draft carries the bed heat away (the bed lag below) and takes none from the water: Fig 4. Once the bed is under the
-       water (Fig 5 cold shutdown, furnace 840 -> 100 C in 8 h) the draft cools the water as before. kcool / kamb unchanged; the ambient
-       loss (kamb) stays on Tw - Tamb */
-    Qloss =
-      unf *
-      (U.kcool * asC * Math.max(0, (U.Tw - Math.max(U.Tamb, U.Tb)) / 300) +
-        U.kamb * Math.max(0, (U.Tw - U.Tamb) / 300));
-  if (U.cold) {
+  /* beta.258: the cooling of an unfired boiler by the draft and the room is inside the bed / wall heat balance below (one model) */
+  /* 3.2.3-beta.258 (user 2026-11-15 "isang unit lng naman yan"): ONE model for every state. The bed heat balance below runs at every load
+     (before: Cold only; "Start at 150 MW" had the curve anBedSS and a steam made from a fuel line) */
+  {
     /* the bed heat balance (AN_BB above): the bed, the furnace exit gas and the heat of the water walls, no fitted law */
     const B = AN_BB,
       ts = tsatOf(U.Pd),
@@ -4710,7 +4664,8 @@ function anUnitStep0(dt) {
       gcp = ((av[0] + av[1] + av[2]) / 3.6) * B.cpA + fg * AN_FG.cpG /* kW/K */,
       uRel = U.taf0 > 0 ? (taf / U.taf0) * ((U.Tb + 273) / (U.Tb0 + 273)) : 0,
       phi = Math.min(1.2, Math.max(0, isFinite(U.bedI) ? U.bedI / AN_BI.t0 : 1)) * Math.min(1.44, uRel * uRel),
-      qSol = ((B.ua0 - B.uag) * phi + B.uaL) * dW /* kW, from the bed lump */,
+      qSol = ((B.ua0w - B.uag) * phi + B.uaL) * dW /* kW, from the bed lump to the furnace walls */,
+      qPan = isFinite(U.hxQp) ? U.hxQp : 0 /* kW, to the in-furnace SH panels (hx.js, last scan) */,
       qGas = gcp > 0.01 ? gcp * dW * (1 - Math.exp(-B.uag / gcp)) : 0 /* kW, from the gas over the upper walls */,
       qFuel = Fb * B.lhvC + oil * B.lhvO,
       qAirG =
@@ -4719,53 +4674,36 @@ function anUnitStep0(dt) {
         (av[2] / 3.6) * B.cpA * (U.Tb - U.Tamb) +
         fg * AN_FG.cpG * (U.Tb - U.Tamb),
       Cb = Math.max(0, isFinite(U.bedI) ? U.bedI : AN_BI.tCold) * 1000 * B.cpS + B.mRef;
-    U.Tb = Math.max(U.Tamb, U.Tb + ((qFuel - qAirG - qSol) * dt) / Cb);
+    U.Tb = Math.max(U.Tamb, U.Tb + ((qFuel - qAirG - qSol - qPan) * dt) / Cb);
     /* the furnace exit gas: the bed less the upper walls, held at the bed by the circulating solids in the share phi */
     U.tgF = gcp > 0.01 ? U.Tb - (1 - Math.min(1, phi)) * (qGas / gcp) : U.Tb;
     U.gcp = gcp;
+    U.mG = (av[0] + av[1] + av[2]) / 3.6 + fg /* flue gas kg/s, to the backpass (hx.js) */;
     U.phi = phi;
     /* water walls, T/H of steam-equivalent (the unit of Cw / C): both ways, a bed under the water cools it. The air cooling of the
        unfired boiler (kcool) is inside this balance now; the loss to the room (kamb) stays */
     const qW = (qSol + qGas) / B.kW,
       qL = U.kamb * Math.max(0, (U.Tw - U.Tamb) / 300);
     U.qW = qW;
-    U.Qs = Math.max(0, qW); /* the steam made, read by the firing ratio of the steam temperatures */
+    /* beta.258: boiling, one T/H of steam made takes the heat from the water of the economizer outlet to saturated vapour (kWe kW per
+       T/H; hx.js gives the economizer outlet), not the 554 kW of the old lump that carried the superheat too. The storage of the water
+       and the steel (Cw, in units of 554 kW) and the room loss go by 554 / kWe. The drum gives the steam leaving the boiler less the
+       spray water that joins it in the superheater (FT-FW1109 / 1119) */
+    const hg = anHxHs(U.Pd, ts),
+      he = isFinite(U.hxHe) ? Math.min(U.hxHe, hg - 1) : anHxHw(Math.min(ts, isFinite(U.hpT2) ? U.hpT2 : ts)),
+      kWe = Math.max(100, (hg - he) / 3.6),
+      r = B.kW / kWe,
+      mDr = Math.max(0, U.ms + U.mb + (U.msb || 0) - (U.w1s || 0) - (U.w2s || 0));
+    U.kWe = kWe;
     if (U.Tw < ts - 0.01) {
+      U.Qs = 0;
       U.Tw = Math.max(U.Tamb, Math.min(ts, U.Tw + ((qW - qL) * dt) / U.Cw));
-      U.Pd = Math.max(0, U.Pd - ((U.ms + U.mb + (U.msb || 0)) * dt) / U.C);
+      U.Pd = Math.max(0, U.Pd - (mDr * dt) / U.C);
     } else {
-      U.Pd = Math.max(0, U.Pd + ((qW - qL - U.ms - U.mb - (U.msb || 0)) * dt) / (U.C + U.Cw * steamDTsat(U.Pd)));
+      U.Qs = Math.max(0, (qSol + qGas) / kWe); /* the steam made, T/H */
+      U.Pd = Math.max(0, U.Pd + (((qSol + qGas) / kWe - qL * r - mDr) * dt) / (U.C + U.Cw * r * steamDTsat(U.Pd)));
       U.Tw = tsatOf(U.Pd);
     }
-  } else {
-    /* S163-6: unfired, the saturated water gives its heat too (C + Cw x dTsat/dP, as the U.cold path); fired (unf = 0) the load path
-       keeps its steam storage C alone */
-    U.Pd = Math.max(
-      0,
-      U.Pd + ((U.Qs - Qloss - U.ms - U.mb - (U.msb || 0)) * dt) / (U.C + unf * U.Cw * steamDTsat(U.Pd))
-    );
-    U.Tw = tsatOf(U.Pd);
-  }
-  /* bed temperature: firing share over air share, first order. The load path only ("Start at 150 MW"); the Cold path has the bed
-     heat balance above (AN_BB) */
-  if (!U.cold) {
-    const /* fuel share (coal-equivalent, burnt) over air share, exponent 0.45 (ASSUMED, calibrated: 850 C at full load, Fig 8; about
-         450 C with two start-up burners at 60 % and the light-off air, the coal batch permissive of PR-OPE-5002 400 ~ 450 C; coal
-         alone at O2 4 ~ 5 % about 800 C). 2.2.0-beta.15: on the fuel, not on the steam made (the fixed loss of the firing line
-         made a small fire too cold) */
-      Tbss = anBedSS(U, Fe / Math.max(1, U.F0), as);
-    /* below the start of coal (Fig 2, 483 C) the refractory and the bed charge are the heat sink, and there is no coal burning in the bed:
-       FHI Fig 2 110 C at 1 h, 483 C at 6 h; PR-OPE-5002 gradient 1 C/min, FHI limit 153 C/h. The hot lag tauB takes over by 600 C */
-    const kh = Math.max(0, Math.min(1, (U.Tb - 483) / (600 - 483)));
-    let tauBed = U.tauBc + (U.tauB - U.tauBc) * kh;
-    /* sweep item 25 (Mina beta.163: Hot state with every fan stopped, bed 708 -> 652 C in 1.3 min): an UNFIRED bed that cools loses its
-       heat to the air the fans push through it; banked (no air) it keeps it for hours. FHI Fig 4 HOT STARTUP: fuel off at -1.0 h,
-       furnace 780 -> 700 C at 0.0 h with no fans (about 80 C/h: tau = (780 - 30) / 80 h = 33,750 s); fans and blowers started at 0.0 h,
-       700 -> 650 C at 0.1 h (about 8 C/min at the purge air, share about 0.3: tau about 4,640 s). tau = 33,750 / (1 + 20.9 x air share),
-       air share = total air / anchor air (no floor). Used only unfired (fuel share < 2 %) and cooling; the fired bed keeps tauB */
-    const raw = U.taf0 > 0 ? Math.max(0, taf / U.taf0) : 1;
-    if (Fe < 0.02 * U.F0 && Tbss < U.Tb) tauBed = Math.max(tauBed, 33750 / (1 + 20.9 * raw));
-    U.Tb += ((Math.max(U.Tamb, Tbss) - U.Tb) * dt) / tauBed;
   }
   /* 3.2.0-beta.23: the furnace and cyclone thermocouples (TIFG1090 / 1091 lower layer under / above, TIFG1095 / 1096 cyclone,
      TIFG1009 furnace) follow the bed: ambient + (snapshot - ambient) x bed rise / anchor bed rise. Before, they kept the 150 MW
@@ -4901,66 +4839,19 @@ function anUnitStep0(dt) {
   /* 2.2.0-beta.17: not exactly 0 while the HP valves are shut: the SELECT CIRCUIT of ABC-052 (SI0181) reads 0 as a lost transmitter
      (SIG.AB) and would hold the 150 MW value, so the LP bypass REMOTE set point (LN12 of the first stage + 5.1) would stay at 30.9 */
   for (const L of U.pist) scaled(L, Math.max(1e-3, U.ms / U.m0));
-  /* SH / RH temperature versus load: the spray loops see a load disturbance (plant.js pr.ld, in units of the PV). At the anchor
-     (MCR) it is 0; down to 60 % MCR it grows to the authority of the spray of the snapshot (the spray closes, the PV stays at the set
-     point: Fig 6 / Fig 10); below 60 % the PV falls at the slope of the snapshots (02.png) */
-  const xl = Math.min(
-      1,
-      mso / U.mcr
-    ) /* 2.2.0-beta.12: the load of the boiler is all the steam it makes, bypass included */,
-    cv = U.sprayCurve,
-    suMode = U.cold || (U.tc && U.tc.step < 7);
-  /* the lag is the heat of a burning loop: after a loss of the fire (steam made under frDb of the steam leaving: MFT, fuel cut) the
-     superheat goes with the firing ratio below, the load share is taken as it is */
-  U.xq = suMode || U.xq == null || !(U.tauQ > 0) || U.Qs < U.frDb * mso ? xl : U.xq + ((xl - U.xq) * dt) / U.tauQ;
-  const xs = U.xq;
-  let gx = 1;
-  if (xs <= cv[0][0]) gx = 0;
-  else
-    for (let i = 1; i < cv.length; i++)
-      if (xs <= cv[i][0]) {
-        gx = cv[i - 1][1] + ((cv[i][1] - cv[i - 1][1]) * (xs - cv[i - 1][0])) / (cv[i][0] - cv[i - 1][0]);
-        break;
-      }
-  const below = Math.max(0, cv[0][0] - xs),
-    /* 2.2.0-beta.12 (M3): firing ratio = steam made / steam leaving (1 in steady state; 0 after an MFT while the stored steam still flows):
-       the superheat goes with the firing, the temperature falls to the saturation temperature of the drum pressure (3.2.0-beta.15: the
-       IF97 steam table of steam.js) */
-    fr0 = Math.max(0, Math.min(1, U.Qs / Math.max(1, mso))),
-    /* 3.2.0-beta.39 (roadmap 2) (roadmap 2, mouse Cold run: ATS HOLD in the 1800 rpm heat soak, MS 384 ~ 417 C and RH 360 ~ 413 C in a minute while
-       the oil coach trimmed the fire): the steam temperatures followed the firing ratio at once. The tubes and the gas path store heat:
-       the ratio the temperatures see is lagged by the metal lag tauT (after an MFT the superheat is still lost: 120 s to 37 %) */
-    /* 3.2.0-beta.39 (roadmap 2, mouse Cold run 3: the sync at 3600 rpm missed ATS 1.4 / 1.6 for 6 minutes, MS 389 ~ 416 C and RH 388 ~
-       412 C while the HP bypass swung 59 ~ 84 % on the pressure): a CFB superheater takes its heat from the bed, the refractory and
-       the circulating solids, which carry it through a swing of the steam flow; only a real loss of the fire (MFT, fuel cut) takes
-       the superheat. The ratio counts below frDb of the steam leaving (ASSUMED 0.75) */
-    frE = Math.min(1, fr0 / U.frDb),
-    fr = (U.frT = U.frT == null ? frE : U.frT + ((frE - U.frT) * dt) / U.tauT),
-    /* 3.2.0-beta.22 (bug, user 2026-10-24 "cold na, may value pa rin ... baka sa iba ganyan din"): not above the water of the drum. In a
-       cold boiler (water 30 C, no steam) the saturation temperature of 0 kg/cm2 is 99.97 C: the SH / RH steam temperatures
-       (TICBR1130 / 1140 / 1150, TICMS1004, TICHR1002) read 99.97 C instead of the ambient. Once the water boils Tw = saturation */
-    tsat = Math.min(tsatOf(U.Pd), isFinite(U.Tw) ? U.Tw : 1e9);
-  /* F11: superheater / reheater tube metal (see AN_UNIT.shM). Gas into the backpass = the bed less the upper furnace walls, then the cyclone
-     refractory (AN_FG, beta.229 / 230) */
-  if (U.cold) {
-    /* start value (a save without the metal state): the tube metal is at least as hot as the steam held in its headers (h.x of
-       TT-BR1140 / TT-MS1004), not below the water. beta.208 started it at the water (57 C) under 135 C steam: a false drop live */
-    let tw0 = Math.max(U.Tamb, isFinite(U.Tw) ? U.Tw : U.Tamb);
-    if (!isFinite(U.TmS)) for (const h of U.sh || []) if (isFinite(h.x)) tw0 = Math.max(tw0, Math.min(U.Tb, h.x));
-    const rq = U.xt && U.xt.rhPv && U.xt.rhPv.c && U.xt.rhPv.c.q,
-      rh0 =
-        rq && rq.pv != null
-          ? +U.xt.rhPv.S.rt.v[rq.pv]
-          : NaN; /* the RH tubes: the steam held in them, PV of TICHR1002 */
-    if (!isFinite(U.TmR))
-      U.TmR = isFinite(rh0) ? Math.max(Math.max(U.Tamb, isFinite(U.Tw) ? U.Tw : U.Tamb), Math.min(U.Tb, rh0)) : tw0;
-    if (!isFinite(U.TmS)) U.TmS = tw0;
-    /* the furnace exit gas U.tgF and the gas flow x cp U.gcp: the bed heat balance above (AN_BB) */
+  /* 3.2.3-beta.258 (user 2026-11-15 "isang unit lng naman yan.. isang dcs.. isang planta"): THE STEAM TEMPERATURES, ONE MODEL. Gas, tube
+     metal and steam of every bank (hx.js anHxStep) at every load and state: the spray outlets TICBR1130 / TICBR1150, the SH no.2 outlet
+     TT-BR1140, the main steam TT-MS1004 and the reheat TT-HR1002 come from the heat they get and the spray water they take. Removed:
+     the curves of the old load path (sprayCurve, natSH / natRH, suCurve, slopeSH / RH, the lag tauQ and the firing ratio), which were
+     design and trend curves, and the two-lump SH / RH metal of the Cold path */
+  const tsat = tsatOf(U.Pd);
+  let H;
+  {
+    /* the cyclone refractory (AN_FG): the gas touches only the hot face (U.Tcy) through the film hA (effectiveness 1 - exp(-hA / gas
+       cp)); the hot face conducts into the back of the lining (U.TcyB) */
     const K = AN_FG,
       gcp = isFinite(U.gcp) ? U.gcp : 0;
     if (!isFinite(U.tgF)) U.tgF = U.Tb;
-    /* the cyclone refractory (AN_FG): the gas touches only the hot face (U.Tcy) through the film hA (effectiveness 1 - exp(-hA / gas
-       cp)); the hot face conducts into the back of the lining (U.TcyB) */
     if (!isFinite(U.Tcy)) U.Tcy = U.tgF;
     if (!isFinite(U.TcyB)) U.TcyB = U.Tcy;
     const eCy = gcp > 0.01 ? 1 - Math.exp(-K.hA / gcp) : 1,
@@ -4968,126 +4859,67 @@ function anUnitStep0(dt) {
       qCyB = K.kAB * (U.Tcy - U.TcyB); /* kW, hot face to the back */
     U.Tcy += ((qCy - qCyB) * dt) / K.mF;
     U.TcyB += (qCyB * dt) / K.mB;
-    const tG = gcp > 0.01 ? U.tgF - qCy / gcp : U.Tcy; /* gas into the backpass: SH / RH */
+    const tG = gcp > 0.01 ? U.tgF - qCy / gcp : U.Tcy; /* gas into the backpass */
     U.tgB = tG;
-    const gr = U.taf0 > 0 ? Math.max(0, taf / U.taf0) : 0,
-      kg = Math.pow(gr, 0.6);
-    let qS = (U.shUA || 261) * kg * Math.max(0, tG - U.TmS),
-      qR = (U.rhUA || 116) * kg * Math.max(0, tG - U.TmR);
-    const qMax = gcp * Math.max(0, tG - Math.min(U.TmS, U.TmR));
-    if (qS + qR > qMax) {
-      const k = qMax / (qS + qR);
-      qS *= k;
-      qR *= k;
-    }
-    const sS = ((U.ms + U.mb + (U.msb || 0)) / 3.6) * 2.2 * Math.max(0, U.TmS - tsat),
-      /* live Cold start 2026-11-14: the reheater inlet is the cold reheat line (P4S3: cold reheat -> R-1 -> R-2), the mix of the HP
-         exhaust and the HP bypass outlet of anUnitStepX (X.T.cr, last scan), not the drum saturation (293 C against 331 C live) */
-      tcr = U.xt && U.xt.T && isFinite(U.xt.T.cr) ? U.xt.T.cr : tsat,
-      sR = (((U.mhp || 0) + U.ms) / 3.6) * 2.2 * Math.max(0, U.TmR - tcr);
-    U.TmS = Math.max(U.Tamb, U.TmS + ((qS - sS) * dt) / (U.shM || 176630));
-    U.TmR = Math.max(U.Tamb, U.TmR + ((qR - sR) * dt) / (U.rhM || 121550));
-    /* live Cold start (user 2026-11-14 "Ang sabe kasi ay RH steam temp eh?"): TT-HR1002 is on the reheater outlet pipe, outside the gas
-       path. With the HP bypass shut and no reheat pressure no steam flows: the thermowell reads the outlet pipe, not the tube metal in
-       the gas (it read 474 C, floored at the drum saturation 332 C). The outlet pipe is heated only by the steam that flows out of the
-       tubes (steam x 2.2 kJ/kg K x (tube metal - pipe)) and loses to the room through its lagging (rhPipeUA) */
-    const wR = Math.max(0, (U.mhp || 0) + U.ms);
-    if (!isFinite(U.TpR)) U.TpR = wR > 1 && isFinite(rh0) ? Math.min(rh0, U.TmR) : U.Tamb;
-    U.TpR +=
-      (((wR / 3.6) * 2.2 * (U.TmR - U.TpR) - (U.rhPipeUA || 0.02) * (U.TpR - U.Tamb)) * dt) / (U.rhPipeM || 10000);
-    U.TpR = Math.max(U.Tamb, Math.min(Math.max(U.TmR, U.Tamb), U.TpR));
-    U.wR = wR;
-    /* the cyclone outlet thermocouples TT-FG1095-A / B read the gas leaving the cyclones (beta.212 scaled them on the bed) */
+    /* the cyclone outlet thermocouples TT-FG1095-A / B read the gas leaving the cyclones */
     U.gCy = [tG, tG];
-  } else U.TmS = U.TmR = U.TpR = U.Tcy = U.TcyB = U.tgB = U.tgF = undefined;
-  for (const e of U.ld) {
-    const pr = e.pr,
-      p = e.b.p || {};
-    pr.fr = fr;
-    /* the reheater is not on the drum: its steam is at the reheat pressure, and with no steam flowing the pipe has no saturation floor */
-    pr.tsat = e.r || !U.cold ? tsat : U.wR > 1 ? Math.min(tsatOf(Math.max(0, U.Prh || 0)), U.TpR) : U.Tamb;
-    /* live Cold start F11 (user 2026-11-13 "Bkt same si bed temp at ms temp?"): in Cold the steam leaves at its tube metal temperature
-       (the SH / RH metal model above), not at the bed. e.r undefined = the reheater (TICHR1002): its outlet pipe (TpR above) */
-    pr.tcap = U.cold ? (e.r ? U.TmS : U.TpR) : undefined;
-    if (!pr.hop || !(pr.Ka > 0)) {
-      pr.ld = 0;
-      continue;
-    }
-    const plo = p.lo == null ? 0 : p.lo,
-      span = p.span > 0 ? p.span : 100,
-      A =
-        (pr.Ka * Math.max(0, pr.hop.mv - plo) * span) /
-        100; /* authority of the spray of the snapshot, units of the PV */
-    /* 3.2.0-beta.38 (CHECKLIST 0.6, the ATS criteria 1.4 / 1.6 / 1.71 / 1.72 at the roll): in a start-up / shutdown (U.cold, or a turbine
-       start-up not yet in NORMAL OPERATION: Start warm / hot) the SH and RH outlet follow the FHI Fig. 2 curve (suCurve). The slopes of the load test extrapolated to 12 % load gave MS 468 C (RH 388
-       C with slopeRH): outside the ATS window, no roll. The spray drawings agree that no spray can help there: DITL-33 opens the SH
-       spray SOV only with the finishing SH inlet >= 350 C and steam > 46 T/H, DITL-35 the RH spray only after the ICV to CV transfer */
-    let dn = e.s * below;
-    if (e.s > 0) {
-      const N = e.r ? U.natSH : U.natRH;
-      let T = N[N.length - 1][1];
-      if (xs < N[0][0]) T = N[0][1] - e.s * (N[0][0] - xs);
-      else
-        for (let i = 1; i < N.length; i++)
-          if (xs <= N[i][0]) {
-            T = N[i - 1][1] + ((N[i][1] - N[i - 1][1]) * (xs - N[i - 1][0])) / (N[i][0] - N[i - 1][0]);
-            break;
-          }
-      dn = Math.max(0, 541 - T);
-    }
-    /* live Cold start 2026-11-14 (no curve fits, user rule): in Cold the steam leaves the superheater / reheater at its tube metal
-       temperature, the heat balance of the metal model above (gas in, steam out): SH = U.TmS, RH = its outlet pipe U.TpR. The FHI
-       Fig. 2 curve is a check only; the curve stays for a Warm / Hot turbine start out of Cold, where there is no metal model */
-    const Tm = U.cold ? (e.r ? U.TmS : U.TpR) : NaN;
-    if (U.cold && e.s > 0 && isFinite(Tm)) dn = 541 - Tm;
-    else if ((U.cold || (U.tc && U.tc.step < 7)) && e.s > 0) {
-      const p0 = (U.tc && U.suRoll[U.tc.mode]) || U.suCurve[0][1],
-        c = U.suCurve.map(([a, b]) => [a, Math.max(b, p0)]),
-        x = Math.max(c[0][0], xl);
-      let T = c[c.length - 1][1];
-      for (let i = 1; i < c.length; i++)
-        if (x <= c[i][0]) {
-          T = c[i - 1][1] + ((c[i][1] - c[i - 1][1]) * (x - c[i - 1][0])) / (c[i][0] - c[i - 1][0]);
-          break;
-        }
-      dn = Math.max(0, 541 - T);
-    }
-    pr.dn = dn;
-    /* 3.2.0-beta.39 (roadmap 2): the SH chain (see U.ld): the share of the fall at the spray 1 outlet; the finishing SH inlet follows the SH no.2
-       outlet (its superheat came through the chain: no second firing ratio on it) */
-    if (e.r === 'sh1') {
-      U.shDn = dn;
-      pr.ld = (pr.sg || -1) * (A * (1 - gx) + U.fsh[0] * dn);
-    } else if (e.r === 'up') {
-      U.shA2 = A;
-      pr.fr = 1;
-      const h0 = U.sh.find(h => h.r === 'sh2');
-      pr.ld = h0 ? h0.x - h0.pv0 + (h0.d || 0) : (pr.sg || -1) * (A * (1 - gx) + dn);
-    } else pr.ld = (pr.sg || -1) * (A * (1 - gx) + dn);
-    /* the reheater (no chain role): below the spray range its natural curve is the value with the dampers at their end (plant.js ss) */
-    pr.nsat = !e.r && e.s > 0 && !(U.cold || (U.tc && U.tc.step < 7)) ? 1 - gx : 0;
+    const tcr = U.xt && U.xt.T && isFinite(U.xt.T.cr) ? U.xt.T.cr : tsat,
+      /* the reheater steam: the HP turbine exhaust less the No.2 HP heater extraction (U.hpF2, its drain) and the HP gland leak-off
+         (2.7 % of the HP steam: HEAT_BALANCE.md 458.7 T/H to the turbine, 401 T/H to the reheater, 45.15 T/H No.2 HPH), plus the HP
+         bypass */
+      mRh = Math.max(0, (U.mhp || 0) + Math.max(0, U.ms * 0.973 - (isFinite(U.hpF2) ? U.hpF2 : 0)));
+    H = anHxStep(
+      U,
+      {
+        Tg: tG,
+        mG: isFinite(U.mG) ? U.mG : 0,
+        Tb: U.Tb,
+        phi: isFinite(U.phi) ? U.phi : 0,
+        Tamb: U.Tamb,
+        Tm0: U.hxT0,
+        Pd: U.Pd,
+        Pms: U.Pms,
+        mOut: U.ms + U.mb + (U.msb || 0),
+        w1: U.w1s,
+        w2: U.w2s,
+        wrh: U.wrhs,
+        Tsp: U.tSp,
+        Prh: U.Prh,
+        mRh,
+        Tcr: tcr,
+        mEco: U.mEco,
+        Tfw: U.hpT2,
+        dR: isFinite(U.dmpR) ? U.dmpR : 1 /* no position read: open */,
+        dS: isFinite(U.dmpS) ? U.dmpS : 1
+      },
+      dt
+    );
+    U.hxT0 = NaN;
+    U.hxQp = H.qP;
+    U.hxHe = H.hEco;
+    U.hxO = H;
+    /* TT-HR1002 is on the reheater outlet pipe, outside the gas path (live Cold start 2026-11-14): heated by the steam that flows out of
+       the last reheater bank, losing to the room through its lagging (rhPipeUA). No steam: the pipe cools */
+    const wR = mRh + Math.max(0, U.wrhs || 0);
+    if (!isFinite(U.TpR)) U.TpR = H.rh;
+    U.TpR +=
+      (((wR / 3.6) * 2.2 * (H.rh - U.TpR) - (U.rhPipeUA || 0.02) * (U.TpR - U.Tamb)) * dt) / (U.rhPipeM || 10000);
+    U.TpR = Math.max(U.Tamb, U.TpR);
+    U.wR = wR;
   }
-  /* the headers after the spray: spray outlet + the pickup of the next superheater, metal lag. 3.2.0-beta.39 (roadmap 2): the pickup falls with its
-     share of dn, the finishing SH pickup is short of the spray 2 authority below the spray of Fig 10, and without firing (fr) the pickup
-     is lost as the superheat of the spray outlet is (plant.js pr.fr) */
+  for (const e of U.ld) {
+    const pr = e.pr;
+    pr.ld = 0;
+    pr.nsat = 0;
+    pr.fr = pr.tsat = pr.tcap = undefined;
+    pr.hx = e.r === 'sh1' ? H.d1 : e.r === 'up' ? H.d2 : U.TpR;
+  }
+  /* the headers: SH no.2 outlet TT-BR1140-1 / -2 and the finishing SH outlet TT-MS1004-1 / -2 (PV of TICBR1140 / TICMS1004) */
   for (const h of U.sh) {
-    const pv = +h.S.rt.v[h.n];
-    if (!isFinite(pv)) continue;
-    h.x += ((pv - h.x) * dt) / U.tauT;
-    const dn = U.shDn || 0,
-      pkT = h.pk0 - (h.r === 'sh2' ? U.fsh[1] * dn : U.fsh[2] * dn + (U.shA2 || 0) * (1 - gx));
-    /* 3.2.1 b6 (Mina beta.111: MST 550 C at 118 MW on a 0.75 MW/min ramp up, 532 C on the way down; plant 535 ~ 542 C): the pickup of the
-       superheater followed the load at once while the spray outlet before it moved with the metal lag tauT, so a ramp put the main steam
-       9 C off. The pickup is heat of the same tube metal: it moves with the same lag (the steady values do not change) */
-    h.pk = h.pk == null ? pkT : h.pk + ((pkT - h.pk) * dt) / U.tauT;
-    const pk = h.pk;
-    h.d = pk * fr - h.pk0;
-    /* 2.2.0-beta.14 (cold): the header after the spray cannot be above the gas (bed) nor below saturation either */
-    if (U.cold) {
-      /* F11: the superheater tube metal (model above), not the bed */
-      const cap = Math.max(tsat, isFinite(U.TmS) ? U.TmS : U.Tb);
-      for (const L of h.L) anUnitWrite(L, i => Math.max(tsat, Math.min(cap, L.a0[i] + h.x - h.pv0 + h.d)));
-    } else for (const L of h.L) shifted(L, h.x - h.pv0 + h.d);
+    const T = h.r === 'sh2' ? H.s2 : H.ms;
+    if (!isFinite(T)) continue;
+    h.x = T;
+    for (const L of h.L) anUnitWrite(L, T);
   }
   /* O2 of the flue gas: 21 x (1 - stoichiometric air / total air), analyzer lag. Both analyzers read it: FHI gives one curve (Fig 7) and
      the 6.4 / 2.2 % of one snapshot has no source, it stood the B side on LOW-LOW at 150 MW */
