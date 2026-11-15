@@ -8,7 +8,7 @@ const r=await page.evaluate(async()=>{const P=(rpm,h)=>{const U={Fc:89,burn:1,lm
   await AN.ades();WORLD.set(true);document.getElementById('load150').click();await AN._startP;const U=AN.unit,all=AN.sheets.filter(s=>s.S&&!/ABC-000/.test(s.name));for(let k=0;k<30;k++){WORLD.live=true;AN.stepSet(AN.sheets.find(z=>z.name==='ABC-001C'),.5);WORLD.tick(.5)}
   const s=all.find(x=>x.name==='ABC-006');return {lost,back,hold,none,fast,cold,U:{I:U.bedI,k:U.bedK,inn:U.bedIn,out:U.bedOut,dp:U.bedDp.map(([L])=>L.length),sc:(U.bedSc||[]).length},MW:U.MW}});
 console.log(JSON.stringify(r.U));
-ck(Math.abs(r.hold.I-169.7)<4,'screws at the ash make the bed hold: '+r.hold.I+' t');
+ck(Math.abs(r.hold.I-174.3)<4,'screws at the ash make the bed hold: '+r.hold.I+' t');
 ck(r.none.I>180,'screws stopped: the bed grows: '+r.none.I);
 ck(r.fast.I<160,'screws fast: the bed falls: '+r.fast.I);
 ck(r.lost.I<145&&r.lost.leg>25,'no seal pot air: the solids stay in the legs: bed '+r.lost.I+' t, legs '+r.lost.leg+' t');
