@@ -169,7 +169,10 @@
     ['I.0169', 'lsl', /DISPENSING VESSEL LSL/],
     ['I.016A', 'tank', /AIR TANK PRESSURE LOW/],
     ['I.0170', 'run', /ROTOFEEDER RUNNING/],
-    ['I.0173', 'fan', /RUNNING/]
+    ['I.0173', 'fan', /RUNNING/],
+    /* 3.2.3-beta.257 (F95): the REMOTE selectors had no source, so each DITL-LS sheet kept its own field bit (one address = one signal) */
+    ['I.0176', 'sysRem', null],
+    ['I.0172', 'vfdRem', null]
   ].forEach(([a, k, re]) => L.push([a, lmSw(k), 0.5, 'hi', 0, 0, re, LMS, k === 'run' ? 1 : 0]));
   /* 3.2.1 d1 (LISA): DITL-01 row 14 MIR-M1311 LIMESTONE FEEDER ROTARY VALVE RUNNING is I.0170 (I/O list "#1 Limestone feeder running"), the same contact as ROTOFEEDER RUNNING above */
   /* Mina beta.18 B18-1 / B16-3: after the 150 MW load the row stood "running" for good (DITL150 field state s.sig = 1, "L-1311 ROTO

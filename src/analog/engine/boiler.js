@@ -670,6 +670,10 @@ function anLmStep(U, dt) {
   W.tank = pa < K.tankBar ? 1 : 0; /* the air receiver of the system (PS-PA1811) is fed by the plant air */
   W.run = L.run ? 1 : 0;
   W.fan = L.fan ? 1 : 0;
+  /* 3.2.3-beta.257 (F95): the local selectors of the panel stand at REMOTE in normal service (O&M L5-3: the system runs from the DCS):
+     SIL-LM1311 SYSTEM LOCAL / REMOTE (I.0176, DITL-LS10 row 6, LS110) and the Rotofeed VFD IN REMOTE (I.0172, DITL-LS110) */
+  W.sysRem = 1;
+  W.vfdRem = 1;
   iso.forEach((q, i) => {
     W['isoO' + i] = q.x >= 1 ? 1 : 0;
     W['isoC' + i] = q.x <= 0 ? 1 : 0;
