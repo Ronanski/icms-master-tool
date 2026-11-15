@@ -71,3 +71,13 @@ Full conversation (private): `/mnt/project-files/turnover/hanni/conversation.md`
 - 2026-11-15 8:05 PM: "Ganyan ba ang proper font style??!!!!" 8:06 PM: "Kailangan ko b tlga specific sabihin lahat ng mali?" (rule: audit yourself before showing)
 - 2026-11-15 8:37 PM: start the turnover now. 8:39 PM: "Kasama artifacts? Pdf? Mga usapan? Lahat? Covered?"
 - 2026-11-15 8:39 PM (team decision via coordinator): PDF and HTML copies with private plant data go only to `/mnt/project-files/turnover/hanni/`, never to a public repo.
+
+## 6. Private copies (project folder only, not in this repo)
+
+`/mnt/project-files/turnover/hanni/`:
+- `HANNI-TUTOR.md`: copy of this note.
+- `conversation.md`: the whole thread, every message, PHT times.
+- `html/`: 13 pages as they are published now (12 listed in section 2, plus `turbine-page-v4.html`, an older turbine page).
+- `pdf/`: a PDF of each of the 13 pages (Signal Path Finder printed with signal GCP-AO1005 open).
+- `screenshots/`: 16 pictures (Signal Path Finder versions 7 to 16, rack room layout E2-0-107).
+- `source/`: Signal Path Finder source, data and the check scripts (section 3).
