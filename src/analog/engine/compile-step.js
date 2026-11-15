@@ -443,6 +443,29 @@ function anDefaults(S) {
           .replace(/\.KP2$/, '')
       : '';
   };
+  /* 3.2.3-beta.241 (live Cold start, ICV to CV transfer: the LP bypass PCV-HR1010 stayed at 33.0 % while the hot reheat fell to 2.6
+     kg/cm2): ABC-052 "X% / sec Ramp" SI0223 -> SI0224 takes its X from F(X) LN11 (SI0225, PICHR1003.DV vs Time Constant, S2-LN-11:
+     33 for DV <= 0, 1667 at DV +50). The pin reader took the LN11 output on the left as the signal and SI0223 as the limits, so the
+     ramp followed 33 (the X) instead of SI0223 (0 % after the transfer, M.0714). Signal = SI0223, X = LN11 as the time of a full
+     stroke in seconds (NO-SOURCE unit; a time constant per the curve title: close fast when the pressure is at or under the set
+     point, slow while it is still high) */
+  if (S.name === 'ABC-052')
+    for (const b of S.blk) {
+      if (b.k !== 'RATE' || b.main === undefined) continue;
+      const fxIn = [b.main, b.up, b.dn].find(n => n >= 0 && (S.drv[n] || []).some(d => d.k === 'FX' && d.p && d.p.ln === 'LN11'));
+      if (fxIn === undefined) continue;
+      const sig = [b.main, b.up, b.dn].find(n => n >= 0 && n !== fxIn);
+      if (sig === undefined) continue;
+      b.main = sig;
+      b.tpar = fxIn;
+      b.tsec = true;
+      b.span = 100;
+      b.up = undefined;
+      b.dn = undefined;
+      b.p.rate = 0;
+      b.i = [b.main, b.tpar, b.byp].filter(x => x >= 0);
+      b.note = 'X% / sec Ramp: signal SI0223, full stroke time from LN11 (PICHR1003.DV)';
+    }
   const fixedRate = S.blk
       .filter(b => b.k === 'RATE' && b.main !== undefined && b.up === undefined && !(b.p.rate > 0))
       .sort((p, q) => p.id - q.id),
@@ -2512,7 +2535,12 @@ function anInit(S) {
       try {
         const t = anStationOf(S, b),
           sw = anSvSwitchOf(S, b);
-        if (t.amt && rt.st[t.amt.id]) rt.st[t.amt.id].al = t.autoLeg;
+        if (t.amt && rt.st[t.amt.id]) {
+          rt.st[t.amt.id].al = t.autoLeg;
+          /* 3.2.3-beta.253: every A/M station knows its tag, so its mode status can follow a force (plant.js) */
+          /* beta.255: also on the block: a LOAD of a save point replaces rt.st and dropped the tag */
+          rt.st[t.amt.id].mtag = t.amt.mtag = (b.txt || [])[1];
+        }
         /* the SV switch is a station too: leg A = REMOTE (its auto leg), leg B = LOCAL; REMOTE locks the A/M station to AUTO (see plant.js) */ if (
           sw &&
           rt.st[sw.id]
@@ -2520,7 +2548,6 @@ function anInit(S) {
           rt.st[sw.id].al = 'A';
           if (t.amt && rt.st[t.amt.id] && anHasRemote(S, b)) {
             rt.st[t.amt.id].rmSw = sw.id;
-            rt.st[t.amt.id].mtag = (b.txt || [])[1];
           }
         }
       } catch (e) {}

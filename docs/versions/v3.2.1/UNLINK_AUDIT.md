@@ -15,3 +15,5 @@
 - **"LINE 3" na walang SHEET = output ng parehong sheet.** LS212 row 15 M.182D ← out LINE 3 M.182D; LS60 row 4 M.1837 ← out LINE 13 M.1837 (parehong address). Ayos: `src/world/world.js`. Walang link na tinanggal.
 - **Negation circle na 0.5 sa itaas ng wire.** LS210 AND ng M.1835: ang input mula TR419 (M.1836, 600 s) ay may bilog; LS100 AND ng M.1830: ang input mula row 11 FILLING CYCLE ENABLED ay may bilog. Hindi ito nabasa (tolerance 0.4) kaya walang NOT. Ayos: tolerance 0.9 (2.25 ang pagitan ng mga pin). LS210 at LS100 lang ang nagbago.
 - Test: `tests/regress/limestone.js` 8 PASS, `ditl_ls.js` ALL PASS.
+
+- **LS10 row 7 I.0171 ROTOFEEDER FAULT sa AND ng M.180F (3.2.3-beta.257, F95).** Walang negation circle ang pin (x 210.748, y -69.429) sa E10211 sheet 10, kaya kailangan ng ENABLE ang FAULT = 1 kasabay ng I.0170 RUNNING = 1 (hindi mangyayari). Ang parehong signal ay may bilog sa AND ng M.183F READY (parehong sheet) at sa feeder start ng LS110; ang FHI manual ay nagpapakain ng sorbent sa normal service (Part 2 Fig. 13). Basa: may negation (kulang na bilog sa drawing). Ayos: `src/digital/parts/02-netlist.js`. Walang link na inalis.

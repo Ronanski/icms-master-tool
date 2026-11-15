@@ -741,6 +741,16 @@
         if (/REMOTE (MODE )?SELECTED/.test(v) && !/\b(AUTO|NOT)\b/.test(v)) R.rem.push(r);
         else if (/\bAUTO MODE SELECTED\b/.test(v)) R.au.push(r);
       }
+      /* live Cold start beta.241 (coal feeder B would not start, its faceplate said REMOTE): DITL-19 rows 22 ~ 27 read the REMOTE of all
+         three feeders (I.0132 / I.0452 / I.0492) for "ALL IN REMOTE AND RUNNING" (ABC-004A/B/C). Feeder B showed the REMOTE of feeder A
+         and its REMOTE / LOCAL press set the selectors of A and C too. One address = one signal (CLAUDE.md 1): the selector of this motor
+         is the address of its first REMOTE row; the rows of other addresses belong to other motors */
+      const t0 = R.rem.length ? rowInfo(s, R.rem[0]).tag : '';
+      if (/^[IM]\.[0-9A-F]{4}$/.test(t0 || '')) R.rem = R.rem.filter(r => rowInfo(s, r).tag === t0);
+      if (R.au.length > 1) {
+        const a0 = rowInfo(s, R.au[0]).tag;
+        if (/^[IM]\.[0-9A-F]{4}$/.test(a0 || '')) R.au = R.au.filter(r => rowInfo(s, r).tag === a0);
+      }
       /* live test 2026-11-05 (CEP-A / B, DITL-61A rows 4 / 14 "CONDENSATE PUMP A M.1182 AUTO SELECTED", no "MODE"): the faceplate AUTO
          stayed grey (mode unknown) although amRow finds the CRT row; the mode is read from that row too */
       if (!R.au.length) {

@@ -68,16 +68,29 @@ _i = p.s.index('<text x="20" y="60"')
 _e = p.s.index('</text>', _i) + len('</text>')
 p.s = (p.s[:_e] + '<text x="20" y="74" font-size="11" fill="#9aa3ab">inlet damper A ' + C('FICFA1055A', 'mv', 1, ' %') + ' ' + MODE('FICFA1055A')
        + ' · B ' + C('FICFA1055B', 'mv', 1, ' %') + ' ' + MODE('FICFA1055B') + '</text>' + p.s[_e:])
+# live run 2026-11-13 F6: the surge (to silencer) and outlet SOVs of the blowers XV-FA1055-A2 / A3 / B2 / B3 (DITL-28C and #B), with their faceplates:
+# the blower start needs FCD READY (DITL-28A row 4) = damper demand 25 % AND surge SOV opened, and the operator had no control of them
+_MV = lambda sh, ph, how: '<tspan data-mov="' + sh + '|~' + ph + '|' + how + '">-----</tspan>'
+_i = p.s.index('<text x="20" y="74"')
+_e = p.s.index('</text>', _i) + len('</text>')
+for _y, _l, _ph in ((88, 'surge SOV', 'TO SILENCE'), (102, 'outlet SOV', 'OUTLET SOV')):
+    _t = ('<text x="20" y="' + str(_y) + '" font-size="11" fill="#9aa3ab">' + _l + ' A ' + _MV('DITL-28C', _ph, 'oc') + ' ' + _MV('DITL-28C', _ph, 'md') + '</text>'
+          + '<text x="190" y="' + str(_y) + '" font-size="11" fill="#9aa3ab">B ' + _MV('DITL-28C #B', _ph, 'oc') + ' ' + _MV('DITL-28C #B', _ph, 'md') + '</text>')
+    p.s = p.s[:_e] + _t + p.s[_e:]
+    _e += len(_t)
+# F8: the primary air fan lube oil pumps A / B (DITL-24 and #B) had no faceplate on any page: the PA fan needs one running (DITL-26A)
+_t = '<text x="360" y="924" font-size="11" fill="#9aa3ab">lube oil pump A ' + ST('LOA') + ' · B ' + ST('LOB') + '</text>'
+p.s = p.s[:_e] + _t + p.s[_e:]
 # combustion controls
 p.inner(1360, 292, C('AICFG112', 'sv', 1, ' %'))
-p.inner(1360, 310, NS)
+p.inner(1360, 310, V('ABC-002|SI0060', 1, ' T/H'))  # total air = ABC-006 SI0060 (live sweep 2026-11-14)
 p.inner(1360, 328, NS + ' / ' + NS)
 p.inner(1360, 346, 'PV ' + C('TICHR1002A', 'pv', 0) + ' · SV ' + C('TICHR1002A', 'sv', 0, ' °C'))
 p.inner(1360, 364, 'RH ' + C('HICHR1002A', 'mv', 1, ' %') + ' · SH ' + C('HICHR1002B', 'mv', 1, ' %') + ' ' + MODE('HICHR1002A'))
 p.inner(860, 390, '')
 # faceplates (transparent hits over the texts)
 for i, x, y, w, h in (('PAF', 230, 856, 140, 16), ('SAF', 230, 946, 140, 16), ('IDF', 1150, 866, 120, 16), ('FA', 16, 34, 124, 16),
-                      ('FB', 140, 34, 140, 16), ('FCA', 16, 64, 150, 14), ('FCB', 166, 64, 120, 14), ('APH', 700, 708, 100, 16), ('CPA', 200, 870, 260, 16), ('CSA', 200, 960, 260, 16),
+                      ('FB', 140, 34, 140, 16), ('FCA', 16, 64, 150, 14), ('FCB', 166, 64, 120, 14), ('SVA', 16, 78, 170, 14), ('SVB', 186, 78, 140, 14), ('OVA', 16, 92, 170, 14), ('OVB', 186, 92, 140, 14), ('LOA', 356, 913, 128, 14), ('LOB', 484, 913, 80, 14), ('APH', 700, 708, 100, 16), ('CPA', 200, 870, 260, 16), ('CSA', 200, 960, 260, 16),
                       ('MPA', 200, 912, 140, 16), ('MSA', 200, 1002, 140, 16), ('IDC', 1150, 882, 120, 16), ('IDD', 1110, 898, 200, 16),
                       ('RHD', 540, 454, 90, 16), ('SHD', 690, 454, 90, 16), ('O2', 1300, 280, 70, 16), ('RHT', 1290, 334, 80, 16)):
     p.mach(i, hits=[(x, y, w, h)])

@@ -12,6 +12,7 @@ engine/ranges-fx.js
 engine/plant.js
 engine/steam.js
 engine/boiler.js
+engine/hx.js
 engine/unit.js
 engine/tcs.js
 engine/tcs-ibd-data.js

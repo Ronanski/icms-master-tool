@@ -44,6 +44,9 @@ function anEngAPI() {
     field: anField,
     tsat: steamTsat,
     fieldState: () => Object.assign({}, AN_SRC.field),
+    /* F31 (live Cold start, beta.218): the opening of the lower ring header drains is in the engine (saved with the plant), so the
+       faceplate reads it here; a page variable was lost at every update or LOAD and the faceplate said only "OPEN" */
+    lhdPct: () => +AN_SRC.lhdPct || 0,
     srcSt: () => Object.assign({}, AN_SRC.st || {}) /* 3.2.3 SOHEE: the source state of the plant now (tests) */,
     /* 3.2.1 (CW plant model): the manual valves of the seawater system, opening in % (unit.js AN_SW_V0) */
     /* 3.2.1 (IRENE): with the diesel oil line-up of boiler.js (AN_DO.fv0, anDoValve), so the one field valve faceplate serves both */

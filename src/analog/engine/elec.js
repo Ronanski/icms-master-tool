@@ -51,7 +51,7 @@ function anElec(U) {
     I = AN_EL.mot.reduce((a, [k]) => a + Math.max(0, +U[k] || 0), 0),
     Pa = (Math.sqrt(3) * AN_EL.kV * I * AN_EL.pf) / 1000,
     Qa = Pa * Math.tan(Math.acos(AN_EL.pf)),
-    Pg = g52 && G ? Math.max(0, +U.MW || 0) : 0,
+    Pg = g52 && G ? +U.MW || 0 : 0 /* beta.240: negative = reverse power from the grid */,
     Qg = g52 && G ? G.MVAr || 0 : 0,
     /* the main transformer carries the generator minus the house load (export), or the house load from the grid (back-feed) */
     Pt = e.l52 ? Pg - Pa : 0,
