@@ -629,7 +629,7 @@ function anUnitStart() {
   /* 3.2.1 (IRENE: FEEDWATER): the motor of the DITL drawing too (BFWP A / B = DITL-23A / #B): a FIELD TRIP (protection relay) stops the
      water although ABC-010 M.3343 (DITL-23A output 55 RUNNING) still reads 1 */
   U.mul[0].drw = U.mul[0].run.length === 2 ? ['DITL-23A', 'DITL-23A #B'] : null;
-<<<<<<< ours
+  U.mul[0].suc = U.mul[0].run.length === 2 ? ['V-FW1001', 'V-FW1002'] : null;
   U.mul[0].dis =
     U.mul[0].run.length === 2
       ? [
@@ -637,10 +637,6 @@ function anUnitStart() {
           ['DITL-38 #MV-FW1002', 'DITL-38 #MV-FW1392']
         ]
       : null;
-=======
-  U.mul[0].suc = U.mul[0].run.length === 2 ? ['V-FW1001', 'V-FW1002'] : null;
-  U.mul[0].dis = U.mul[0].run.length === 2 ? [['DITL-38 #MV-FW1001', 'DITL-38 #MV-FW1391'], ['DITL-38 #MV-FW1002', 'DITL-38 #MV-FW1392']] : null;
->>>>>>> theirs
   /* 2.2.0-beta.15 (M4 step 2): the start-up feedwater valve (ABC-010 LICBR1001B, single-element drum level control for the start-up,
      FCV-FW1060) is a second line into the drum beside the main valve of FICFW1007: its flow is added to the feedwater flow
      transmitter (plant.js pr.op of the FICFW1007 loop), its flow is from the valve sheet (anSuFw below, K1AU3-E2-0-123 p147);
