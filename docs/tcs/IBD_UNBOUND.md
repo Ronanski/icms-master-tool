@@ -4,10 +4,12 @@
 binding of `tcsIbdBind()` (`src/analog/engine/tcs-trip.js`). An input has a source when a gate of its own sheet drives it, an off-page link
 from another sheet gives it, a plant model value is bound to it (`TCS_IBD_PV` by name, `TCS_IBD_NET` by net), or it is the BOILER MFT.
 
-Count: 797 inputs, 374 with no source (was 383). Every one of the 374 is in one of the three kinds of CLAUDE.md rule 5:
+Count: 797 inputs, 373 with no source (was 383). Every one of the 373 is in one of the three kinds of CLAUDE.md rule 5:
 (a) bug, fixed; (b) correct, with the reason; (c) the drawing or the reader cannot give it, with the exact part named.
 
 ## Fixed in this version (a)
+
+- 3.2.3-beta.264 (SAKURA, 2026-11-15): TC-17 (page 71) net 6 TURBINE FLOW DEMAND (EL) (CV FULL CLOSE): the sheet does show the set point, ON <= 20 %. Now the TCS flow demand of the model (U.tb.fd) <= 20 %; before the flow demand runs, the CV FULL CLOSE of the label (U.gv). It feeds the VENTILATOR VALVE OPEN COMMAND that also closes the cold reheat NRV (TC-19 page 73).
 
 - TA-41 net 28 MSV(B) FULL OPEN, TA-42 net 21 MSV(B) FULL OPEN, TA-42 net 26 MSV(A) FULL OPEN: the name rule `MSV([AB]) FULL OPEN` had
   unescaped parentheses and matched no input. Now `MSV\([AB]\) FULL OPEN` = the stop valve position of the model at 100 %. The other
@@ -48,7 +50,6 @@ Other inputs, one by one.
 - TC-7 (page 67) net 27: CV CHEST WARMING COMPLETE = (c) CV CHEST WARMING COMPLETE: the ATS model has phase chest -> reset (tcs.js), the sheet source is not read; next batch
 - TC-12 (page 69) net 11: ICV TO CV TRANSFER START = (c) the reader lists net 11 as an off-page OUTPUT to TC-13 (link 3); the input side is not read
 - TC-17 (page 71) net 5: HP TURBINE HEAT SOAK EXECUTE = (c) source TCE163 soft logic, PC-only (see above)
-- TC-17 (page 71) net 6: TURBINE FLOW DEMAND = (c) TURBINE FLOW DEMAND enters an OR as a contact with no set point on the sheet (page 71)
 - TC-19 (page 73) net 3: DE-ENERGIZE = (c) output label (solenoid) read as input
 - TC-19 (page 73) net 5: SOLENOID VALVE ENERGIZE = (c) output label (solenoid) read as input
 - TC-20 (page 74) net 0: ZT-ASn011 HP TURBINE WARMING VALVE = (c) model gap: ZT-ASn011 warming valve position; the model has no warming valve position
