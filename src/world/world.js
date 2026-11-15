@@ -413,6 +413,7 @@
       byLetter = [],
       bySister = [],
       byTo = [],
+      byMach = [],
       noMach = [];
     const addIn = (s, row, src) => {
       if (!din.has(s)) din.set(s, new Map());
@@ -497,7 +498,32 @@
               return;
             }
           }
-          for (const f of refsOf(ft)) {
+          let rf = refsOf(ft);
+          /* 3.2.3-beta.265 (SOHEE, Jennie): one FROM cell, one reference per machine. DITL-21B row 11 "21E-58 21E-72" / row 13 "21E-55 21E-69":
+             DITL-21E (one drawing for the four coolers) out 58 = COOLER A CYCLE SEQ. STOP, out 72 = COOLER B~D CYCLE SEQ. STOP. Machine k of
+             the row reads only the output that names its own machine (A, or the range B~D). Before, every cooler read both: the B~D cycle
+             start of the A stop started A again 3 s after its drain stop, and the four ran in step. Only a drawing with machine copies (#B ~ #D):
+             the B~D half of DITL-21E is one drawing for three coolers and reads both (row 16 "21E-56 (21E-70)") */
+          if (rf.length > 1 && k < LET.length && W.instOf.get(sb).length > 1 && new Set(rf.map(f => f.code)).size === 1) {
+            const lets = f => {
+              const o = outRow(f.code, f.nn, sb);
+              if (!o || machinesOf(o.d) > 1) return null;
+              const t = cellTxt(o.d, o.row, 'RS'),
+                r = /\b([A-D])\s*~\s*([A-D])\b/.exec(t);
+              if (r) return LET.slice(LET.indexOf(r[1].toUpperCase()), LET.indexOf(r[2].toUpperCase()) + 1);
+              const m = machOfDitl(t);
+              return m ? [m] : null;
+            };
+            const ls = rf.map(lets);
+            if (ls.every(x => x && x.length) && ls.flat().length === new Set(ls.flat()).size) {
+              const mine = rf.filter((f, j) => ls[j].includes(LET[k]));
+              if (mine.length && mine.length < rf.length) {
+                byMach.push(s.name + ' r' + (i + 1) + ' -> ' + mine.map(f => f.code + '-' + f.nn).join(' '));
+                rf = mine;
+              }
+            }
+          }
+          for (const f of rf) {
             const o = outRow(f.code, f.nn, sb);
             if (!o) continue;
             /* 2.2.0-beta.6: machine k of this row on a drawing made for one machine: the output whose TO column names this row
@@ -1017,6 +1043,7 @@
       byLetter: byLetter.length,
       bySister: bySister.length,
       byTo,
+      byMach,
       noMach,
       digFix,
       fromDitl: fa,
