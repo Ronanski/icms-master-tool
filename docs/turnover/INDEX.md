@@ -25,8 +25,8 @@ Written by JENNIE (Leader), 2026-11-15 ~8:50 PM PHT. Account weekly limit 96 %, 
 - CHAEWON : BOILER: `chaewon/CHAEWON_BOILER_turnover.pdf`.
 - HANNI : TUTOR, BECOME PLANT EXPERT: `hanni/HANNI-TURNOVER-COMPLETE.pdf`.
 - MOMO : 3D PLANT: `momo-3d/TURNOVER-3D-WHOLE-PLANT.pdf`.
-- SAKURA : TURBINE: `sakura/` (not yet received at 8:50 PM).
-- SOHEE : PLANT MODEL HELPER: `sohee/` (not yet received at 8:50 PM).
+- SAKURA : TURBINE: `sakura/SAKURA_TURBINE_COMPLETE.pdf`.
+- SOHEE : PLANT MODEL HELPER: `sohee/SOHEE_PLANT_MODEL_HELPER_COMPLETE.pdf`.
 
 ## 5. Threads (state on 2026-11-15)
 Active or open:
