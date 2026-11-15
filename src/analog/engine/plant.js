@@ -973,11 +973,14 @@ function anProcStep(S, dt) {
          (2 x 0.8242 x 12.481, K1AU3D-101) = 204 mm per kg/cm2 while that steam is in the risers. On a ramp the model gives ks x tauS x
          dP/dt = 600 mm per kg/cm2/s, the flash 204 x tr: the two agree for a riser transit time tr of about 3 s, which is NO-SOURCE
          (no circulation data in the FHI manual), so ks and tauS stay as they are */
-      if (S1 && pr.integ.pd >= 0) {
-        const ps = S1.rt.st[pr.integ.pd],
-          P = ps && isFinite(ps.val) ? +ps.val : NaN;
+      /* 3.2.3 CHAEWON: the pressure of the shrink / swell is the plant drum pressure (unit model U.Pd), as the drains above. Before: only
+         AI0128 of ABC-001C, which is not on that sheet (pr.integ.pd = -1), so the shrink / swell never ran (probe at 150 MW: no q.sw) */
+      {
+        const unitP = typeof AN_UNIT !== 'undefined' && AN_UNIT.on && isFinite(AN_UNIT.Pd);
+        const ps = !unitP && S1 && pr.integ.pd >= 0 ? S1.rt.st[pr.integ.pd] : null,
+          P = unitP ? +AN_UNIT.Pd : ps && isFinite(ps.val) ? +ps.val : NaN;
         if (isFinite(P)) {
-          if (q.pl == null) q.pl = P;
+          if (q.pl == null || !isFinite(q.pl) || AN.steady) q.pl = P; /* a starting state loads: no transient from the settling steps */
           q.pl += ((P - q.pl) * dt) / pr.integ.tauS;
           q.sw = pr.integ.ks * (P - q.pl);
         }
