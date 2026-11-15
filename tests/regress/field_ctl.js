@@ -10,7 +10,7 @@ const url='file://'+path.resolve(html),SH=process.env.SHOTS||'';
 (async()=>{const browser=await chromium.launch({executablePath:process.env.CHROMIUM||'/opt/pw-browsers/chromium'});
 let fail=0,n=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
 const errs=[];const wait=ms=>new Promise(r=>setTimeout(r,ms));
-const step=(page,sec)=>page.evaluate(sec=>{const C=AN.sheets.find(s=>s.name==='ABC-001C');for(let k=0;k<sec*2;k++){AN.stepSet(C,.5);WORLD.tick(.5)}},sec);
+const step=(page,sec)=>page.evaluate(sec=>{const C=AN.sheets.find(s=>s.name==='ABC-001C');for(let k=0;k<sec*2;k++){WORLD.live=true;AN.stepSet(C,.5);WORLD.tick(.5)}},sec);
 const shot=async(page,t)=>{if(SH){fs.mkdirSync(SH,{recursive:true});await page.screenshot({path:path.join(SH,String(++n).padStart(2,'0')+'-'+t+'.png')})}};
 const go=async(page,id)=>{await page.evaluate(id=>lsShellC.openPage(id),id);await wait(2000)};
 const exec=async page=>{await page.locator('.fpo-box .fpo-ex:not([hidden]) .fpo-go').first().click({timeout:5000});await wait(400);await step(page,4);await wait(1200)};
