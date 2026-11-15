@@ -205,9 +205,11 @@
             ap.sel = 1;
             pbs.push({ l: 'MANUAL', row: ap.row, sel: 0 });
           }
-          /* F6: DITL-28C has no AUTO PB; its "AUTO MODE SELECTED" row is an operator memory bit (M.1032 / M.1052): the CRT AUTO / MANUAL */
-          if (ph && !ap && auV != null) {
-            const ar = ri(/AUTO (?:MODE )?SELECTED\b/, true),
+          /* F6: DITL-28C has no AUTO PB; its "AUTO MODE SELECTED" row is an operator memory bit (M.1032 / M.1052): the CRT AUTO / MANUAL.
+             Live Cold load-up 2026-11-15 F71: the same on DITL-32 / 33 / 35 / 44 ("SPRAY WATER SOV(1) AUTO MODE" M.1012, L=CRT): the spray
+             block valve had OPEN / CLOSE only, so it could never go AUTO and open by itself above 380 °C */
+          if (!ap && auV != null) {
+            const ar = ri(/AUTO (?:MODE )?SELECTED\b|AUTO MODE\b/, true),
               AI = ar != null ? DUI.rowInfo(s, ar) : null;
             if (AI && /^M\./.test(AI.tag || '')) pbs.unshift({ l: 'AUTO', row: ar, sel: 1 }, { l: 'MANUAL', row: ar, sel: 0 });
           }
