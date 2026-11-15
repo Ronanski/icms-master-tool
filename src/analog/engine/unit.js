@@ -30,16 +30,11 @@ const AN_UNIT = {
   /* sweep 34 (Mina beta.175: AN.unit.MW read NaN once right after a chip load): a load begins with the Reset (anStateInPlace back to
      this object), which had no MW, so MW was undefined until the starting state set it (MW0 / 0). The generator gives 0 MW until then */
   MW: 0,
-  a:
-    (484 - 302) /
-    (89.7 -
-      55.4) /* T/H of steam per T/H of coal: plant trends 2026-11-08 holds at 150 and 90 MW (5.31; the snapshots 03.png / 02.png gave 5.78, coal 3.6 % high at 90 MW in Mina's b6 run) */,
   /* storage and firing lag from the TUNING OF THE PLANT (PID summary: PIC-COBM Kp 3.0, Ti 165 s, Td 7 s): the pressure of a drum
      whose steam flow the TCS holds is an integrator, and a PI on an integrator with a lag is stable only when the lag is well below
      Ti. With 700 / 150 s the loop of the plant tuning oscillated (MSP 70 ~ 126 kg/cm2 at 85 MW, the PID at +-25 %); with
      1500 / 60 s the cross-over of that PI is where its phase is best (about 0.01 rad/s). Not measured on the plant */
   C: 1500 /* (T/H) x s per kg/cm2 of drum pressure */,
-  tauF: 60 /* s, coal -> steam made */,
   tauMW: 10 /* s, steam flow -> MW (reheater, NO-SOURCE: the plant trends are 60 s averages, too slow to fit it) */,
   tcs: 20 /* s, TCS load loop (NO-SOURCE: the TCS soft logic is a PC-only scan) */,
   /* other steam outlets of the main steam line, flow at 100 % open and the anchor pressure, as a share of the anchor flow (the valve
@@ -4417,15 +4412,15 @@ function anUnitStep0(dt) {
     cb0 = isFinite(U.cbed) && U.cbed > 0 ? U.cbed : 0,
     cbB = (bf * cb0 * 3600) / AN_CBED.tau /* T/H of the held coal that burns */,
     Fb = bf * F + cbB /* coal burnt, T/H */,
-    Fe = Fb + U.ao * oil,
-    Qss = Math.max(0, U.a * Fe + (U.m0 - U.a * U.F0) * Math.min(1, Fe / (0.3 * U.F0)));
+    Fe = Fb + U.ao * oil;
   U.oilF = oil;
   U.burn = bf;
   U.cbn = Fb;
   U.cbed = Math.max(0, cb0 + (((1 - bf) * F - cbB) * dt) / 3600);
   U.unb = F - Fb; /* fed minus burnt: negative while held coal burns out */
   U.Fc = F; /* 3.2.0-beta.14: coal of the feeders (source.js: SOx) */
-  U.Qs += ((Qss * (isFinite(U.hpFac) ? U.hpFac : 1) - U.Qs) * dt) / U.tauF;
+  /* beta.261: the steam made (U.Qs) is the bed / wall heat balance below over the boiling heat; the fuel line a x coal (a fitted on the
+     2026-11-08 plant trends) and its lag tauF are gone */
   /* ---- 2.2.0-beta.12 (M3): station wiring S2 -> S1, turbine trip ---- */
   for (const [a, tg] of U.bcast || []) {
     const x = a.S.rt.force[a.n] !== undefined ? a.S.rt.force[a.n] : a.S.rt.ext[a.n];
@@ -4691,7 +4686,13 @@ function anUnitStep0(dt) {
       tSa = isFinite(U.aphSa) ? U.aphSa : U.Tamb,
       dW = U.Tb - U.Tw /* bed over the wall water, both signs */,
       fg = (Fb * (1 - AN_FG.ash) + oil) / 3.6 /* fuel gas, kg/s */,
-      gcp = ((av[0] + av[1] + av[2]) / 3.6) * B.cpA + fg * AN_FG.cpG /* kW/K */,
+      /* beta.261: cp(T). Air: Incropera Table A.4 (300 K 1.007, 700 K 1.075, 1100 K 1.159 kJ/kg K) as cp = 1.0 + 0.000155 T(C), CALC;
+         flue gas: anHxCp (hx.js, FHI Tab 2 fuel at 20 % excess air). The heat to bring the air in and the fuel to the bed is the enthalpy
+         of the flue gas at the bed less that of the air as it comes in (preheated by the air heater), both from the room */
+      hAir = T => 1.0 * T + 0.0000775 * T * T,
+      hFg = T => 1.08 * T + 0.0001065 * T * T,
+      mAir = (av[0] + av[1] + av[2]) / 3.6,
+      gcp = (mAir + fg) * anHxCp(U.Tb) /* kW/K, flue gas at the bed */,
       uRel = U.taf0 > 0 ? (taf / U.taf0) * ((U.Tb + 273) / (U.Tb0 + 273)) : 0,
       phi = Math.min(1.2, Math.max(0, isFinite(U.bedI) ? U.bedI / AN_BI.t0 : 1)) * Math.min(1.44, uRel * uRel),
       qSol = ((B.ua0w - B.uag) * phi + B.uaL) * dW /* kW, from the bed lump to the furnace walls */,
@@ -4699,10 +4700,9 @@ function anUnitStep0(dt) {
       qGas = gcp > 0.01 ? gcp * dW * (1 - Math.exp(-B.uag / gcp)) : 0 /* kW, from the gas over the upper walls */,
       qFuel = Fb * B.lhvC + oil * B.lhvO,
       qAirG =
-        (av[0] / 3.6) * B.cpA * (U.Tb - tPa) +
-        (av[1] / 3.6) * B.cpA * (U.Tb - tSa) +
-        (av[2] / 3.6) * B.cpA * (U.Tb - U.Tamb) +
-        fg * AN_FG.cpG * (U.Tb - U.Tamb),
+        (mAir + fg) * (hFg(U.Tb) - hFg(U.Tamb)) -
+        (av[0] / 3.6) * (hAir(tPa) - hAir(U.Tamb)) -
+        (av[1] / 3.6) * (hAir(tSa) - hAir(U.Tamb)),
       Cb = Math.max(0, isFinite(U.bedI) ? U.bedI : AN_BI.tCold) * 1000 * B.cpS + B.mRef;
     U.Tb = Math.max(U.Tamb, U.Tb + ((qFuel - qAirG - qSol - qPan) * dt) / Cb);
     /* the furnace exit gas: the bed less the upper walls, held at the bed by the circulating solids in the share phi */
