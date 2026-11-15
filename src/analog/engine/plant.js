@@ -1406,7 +1406,18 @@ function anStep(S, dt) {
             }
           }
         }
-        if (s.trk != null) s.val = s.trk;
+        if (s.trk != null) {
+          s.val = s.trk;
+          /* 3.2.3-beta.256 (live load-up 78 MW, ABC-001A legend "INTERLOCK TRACKING FOR PID CONTROLLER & MANUAL CONTROL STATION"):
+             while a station is tracked, the operator values on the A / M switch that feeds it (COS manual ▸ SI0243 target, COS manual ▸
+             MAN HIC-ULD) follow the tracked value too. Before, HIC-ULD tracked the actual MW in TURBINE MASTER MANUAL but its target COS kept
+             the old 150 MW, so EIC-TM to AUTO made the load demand jump from 78 to 150 MW */
+          const td = b.svI >= 0 && b.i[b.svI] >= 0 ? (S.drv[b.i[b.svI]] || []).find(x => x.k === 'AMT') : null;
+          if (td && S.ext)
+            for (const n of [td.a, td.b])
+              if (n != null && n >= 0 && S.ext.includes(n) && rt.force[n] === undefined && /^COS manual/.test(AN.nm(S, n) || ''))
+                rt.ext[n] = s.trk;
+        }
         /* 2.3.0-beta.2 (ABC-004A-1 ~ 004C-1): the MV high limit written on the drawing as an input "<tag>.MHD" (% of the station range:
            FICCL1061A.MHD = 83.3 % when M.3405 A / B / C ALL IN REMOTE AND RUNNING, else 100 %) limits the station output */
         if (b._mhd === undefined) b._mhd = (b.i || []).find(n => n >= 0 && S.lab[n] && String(S.lab[n].t).trim() === b.tag + '.MHD') ?? -1;
