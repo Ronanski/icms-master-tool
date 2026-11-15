@@ -1103,7 +1103,7 @@ function paint0() {
   for (const f of L.fo) {
     const n = f.b.pins[0].n,
       ne = L.nets[n],
-      on = S.nets[n].dig ? v[n] > 0.5 : Math.abs(v[n]) > 1e-6,
+      on = (S.nets[n] || {}).dig ? v[n] > 0.5 : Math.abs(v[n]) > 1e-6,
       c = (on || AN.view) && ne ? ne._c : 'none';
     if (f._o !== c) {
       f._o = c;
@@ -1255,7 +1255,9 @@ function paint0() {
     for (const k in S.rt.force) if (!(S.rt.pf && S.rt.pf[k]) && L.mkBadge && !(L.have && L.have.has(+k))) L.mkBadge(+k);
   for (const b of L.bd) {
     if (b.wire && !b.skip) {
-      const sw = AN.wireVals && !(L.addrN && L.addrN.has(b.n)) && !S.nets[b.n].dig ? '' : 'none';
+      /* 3.2.3-beta.250 (live, start screen Continue: red banner "reading 'dig'" in paint0, F69): a badge whose net has no entry in S.nets
+         stopped the whole paint; it is read as analog, as the value text below already does */
+      const sw = AN.wireVals && !(L.addrN && L.addrN.has(b.n)) && !(S.nets[b.n] || {}).dig ? '' : 'none';
       if (b.sw !== sw) {
         b.sw = sw;
         b.t.style.display = sw;
@@ -1284,7 +1286,7 @@ function paint0() {
     }
     {
       const es = S._extSet || (S._extSet = new Set(S.ext)),
-        ck = S.rt.force[b.n] !== undefined ? 'f' : es.has(b.n) && !S.nets[b.n].dig ? 'i' : '';
+        ck = S.rt.force[b.n] !== undefined ? 'f' : es.has(b.n) && !(S.nets[b.n] || {}).dig ? 'i' : '';
       if (b.ck !== ck) {
         b.ck = ck;
         b.t.classList.toggle('frc', ck === 'f');

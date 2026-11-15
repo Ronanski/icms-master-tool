@@ -714,6 +714,9 @@ function anProcStep(S, dt) {
       /* 2.2.0-beta.11: pr.ld = load disturbance of the unit model (unit.js), units of the PV. 2.2.0-beta.12: pr.mul = 0 when the machine that
          makes the flow is stopped (no BFWP: no feedwater; fan stopped: no air), the PV is then the bottom of the range */
       ss = c => {
+        /* 3.2.3-beta.258: a steam temperature of the heat transfer chain (unit.js / hx.js): the PV is the plant, the spray valve acts
+           through the spray water it lets into the steam (no snapshot gain, no load curve) */
+        if (pr.hx != null && isFinite(pr.hx)) return pr.hx;
         let y = ss0(c) + anc + ((pr.dist || 0) / 100) * span + (pr.op || 0) + (pr.ld || 0);
         /* 3.2.1 b6 (Mina beta.111: reheat 536 C at 90 MW, plant 521 C with its controller at SV 541, so at its limit): the natural curve of
            the unit model (unit.js natRH) is the temperature with every actuator at its limit. Below the spray range (pr.nsat = 1 - spray
@@ -1406,7 +1409,18 @@ function anStep(S, dt) {
             }
           }
         }
-        if (s.trk != null) s.val = s.trk;
+        if (s.trk != null) {
+          s.val = s.trk;
+          /* 3.2.3-beta.256 (live load-up 78 MW, ABC-001A legend "INTERLOCK TRACKING FOR PID CONTROLLER & MANUAL CONTROL STATION"):
+             while a station is tracked, the operator values on the A / M switch that feeds it (COS manual ▸ SI0243 target, COS manual ▸
+             MAN HIC-ULD) follow the tracked value too. Before, HIC-ULD tracked the actual MW in TURBINE MASTER MANUAL but its target COS kept
+             the old 150 MW, so EIC-TM to AUTO made the load demand jump from 78 to 150 MW */
+          const td = b.svI >= 0 && b.i[b.svI] >= 0 ? (S.drv[b.i[b.svI]] || []).find(x => x.k === 'AMT') : null;
+          if (td && S.ext)
+            for (const n of [td.a, td.b])
+              if (n != null && n >= 0 && S.ext.includes(n) && rt.force[n] === undefined && /^COS manual/.test(AN.nm(S, n) || ''))
+                rt.ext[n] = s.trk;
+        }
         /* 2.3.0-beta.2 (ABC-004A-1 ~ 004C-1): the MV high limit written on the drawing as an input "<tag>.MHD" (% of the station range:
            FICCL1061A.MHD = 83.3 % when M.3405 A / B / C ALL IN REMOTE AND RUNNING, else 100 %) limits the station output */
         if (b._mhd === undefined) b._mhd = (b.i || []).find(n => n >= 0 && S.lab[n] && String(S.lab[n].t).trim() === b.tag + '.MHD') ?? -1;
@@ -1599,10 +1613,15 @@ function anStep(S, dt) {
         /* 3.2.3-beta.247 (live Cold load-up, ABC-004A): every station with a REMOTE leg, not only these three. FIC-CF went to REMOTE by
            FORCE REMOTE M.0132 (all feeders AUTO) but FIC-CF.REM stayed 0, so the coal master permissive M.0130 (OR NOT FIC-CF.REM) stayed 1
            and FIC-CM could never go REMOTE: the mode status of a real DCS station is its mode, however it got there */
-        if (s.rmSw != null && s.al && s.mtag && AN.unit && AN.unit.on && +AN.unit.t > 5) {
-          if (s.fman) s.lf = 1;
+        /* 3.2.3-beta.253 (live load-up 77 MW, ABC-001C): stations without a REMOTE leg too. PIC-COBM left its force manual (x76) for AUTO
+           but the wire "BOILER PRESSURE CONTROL IN MANUAL" (PIC-COBM.MAN) stayed 1, so O.0178 (DCS mode ON to the TCS) could never pulse */
+        if (!s.mtag && b.mtag) s.mtag = b.mtag;
+        if (s.al && s.mtag && AN.unit && AN.unit.on && +AN.unit.t > 5) {
+          /* beta.254: a station without a REMOTE leg has only MAN / AUTO, so its status always follows (also after LOAD of a save point
+             made before beta.253, where PIC-COBM.MAN was left at 1) */
+          if (s.fman || s.rmSw == null) s.lf = 1;
           if (s.lf) {
-            const q = rt.st[s.rmSw],
+            const q = s.rmSw != null ? rt.st[s.rmSw] : null,
               kd = s.pk !== s.al ? 'MAN' : q && q.pk === 'A' ? 'REM' : 'LOC';
             if (kd !== s.lk) {
               s.lk = kd;

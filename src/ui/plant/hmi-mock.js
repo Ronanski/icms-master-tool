@@ -21,7 +21,8 @@
    - [data-mov]     a MOV / XV of a DITL sheet ("pct" position %, "oc" OPEN / CLOSED, "md" REMOTE / AUTO mode); mach.mov = its faceplate (LS_FPOP.mov);
    - mach.tcs       a pump of the TCS (tcs.js TCS_OIL): state of AN.unit, click = the TCS faceplate (LS_FPOP.tcs);
    - [data-go=ID]   a "page:" link of the mockup = that page of the Plant view.
-   Nothing here presses or forces anything: the faceplates do, the same ones the loop check dock watches. */
+   - [data-tpb=cmd] a TCS push button; [data-apb="SHEET|ADDRESS|ADDR=v"] a CRT push button of an analog sheet (1 / 3 ELEMENT).
+   Nothing else here presses or forces anything: the faceplates do, the same ones the loop check dock watches. */
 (function () {
   if (!window.PLANT_V2) return;
   const NS = 'http://www.w3.org/2000/svg';
@@ -204,9 +205,11 @@
             ap.sel = 1;
             pbs.push({ l: 'MANUAL', row: ap.row, sel: 0 });
           }
-          /* F6: DITL-28C has no AUTO PB; its "AUTO MODE SELECTED" row is an operator memory bit (M.1032 / M.1052): the CRT AUTO / MANUAL */
-          if (ph && !ap && auV != null) {
-            const ar = ri(/AUTO (?:MODE )?SELECTED\b/, true),
+          /* F6: DITL-28C has no AUTO PB; its "AUTO MODE SELECTED" row is an operator memory bit (M.1032 / M.1052): the CRT AUTO / MANUAL.
+             Live Cold load-up 2026-11-15 F71: the same on DITL-32 / 33 / 35 / 44 ("SPRAY WATER SOV(1) AUTO MODE" M.1012, L=CRT): the spray
+             block valve had OPEN / CLOSE only, so it could never go AUTO and open by itself above 380 °C */
+          if (!ap && auV != null) {
+            const ar = ri(/AUTO (?:MODE )?SELECTED\b|AUTO MODE\b/, true),
               AI = ar != null ? DUI.rowInfo(s, ar) : null;
             if (AI && /^M\./.test(AI.tag || '')) pbs.unshift({ l: 'AUTO', row: ar, sel: 1 }, { l: 'MANUAL', row: ar, sel: 0 });
           }
@@ -293,8 +296,59 @@
             }, 2500);
         });
       });
+      /* 3.2.3-beta.249 (live Cold load-up, ABC-010): the CRT push buttons of an analog sheet [data-apb="SHEET|ADDRESS|ADDR=0/1"], first the
+         drum level 1 ELEMENT (M.054F) and 3 ELEMENT (M.054E) select (TPS 2 s -> FF M.0222). Only the Training dock pressed them, so an
+         operator on the Feedwater page could not take the feedwater to three element. Click (RUN) = that input of the sheet at 1 for 2.5 s
+         of plant time, then 0 (the same press as the dock, guide.js push); the button is lit while ADDR of the sheet has that value */
+      qa('[data-apb]').forEach(e => {
+        const [k, ad, lit] = e.dataset.apb.split('|'),
+          sh = () => call(() => AN.sheets.find(s => s.name === k).S, null),
+          set = x => {
+            const T = sh();
+            if (T)
+              for (const n of T.ext) {
+                const t = T.lab[n] && String(T.lab[n].t).trim();
+                if (t === ad && T.rt.force[n] === undefined) T.rt.ext[n] = x;
+              }
+            call(() => AN.settle());
+          },
+          nm = e.textContent.trim(),
+          fr = e.querySelector('rect');
+        e.style.cursor = 'pointer';
+        e.style.pointerEvents = 'all';
+        const ti = document.createElementNS(NS, 'title');
+        ti.textContent = nm + ' push button (' + k + ' ' + ad + ') · click = press (RUN)';
+        e.append(ti);
+        if (lit && fr) {
+          const [la, lv] = lit.split('='),
+            show = () => {
+              const T = sh(),
+                i = T ? T.lab.findIndex(x => x && String(x.t).trim() === la) : -1,
+                on = i >= 0 && Math.round(+T.rt.v[i]) === +lv;
+              fr.setAttribute('fill', on ? '#3a4a58' : 'none');
+              fr.setAttribute('stroke', on ? '#e6e6e6' : '#5a6168');
+            };
+          show();
+          const iv = setInterval(() => (e.isConnected ? show() : clearInterval(iv)), 500);
+        }
+        e.addEventListener('click', ev => {
+          ev.stopPropagation();
+          const view = document.body.classList.contains('an') ? !!(window.AN && AN.view && !AN.run) : call(() => !SIM, false);
+          if (view) return void call(() => typeof msg === 'function' && msg('VIEW: press RUN to use ' + nm));
+          const t0 = +((AN && AN.unit) || {}).t || 0;
+          set(1);
+          call(() => window.lsEventAdd && lsEventAdd(k, k, 'Operator: ' + nm + ' push button (' + ad + ')'));
+          const iv = setInterval(() => {
+            const t = +((AN && AN.unit) || {}).t || 0;
+            /* a LOAD of a save point puts the plant time back: the press ends there too */
+            if (t - t0 >= 2.5 || t < t0 || !(AN && AN.unit)) (set(0), clearInterval(iv));
+          }, 200);
+        });
+      });
       qa('[data-go]').forEach(e => {
         e.style.cursor = 'pointer';
+        /* F76: the title groups of the OVERVIEW carry pointer-events none from the art: the link takes the click itself */
+        e.style.pointerEvents = 'all';
         const ti = document.createElementNS(NS, 'title');
         ti.textContent = 'click = open this page';
         e.append(ti);
