@@ -7,7 +7,7 @@ await page.waitForFunction(()=>AN.sheets&&AN.sheets.length>=54&&window.WORLD&&WO
 await page.evaluate(async()=>{await AN.ades();WORLD.set(true);document.getElementById('load150').click();await AN._startP;
   window.__h={all:AN.sheets.filter(s=>s.S&&!/ABC-000/.test(s.name)),d:S.sheets.find(s=>/DITL-03A$/.test(s.name))}});
 let e;for(let m=0;m<=5;m++){
-  e=await page.evaluate(async([m])=>{const h=window.__h,U=AN.unit;if(m)for(let k=0;k<120;k++){for(const s of h.all)AN.stepSet(s,.5);WORLD.tick(.5)}
+  e=await page.evaluate(async([m])=>{const h=window.__h,U=AN.unit;if(m)for(let k=0;k<120;k++){WORLD.live=true;AN.stepSet(AN.sheets.find(z=>z.name==='ABC-001C'),.5);WORLD.tick(.5)}
     const d=h.d,mft=WORLD.out[d.name]&&WORLD.out[d.name].has(d.rows.findIndex(x=>+x.n===13))?1:0;
     return {m,MW:+U.MW.toFixed(1),Pd:+U.Pd.toFixed(1),ms:+U.ms.toFixed(0),mft,heapMB:Math.round((performance.memory||{}).usedJSHeapSize/1e6)}},[m]);
   console.log(JSON.stringify(e))}

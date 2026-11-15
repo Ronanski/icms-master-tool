@@ -6,7 +6,7 @@ const html=process.argv.find(a=>/\.html$/.test(a))||'dist/'+fs.readdirSync('dist
 (async()=>{const {browser,page,errs}=await open(html);let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
 const r=await page.evaluate(async()=>{await AN.ades();WORLD.set(true);DITL150.on=false;document.getElementById('load150').click();
  for(let k=0;k<300&&(!DITL150.on||AN._loading);k++)await new Promise(r=>setTimeout(r,100));
- const all=AN.sheets.filter(s=>s.S&&!/ABC-000/.test(s.name)),step=n=>{for(let k=0;k<n;k++){for(const s of all)AN.stepSet(s,.5);WORLD.tick(.5)}};
+ const all=AN.sheets.filter(s=>s.S&&!/ABC-000/.test(s.name)),step=n=>{for(let k=0;k<n;k++){WORLD.live=true;AN.stepSet(AN.sheets.find(z=>z.name==='ABC-001C'),.5);WORLD.tick(.5)}};
  const row=(nm,n)=>{const d=S.sheets.find(s=>s.name.endsWith(')'+nm));const i=d.rows.findIndex(x=>+x.n===n);return DUI.rowVal(d,i)};
  const o={};step(40);o.on0=row('DITL-89',15);o.open0=row('DITL-03E',3);o.mw0=AN.unit.MW;
  o.trip=AN.turbine('trip');step(40);o.on1=row('DITL-89',15);o.open1=row('DITL-03E',3);o.st=AN.unit.tb.st;return o});

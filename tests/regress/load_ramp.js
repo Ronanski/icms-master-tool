@@ -12,7 +12,7 @@ await page.evaluate(async()=>{await AN.ades();WORLD.set(true);DITL150.on=false;d
  /* one step of the app per 0.5 s (sched.js: stepSet of the page sheet steps every active sheet). Stepping each sheet gave ~50 plant minutes per test minute */window.__R={cs:AN.sheets.find(s=>s.name==='ABC-001C'),all:AN.sheets.filter(s=>s.S&&!/ABC-000/.test(s.name)),rows:[],mx:{lvl:0},trip:0};});
 /* run sec seconds of plant time, a row each minute */
 const run=sec=>page.evaluate(async sec=>{const R=window.__R,L=window.LS_LIVE;
- for(let t=0;t<sec;t+=60){for(let k=0;k<120;k++){AN.stepSet(R.cs,.5);WORLD.tick(.5)}
+ for(let t=0;t<sec;t+=60){for(let k=0;k<120;k++){WORLD.live=true;AN.stepSet(R.cs,.5);WORLD.tick(.5)}
   if(L.recNow)L.recNow();
   const U=AN.unit;R.trip=R.trip||(U.tb&&U.tb.st==='off'?1:0);
   const row={t:Math.round(U.t/60),MW:U.MW};R.rows.push(row);
