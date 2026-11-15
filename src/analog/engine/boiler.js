@@ -505,10 +505,13 @@ function anAphStep(U, dt) {
     v = U.tafS && U.taf.length === 3 ? U.taf.map(n => Math.max(0, +U.tafS.rt.v[n] || 0)) : [0, 0, 0],
     k = anAphClamp((U.Tb - amb) / Math.max(1, U.Tb0 - amb), 0, 1.3),
     g = fnRun(AN_FN.run.idf) ? anAphClamp((v[0] + v[1] + v[2]) / 594, 0, 1.4) : 0,
-    gi = anAphIn(amb, k, g, U.fwDrop),
+    /* 3.2.3-beta.258: the gas that leaves the No.1 economizer of the heat transfer chain (hx.js); the curve anAphIn only without it */
+    hxG = U.hxO && isFinite(U.hxO.gEo) ? U.hxO.gEo : NaN,
+    gi = isFinite(hxG) ? hxG : anAphIn(amb, k, g, U.fwDrop),
     tpa = anAphAir(amb, fnRun(AN_FN.run.paf) ? v[0] / AN_FN.pa.Q0 : 0, 'p'),
     tsa = anAphAir(amb, fnRun(AN_FN.run.saf) ? v[1] / AN_FN.sa.Q0 : 0, 's');
-  z.gi = isFinite(z.gi) ? z.gi + ((gi - z.gi) * Math.min(dt, K.tauG)) / K.tauG : gi;
+  /* the chain has its own metal lag: no second lag on it */
+  z.gi = isFinite(hxG) || !isFinite(z.gi) ? gi : z.gi + ((gi - z.gi) * Math.min(dt, K.tauG)) / K.tauG;
   /* the rotor carries the heat across: stopped, the air stops heating as the metal cools */
   const r = fnRun('DITL-43') ? 1 : 0;
   z.rot = isFinite(z.rot) ? z.rot + ((r - z.rot) * Math.min(dt, K.tauR)) / K.tauR : r;
@@ -531,7 +534,10 @@ function anAphStep(U, dt) {
               MCR (snapshot 148 - 146 = 2 C after the precipitator losses, which are not modelled). */
   {
     const tf = isFinite(U.hpT2) ? U.hpT2 : amb;
-    U.ecoGo = Math.max(z.gi, (z.gi - K.eco * tf) / (1 - K.eco));
+    U.ecoGo =
+      U.hxO && isFinite(U.hxO.gRo) && isFinite(U.hxO.gSo)
+        ? (U.hxO.gRo + U.hxO.gSo) / 2 /* beta.258: the chain (hx.js), gas leaving the No.2 economizer */
+        : Math.max(z.gi, (z.gi - K.eco * tf) / (1 - K.eco));
     const gi = Array.isArray(U.fnGi) ? (U.fnGi[0] + U.fnGi[1]) / 2 : 0,
       dp = Math.max(0, (isFinite(U.fnGo) ? U.fnGo : 0) - (isFinite(gi) ? gi : 0));
     U.idfGo = U.aphGo + (dp * 9.80665) / (0.85 * 1050 * 0.8);

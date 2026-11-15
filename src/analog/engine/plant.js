@@ -714,6 +714,9 @@ function anProcStep(S, dt) {
       /* 2.2.0-beta.11: pr.ld = load disturbance of the unit model (unit.js), units of the PV. 2.2.0-beta.12: pr.mul = 0 when the machine that
          makes the flow is stopped (no BFWP: no feedwater; fan stopped: no air), the PV is then the bottom of the range */
       ss = c => {
+        /* 3.2.3-beta.258: a steam temperature of the heat transfer chain (unit.js / hx.js): the PV is the plant, the spray valve acts
+           through the spray water it lets into the steam (no snapshot gain, no load curve) */
+        if (pr.hx != null && isFinite(pr.hx)) return pr.hx;
         let y = ss0(c) + anc + ((pr.dist || 0) / 100) * span + (pr.op || 0) + (pr.ld || 0);
         /* 3.2.1 b6 (Mina beta.111: reheat 536 C at 90 MW, plant 521 C with its controller at SV 541, so at its limit): the natural curve of
            the unit model (unit.js natRH) is the temperature with every actuator at its limit. Below the spray range (pr.nsat = 1 - spray
