@@ -2535,7 +2535,11 @@ function anInit(S) {
       try {
         const t = anStationOf(S, b),
           sw = anSvSwitchOf(S, b);
-        if (t.amt && rt.st[t.amt.id]) rt.st[t.amt.id].al = t.autoLeg;
+        if (t.amt && rt.st[t.amt.id]) {
+          rt.st[t.amt.id].al = t.autoLeg;
+          /* 3.2.3-beta.253: every A/M station knows its tag, so its mode status can follow a force (plant.js) */
+          rt.st[t.amt.id].mtag = (b.txt || [])[1];
+        }
         /* the SV switch is a station too: leg A = REMOTE (its auto leg), leg B = LOCAL; REMOTE locks the A/M station to AUTO (see plant.js) */ if (
           sw &&
           rt.st[sw.id]
@@ -2543,7 +2547,6 @@ function anInit(S) {
           rt.st[sw.id].al = 'A';
           if (t.amt && rt.st[t.amt.id] && anHasRemote(S, b)) {
             rt.st[t.amt.id].rmSw = sw.id;
-            rt.st[t.amt.id].mtag = (b.txt || [])[1];
           }
         }
       } catch (e) {}

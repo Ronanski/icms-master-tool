@@ -1599,10 +1599,12 @@ function anStep(S, dt) {
         /* 3.2.3-beta.247 (live Cold load-up, ABC-004A): every station with a REMOTE leg, not only these three. FIC-CF went to REMOTE by
            FORCE REMOTE M.0132 (all feeders AUTO) but FIC-CF.REM stayed 0, so the coal master permissive M.0130 (OR NOT FIC-CF.REM) stayed 1
            and FIC-CM could never go REMOTE: the mode status of a real DCS station is its mode, however it got there */
-        if (s.rmSw != null && s.al && s.mtag && AN.unit && AN.unit.on && +AN.unit.t > 5) {
+        /* 3.2.3-beta.253 (live load-up 77 MW, ABC-001C): stations without a REMOTE leg too. PIC-COBM left its force manual (x76) for AUTO
+           but the wire "BOILER PRESSURE CONTROL IN MANUAL" (PIC-COBM.MAN) stayed 1, so O.0178 (DCS mode ON to the TCS) could never pulse */
+        if (s.al && s.mtag && AN.unit && AN.unit.on && +AN.unit.t > 5) {
           if (s.fman) s.lf = 1;
           if (s.lf) {
-            const q = rt.st[s.rmSw],
+            const q = s.rmSw != null ? rt.st[s.rmSw] : null,
               kd = s.pk !== s.al ? 'MAN' : q && q.pk === 'A' ? 'REM' : 'LOC';
             if (kd !== s.lk) {
               s.lk = kd;
