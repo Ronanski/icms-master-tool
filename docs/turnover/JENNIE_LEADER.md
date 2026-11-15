@@ -44,3 +44,42 @@ Never loop stepSet over all sheets.
 
 ## 6. Release steps for a Beta
 Version = main + 1 in `src/version.txt`, new line in HANDOFF.md and `docs/versions/v3.2.3/UPDATE_REPORT.md`, `npm run build`, `npm run check` (SAME), PR with the attribution block, then `gh pr merge N --auto --squash --delete-branch`.
+
+## 7. Decisions log (user's own words, PHT)
+Full list of every user message in this thread (with exact text) is private: `turnover-private/jennie/USER_MESSAGES_FULL.txt` on the PC and in the project files. The decisions are:
+- 2026-11-09 7:57 PM: new account; Jennie is the new LEADER, continue from HANDOVER_2026-11-10.
+- 2026-11-10 6:55 AM: "Go stable" (Stable 3.2.1 from beta.281).
+- 2026-11-10 8:48 AM: "Ok go sa 1" (Stable 3.2.2, Worker default on the Stable site).
+- 2026-11-10 6:11 PM: Mina does one Cold to full load live test at the end; the team finishes the plan first and may self-check automatically. "Ayaw ko ng paulit2 na cold to 150MW."
+- 2026-11-10 6:16 PM: split the work across threads.
+- 2026-11-10 11:20 PM: "diretso ung live test ni mina s dulo nyan ha.. tuloy tuloy yan. no need n tnungin p sakin"
+- 2026-11-11 6:07 AM: "Puro assumed ha. Bawal yan" (every value needs a source).
+- 2026-11-12 8:41 AM: the Plant Simulator Plan count must not grow (fixed task list).
+- 2026-11-12 11:17 AM: sessions must not go offline when the user is away; find a way.
+- 2026-11-13 6:51 PM: "Tigil nga muna ang tester at plant model makers." (STOP)
+- 2026-11-13 7:36 PM: no training guide as a basis; the plant must start the way it really starts, without the SOP.
+- 2026-11-13 7:47 PM: "Ok go" (Jennie live start-up from HMI and faceplates).
+- 2026-11-13 11:46 PM: no patches; "Code ang gawin. Hnd temporary fix!"
+- 2026-11-14 8:16 AM: one whole physics plant; manuals and design documents allowed; no HMI snapshots, trends or start-up / shutdown procedure as a basis.
+- 2026-11-14 9:42 AM: keep the existing model, fix only what is patched or incomplete; still follow DCS, TCS, PLC, GCP, HMI logic.
+- 2026-11-14 10:17 AM: save before a step, fix, load and continue (no restart from Cold).
+- 2026-11-14 12:30 PM: unlimited supply (silos, tanks).
+- 2026-11-14 2:16 PM: "Go sync"; later excitation, sync, load up watched by the user.
+- 2026-11-14 8:46 PM: start-up again, automatic in the logic; only a few manual actions; target MW on HIC-ULD with CCS AUTO.
+- 2026-11-15 10:40 AM: "magload down ka sa 120MW at 90MW at 75MW then load up sa 150MW. Auto ha."
+- 2026-11-15 11:12 AM: physics must include everything (sand, limestone, feeders, efficiency).
+- 2026-11-15 11:48 AM: one unit, one DCS, one plant; no separate models.
+- 2026-11-15 3:03 PM: the logic is the source of truth and is not modified.
+- 2026-11-15 3:35 PM: "Sige tapusin mo na yan.."
+- 2026-11-15 7:55 PM: "Wala ng live test, d n ntn gagamitin ung training test n un s start up n cold."
+- 2026-11-15 7:56 PM: only Jennie may live test; Training is a guide only, no separate code.
+- 2026-11-15 8:37 PM: turnover now, also on the PC; include artifacts, PDF and conversations.
+
+## 8. Where to find things
+- State and next steps: `HANDOFF.md`, this file, `docs/turnover/INDEX.md`.
+- Rules: `CLAUDE.md` (Commandments), `PROJECT_RULES.md`, `docs/SPEC.md`.
+- Beta history: `docs/versions/v3.2.3/UPDATE_REPORT.md` and `git log`.
+- Plant model code: `src/analog/engine/unit.js` (boiler, bed), `hx.js` (heat exchangers), `api.js` (faceplate presses), steady state `src/data/st150.txt` (made by `tools/steady150/make.cjs`).
+- Private (PC only, git-ignored): `turnover-private/` (full user messages, artifact HTML copies, PDFs), `../team-files/` (STATE.md, physics audit, findings, pictures), `../document-references/` (plant documents).
+- Artifacts (claude.ai, private): Tracker `https://claude.ai/artifact/6P9z7mA24JJkYdCGQuqMd1`, Plant map `https://claude.ai/artifact/39fXcpnZz3ybjCeC9s9FSN`, Plant Simulator Plan `https://claude.ai/code/artifact/2b9597e2-86ea-4b83-90b0-4ceef2e1ce58`.
+- Open PRs (not mine, old): 93 HMI kit, 443 / 444 plant model 4B, 639 / 642 shell. Branch of this turnover: `claude/turnover-jennie`.

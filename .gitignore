@@ -5,3 +5,4 @@ node_modules/
 document-references/*
 !document-references/INDEX.md
 .claude/launch.json
+turnover-private/
