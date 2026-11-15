@@ -2749,7 +2749,7 @@ function anCdTagStep(U, ld) {
      FT-FW1109 / 1119   0.7674 T/H x (Cv(-1) x XV-1 + Cv(-2) x XV-2) x sqrt(PT-FW1011 - spray point), Cv from the travel by the sheet
                         points; spray point = drum - 6.4 / 9.3 kg/cm2 x (main steam / 474.1)^2 (03.png); 0.7674 from item 19 COND 1. The
                         No.1 spray gives 37.3 T/H at the 03.png point (37.5). The No.2 spray gives 9.6 T/H by its sheet against 28.2 in
-                        03.png: UNUSUAL (the equal % curve at 14.9 % travel is far below what flows); calibrated x 2.94 to the snapshot;
+                        03.png: UNUSUAL (the equal % curve at 14.9 % travel is far below what flows); beta.259: the x 2.94 snapshot calibration is removed (no patches: the Cv of the data sheet only);
      FT-FW1149          14.8 x TCV-FW1150 (TICHR1002 MV) / 66.0 x XV-FW1151 (DITL-35) x sqrt(dp / 130.5) (NO-SOURCE: linear valve, the tap
                         at the pump discharge, dp to the reheat inlet 165.4 - 34.9);
      FT-FW1059          40 T/H x TCV-FW1060 (TICMS1022 MV) x XV-FW1061 (DITL-79) x sqrt(dp / 130.5) (NO-SOURCE: no data sheet, the
@@ -3184,8 +3184,7 @@ const AN_FWT = {
       [90, 0.99],
       [100, 1.5]
     ]
-  },
-  k2: 2.94
+  }
 };
 function anFwTagStep(U) {
   const K = AN_FWT,
@@ -3260,7 +3259,7 @@ function anFwTagStep(U) {
     z21 = fx('ABC-012', 'TICBR1150', 'LN49', m2),
     z22 = fx('ABC-012', 'TICBR1150', 'LN48', m2),
     w1 = K.K * (cv(K.cv.a1, z11) * pos('DITL-32') + cv(K.cv.a2, z12) * pos('DITL-32 #B')) * sq(drum - 6.4 * lf),
-    w2 = K.k2 * K.K * (cv(K.cv.b1, z21) * pos('DITL-33') + cv(K.cv.b2, z22) * pos('DITL-33 #B')) * sq(drum - 9.3 * lf),
+    w2 = K.K * (cv(K.cv.b1, z21) * pos('DITL-33') + cv(K.cv.b2, z22) * pos('DITL-33 #B')) * sq(drum - 9.3 * lf),
     Prh = isFinite(U.Prh) ? U.Prh : 0,
     dr = isFinite(pd) ? Math.sqrt(Math.max(0, pd - Prh) / (165.4 - 34.9)) : NaN,
     wrh =
