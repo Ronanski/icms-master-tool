@@ -81,5 +81,5 @@ Full list of every user message in this thread (with exact text) is private: `tu
 - Beta history: `docs/versions/v3.2.3/UPDATE_REPORT.md` and `git log`.
 - Plant model code: `src/analog/engine/unit.js` (boiler, bed), `hx.js` (heat exchangers), `api.js` (faceplate presses), steady state `src/data/st150.txt` (made by `tools/steady150/make.cjs`).
 - Private (PC only, git-ignored): `turnover-private/` (full user messages, artifact HTML copies, PDFs), `../team-files/` (STATE.md, physics audit, findings, pictures), `../document-references/` (plant documents).
-- Artifacts (claude.ai, private): Tracker `https://claude.ai/artifact/6P9z7mA24JJkYdCGQuqMd1`, Plant map `https://claude.ai/artifact/39fXcpnZz3ybjCeC9s9FSN`, Plant Simulator Plan `https://claude.ai/code/artifact/2b9597e2-86ea-4b83-90b0-4ceef2e1ce58`.
+- Artifacts (claude.ai, private): Tracker `https://claude.ai/artifact/4ghD2uQkHeyKwrmqcaypTs` (bago, 2026-11-15), Plant map `https://claude.ai/artifact/39fXcpnZz3ybjCeC9s9FSN`, Plant Simulator Plan `https://claude.ai/code/artifact/2b9597e2-86ea-4b83-90b0-4ceef2e1ce58`.
 - Open PRs (not mine, old): 93 HMI kit, 443 / 444 plant model 4B, 639 / 642 shell. Branch of this turnover: `claude/turnover-jennie`.

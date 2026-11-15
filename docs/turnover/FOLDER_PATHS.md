@@ -22,7 +22,7 @@ Nasa PC lang ang listahan (company folder names, public ang repo): `team-files\t
 ## 3. Artifacts (claude.ai, private sa user)
 
 - Buong listahan: project artifact list sa claude.ai (Artifact gallery) o `list_project_artifacts`. 50+ artifact.
-- Pinakamahalaga: Tracker https://claude.ai/artifact/6P9z7mA24JJkYdCGQuqMd1, Plant map https://claude.ai/artifact/39fXcpnZz3ybjCeC9s9FSN, Plant Simulator Plan https://claude.ai/artifact/5kxM2SPZjaN11EN3szHzwt, HP-IP Turbine at Control Valves https://claude.ai/artifact/NRX6XetGGHB3XWh69oZqz8, Docs and References Audit https://claude.ai/artifact/DuDeRGgJHSCqzRtdmpsbNU.
+- Pinakamahalaga: Tracker https://claude.ai/artifact/4ghD2uQkHeyKwrmqcaypTs (bago, 2026-11-15; luma: 6P9z7mA24JJkYdCGQuqMd1), Plant map https://claude.ai/artifact/39fXcpnZz3ybjCeC9s9FSN, Plant Simulator Plan https://claude.ai/artifact/5kxM2SPZjaN11EN3szHzwt, HP-IP Turbine at Control Valves https://claude.ai/artifact/NRX6XetGGHB3XWh69oZqz8, Docs and References Audit https://claude.ai/artifact/DuDeRGgJHSCqzRtdmpsbNU.
 
 ## 4. PDF, larawan at iba pang output
 
