@@ -34,12 +34,6 @@ const AN_UNIT = {
     (484 - 302) /
     (89.7 -
       55.4) /* T/H of steam per T/H of coal: plant trends 2026-11-08 holds at 150 and 90 MW (5.31; the snapshots 03.png / 02.png gave 5.78, coal 3.6 % high at 90 MW in Mina's b6 run) */,
-  c:
-    (149.8 - 90.3) /
-    (481 - 304) /* MW per T/H of steam: plant trends 2026-11-08 (holds at 150 and 90 MW); the snapshots gave 0.3336 */,
-  mwK:
-    0.3362 * 481 -
-    149.8 /* MW lost at the anchor line: MW = c x steam - mwK on the plant trend (149.8 MW at 481 T/H); the snapshot anchor 150.5 at 474.1 was 3 MW above it */,
   /* storage and firing lag from the TUNING OF THE PLANT (PID summary: PIC-COBM Kp 3.0, Ti 165 s, Td 7 s): the pressure of a drum
      whose steam flow the TCS holds is an integrator, and a PI on an integrator with a lag is stable only when the lag is well below
      Ti. With 700 / 150 s the loop of the plant tuning oscillated (MSP 70 ~ 126 kg/cm2 at 85 MW, the PID at +-25 %); with
@@ -55,7 +49,7 @@ const AN_UNIT = {
   blo: 0.46 /* PCV-MS1001, valve sheet E2-0-123 p5: 184 T/H at 76 % travel, full Cv 232 = about 217 T/H */,
   /* 2.2.0-beta.11 (M2 steps 1 ~ 3): reheat, temperatures, O2.
      - Reheat pressure (ABC-052 PT-HR1003-1 / -2, ABC-019 PT-CR1006 cold reheat, ABC-052 PT-ST1001 first stage): the IP / LP turbine
-       is a fixed nozzle, so its inlet pressure is proportional to the steam through it (design: RH 181.9 T/H at 36.6 / 35.1 kg/cm2
+       is a fixed nozzle, so its inlet pressure is proportional to the steam through it (design: RH 401 T/H, MHPS HB PPE-14-0725 p6 HRH 400,944 kg/h, MB-012; the FHI "181.9 T/H" is lb/h read as kg/h; at 36.6 / 35.1 kg/cm2
        at MCR; 02.png: 15.0 kg/cm2 at 203.7 T/H, 4.PNG 34.0 at 474 T/H: 34.0 x 203.7 / 474 = 14.6). The HP bypass PCV-MS1020
        (ABC-050) adds steam to the cold reheat; the LP bypass PCV-HR1003 (ABC-052) takes steam out of the hot reheat (size as the
        valve sheet L21, lpb below). Reheater volume lag tauRH (NO-SOURCE).
@@ -87,8 +81,7 @@ const AN_UNIT = {
      -> 'sync' (3600 rpm, the TCS closes the GCB: I.0931 = 1 / I.0932 = 0, INITIAL LOAD 4.5 MW on the ICV) -> 'load' (LOAD UP
      at rate MW/min = 5 % of 150 MW per minute; the HP control valves open as the flow demand passes the CV opening bias (anTbFlow), ICV -> CV
      TRANSFER COMPLETE I.0418 = 1, "transfer at 20 MW or HP bypass closed"). While the generator is on the grid the MW is the HP
-     steam (1 - cIP) + the IP / LP steam cIP (cIP below: 75 %, CALC from HEAT_BALANCE.md) less the anchor losses
-     (c x m0 - MW0, fading out with a small IP flow). Before the transfer the IP / LP steam comes from the HP bypass through the
+     steam and the IP / LP steam, each x its enthalpy drop from the MHPS heat balance, less the losses (anTbGen, AN_TBW). Before the transfer the IP / LP steam comes from the HP bypass through the
      reheater (U.rr integrator of beta.16, with the ICV flow out). DCS CONTROL MODE PERMISSIVE I.0081 (3.2.3-beta.135, TCS soft logic
      TCE 331DM09784 p.127 TCE180, read 2026-11-12 on the PC): the NOT of the reset group of DCS CONTROL MODE = 52G closed, no TURBINE
      TRIP, no FORCED CLOSE (HOUSE LOAD OPERATION), and in IP START the TRANSFER REGION COMPLETE(IP); was MWperm 45 MW (the NORMAL
@@ -99,7 +92,6 @@ const AN_UNIT = {
      "Start at 150 MW" keeps its own. */
   rollRate: 120 /* rpm/min, PR-OPE-5002 cold start (the holds at 1800 / 3600 rpm of the procedure are the operator's; not modelled) */,
   icvRoll: 0.13 /* ICV opening for the roll steam (about 14 T/H at 7.6 kg/cm2 reheat, NO-SOURCE: the SOP gives CV 10 / 3 % at 400 rpm, no ICV opening) */,
-  cIP: 0.75 /* calculated: HP 38 MW, IP / LP 113 MW of the shaft, HEAT_BALANCE.md */,
   /* 3.2.3-beta.240 (live Cold start Load up): the TCS flow demand splits to the ICV and the CVs (TCE 331DM09784 p.141 TCE207 FLOW
      CONTROL(2), A007 HEAT SOAK CONTROL: CV OPENING BIAS SG C008 K:20.0 %, ICV MIN OPENING K:-0.5 %, RI / RD 0.03 % per 30 ms cycle = 1 %/s;
      p.144 TCE212 / p.145 TCE214: CV and ICV demand through FG (PARA-LIST, NO-SOURCE) to the VALVE CONTROL MT1, ICV opening speed SG C007
@@ -107,7 +99,6 @@ const AN_UNIT = {
   cvBias: 0.2,
   fdRate: 0.01,
   vRate: 0.1,
-  nlMW: 1.5 /* MW, the no-load (motoring) loss of the turbine generator shaft at 3600 rpm, NO-SOURCE (about 1 % of the rating) */,
   MWinit: 4.5 /* PR-OPE-5002: initial load 4.5 MW */,
   rateUp: 7.5 /* MW/min = 5 % / min (PR-OPE-5002 LOAD UP), AI0421 max load-up rate 0 ~ 5 %/min */,
   tauT: 362 /* metal over steam: SH steel 232 t (B-0-001) x 0.5 kJ/kg K = 116 MJ/K, over 128 kg/s x 2.5 kJ/kg K = 0.32 MW/K */,
@@ -2281,6 +2272,46 @@ function anFwStep(U, dt) {
    787.1 kcal/kg = 3295.5 kJ/kg, No.3 676.7 = 2833.2, the same as the app. Before, every stage pressure and flow went with main steam / 458.684
    (NO-SOURCE shape); the HB gives that ratio within 1 ~ 3 % at the HP end and up to 9 % low at 30 % load at the LP end (No.1: 0.357, flow 0.133).
    anHb(k, ms) = the value of row k at ms over its 100 % value; below 30 % load straight to 0 at no flow, above 100 % on the 85 -> 100 % slope */
+/* 3.2.3 (SAKURA, coordinator / Jennie 2026-11-15: the MW line MW = c x steam - mwK was fitted on the plant trends of 2026-11-08, which
+   the user forbids as a basis): the generator MW from the enthalpy drop of the turbine sections, MHPS Heat Balance Diagram of Unit 1:
+   PPE-13-0106 Rev.2 (SMC Limay Power Plant Project 2 x 150 MW, SMC Consolidated Power Corp., contract XZ-DPC566 = Phase I), pages 5 ~ 11
+   (100 / 85 / 70 / 60 / 50 / 40 / 30 %) and the VWO sheet 310SD09-061 R3 (in pages 12 ~ 20); the same Hitachi sheets 310SD07-485 R4, 310SD09-053 ~ 061 with the same numbers
+   as PPE-14-0725 R1 (Limay Phase II, as built 2019) pages 6 ~ 12 / 14, compared page by page on the PC 2026-11-15. CALC per case,
+   kcal/h / 860 = kW:
+     HP  = (MS - front gland - HP to IP leak) x (H main steam - H HP exhaust); the HP exhaust end gland (to B / C) leaves after the blading.
+     IP / LP = HRH x H HRH + leak x its H + front gland to the crossover (A) x H main steam - (No.5, deaerator, No.3, No.2, No.1
+           extraction x their stage H) - LP exhaust x H exhaust: the mass of each case closes to 0 kg/h. The extractions to the heaters
+           are in it (design line-up; a heater out of service: U.dMWx, below).
+   Per T/H of main steam (kW): wh = HP, wi = IP / LP, with the IP / LP taken on the main steam equivalent (qip = the steam through the
+   ICV, = the main steam with the bypasses shut). Below 30 % the 30 % values are held (no case below 30 % in the HB).
+   Shaft - generator kW of the cases 30 ~ 100 % (power factor 0.85) = 2.64 ~ 3.34 MW: the mechanical and generator losses (not printed in
+   the HB; kW printed after the excitation power), CALC as L = lo + kq x shaft^2 (lo 2.565 MW, kq 3.295e-5 / MW): the 8 cases come back
+   within 0.1 % of the printed kW. With no steam on the grid the same lo is taken from the grid (motoring; the windage of the blading
+   without steam is NO-SOURCE) */
+const AN_TBW = {
+  ms: [149.954, 190.769, 231.94, 273.36, 318.817, 387.587, 458.327, 472.46],
+  wh: [77.49, 77.72, 79.79, 81.25, 81.2, 81.96, 82.0, 81.9],
+  wi: [240.2, 250.85, 255.46, 258.39, 257.31, 254.96, 252.56, 252.04],
+  lo: 2.565,
+  kq: 3.295e-5
+};
+function anTbW(k, m) {
+  const X = AN_TBW.ms,
+    Y = AN_TBW[k],
+    n = X.length;
+  if (!(m > X[0])) return Y[0];
+  if (m >= X[n - 1]) return Y[n - 1];
+  let i = 1;
+  while (X[i] < m) i++;
+  return Y[i - 1] + ((Y[i] - Y[i - 1]) * (m - X[i - 1])) / (X[i] - X[i - 1]);
+}
+/* ms = HP turbine steam, qip = IP / LP steam (main steam equivalent), T/H; returns the generator MW (negative = motoring) */
+function anTbGen(ms, qip) {
+  const m = Math.max(0, +ms || 0),
+    q = Math.max(0, +qip || 0),
+    sh = (m * anTbW('wh', m) + q * anTbW('wi', q)) / 1000;
+  return sh - AN_TBW.lo - AN_TBW.kq * sh * sh;
+}
 const AN_HB = {
   ms: [149954, 190769, 231940, 273360, 318817, 387587, 458327],
   x6: [12.79, 16.35, 19.9, 23.48, 27.25, 32.89, 38.64] /* HP exhaust = No.6 (No.2 HPH) extraction */,
@@ -4610,7 +4641,7 @@ function anUnitStep0(dt) {
         r = dt / U.tauTrip;
       U.gv += Math.max(-r, Math.min(r, dem - U.gv));
       /* the ICV takes the same flow demand (TCE p.141 TCE207: the CV and ICV demands come from the one flow demand; the ICV curve itself
-         is NO-SOURCE, here ICV = flow demand): with the HP bypass open the reheater feeds the IP turbine (75 % of the shaft, cIP) */
+         is NO-SOURCE, here ICV = flow demand): with the HP bypass open the reheater feeds the IP turbine (about 75 % of the shaft, AN_TBW) */
       tb.icv = Math.max(
         0,
         Math.min(
@@ -4745,20 +4776,14 @@ function anUnitStep0(dt) {
   }
   const Pms = Math.max(0, U.Pd - U.kdp * U.ms * U.ms);
   U.Pms = Pms; /* 3.2.0-beta.14: source of the reducing stations (source.js) */
-  /* generator. 2.2.0-beta.17: HP steam (1 - cIP) + IP / LP steam cIP (qip = the reheat pressure x the ICV opening, = the HP steam
-     when the bypass is shut and the ICV full open: the same line MW0 + c x (ms - m0) as before) less the anchor losses; 0 off the grid */
+  /* generator: HP steam x its enthalpy drop + IP / LP steam x its drop less the extractions, less the mechanical and generator losses
+     (anTbGen, MHPS heat balance; qip = the reheat pressure x the ICV opening, = the HP steam when the bypass is shut and the ICV full
+     open); 0 off the grid */
   /* 3.2.3-beta.240 (user 2026-11-14, reverse power): on the grid the MW is not held at 0 or above. With too little steam the generator
-     takes power from the grid to keep the shaft at 3600 rpm (motoring): the no-load loss of the shaft (windage, bearings, U.nlMW, NO-SOURCE)
-     stays when the IP steam is gone, where the anchor line loss (mwK) fades out. The 32 relay (anRp32) sees the negative power */
+     takes power from the grid to keep the shaft at 3600 rpm (motoring): the losses of anTbGen stay when the steam is gone. The 32 relay
+     (anRp32) sees the negative power */
   const qip = U.m0 * U.rr * tb.icv,
-    fq = Math.min(1, qip / (0.3 * U.m0)),
-    MWss = onGrid
-      ? U.c * ((1 - U.cIP) * U.ms + U.cIP * qip) -
-        (U.mwK != null ? U.mwK : U.c * U.m0 - U.MW0) * fq -
-        (U.nlMW || 0) * (1 - fq) -
-        anVacMW(U) +
-        (U.dMWx || 0)
-      : 0;
+    MWss = onGrid ? anTbGen(U.ms, qip) - anVacMW(U) + (U.dMWx || 0) : 0;
   U.MW += ((MWss - U.MW) * dt) / U.tauMW;
   U.Pm = MWss;
   anRp32(U, onGrid && !trip, dt);
