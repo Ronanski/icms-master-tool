@@ -7,6 +7,7 @@ Written by JENNIE (Leader), 2026-11-15 ~8:50 PM PHT. Account weekly limit 96 %, 
 2. `HANDOFF.md` (state, versions, next steps).
 3. This INDEX, then each thread's turnover below.
 4. `docs/turnover/JENNIE_LEADER.md` (leader state, plant model open items, decisions log).
+5. `docs/turnover/NEW_ACCOUNT_SETUP.md` (setup of a new account on the PC, start prompt).
 
 ## 2. Repository and privacy
 - Repo `Ronanski/icms-master-tool` is **PUBLIC** (checked 2026-11-15 with `gh repo view`). The .md files in `docs/turnover/` hold no private plant data.
