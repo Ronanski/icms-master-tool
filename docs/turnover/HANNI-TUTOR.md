@@ -75,6 +75,7 @@ Full conversation (private): `/mnt/project-files/turnover/hanni/conversation.md`
 ## 6. Private copies (project folder only, not in this repo)
 
 `/mnt/project-files/turnover/hanni/`:
+- `HANNI-TURNOVER-COMPLETE.pdf`: ONE file with everything (reading guide, this note, all 13 pages, full conversation), with bookmarks. Start here.
 - `HANNI-TUTOR.md`: copy of this note.
 - `conversation.md`: the whole thread, every message, PHT times.
 - `html/`: 13 pages as they are published now (12 listed in section 2, plus `turbine-page-v4.html`, an older turbine page).
