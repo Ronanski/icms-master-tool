@@ -44,6 +44,9 @@ function anEngAPI() {
     field: anField,
     tsat: steamTsat,
     fieldState: () => Object.assign({}, AN_SRC.field),
+    /* F31 (live Cold start, beta.218): the opening of the lower ring header drains is in the engine (saved with the plant), so the
+       faceplate reads it here; a page variable was lost at every update or LOAD and the faceplate said only "OPEN" */
+    lhdPct: () => +AN_SRC.lhdPct || 0,
     srcSt: () => Object.assign({}, AN_SRC.st || {}) /* 3.2.3 SOHEE: the source state of the plant now (tests) */,
     /* 3.2.1 (CW plant model): the manual valves of the seawater system, opening in % (unit.js AN_SW_V0) */
     /* 3.2.1 (IRENE): with the diesel oil line-up of boiler.js (AN_DO.fv0, anDoValve), so the one field valve faceplate serves both */
@@ -64,9 +67,11 @@ function anEngAPI() {
         const S0 = s && s.S;
         if (S0)
           for (const z of S0.blk)
-            if (z.k === 'AMT' && (z.trkFrom || []).some(d => d.id === id) && z.b >= 0 && S0.rt.force[z.b] === undefined) {
+            /* 3.2.3-beta.261: only a manual leg that is an input of the sheet (COS manual value). ABC-001A HIC-ULD: the B leg of its switch is the
+               limited demand SI0200, a computed signal; the target written there went 0.5 MW over HIC-MWHL and the high limit tracked the old load */
+            if (z.k === 'AMT' && (z.trkFrom || []).some(d => d.id === id) && z.b >= 0 && S0.ext.includes(z.b) && S0.rt.force[z.b] === undefined) {
               const xb = z.bg != null && z.bg !== 0 ? x / z.bg : x;
-              if (S0.ext.includes(z.b)) S0.rt.ext[z.b] = xb;
+              S0.rt.ext[z.b] = xb;
               S0.rt.v[z.b] = xb;
               if (z.o && z.o[0] != null && z.o[0] >= 0) S0.rt.v[z.o[0]] = x;
               if (S0.rt.st[z.id]) (S0.rt.st[z.id].hold = x), (S0.rt.st[z.id].y = x);
@@ -82,9 +87,16 @@ function anEngAPI() {
           dr = si != null ? (S.drv[si] || []).find(z => z.k === 'AMT') : null;
         if (dr && dr.o && dr.o[0] != null && !S.ext.includes(dr.a) && S.rt.st[dr.id] && S.rt.st[dr.id].pk === 'A') {
           S.rt.st[id].op = x;
-          S.rt.v[dr.o[0]] = x;
-          for (const n of b.o || []) if (n != null && n >= 0) S.rt.v[n] = x;
-          if (dr.a != null && dr.a >= 0) S.rt.v[dr.a] = x;
+          /* 3.2.3-beta.261 (load swing 150 -> 75 -> 150 MW): only a station whose AUTO leg is its OWN output (HIC-MWRL) gets the value written on
+             that loop. ABC-001A HIC-ULD: the A leg of its switch is the demand after the high / low MW limiter (SI0200); writing the raw target
+             there put SI0200 0.5 MW over HIC-MWHL, the drawing's M.2004 (demand > high limit + 0.2) made HIC-MWHL track the demand, and the
+             high limit stayed at the old load: the load up stopped. The station keeps its value (s.op) and the scan computes the limiter */
+          const own = (b.o || []).includes(dr.a) || (b.tag && (AN.nm(S, dr.a) || '').toUpperCase() === b.tag.toUpperCase() + '.MV');
+          if (own) {
+            S.rt.v[dr.o[0]] = x;
+            for (const n of b.o || []) if (n != null && n >= 0) S.rt.v[n] = x;
+            if (dr.a != null && dr.a >= 0) S.rt.v[dr.a] = x;
+          }
         }
       } catch (e) {}
     },

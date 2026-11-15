@@ -49,7 +49,7 @@
             st,
             val: () => (st() ? (pc() ? pc() + ' % OPEN' : 'OPEN') : 'CLOSED'),
             why: 'Manual valves from the furnace lower ring header to the blowdown tank T-1051 (flow diagram PD-019). The field operator opens them to lower an overfilled drum.',
-            use: 'PR-OPE-5002: below 10 kg/cm2 control the drum level with the lower header drain; above 10 kg/cm2 use the mass and continuous blowdown (MV-BD1001 / MV-BD1002).',
+            use: 'At low drum pressure the blowdown lines from the drum have little pressure to push the water out, so the drum level is lowered with these drains at the bottom of the furnace (PD-019). With pressure up, the continuous and the mass blowdown (MV-BD1001 / MV-BD1002) take over.',
             acts: [
               ['CLOSE', () => set(0), () => st() === false, 'FIELD: close the lower ring header drains?', 'stop'],
               ['10 %', () => set(10), () => pc() === 10],

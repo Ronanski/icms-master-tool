@@ -276,10 +276,35 @@
       return false;
     }
   };
-  function grpRel(shn, t) {
+  /* F33 (live Cold start, beta.219: 41 standing alarms came NEW at once 10 min after coal feeder A started, among them the turbine
+     side: reheat / first stage / turbine main steam / bypass outlet pressure LOW-LOW, LPH level, lube oil cooler outlet, TCS and GCP
+     inputs). Those points have no steam or no duty until the turbine rolls (HP bypass and reheat get steam from the turbine side, the
+     LPH drains from extraction): a coal feeder running says nothing about them. They follow the turbine: released 10 min (plant time)
+     after the turbine leaves the turning gear (unit tb.st not 'off'), by the alarm name, since one sheet (ABC-001C) carries both sides */
+  const TURB_NM = /^(PICR|PIHR|PIST|PIMS1006|PIMS1021|TILO|LIHD|TCSAI|GCPAI)/;
+  const turbOn = () => {
+    try {
+      const tb = window.AN && AN.unit && AN.unit.tb;
+      return !!tb && !!tb.st && tb.st !== 'off';
+    } catch (e) {
+      return false;
+    }
+  };
+  function grpRel(shn, t, nm) {
     const A = window.AN,
       sh = A && A.sheets && A.sheets.find(s => s.name === shn);
     if (!sh || !/^ABC-/.test(shn)) return true;
+    try {
+      if (window.CHECK && CHECK.H && +CHECK.H().MW() > 1) return true;
+    } catch (e) {}
+    if (nm && TURB_NM.test(String(nm))) {
+      if (!turbOn()) {
+        delete grpT.turb;
+        return false;
+      }
+      if (grpT.turb == null || grpT.turb > t) grpT.turb = t;
+      return t - grpT.turb >= 600;
+    }
     /* Mina beta.160 S160-3: a save point of a cold-start run at 150 MW (its starting state stays 'plantCold') with the BFPs stopped:
        drum level LOW and drum pressure LOW were "suppressed: the equipment of its group is stopped", so no drum level alarm line came
        before the drum level L.L. MFT. The group suppression (retest #35 / #62) is a shutdown suppression; no plant document names one
@@ -456,7 +481,10 @@
          both feed pumps ran, released 10 min later): a save point is a plant that was already running. A group whose equipment runs
          at the load of a save point is released at once (its 10 min of running are behind it); a group stopped there is suppressed
          as before */
-      if (almScan.svPre) GRP.forEach((x, g) => grpOn(g) && (grpT[g] = t - 600));
+      if (almScan.svPre) {
+        GRP.forEach((x, g) => grpOn(g) && (grpT[g] = t - 600));
+        if (turbOn()) grpT.turb = t - 600;
+      }
       almScan.svLoad = !!almScan.svPre;
       almScan.svPre = false;
       almScan.first = true;
@@ -607,7 +635,7 @@
            acknowledged (the operator did not cause it now), counted and listed, a HIGH never hidden */
         /* S160: an alarm standing at the load of a save point in a group that runs there is a real standing alarm (as at the 150 MW
            load), not a shutdown alarm */
-        const svRel = !!almScan.svLoad && x.kind === 'ALM' && /^ABC-/.test(x.sh) && grpRel(x.sh, t),
+        const svRel = !!almScan.svLoad && x.kind === 'ALM' && /^ABC-/.test(x.sh) && grpRel(x.sh, t, x.nm),
           atLoad = A.startState === 'plantLoad150' || svRel,
           stand = atLoad && (first || !!x.fresh);
         const sd =
@@ -615,7 +643,7 @@
           (x.kind === 'ALM' &&
             /LOW/.test(x.lv) &&
             (A.startState === 'plantCold' || !!(e && e.sd && !e.rtn)) &&
-            !grpRel(x.sh, t));
+            !grpRel(x.sh, t, x.nm));
         /* live test #11 (94 at the start, 96 in the header later, "standing since the plant was loaded"): an alarm suppressed after the
            load (its group still stopped) is marked late and logged, so the count and the text say where it came from */
         const late = sd && !first && !(e && e.sd && !e.rtn && !e.late) ? true : !!(e && e.late && sd);
@@ -636,7 +664,7 @@
        alarms now (NEW, logged), as a DCS releases the alarm suppression of a group after the start of its equipment */
     if (A.startState === 'plantCold')
       for (const [k, e] of AT)
-        if (e.sd && !e.rtn && /^ABC-/.test(e.sh) && grpRel(e.sh, t)) { /* a DITL standing trip stays suppressed until it resets */
+        if (e.sd && !e.rtn && /^ABC-/.test(e.sh) && grpRel(e.sh, t, e.nm)) { /* a DITL standing trip stays suppressed until it resets */
           e.sd = false;
           e.ack = false;
           e.t = tfmt(t); /* live check #106: the time it comes as a real alarm (before: the load time, "at 0:00") */

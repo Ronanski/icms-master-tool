@@ -166,7 +166,7 @@
         E('h3', { txt: 'Starting state of the plant' }),
         E('p', { cls: 'hmnote', txt: 'Sets the plant, then opens the Plant view. Press RUN there to let it run.' }),
         E('div', { cls: 'hmstarts' }, [
-          startBtn('load150', 'At 150 MW', 'The control-room HMI snapshot'),
+          startBtn('load150', 'At 150 MW', 'Steady state of the plant model, all loops in AUTO'),
           startBtn('loadcold', 'Cold', 'Start-up from zero: no fire, fans stopped')
         ])
       ]),

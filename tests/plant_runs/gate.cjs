@@ -26,7 +26,8 @@ const RUNS = {
 };
 const pick = (process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'cold,hot,warm,shutdown').split(',');
 const SPD = '×' + (arg('x') || '300'),
-  MINS = +arg('mins') || 60;
+  MINS = +arg('mins') || 60,
+  TRACE = arg('trace') != null ? +arg('trace') : null;
 const V = fs.readFileSync(path.join(ROOT, 'src', 'version.txt'), 'utf8').trim();
 const HTML = require('url').pathToFileURL(path.join(ROOT, 'dist', 'logic-sim-v' + V + '.html')).href;
 
@@ -100,20 +101,25 @@ async function one(b, name) {
         try {
           mft = +LS_LIVE.val('I.000F');
         } catch (e) {}
-        return { cur: G.cur, n: G.steps().length, t: s ? s.t : 'END', end: !!(s && s.end), T: +AN.unit.t, MW: +H.MW(), MSP: +H.MSP(), mft, eng: window.ENG && ENG.mode, err: window.ENG && ENG.err ? String(ENG.err) : '' };
+        return { cur: G.cur, n: G.steps().length, t: s ? s.t : 'END', end: !!(s && s.end), T: +AN.unit.t, MW: +H.MW(), MSP: +H.MSP(), lvl: +H.lvl(), fw: +H.FW(), msf: +H.MSF(), mft, eng: window.ENG && ENG.mode, err: window.ENG && ENG.err ? String(ENG.err) : '' };
       });
       if (r.eng !== 'mirror' || r.err) return fail('engine left the Worker: ' + r.eng + ' ' + r.err);
       if (errs.length) return fail('page error: ' + errs[0]);
       if (r.cur !== last) {
-        say('T ' + (r.T / 60).toFixed(0) + ' min, step ' + r.cur + ' ' + String(r.t).slice(0, 70) + ' | MW ' + r.MW.toFixed(1) + ' MSP ' + r.MSP.toFixed(1));
+        say('T ' + (r.T / 60).toFixed(0) + ' min, step ' + r.cur + ' ' + String(r.t).slice(0, 70) + ' | MW ' + r.MW.toFixed(1) + ' MSP ' + r.MSP.toFixed(1) + ' drum ' + r.lvl.toFixed(0) + ' mm FW ' + r.fw.toFixed(0) + ' steam ' + r.msf.toFixed(0));
         last = r.cur;
         lastT = r.T;
         if (R.mftOk && R.mftOk.test(r.t)) mftSeen = true;
       }
+      /* --trace N: from step N, the drum and the flows each plant minute */
+      if (TRACE != null && r.cur >= TRACE && r.T - (globalThis.__tt || -1e9) >= 60) {
+        globalThis.__tt = r.T;
+        say('  T ' + (r.T / 60).toFixed(1) + ' drum ' + r.lvl.toFixed(0) + ' FW ' + r.fw.toFixed(0) + ' steam ' + r.msf.toFixed(0) + ' MSP ' + r.MSP.toFixed(1) + ' ' + (await p.evaluate(() => ['LICBR1001B', 'LICBR1001', 'FICFW1007', 'PICMS1002', 'PICMS1006'].map(t => { try { const f = LS_LIVE.fp(t); return t + ' ' + LS_LIVE.modeOf(f) + ' ' + (+LS_LIVE.mvOf(f)).toFixed(1); } catch (e) { return t + ' ?'; } }).join(', '))));
+      }
       /* an MFT: I.000F from 0 to 1 (Cold, Warm and Hot start with the MFT latched until the purge resets it) */
       if (r.mft === 0) mft0 = 0;
       else if (r.mft === 1 && mft0 === 0 && !mftSeen) {
-        const ev = await p.evaluate(() => (window.lsEvents || []).slice(-10).map(e => e.t + ' ' + e.text).join(' | '));
+        const ev = await p.evaluate(() => (window.lsEvents || []).slice(0, 14).map(e => e.t + " " + e.text + (e.why ? " (" + String(e.why).slice(0, 120) + ")" : "")).join(" | "));
         return fail('MFT at step ' + r.cur + ' "' + r.t + '" T ' + (r.T / 60).toFixed(0) + ' min. Events: ' + ev);
       }
       if (r.T - lastT > 300 * 60) return fail('step ' + r.cur + ' "' + r.t + '" did not move for 300 plant minutes');

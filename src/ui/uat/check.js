@@ -1033,7 +1033,12 @@
         }
         /* 3.2.0-beta.38: the ATS (tcs.js) ends ACCELERATION after the heat soak at 3600 rpm (HOT mode 3 min); SYNC starts EXCITATION */
         const ts = AN.tcs && AN.tcs();
-        if (o.sync == null && tb.st === 'roll' && (ts ? ts.step >= 3 : tb.rpm >= 3600)) {
+        /* beta.235: EXCITATION is its own step (ATS page 23), SYNC after it */
+        if (o.exc == null && tb.st === 'roll' && ts && ts.step >= 3) {
+          AN.turbine('excite');
+          o.exc = t;
+        }
+        if (o.sync == null && tb.st === 'roll' && (ts ? ts.step >= 4 : tb.rpm >= 3600)) {
           AN.turbine('sync');
           o.sync = t;
           h.rem('ABC-052', 'PICHR1003');

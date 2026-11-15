@@ -254,6 +254,7 @@
   /* ---------- (c) the turbine start panel on the Steam and turbine page (MK13 TURBINE START) ---------- */
   const TSB = [
     ['tcsroll', 'Roll to 3600 rpm'],
+    ['tcsexc', 'Excitation'] /* beta.235: ATS step 4, its own push button (310SC90-775 page 23) */,
     ['tcssync', 'Synchronize, 4.5 MW'],
     ['tcsload', 'Load up to 45 MW'],
     ['tcstarget', 'Target MW…'],
@@ -305,6 +306,94 @@
     s.append(k + ' ', E('b', '', v));
     return s;
   };
+  /* beta.235 (live Cold start, user: "wala ako napansin" on SYNC, "dapat makita ang 13.8 kV sa excitation"): the generator side of the
+     ATS steps 4 and 5 in words: field breaker 41 and the voltage build-up (tcs-gen.js, AVR 30 s), then the automatic synchronizing
+     (G-1B: 25X1 seal-in 3 s, the ASD matches speed and voltage 60 s, then the 52G close order) */
+  function genTxt(U, tb, gcb) {
+    const g = U.gen;
+    if (!g || !tb.st) return '—';
+    if (gcb) return 'on the grid, 13.8 kV, 60 Hz';
+    const v = (13.8 * (g.V || 0)).toFixed(2) + ' kV, ' + (+tb.rpm / 60 || 0).toFixed(2) + ' Hz';
+    if (g.x25)
+      return (
+        v + ' · grid ' + (+g.fgr || 60).toFixed(2) + ' Hz · slip ' + ((g.slip || 0) >= 0 ? '+' : '') + (g.slip || 0).toFixed(3) + ' Hz · phase ' +
+        Math.round(g.th || 0) + '° · auto synchronizing' + (g.cmd ? ', CLOSE command' : '')
+      );
+    if (g.f41) return v + (Math.abs((g.V || 0) - 1) > 0.02 ? ', field breaker closed, voltage building up' : ', excited, ready to synchronize');
+    return 'not excited (field breaker open)';
+  }
+  /* beta.237 (live Cold start, user: "nasaan ang synchroscope?", "ipakita niyo"): the 24 px dial in the status line was too small. A sync panel
+     under the buttons while the generator is excited and 52G1 is open: a synchroscope (80 px since beta.238: a global svg rule made the 120 px one fill the page) (the pointer is the phase angle of the
+     generator against the grid, clockwise = generator fast, top = in phase; the marked arc is the check synchronizing relay 25 window
+     +-10 deg, GEE-2015-0141 p.26), generator and grid voltage and frequency, slip, voltage difference, phase angle and three lamps:
+     auto synchronizing (25X1), sync check 25 permit (dV 5 %, dF 0.15 Hz, dTheta 10 deg), close command. The grid is 13.8 kV (1.0 pu, NO-SOURCE). */
+  let syp = null;
+  const SYN = TCS_GEN_R25();
+  function TCS_GEN_R25() {
+    return typeof TCS_GEN === 'object' && TCS_GEN.r25 ? TCS_GEN.r25 : { dV: 0.05, dF: 0.15, dTh: 10 };
+  }
+  function buildSyp() {
+    syp = E('div', 'scsync');
+    syp.setAttribute('aria-label', 'Synchronizing panel');
+    let tk = '';
+    for (let a = 0; a < 360; a += 30) {
+      const r = (a * Math.PI) / 180,
+        r1 = a === 0 ? 40 : 46;
+      tk +=
+        '<line x1="' + (60 + r1 * Math.sin(r)).toFixed(1) + '" y1="' + (60 - r1 * Math.cos(r)).toFixed(1) + '" x2="' + (60 + 52 * Math.sin(r)).toFixed(1) +
+        '" y2="' + (60 - 52 * Math.cos(r)).toFixed(1) + '" stroke-width="' + (a === 0 ? 2.5 : 1) + '"/>';
+    }
+    const w = (SYN.dTh * Math.PI) / 180,
+      ax = (52 * Math.sin(w)).toFixed(2),
+      ay = (60 - 52 * Math.cos(w)).toFixed(2);
+    syp.innerHTML =
+      '<svg class="scdial" width="80" height="80" viewBox="0 0 120 120" role="img" aria-label="synchroscope">' +
+      '<circle cx="60" cy="60" r="56" class="rim"/>' +
+      '<path class="win" d="M' + (60 - ax) + ' ' + ay + ' A52 52 0 0 1 ' + (60 + +ax) + ' ' + ay + '"/>' +
+      '<g class="tk">' + tk + '</g>' +
+      '<text x="24" y="98" class="lb">SLOW</text><text x="96" y="98" class="lb">FAST</text>' +
+      '<g class="ptr"><line x1="60" y1="66" x2="60" y2="12"/><circle cx="60" cy="60" r="4"/></g></svg>' +
+      '<div class="scsv"></div><div class="scsl"></div>';
+    tsp.append(syp);
+  }
+  function lamp(t, on) {
+    const s = E('span', 'scl' + (on ? ' on' : ''));
+    s.append(E('i', '', on ? 'Y' : 'N'), document.createTextNode(t));
+    return s;
+  }
+  function tickSyp() {
+    if (!tsp || tsp.hidden) return;
+    const U = call(() => AN.unit, null) || {},
+      tb = U.tb || {},
+      g = U.gen,
+      gcb = tb.st === 'sync' || tb.st === 'load',
+      show = !!(g && tb.st && g.f41 && !gcb) && !tsp.classList.contains('fold');
+    if (!show) {
+      if (syp) syp.hidden = true;
+      return;
+    }
+    if (!syp) buildSyp();
+    syp.hidden = false;
+    const th = +g.th || 0,
+      slip = +g.slip || 0,
+      dv = +g.dv || 0,
+      sg = (x, d) => (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(d),
+      p25 = Math.abs(dv) <= SYN.dV && Math.abs(slip) <= SYN.dF && Math.abs(th) <= SYN.dTh;
+    syp.querySelector('.ptr').setAttribute('transform', 'rotate(' + th.toFixed(1) + ' 60 60)');
+    const v = syp.querySelector('.scsv');
+    v.replaceChildren(
+      kv('Generator', (13.8 * (+g.V || 0)).toFixed(2) + ' kV · ' + ((+tb.rpm || 0) / 60).toFixed(3) + ' Hz'),
+      kv('Grid', '13.80 kV · ' + (+g.fgr || 60).toFixed(3) + ' Hz'),
+      kv('Slip', sg(slip, 3) + ' Hz' + (Math.abs(slip) < 1e-3 ? '' : slip > 0 ? ' (generator fast)' : ' (generator slow)')),
+      kv('Voltage difference', sg(dv * 100, 1) + ' %'),
+      kv('Phase angle', sg(th, 0) + '°')
+    );
+    syp.querySelector('.scsl').replaceChildren(
+      lamp('Auto synchronizing', !!g.x25),
+      lamp('Sync check permit', p25),
+      lamp('Breaker close command', !!(g.cmd || g.close))
+    );
+  }
   function tickTsp() {
     if (!tsp) return;
     const pk = document.querySelector('#plantws .plpick'),
@@ -324,7 +413,8 @@
       kv('Generator breaker', tb.st ? (gcb ? 'closed' : 'open') : '—'),
       kv('Target', dcs ? 'DCS unit load demand' : aim == null ? '—' : (Math.round(aim * 10) / 10) + ' MW'),
       E('span', 'sctsn', dcs ? '' : 'at 7.5 MW/min'),
-      kv('Hold', S ? (S.hold ? 'on' : 'off') : '—')
+      kv('Hold', S ? (S.hold ? 'on' : 'off') : '—'),
+      kv('Generator', genTxt(U, tb, gcb))
     );
     for (const x of tsb) {
       const o = $(x.id);
@@ -346,6 +436,7 @@
       clearInterval(iv);
       narrow();
       setInterval(() => (tickBar(), tickTsp()), 1000);
+      setInterval(tickSyp, 250);
       tickBar();
       tickTsp();
     }

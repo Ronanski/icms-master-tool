@@ -103,6 +103,8 @@ const TCS_IBD_PV = [
   [/^52L OPEN/, U => (U.el && U.el.l52 === false ? 1 : 0)],
   [/^52G OPEN$/, U => (U.tb && (U.tb.st === 'sync' || U.tb.st === 'load') ? 0 : 1)],
   [/^TURBINE TRIP$/, (U, c) => (c.trip ? 1 : 0)],
+  /* 3.2.3-beta.240: TA-9 row 17, the generator lockout relay 86G-A (only the 32 reverse power relay is modelled, unit.js anRp32) */
+  [/^GEN\.\/UNIT TRANS\. PROTECTION A/, U => (U.rp32 && U.rp32.lo ? 1 : 0)],
   /* 3.2.3 c2 (SAKURA): the parentheses were not escaped, so this matched no input; MSV(B) FULL OPEN of TA-41 and MSV(A) / (B) FULL OPEN
      of TA-42 (page 51 / 52) had no source (their off-page links to TA-31 / TA-32 are not read) */
   [/^MSV\([AB]\) FULL OPEN/, (U, c) => (tcsVp(U, c) >= 1 ? 1 : 0)],
@@ -626,6 +628,8 @@ function tcsTripReset(U) {
   if (tcsMirror()) return '';
   const ib = tcsIb(tcsOilState(U));
   ib.pb.rst = 1.5;
+  /* beta.240: the 86G-A lockout is reset with it, 52G open (unit.js anRp32) */
+  if (U.rp32 && !(U.tb && (U.tb.st === 'sync' || U.tb.st === 'load'))) U.rp32.lo = false;
   if (U.tc) U.tc.sdDone = false;
   return '';
 }

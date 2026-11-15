@@ -1346,6 +1346,16 @@ function netlistCore(sh, strict) {
      time delay t1 / t2, PO pulse, compare X ≥ Y / X ≤ Y, SET / RESET, the negation circles) were read by tools/data/ls_xlsx.py
      (sh.lsg: the block, the point where each wire meets it); here each point is given the net of the wire that ends there */
   if (sh.ls && sh.lsg) {
+    /* 3.2.3-beta.257 (JENNIE live 150 MW, F95): DITL-LS10 (E10211 sheet 10) AND of M.180F FILLING CYCLE ENABLED, pin of row 7 I.0171
+       ROTOFEEDER FAULT (MIT-M1311, I/O list "#1 Limestone feeder trip") is drawn with no negation circle, so the fill cycle could only
+       be enabled while the feeder is TRIPPED, and the same AND also needs I.0170 ROTOFEEDER RUNNING: never true together. The same
+       signal enters the AND of M.183F LIMESTONE SYSTEM READY on this sheet and the feeder start of DITL-LS110 with the circle, and the
+       FHI manual feeds sorbent in normal service (Part 2 Fig. 13, 12 T/H at MCR). The missing circle is a drafting omission: the pin is
+       read negated (evidence in docs/versions/v3.2.1/UNLINK_AUDIT.md) */
+    if (/\)DITL-LS10$/.test(sh.name))
+      sh.lsg.forEach(L => (L.ins || []).forEach(p => {
+        if (!p[2] && Math.abs(p[0] - 210.748) < 0.05 && Math.abs(p[1] + 69.429) < 0.05) p[2] = 1;
+      }));
     const netAt = ([x, y]) => {
       let b = null;
       segs.forEach(q =>

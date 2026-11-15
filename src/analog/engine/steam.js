@@ -20,6 +20,18 @@ function steamTsat(P) {
     x = n[9] + D;
   return (x - Math.sqrt(x * x - 4 * (n[8] + n[9] * D))) / 2 - 273.15;
 }
+/* 3.2.3 (F29, drum drains): the saturation pressure (kg/cm2 G) of a temperature in C, IF97 region 4, the basic equation ps(T) (same
+   coefficients). Checked: 0.0 at 100 C, 10.0 at 183.3 C, 60.0 at 275.4 C kg/cm2 G */
+function steamPsat(Tc) {
+  const n = STEAM_N,
+    T = Math.min(647.096, Math.max(273.16, (+Tc || 0) + 273.15)),
+    th = T + n[8] / (T - n[9]),
+    A = th * th + n[0] * th + n[1],
+    B = n[2] * th * th + n[3] * th + n[4],
+    C = n[5] * th * th + n[6] * th + n[7],
+    p = Math.pow((2 * C) / (-B + Math.sqrt(B * B - 4 * A * C)), 4); /* MPa */
+  return p / 0.0980665 - 1.0332;
+}
 /* slope of the saturation line, C per kg/cm2 */
 function steamDTsat(P) {
   const p = Math.max(0, +P || 0);
@@ -74,4 +86,18 @@ function steamTph(P, h) {
     else b = m;
   }
   return (a + b) / 2;
+}
+/* 3.2.3 (live Cold start, user 2026-11-14 "Code ang gawin. Hnd temporary fix!"): the density of superheated steam, IAPWS-IF97 region 2
+   (the same Gibbs equation as steamH2): v = R T / p x pi x (1 / pi + d(gamma_r) / d(pi)), Table 12 of the IF97 release. Checked with the
+   IF97 verification values (Table 15): 300 K / 0.0035 MPa 39.4913866 m3/kg, 700 K / 0.0035 MPa 92.3015898, 700 K / 30 MPa 0.00542946619.
+   P in kg/cm2 G, T in C (at least saturation), result kg/m3 */
+function steamV2(p, T) {
+  const t = 540 / T;
+  let gp = 0;
+  for (const [I, J, n] of STEAM_R2_R) gp += n * I * Math.pow(p, I - 1) * Math.pow(t - 0.5, J);
+  return ((0.461526 * T) / p) * (1 + p * gp) / 1000;
+}
+function steamRho(P, T) {
+  const Ps = Math.max(-1, +P || 0);
+  return 1 / steamV2((Ps + 1.0332) * 0.0980665, Math.max(steamTsat(Ps), +T || 0) + 273.15);
 }

@@ -1,4 +1,4 @@
-// 3.2.3-beta.196 (SOHEE, Mina S194-2 CRITICAL): BFWP-A suction manual valve V-FW1001 closed at 150 MW. The BFWP-A line gives no
+// 3.2.3-beta.264 (SOHEE, Mina S194-2 CRITICAL): BFWP-A suction manual valve V-FW1001 closed at 150 MW. The BFWP-A line gives no
 // water (unit.js m.suc, DITL-23A row 12 ZSO-FW1031, IO list STN102 I.028F) and BFWP-B takes over; before 196 the check ran for every
 // machine line that had a DITL drawing, so the PA fan (DITL-26A) and the SA fan (DITL-27A) lines read 0 flow too: PA / SA flow L.L. ->
 // MFT in about 8 s. Checks: PA / SA lines keep their flow (mul 1), no MFT in 180 s, BFWP-B running and the feedwater line gives water at the end.
