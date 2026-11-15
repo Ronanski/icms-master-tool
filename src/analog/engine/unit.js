@@ -49,7 +49,7 @@ const AN_UNIT = {
   blo: 0.46 /* PCV-MS1001, valve sheet E2-0-123 p5: 184 T/H at 76 % travel, full Cv 232 = about 217 T/H */,
   /* 2.2.0-beta.11 (M2 steps 1 ~ 3): reheat, temperatures, O2.
      - Reheat pressure (ABC-052 PT-HR1003-1 / -2, ABC-019 PT-CR1006 cold reheat, ABC-052 PT-ST1001 first stage): the IP / LP turbine
-       is a fixed nozzle, so its inlet pressure is proportional to the steam through it (design: RH 181.9 T/H at 36.6 / 35.1 kg/cm2
+       is a fixed nozzle, so its inlet pressure is proportional to the steam through it (design: RH 401 T/H, MHPS HB PPE-14-0725 p6 HRH 400,944 kg/h, MB-012; the FHI "181.9 T/H" is lb/h read as kg/h; at 36.6 / 35.1 kg/cm2
        at MCR; 02.png: 15.0 kg/cm2 at 203.7 T/H, 4.PNG 34.0 at 474 T/H: 34.0 x 203.7 / 474 = 14.6). The HP bypass PCV-MS1020
        (ABC-050) adds steam to the cold reheat; the LP bypass PCV-HR1003 (ABC-052) takes steam out of the hot reheat (size as the
        valve sheet L21, lpb below). Reheater volume lag tauRH (NO-SOURCE).
