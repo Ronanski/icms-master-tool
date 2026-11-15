@@ -2273,9 +2273,11 @@ function anFwStep(U, dt) {
    (NO-SOURCE shape); the HB gives that ratio within 1 ~ 3 % at the HP end and up to 9 % low at 30 % load at the LP end (No.1: 0.357, flow 0.133).
    anHb(k, ms) = the value of row k at ms over its 100 % value; below 30 % load straight to 0 at no flow, above 100 % on the 85 -> 100 % slope */
 /* 3.2.3 (SAKURA, coordinator / Jennie 2026-11-15: the MW line MW = c x steam - mwK was fitted on the plant trends of 2026-11-08, which
-   the user forbids as a basis): the generator MW from the enthalpy drop of the turbine sections, MHPS PPE-14-0725 R1 Heat Balance
-   Diagram (Limay Phase II, as built 2019; same turbine as Unit 1, user 2026-11-14), pages 6 ~ 12 (100 / 85 / 70 / 60 / 50 / 40 / 30 %)
-   and 14 (VWO), read on the PC 2026-11-15. CALC per case, kcal/h / 860 = kW:
+   the user forbids as a basis): the generator MW from the enthalpy drop of the turbine sections, MHPS Heat Balance Diagram of Unit 1:
+   PPE-13-0106 Rev.2 (SMC Limay Power Plant Project 2 x 150 MW, SMC Consolidated Power Corp., contract XZ-DPC566 = Phase I), pages 5 ~ 11
+   (100 / 85 / 70 / 60 / 50 / 40 / 30 %) and the VWO sheet 310SD09-061 R3 (in pages 12 ~ 20); the same Hitachi sheets 310SD07-485 R4, 310SD09-053 ~ 061 with the same numbers
+   as PPE-14-0725 R1 (Limay Phase II, as built 2019) pages 6 ~ 12 / 14, compared page by page on the PC 2026-11-15. CALC per case,
+   kcal/h / 860 = kW:
      HP  = (MS - front gland - HP to IP leak) x (H main steam - H HP exhaust); the HP exhaust end gland (to B / C) leaves after the blading.
      IP / LP = HRH x H HRH + leak x its H + front gland to the crossover (A) x H main steam - (No.5, deaerator, No.3, No.2, No.1
            extraction x their stage H) - LP exhaust x H exhaust: the mass of each case closes to 0 kg/h. The extractions to the heaters
