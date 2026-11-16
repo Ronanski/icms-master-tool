@@ -1255,9 +1255,9 @@
     W.busy = true;
     return on ? JAM_T(id) : 'cleared: ' + JAM_T(id);
   };
-  /* 3.2.4-beta.7 (JENNIE): a boiler tube leak, a trainer fault (unit.js anTubeLeak: one 10 mm hole). No DITL contact: the DCS has no
+  /* 3.2.4-beta.7 (JENNIE): a boiler tube leak, a trainer fault (unit.js anTubeLeak: a 10 mm hole that grows to a rupture, beta.16). No DITL contact: the DCS has no
      leak detector; the operator finds it from the feedwater against the steam, the make-up and the furnace draft */
-  const TL = { 'tl.ww': 'Boiler tube leak: furnace water wall (10 mm hole)', 'tl.eco': 'Boiler tube leak: economizer (10 mm hole)' };
+  const TL = { 'tl.ww': 'Boiler tube leak: furnace water wall (grows to a rupture)', 'tl.eco': 'Boiler tube leak: economizer (grows to a rupture)' };
   const tlSet = (id, on) => {
     if (on) W.ft.add(id);
     else W.ft.delete(id);
