@@ -3753,6 +3753,30 @@ const AN_MFW = {
   kUp: 1.5 /* kg/cm2 at w0, pump discharge to the valve */,
   kDn: 2.2 /* kg/cm2 at w0, valve to the drum */
 };
+/* 3.2.4-beta.7 (JENNIE, priority list item: tube leak): a trainer fault 'tl.ww' (furnace water wall tube leak) or 'tl.eco' (economizer
+   tube leak), world.js WORLD.ftrip. FHI manual (plant-study 03, T9 p29): a tube leak is heard or shows as rising make-up; it erodes the
+   tubes next to it and its water plugs the hoppers and the air heater. The DCS has no leak detector (no tag in the IO list); the
+   operator sees it as feedwater (FT-FW1007) above main steam (FT-MS1031) plus blowdown, the drum level and make-up, the furnace draft.
+   The hole: one opening of 10 mm (NO-SOURCE, a trainer setting: a small leak, about 11 T/H at 150 MW, that the plant can run with).
+   Flow: the drum water through a sharp hole to the furnace, liquid to its saturation pressure, then the choked flashing flow (plant.js
+   anFlashG, the IF97 HEM table of the blowdowns). Water wall: the drum pressure and water. Economizer: the feedwater at the economizer
+   inlet (HP heater outlet U.hpT2) at the drum pressure plus the economizer drop 3.5 kg/cm2 at MCR (FHI T3) with the square of the flow.
+   Where it goes: the drum loses the water (plant.js drum balance; an economizer leak is lost before the drum, after FT-FW1007); the
+   water wall leak boils in the bed (the bed balance takes it from saturated water to steam at the bed temperature, IF97) and the steam
+   joins the flue gas (U.mG, the ID fan sees it as gas volume, 28.9 / 18 per kg against air). The economizer leak's heat to the
+   backpass gas is not modelled (its gas mass is). U.tlW / U.tlE T/H */
+const AN_TL = { d: 0.01 /* m, NO-SOURCE */, dpE: 3.5 /* kg/cm2 at MCR, FHI T3 */, mcr: 460 };
+function anTubeLeak(U) {
+  const W = typeof window !== 'undefined' ? window.WORLD : null,
+    on = k => !!(W && W.ft && W.ft.has(k)),
+    A = (Math.PI * AN_TL.d * AN_TL.d) / 4,
+    G = (P, T) => (typeof anFlashG === 'function' ? anFlashG(P, T, 0) : 0);
+  U.tlW = on('tl.ww') && U.Pd > 0 ? (G(U.Pd, U.Tw) * A * 3600) / 1000 : 0;
+  const fw = typeof AN_CYC !== 'undefined' && isFinite(AN_CYC.ffw) ? AN_CYC.ffw : 0,
+    Te = isFinite(U.hpT2) ? U.hpT2 : U.Tw;
+  U.tlE = on('tl.eco') && U.Pd > 0 && fw > 0 ? (G(U.Pd + AN_TL.dpE * Math.pow(fw / AN_TL.mcr, 2), Te) * A * 3600) / 1000 : 0;
+  U.tlE = Math.min(U.tlE, fw);
+}
 /* the output (MV) net of a controller of an ABC sheet, as ctlOut of anUnitStart */
 function anCtlOutOf(k, t) {
   const x = AN.sheets.find(y => y.name === k),
@@ -4539,6 +4563,7 @@ function anUnitStep0(dt) {
     const W = typeof window !== 'undefined' ? window.WORLD : null;
     return !!(W && W.ft && W.ft.has('cf.jam' + 'ABC'[i]));
   };
+  anTubeLeak(U);
   const F = U.fuel.reduce((a, l, i) => {
       const o = U.cfo ? anDitlPos(U.cfo[i], 0) : null;
       return jam(i) ? a : a + (anUnitVal(l) || 0) * (o == null ? 1 : o / 100);
@@ -4864,12 +4889,15 @@ function anUnitStep0(dt) {
       return m * 0.9366 * 1790 + m * 1.0 * Math.max(0, U.Tb - U.Tamb) - ((Fb * 0.0149) / 3.6) * cap * 15680;
     })();
     U.qLm = qLm;
-    U.Tb = Math.max(U.Tamb, U.Tb + ((qFuel - qLm - qAirG - ((B.ua0w - B.uag) * phi * dW + qBR) - qPan) * dt) / Cb);
+    /* the water wall leak boils in the bed: saturated water at the drum (anHxHw) to steam at the bed (IF97, near the furnace pressure) */
+    const qTl = U.tlW > 0 ? (U.tlW / 3.6) * Math.max(0, steamH(0, U.Tb) - anHxHw(ts)) : 0;
+    U.qTl = qTl;
+    U.Tb = Math.max(U.Tamb, U.Tb + ((qFuel - qLm - qTl - qAirG - ((B.ua0w - B.uag) * phi * dW + qBR) - qPan) * dt) / Cb);
     U.Trf = Trf + ((qBR - qRW) * dt) / B.mRef;
     /* the furnace exit gas: the bed less the upper walls, held at the bed by the circulating solids in the share phi */
     U.tgF = gcp > 0.01 ? U.Tb - (1 - Math.min(1, phi)) * (qGas / gcp) : U.Tb;
     U.gcp = gcp;
-    U.mG = (av[0] + av[1] + av[2]) / 3.6 + fg /* flue gas kg/s, to the backpass (hx.js) */;
+    U.mG = (av[0] + av[1] + av[2]) / 3.6 + fg + ((U.tlW || 0) + (U.tlE || 0)) / 3.6 /* flue gas kg/s, to the backpass (hx.js), with a tube leak */;
     U.phi = phi;
     /* water walls, T/H of steam-equivalent (the unit of Cw / C): both ways, a bed under the water cools it. The air cooling of the
        unfired boiler (kcool) is inside this balance now; the loss to the room (kamb) stays */
@@ -4884,7 +4912,7 @@ function anUnitStep0(dt) {
       he = isFinite(U.hxHe) ? Math.min(U.hxHe, hg - 1) : anHxHw(Math.min(ts, isFinite(U.hpT2) ? U.hpT2 : ts)),
       kWe = Math.max(100, (hg - he) / 3.6),
       r = B.kW / kWe,
-      mDr = Math.max(0, U.ms + U.mb + (U.msb || 0) + (U.msv || 0) - (U.w1s || 0) - (U.w2s || 0));
+      mDr = Math.max(0, U.ms + U.mb + (U.msb || 0) + (U.msv || 0) - (U.w1s || 0) - (U.w2s || 0)) + ((U.tlW || 0) * Math.max(0, anHxHw(ts) - he)) / Math.max(1, hg - he) /* a water wall leak: its water, replaced by feedwater, is heated to saturation */;
     U.kWe = kWe;
     if (U.Tw < ts - 0.01) {
       U.Qs = 0;
@@ -5201,7 +5229,7 @@ function anUnitStep0(dt) {
       }
     const idf = !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5,
       taf = U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0),
-      ld = U.taf0 > 0 ? (U.kfpA > 0 ? U.kfpA : U.kfp) * (taf / U.taf0 - 1) : 0;
+      ld = U.taf0 > 0 ? (U.kfpA > 0 ? U.kfpA : U.kfp) * ((taf + (((U.tlW || 0) + (U.tlE || 0)) * 28.9) / 18) / U.taf0 - 1) : 0;
     /* 3.2.0-beta.19 (VIEW / TRACE audit, Cold): no ID fan and no air = the furnace open to the stack, 0 mmH2O. Before, a cold plant
        read about +200 mmH2O (the loop model with the ID fan taking nothing out and the air term). With air and no ID fan the
        pressure still rises (as before); with the ID fan running the model is unchanged. */
