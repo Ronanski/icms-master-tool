@@ -1,0 +1,380 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1f5fae"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="fonts.css"><style>*,*::before,*::after{box-sizing:border-box}html,body{margin:0}</style></head><body><title>Drum Swell Lab</title>
+<style>
+:root{--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:var(--sans);
+--bg:#f6f7f9;--paper:#ffffff;--fg:#1b2129;--muted:#5b6673;--faint:#a3acb6;--edge:#d6dce3;--fill:#eef1f4;--accent:#1f5fae;--on-accent:#ffffff;--selbg:#e8f0fb;
+--ok:#1e6b34;--okbg:#e6f4ea;--warnc:#8a5a00;--warnbg:#fdf3d8;--badc:#b3261e;--badbg:#fdecea;
+--c-red:#c62828;--c-orange:#c8660a;--c-blue:#2474b5;--c-green:#1e8a3c;--c-yellow:#c99700;--c-purple:#7b4fd6;--c-teal:#0e8a8c;--c-steam:#8b98a5;--c-oil:#a67c00;
+--eq:#e9edf1;--metal:#7b8794;--pipe:#c5cdd5;--panel:var(--paper);--line:var(--edge);--dim:var(--muted);color-scheme:light;
+--water:var(--c-blue);--steam:var(--c-steam);--fire:var(--c-orange);--warn:var(--c-yellow);--bad:var(--c-red);}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--faint:#5f6872;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;--selbg:#1d2c40;
+--ok:#7fd29a;--okbg:#17301f;--warnc:#e7bf5c;--warnbg:#33290f;--badc:#f2948c;--badbg:#3a1c1a;
+--c-red:#ef5b5b;--c-orange:#f0954a;--c-blue:#5aa9e6;--c-green:#4cc27a;--c-yellow:#f2c94c;--c-purple:#a585f0;--c-teal:#3cc0c2;--c-steam:#c3ccd4;--c-oil:#d9b13a;
+--eq:#2a3138;--metal:#7c8893;--pipe:#3f4852;color-scheme:dark;}}
+:root[data-theme="dark"]{--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--faint:#5f6872;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;--selbg:#1d2c40;
+--ok:#7fd29a;--okbg:#17301f;--warnc:#e7bf5c;--warnbg:#33290f;--badc:#f2948c;--badbg:#3a1c1a;
+--c-red:#ef5b5b;--c-orange:#f0954a;--c-blue:#5aa9e6;--c-green:#4cc27a;--c-yellow:#f2c94c;--c-purple:#a585f0;--c-teal:#3cc0c2;--c-steam:#c3ccd4;--c-oil:#d9b13a;
+--eq:#2a3138;--metal:#7c8893;--pipe:#3f4852;color-scheme:dark;}
+
+/* Layout: control-room panel. Live process picture left, operator controls right, trend and "what is happening" below. Single dark look like the plant HMI temp style. */
+
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--sans);font-size:14px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:16px}
+header h1{font-size:20px;font-weight:600;margin:0;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--dim);max-width:70ch}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px}
+@media (max-width:860px){.main{grid-template-columns:minmax(0,1fr)}}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;min-width:0}
+canvas{display:block;width:100%;height:auto}
+.label{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:0 0 8px}
+.readout{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+@media (max-width:520px){.readout{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ro{border:1px solid var(--line);border-radius:6px;padding:8px 8px}
+.ro b{display:block;font-family:var(--sans);font-size:16px;font-weight:500;font-variant-numeric:tabular-nums}
+.ro span{font-size:12px;color:var(--dim)}
+.ctl{display:grid;gap:16px}
+.row{display:grid;gap:4px}
+.row[hidden]{display:none}
+.row .top{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.row .top output{font-family:var(--sans);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--water)}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button,.btn{font:inherit;font-size:13px;background:transparent;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px 12px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--water);border-color:var(--water);color:#fff}
+.btn:hover,.seg button:hover{border-color:var(--dim)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--warn);outline-offset:2px}
+.scen{display:grid;gap:8px}
+.scen .btn{text-align:left}
+.btn.red{border-color:var(--bad)}
+.now{font-size:16px;min-height:4.5em}
+.now strong{color:var(--warn)}
+.mft{background:var(--bad);color:#fff;border-radius:6px;padding:8px 12px;font-weight:600}
+.lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.lower{grid-template-columns:minmax(0,1fr)}}
+.tank{display:flex;gap:16px;align-items:flex-end;margin-top:8px}
+.g{flex:1;display:grid;gap:4px;text-align:center;font-size:13px;color:var(--dim)}
+.gauge{height:130px;border:1px solid var(--line);border-radius:6px;position:relative;overflow:hidden}
+.gauge i{position:absolute;left:0;right:0;bottom:0;background:var(--water);transition:height .2s}
+.gauge i.sw{background:repeating-linear-gradient(0deg,var(--water) 0 6px,var(--paper) 6px 8px)}
+.g b{font-family:var(--sans);color:var(--fg);font-weight:500}
+.src{font-size:13px;color:var(--dim)}
+.src li{margin-bottom:4px}
+.key{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--dim);margin-top:8px}
+.key span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px;background:var(--c)}
+@media (prefers-reduced-motion:reduce){.gauge i{transition:none}}
+
+/* ---- plant tools standard v1: one font, sizes 12/13/14/16/20, weights 400/500/600, 4 px spacing grid, radius 6 and 10 ---- */
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg);margin:0}
+body{font-family:var(--sans);font-size:14px;line-height:1.5;font-variant-numeric:tabular-nums;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-size:20px;font-weight:600;line-height:1.3;margin:0}h2{font-size:16px;font-weight:600;line-height:1.35}h3{font-size:14px;font-weight:600}
+b,strong{font-weight:600}
+.sub{color:var(--muted);font-size:14px;margin:4px 0 0;max-width:76ch}
+.box,.sheet,.rule,.tip,.step,figure{background:var(--paper);border:1px solid var(--edge);border-radius:10px}
+.box{padding:16px}
+.lab,.label,.gh{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted);margin:0 0 8px}
+.note,.src,.hint{font-size:13px;color:var(--muted)}
+button,.b,.btn,.f,.st{font-family:var(--sans);min-height:36px;border-radius:6px}
+.b,.st{font-size:14px;font-weight:600;border-width:1px;padding:8px 12px}
+.b small{font-size:12px;font-weight:400}
+.b.on,.f.on,.b.on.l{border-color:var(--accent);background:var(--selbg);box-shadow:inset 0 0 0 1px var(--accent)}
+button:focus-visible,.b:focus-visible,.f:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible,.tap:focus-visible,.part:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=range]{accent-color:var(--accent);min-height:32px}
+.say,.now,.info{font-size:16px;line-height:1.5}
+.say b,.info b,.terms b,.now strong{color:var(--fg)}
+a{color:var(--accent)}
+.seg button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+dl dt{color:var(--fg);font-weight:600}
+.tag{color:var(--fg);font-weight:500}
+.g .v,.ro b,.v b{font-size:16px;font-weight:600}
+.st b{letter-spacing:0;font-weight:500}
+.cw{color:var(--fg);text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px;text-decoration-color:var(--cw)}
+.appbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-height:32px;margin:0}
+.appbar a{color:var(--accent);text-decoration:none;font-weight:500;display:inline-flex;align-items:center;min-height:32px}
+.appbar a:hover{text-decoration:underline}
+.appbar i{font-style:normal;color:var(--muted)}
+.seq i,.g .seq i{color:var(--muted)}
+summary{padding-block:8px}
+@media (max-width:640px){button,.b,.btn,.f,.st,.appbar a,summary{min-height:44px}input[type=range]{min-height:44px}.box{overflow-x:auto}.box>svg,.box>canvas{min-width:640px}}
+</style>
+
+<div class="wrap"><div class="appbar"><a href="index.html">Plant Tools</a><i>/</i><span>Drum Swell Lab</span></div>
+<header>
+  <h1>Drum Swell Lab</h1>
+  <p>Panoorin ang tubig at steam sa loob ng drum, downcomer at waterwall. Pindutin ang isang scenario sa kanan, tapos tingnan kung saan pupunta ang drum level. Ang asul na tuldok ay tubig, ang kulay-abo ay steam bubble.</p>
+</header>
+
+<div class="main">
+  <div class="box">
+    <p class="label">Process picture</p>
+    <canvas id="cv" width="1000" height="600" aria-label="Animated drum, downcomer, waterwall and steam line"></canvas>
+    <div class="key">
+      <span style="--c:var(--water)">tubig</span>
+      <span style="--c:var(--steam)">steam o bubble</span>
+      <span style="--c:var(--fire)">apoy sa furnace</span>
+    </div>
+    <div class="readout">
+      <div class="ro"><span>Drum level</span><b id="rLvl">0 mm</b></div>
+      <div class="ro"><span>Drum pressure</span><b id="rP">145</b></div>
+      <div class="ro"><span>Steam flow</span><b id="rS">322 t/h</b></div>
+      <div class="ro"><span>Feedwater flow</span><b id="rF">322 t/h</b></div>
+    </div>
+  </div>
+
+  <div class="box ctl">
+    <div>
+      <p class="label">Scenario (pindutin isa)</p>
+      <div class="scen">
+        <button class="btn" id="s1">1. Biglang dagdag load (steam valve 70 hanggang 100 %)</button>
+        <button class="btn" id="s2">2. Turbine trip (steam valve sumara)</button>
+        <button class="btn" id="s3">3. BFP trip (walang feedwater)</button>
+        <button class="btn red" id="s0">Reset sa 70 % load</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="top"><label for="valve">Steam valve (turbine demand)</label><output id="oV">70 %</output></div>
+      <input type="range" id="valve" min="0" max="100" value="70">
+    </div>
+    <div class="row">
+      <div class="top"><label for="fire">Firing</label><output id="oFi">70 %</output></div>
+      <input type="range" id="fire" min="0" max="100" value="70">
+      <label style="font-size:13px;color:var(--dim)"><input type="checkbox" id="fireAuto" checked> Boiler master AUTO (firing sumusunod sa pressure)</label>
+    </div>
+    <div class="row">
+      <div class="top"><span>Drum level control</span></div>
+      <div class="seg" role="group" aria-label="Level control mode">
+        <button id="m3" aria-pressed="true">3-element</button>
+        <button id="m1" aria-pressed="false">1-element</button>
+        <button id="mM" aria-pressed="false">Manual</button>
+      </div>
+    </div>
+    <div class="row" id="manRow" hidden>
+      <div class="top"><label for="feed">Feedwater valve</label><output id="oFe">70 %</output></div>
+      <input type="range" id="feed" min="0" max="100" value="70">
+    </div>
+    <div class="row">
+      <div class="top"><label for="spd">Bilis ng simulation</label><output id="oSp">1x</output></div>
+      <input type="range" id="spd" min="1" max="4" value="1">
+    </div>
+  </div>
+</div>
+
+<div class="lower">
+  <div class="box">
+    <p class="label">Ano ang nangyayari ngayon</p>
+    <div id="mftBox" class="mft" hidden></div>
+    <p class="now" id="now"></p>
+    <p class="label">Laman na tubig vs nakikitang level</p>
+    <div class="tank">
+      <div class="g"><div class="gauge"><i id="gM"></i></div>Totoong tubig<b id="tM">0</b></div>
+      <div class="g"><div class="gauge"><i id="gL" class="sw"></i></div>Nakikitang level<b id="tL">0</b></div>
+    </div>
+    <p class="src" style="margin-top:8px">Ito ang susi: sa swell, tumataas ang nakikitang level kahit bumababa ang totoong tubig, dahil lumalaki ang bubbles.</p>
+  </div>
+  <div class="box">
+    <p class="label">Trend, huling 2 minuto</p>
+    <canvas id="tr" width="600" height="260" aria-label="Trend of drum level, steam flow and feedwater flow"></canvas>
+    <div class="key">
+      <span style="--c:var(--warn)">drum level (mm)</span>
+      <span style="--c:var(--steam)">steam flow</span>
+      <span style="--c:var(--water)">feedwater flow</span>
+    </div>
+  </div>
+</div>
+
+<div class="box src">
+  <p class="label">Saan galing ang mga numero</p>
+  <ul>
+    <li>Drum level: normal 0, H +127, HH +254, L -100, alarm LL -178 mm (alarm list LT/LS-BR1001).</li>
+    <li>MFT: drum level above +254 o below -254 mm, 2 of 3 transmitters, 5 s (ABC-010, DITL-03E). Ang LSHH/LSLL switches ay alarm lang. Naka-block ang HH trip ng 600 s pagkatapos ng turbine trip, 52G o 52L open (DITL-03E).</li>
+    <li>MCR steam 460 t/h (FHI Tab 2). Drum pressure 145 kg/cm2 = SH outlet 129 + SH pressure drop 16 (FHI Tab 2, 3; kinuwenta ko).</li>
+    <li>1-element level control below about 230 t/h, 3-element above (PR-OPE-5003).</li>
+    <li><b>Generic, hindi plant data:</b> ang bilis ng pagbabago (gaano kabilis tumaas ang level, gaano kalaki ang swell) ay pinasimple para makita ang hugis ng response. Ang direksyon at pagkakasunod ang tama, hindi ang eksaktong segundo.</li>
+  </ul>
+</div>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const cv=$("cv"),cx=cv.getContext("2d"),tr=$("tr"),tx=tr.getContext("2d");
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C={water:css("--water"),steam:css("--steam"),fire:css("--fire"),line:css("--line"),fg:css("--fg"),dim:css("--dim"),bad:css("--bad"),warn:css("--warn"),panel:css("--panel"),ok:css("--ok")};
+const MCR=460,P0=145,CV=MCR/Math.sqrt(P0);
+let S;
+function reset(){
+  S={P:P0,valve:.7,valveT:.7,fire:.7,gen:.7*MCR,out:.7*MCR,feed:.7*MCR,feedOK:true,void:.31,M:0,I:0,dPdt:0,mode:"3",man:.7,mft:false,tHH:0,tLL:0,hist:[],t:0,last:""};
+  S.M=-1200*(S.void-.4);
+  $("valve").value=70;$("fire").value=70;$("feed").value=70;
+}
+reset();
+const lvl=()=>S.M+1200*(S.void-.4);
+
+function step(dt){
+  S.t+=dt;
+  // steam valve moves toward target
+  const vr=S.valveT<S.valve-.3?2:0.12; // trip closes fast
+  S.valve+=Math.max(-vr*dt,Math.min(vr*dt,S.valveT-S.valve));
+  S.out=S.valve*CV*Math.sqrt(Math.max(S.P,0));
+  // firing
+  if(S.mft){S.fire=Math.max(0,S.fire-dt*.5);}
+  else if($("fireAuto").checked){const tgt=Math.min(1,Math.max(0,S.out/MCR+.03*(P0-S.P)));S.fire+=(tgt-S.fire)*dt/25;}
+  else S.fire=$("fire").value/100;
+  // flash steam when pressure falls (swell), condensing when pressure rises (shrink)
+  S.gen=Math.max(0,S.fire*MCR-35*S.dPdt);
+  const dP=(S.gen-S.out)/MCR*3;
+  S.dPdt+=(dP-S.dPdt)*Math.min(1,dt*2);
+  S.P=Math.max(1,S.P+dP*dt);
+  const vT=(.1+.3*S.gen/MCR)*Math.pow(P0/S.P,2.5);
+  S.void+=(Math.min(.75,vT)-S.void)*Math.min(1,dt/3);
+  // feedwater control
+  const L=lvl();let dem;
+  if(S.mode==="3"){S.I+=(-L)*.04*dt;dem=S.out+.9*(-L)+S.I;}
+  else if(S.mode==="1"){S.I+=(-L)*.08*dt;dem=S.out*0+1.2*(-L)+S.I;}
+  else dem=S.man*MCR;
+  dem=Math.max(0,Math.min(1.15*MCR,dem));
+  if(!S.feedOK)dem=0;
+  S.feed+=(dem-S.feed)*Math.min(1,dt/(S.feedOK?3:.8));
+  S.M+=(S.feed-S.gen)/MCR*25*dt;
+  // MFT 2oo3 >254 or <-254 for 5 s (all three transmitters read the same here)
+  const L2=lvl();
+  S.tHH=L2>254?S.tHH+dt:0;S.tLL=L2<-254?S.tLL+dt:0;
+  if(!S.mft&&(S.tHH>=5||S.tLL>=5)){S.mft=S.tHH>=5?"HH":"LL";}
+  if(S.hist.length===0||S.t-S.hist[S.hist.length-1].t>=.5){S.hist.push({t:S.t,L:L2,s:S.out,f:S.feed});if(S.hist.length>240)S.hist.shift();}
+}
+
+function explain(){
+  const L=lvl();let m;
+  if(S.mft){m=`<strong>MFT: drum level ${S.mft==="HH"?"HIGH HIGH":"LOW LOW"}.</strong> Lumampas ng ${S.mft==="HH"?"+254":"-254"} mm nang 5 segundo sa 2 of 3 transmitter, kaya pinatay ang lahat ng fuel. Ang apoy ay namamatay, kaya bababa ang steam at pressure. Pindutin ang Reset para magsimula ulit.`;}
+  else if(!S.feedOK){m=`<strong>Walang feedwater.</strong> Tuloy pa rin ang paglabas ng steam, kaya nauubos ang tubig sa drum. Pababa ang level. Sa totoong planta, ang standby BFP ay dapat mag-auto start (DITL-23A). Kung hindi, LL trip sa -254 mm.`;}
+  else if(S.dPdt<-.12){m=`<strong>SWELL.</strong> Mas maraming steam ang lumalabas kaysa ginagawa, kaya <strong>bumababa ang pressure</strong>. Sa mas mababang pressure, mas madaling kumulo ang tubig, kaya biglang dumami at lumaki ang bubbles sa waterwall at drum. Tinutulak nila pataas ang tubig, kaya <strong>tumataas ang level kahit nababawasan ang tubig</strong>.`;}
+  else if(S.dPdt>.12){m=`<strong>SHRINK.</strong> Mas kaunti ang steam na lumalabas, kaya <strong>tumataas ang pressure</strong>. Sa mataas na pressure, lumiliit ang bubbles at tumitigil ang pagkulo, kaya <strong>bumababa ang level kahit hindi nabawasan ang tubig</strong>.`;}
+  else if(S.mode==="1"&&Math.abs(S.out-S.feed)>40){m=`<strong>1-element.</strong> Level lang ang tinitingnan ng controller. Kapag nag-swell, aakalain nitong sobra ang tubig at <strong>babawasan ang feedwater</strong>, kahit kailangan pala ng dagdag. Kaya 3-element ang gamit sa mataas na load.`;}
+  else if(Math.abs(L)>127){m=`Malayo pa ang level sa normal. Inaayos ng feedwater control. Bantayan ang trend.`;}
+  else{m=`Steady. Pareho ang steam na lumalabas at ang feedwater na pumapasok, kaya nasa normal ang level. Pumili ng scenario sa kanan.`;}
+  if(m!==S.last){$("now").innerHTML=m;S.last=m;}
+  const box=$("mftBox");
+  if(S.mft){box.hidden=false;box.textContent="MFT: DRUM LEVEL "+(S.mft==="HH"?"HIGH HIGH":"LOW LOW")+" (2 of 3, 5 s)";}
+  else if(S.tHH>0||S.tLL>0){box.hidden=false;box.textContent="Lampas sa trip limit. MFT sa loob ng "+(5-Math.max(S.tHH,S.tLL)).toFixed(1)+" s";}
+  else box.hidden=true;
+}
+
+// ---- drawing ----
+const lvlY=L=>120-Math.max(-60,Math.min(60,L/254*45));
+const parts=[];for(let i=0;i<70;i++)parts.push({s:Math.random(),r:Math.random()});
+const st=[];for(let i=0;i<24;i++)st.push({s:Math.random()});
+const fw=[];for(let i=0;i<18;i++)fw.push({s:Math.random()});
+const db=[];for(let i=0;i<30;i++)db.push({x:330+Math.random()*340,y:Math.random(),v:.4+Math.random()*.6});
+// circulation path: drum bottom left -> down downcomer -> header -> up riser -> drum
+function path(s){
+  const a=[[360,175],[360,560],[650,560],[650,175]];
+  const seg=[385,290,385],tot=1060;let d=s*tot;
+  for(let i=0;i<3;i++){if(d<=seg[i]){const t=d/seg[i];return{x:a[i][0]+(a[i+1][0]-a[i][0])*t,y:a[i][1]+(a[i+1][1]-a[i][1])*t,seg:i,t};}d-=seg[i];}
+  return{x:650,y:175,seg:2,t:1};
+}
+function pipe(pts,w){cx.lineWidth=w;cx.strokeStyle=C.fg;cx.lineJoin="round";cx.beginPath();pts.forEach((p,i)=>i?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.stroke();cx.lineWidth=w-4;cx.strokeStyle=C.panel;cx.stroke();}
+function valveSym(x,y,open,lab){cx.fillStyle=C.panel;cx.strokeStyle=C.fg;cx.lineWidth=2;cx.beginPath();cx.moveTo(x-14,y-11);cx.lineTo(x+14,y+11);cx.lineTo(x+14,y-11);cx.lineTo(x-14,y+11);cx.closePath();cx.fill();cx.stroke();cx.fillStyle=C.fg;cx.font="500 14px IBM Plex Sans, sans-serif";cx.textAlign="center";cx.fillText(lab+"  "+Math.round(open*100)+" %",x,y-17);}
+function draw(ts){
+  cx.clearRect(0,0,1000,600);
+  const L=lvl(),wy=lvlY(L);
+  // furnace box and fire
+  cx.strokeStyle=C.line;cx.lineWidth=2;cx.setLineDash([6,5]);cx.strokeRect(600,240,260,330);cx.setLineDash([]);
+  cx.fillStyle=C.dim;cx.font="13px IBM Plex Sans, sans-serif";cx.textAlign="left";cx.fillText("Furnace (waterwall)",700,262);
+  const f=S.fire;
+  for(let i=0;i<9;i++){const fx=690+i*18,base=555,h=(40+90*f)*(0.7+0.3*Math.sin(ts/180+i*1.7));
+    if(f<.02)continue;cx.globalAlpha=.35+.5*f;cx.fillStyle=C.fire;cx.beginPath();cx.moveTo(fx-8,base);cx.quadraticCurveTo(fx,base-h,fx+8,base);cx.fill();}
+  cx.globalAlpha=1;
+  cx.fillStyle=C.fire;cx.font="500 14px IBM Plex Sans, sans-serif";cx.fillText("Firing "+Math.round(f*100)+" %",700,288);
+  // pipes
+  pipe([[360,180],[360,560],[650,560],[650,180]],30);
+  pipe([[500,60],[500,30],[930,30]],22);
+  pipe([[40,150],[300,150]],18);
+  // drum
+  cx.lineWidth=2.5;cx.strokeStyle=C.fg;cx.fillStyle=C.panel;
+  cx.beginPath();cx.roundRect(300,60,400,120,60);cx.fill();cx.stroke();
+  cx.save();cx.beginPath();cx.roundRect(302,62,396,116,58);cx.clip();
+  cx.fillStyle=C.water;cx.globalAlpha=.75;
+  cx.beginPath();cx.moveTo(300,180);for(let x=300;x<=700;x+=10)cx.lineTo(x,wy+Math.sin(x/25+ts/300)*(1.5+S.void*4));cx.lineTo(700,180);cx.closePath();cx.fill();cx.globalAlpha=1;
+  // bubbles in drum water
+  cx.fillStyle=C.steam;
+  db.forEach(b=>{b.y-=b.v*.004*(.3+S.gen/MCR)*(1+S.void*2);if(b.y<0){b.y=1;b.x=560+Math.random()*130;}
+    const y=wy+(178-wy)*b.y;if(Math.random()<S.void*1.4||b.y>.4){cx.beginPath();cx.arc(b.x,y,1.5+S.void*3,0,7);cx.fill();}});
+  cx.restore();
+  // level marks
+  cx.font="12px IBM Plex Sans, sans-serif";cx.textAlign="left";
+  [[254,"HH +254 trip",C.bad],[127,"H +127",C.warn],[0,"N 0",C.dim],[-178,"LL -178 alarm",C.warn],[-254,"-254 trip",C.bad]].forEach(([v,t,c])=>{const y=lvlY(v);cx.strokeStyle=c;cx.lineWidth=1;cx.setLineDash([4,4]);cx.beginPath();cx.moveTo(705,y);cx.lineTo(740,y);cx.stroke();cx.setLineDash([]);cx.fillStyle=c;cx.fillText(t,745,y+4);});
+  cx.fillStyle=C.fg;cx.font="600 15px IBM Plex Sans, sans-serif";cx.textAlign="center";cx.fillText("Steam drum",400,52);
+  // circulation particles
+  const sp=(.03+.09*Math.min(1.3,S.gen/MCR))*(S.mft?.6:1);
+  parts.forEach(p=>{p.s=(p.s+sp*dtF)%1;const q=path(p.s);
+    let bub=false;if(q.seg===2){bub=p.r<Math.min(.95,S.void*2.2)*(0.25+q.t);}
+    cx.fillStyle=bub?C.steam:C.water;cx.beginPath();cx.arc(q.x+(p.r-.5)*14,q.y,bub?3.6:3,0,7);cx.fill();});
+  cx.fillStyle=C.dim;cx.font="13px IBM Plex Sans, sans-serif";cx.textAlign="center";
+  cx.save();cx.translate(330,380);cx.rotate(-Math.PI/2);cx.fillText("Downcomer: tubig pababa",0,0);cx.restore();
+  cx.save();cx.translate(680,400);cx.rotate(-Math.PI/2);cx.fillText("Riser: tubig + bubbles pataas",0,0);cx.restore();
+  cx.fillText("Lower header",505,595);
+  // steam particles
+  const ss=S.out/MCR;
+  st.forEach(p=>{p.s=(p.s+.25*ss*dtF)%1;if(ss<.01)return;const d=p.s*500;let x,y;if(d<30){x=500;y=60-d;}else{x=500+(d-30);y=30;}
+    cx.fillStyle=C.steam;cx.beginPath();cx.arc(x,y+(Math.random()-.5)*3,2.6,0,7);cx.fill();});
+  // feed particles
+  const fs=S.feed/MCR;
+  fw.forEach(p=>{p.s=(p.s+.25*fs*dtF)%1;if(fs<.01)return;cx.fillStyle=C.water;cx.beginPath();cx.arc(40+p.s*260,150,2.8,0,7);cx.fill();});
+  valveSym(820,30,S.valve,"Steam valve");
+  valveSym(170,150,S.feedOK?Math.min(1,S.feed/MCR):0,S.feedOK?"Feedwater valve":"BFP TRIPPED");
+  cx.fillStyle=C.dim;cx.textAlign="left";cx.font="13px IBM Plex Sans, sans-serif";
+  cx.textAlign="right";cx.fillText("papunta sa Superheater at Turbine",995,52);cx.textAlign="left";
+  cx.fillText("galing sa BFP at economizer",40,178);
+}
+
+function drawTrend(){
+  const W=600,H=260,pl=44,pr=40,pt=10,pb=24;tx.clearRect(0,0,W,H);
+  tx.strokeStyle=C.line;tx.lineWidth=1;tx.font="11px IBM Plex Sans, sans-serif";tx.fillStyle=C.dim;
+  const yL=v=>pt+(H-pt-pb)*(1-(v+300)/600),yF=v=>pt+(H-pt-pb)*(1-v/600);
+  [-254,0,254].forEach(v=>{tx.beginPath();tx.moveTo(pl,yL(v));tx.lineTo(W-pr,yL(v));tx.stroke();tx.textAlign="right";tx.fillText(v,pl-4,yL(v)+4);});
+  tx.textAlign="left";[0,300,600].forEach(v=>tx.fillText(v,W-pr+4,yF(v)+4));
+  tx.fillText("mm",4,pt+8);tx.textAlign="right";tx.fillText("t/h",W-2,pt+8);
+  const h=S.hist;if(h.length<2)return;const t1=h[h.length-1].t,xs=t=>pl+(W-pl-pr)*(1-(t1-t)/120);
+  const line=(k,c,fy,w)=>{tx.strokeStyle=c;tx.lineWidth=w;tx.beginPath();h.forEach((p,i)=>{const x=xs(p.t),y=fy(p[k]);i?tx.lineTo(x,y):tx.moveTo(x,y);});tx.stroke();};
+  line("s",C.steam,yF,1.5);line("f",C.water,yF,1.5);line("L",C.warn,v=>yL(Math.max(-300,Math.min(300,v))),2.2);
+  tx.fillStyle=C.dim;tx.textAlign="center";tx.fillText("ngayon",W-pr,H-6);tx.fillText("-2 min",pl,H-6);
+}
+
+function ui(){
+  const L=lvl();
+  $("rLvl").textContent=(L>0?"+":"")+Math.round(L)+" mm";
+  $("rLvl").style.color=Math.abs(L)>=254?C.bad:Math.abs(L)>=127?C.warn:C.fg;
+  $("rP").textContent=S.P.toFixed(1)+" kg/cm2";
+  $("rS").textContent=Math.round(S.out)+" t/h";$("rF").textContent=Math.round(S.feed)+" t/h";
+  $("oV").textContent=Math.round(S.valveT*100)+" %";
+  if($("fireAuto").checked||S.mft){$("fire").value=Math.round(S.fire*100);}
+  $("oFi").textContent=Math.round(S.fire*100)+" %";
+  const m=S.M-108,mh=Math.max(4,Math.min(100,50+m/6)),lh=Math.max(4,Math.min(100,50+L/6));
+  $("gM").style.height=mh+"%";$("gL").style.height=lh+"%";
+  $("tM").textContent=(m>0?"+":"")+Math.round(m)+" mm";$("tL").textContent=(L>0?"+":"")+Math.round(L)+" mm";
+}
+
+let lastT=0,dtF=0;
+function loop(ts){
+  const real=Math.min(.1,(ts-lastT)/1000||0);lastT=ts;const k=+$("spd").value;
+  const dt=real*k;dtF=dt;
+  for(let i=0;i<4;i++)step(dt/4);
+  draw(ts);drawTrend();ui();explain();
+  requestAnimationFrame(loop);
+}
+// controls
+$("valve").oninput=e=>{S.valveT=e.target.value/100;};
+$("fire").oninput=()=>{$("fireAuto").checked=false;};
+$("feed").oninput=e=>{S.man=e.target.value/100;$("oFe").textContent=e.target.value+" %";};
+$("spd").oninput=e=>{$("oSp").textContent=e.target.value+"x";};
+function mode(m){S.mode=m;S.I=m==="1"?S.feed:0;if(m==="M"){S.man=S.feed/MCR;$("feed").value=Math.round(S.man*100);$("oFe").textContent=Math.round(S.man*100)+" %";}
+  [["3","m3"],["1","m1"],["M","mM"]].forEach(([k,id])=>$(id).setAttribute("aria-pressed",k===m));$("manRow").hidden=m!=="M";}
+$("m3").onclick=()=>mode("3");$("m1").onclick=()=>mode("1");$("mM").onclick=()=>mode("M");
+$("s0").onclick=()=>{reset();mode("3");$("fireAuto").checked=true;};
+$("s1").onclick=()=>{S.valveT=1;$("valve").value=100;};
+$("s2").onclick=()=>{S.valveT=0;$("valve").value=0;};
+$("s3").onclick=()=>{S.feedOK=false;};
+requestAnimationFrame(loop);
+})();
+</script>
+<script>if("serviceWorker" in navigator&&location.protocol!=="file:")navigator.serviceWorker.register("sw.js")</script></body></html>

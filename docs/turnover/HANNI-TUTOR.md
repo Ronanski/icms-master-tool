@@ -47,6 +47,8 @@ Update 2026-11-16, 8:10 PM PHT (user: "save mo lahat sa github repo", "isang rep
 
 ### Next work, in order (start here)
 
+The tools are a real web app in this repo since 2026-11-16 8:40 PM PHT (user: "wala naman app ata sa repo eh. hndi naman artifact pnapagawa ko eh dbaa"): `docs/plant-tools/app/`, built by `docs/plant-tools/build-app.js`, served at https://ronanski.github.io/icms-master-tool/tools/ after merge. Read the "web app" section of `docs/plant-tools/README.md`. After changing any page, run `node docs/plant-tools/build-app.js` or Checks fail.
+
 Read first: `docs/plant-tools/README.md`, then `docs/plant-tools/standard/README.md`. Every new or changed page goes through `standard/std.py` and is measured before the user sees it.
 
 1. Signal Path Finder: bring the drawings to the design standard (only the app bar was done; 30 % of spacing is off the grid, 7 corner radii). Run `sweep.js` after: all 2,703 signals must stay linked.

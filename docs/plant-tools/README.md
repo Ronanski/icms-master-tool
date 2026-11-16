@@ -4,6 +4,22 @@ Mga tool na hiwalay sa simulator app: bawat isa ay isang web page (claude.ai Art
 
 Last update: 2026-11-16, 8:20 PM PHT.
 
+## Ang web app (2026-11-16, user: "wala naman app ata sa repo eh. hndi naman artifact pnapagawa ko")
+
+Ang `app/` ang tunay na web app: 15 page, isang home page (`app/index.html`), sariling font file, walang kailangang Claude at walang kailangang internet pagkatapos ng unang bukas.
+
+- Address pagkatapos ma-merge sa main: https://ronanski.github.io/icms-master-tool/tools/ (kinokopya ng `.github/workflows/site.yml` ang `docs/plant-tools/app` sa `/tools/`).
+- Na-i-install bilang app sa phone at PC (browser menu: "Install" o "Add to Home screen").
+- Sa sariling PC na walang internet: `npx serve docs/plant-tools/app` o anumang web server na nakaturo sa folder.
+- Buuin: `node docs/plant-tools/build-app.js`. Kinukuha nito ang mga page sa folder na ito, pinapalitan ang mga link ng Claude ng link sa loob ng app, at isinusulat ang `app/`. Ang Checks ay nagpapatakbo ng `build-app.js --check`: kapag binago ang isang page at hindi binuo ulit ang app, babagsak ang Checks.
+- Test: mag-serve ng folder na may `tools/` = `app/` sa port 8765, tapos `node docs/plant-tools/app-test.js`.
+- Plant Workbench sa app: ang mga record ay nasa device lang (browser storage), may "Save backup file" at "Load backup file" para mailipat. Hindi ito shared sa ibang tao; ang shared na bersyon ay ang kopya sa Claude.
+- Tag Lookup sa app: walang assistant (kailangan nito ang Claude); buo ang card at ang hanap.
+- Ang "Three-Dimensional Plant" sa home page ay link pa rin sa Claude (gawa ng ibang thread).
+- Hindi nasubok: tunay na phone, pag-install sa tunay na device, at ang tunay na address (lalabas lang pagkatapos ng merge).
+
+Ang mga kopya sa Claude (mga link sa ibaba) ay nananatili; pareho ang laman.
+
 ## Ang mga tool
 
 - **Plant Tools List** (`plant-tools-list/plant-tools.html`): listahan ng 16 tool at estado ng bawat isa. https://claude.ai/artifact/CLWF6fLkvX8VNvtbjfYLwS (version 12).

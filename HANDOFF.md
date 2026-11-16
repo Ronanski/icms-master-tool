@@ -133,7 +133,7 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 - Workflows: `.github/workflows/` (`checks.yml` bawat push; `site.yml` kusa pagkatapos ng Checks; `release.yml` at `clean-releases.yml` = GO STABLE lang).
 - Kasaysayan: `archive/handoff/` (lumang HANDOFF at PROJECT_MEMORY ng lumang account), git log.
 
-- Plant tools na hiwalay sa app (Tag Lookup, Signal Path Finder, Plant Workbench, Connection Lessons, Plant Tools List): `docs/plant-tools/README.md` (2026-11-16, HANNI).
+- Plant tools na hiwalay sa app (Tag Lookup, Signal Path Finder, Plant Workbench, Connection Lessons, Plant Tools List): `docs/plant-tools/README.md` (2026-11-16, HANNI). Web app ng mga ito: `docs/plant-tools/app/`, nasa website sa `/tools/`; kapag binago ang isang page, patakbuhin ang `node docs/plant-tools/build-app.js`.
 
 ## 8. Paano i-update ang file na ito (bawat thread, sa katapusan ng gawain)
 1. "Huling update": oras sa PHT, pangalan ng thread, isang pangungusap.

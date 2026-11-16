@@ -1,0 +1,300 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1f5fae"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="fonts.css"><style>*,*::before,*::after{box-sizing:border-box}html,body{margin:0}</style></head><body><title>52G and 52L Lab</title>
+<style>
+:root{--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:var(--sans);
+--bg:#f6f7f9;--paper:#ffffff;--fg:#1b2129;--muted:#5b6673;--faint:#a3acb6;--edge:#d6dce3;--fill:#eef1f4;--accent:#1f5fae;--on-accent:#ffffff;--selbg:#e8f0fb;
+--ok:#1e6b34;--okbg:#e6f4ea;--warnc:#8a5a00;--warnbg:#fdf3d8;--badc:#b3261e;--badbg:#fdecea;
+--c-red:#c62828;--c-orange:#c8660a;--c-blue:#2474b5;--c-green:#1e8a3c;--c-yellow:#c99700;--c-purple:#7b4fd6;--c-teal:#0e8a8c;--c-steam:#8b98a5;--c-oil:#a67c00;
+--eq:#e9edf1;--metal:#7b8794;--pipe:#c5cdd5;--panel:var(--paper);--line:var(--edge);--dim:var(--muted);color-scheme:light;
+--power:var(--c-yellow);--run:var(--c-red);--stop:var(--c-green);--off:var(--pipe);}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--faint:#5f6872;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;--selbg:#1d2c40;
+--ok:#7fd29a;--okbg:#17301f;--warnc:#e7bf5c;--warnbg:#33290f;--badc:#f2948c;--badbg:#3a1c1a;
+--c-red:#ef5b5b;--c-orange:#f0954a;--c-blue:#5aa9e6;--c-green:#4cc27a;--c-yellow:#f2c94c;--c-purple:#a585f0;--c-teal:#3cc0c2;--c-steam:#c3ccd4;--c-oil:#d9b13a;
+--eq:#2a3138;--metal:#7c8893;--pipe:#3f4852;color-scheme:dark;}}
+:root[data-theme="dark"]{--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--faint:#5f6872;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;--selbg:#1d2c40;
+--ok:#7fd29a;--okbg:#17301f;--warnc:#e7bf5c;--warnbg:#33290f;--badc:#f2948c;--badbg:#3a1c1a;
+--c-red:#ef5b5b;--c-orange:#f0954a;--c-blue:#5aa9e6;--c-green:#4cc27a;--c-yellow:#f2c94c;--c-purple:#a585f0;--c-teal:#3cc0c2;--c-steam:#c3ccd4;--c-oil:#d9b13a;
+--eq:#2a3138;--metal:#7c8893;--pipe:#3f4852;color-scheme:dark;}
+
+/* Layout: plant one-line picture on top (tap any part for a plain explanation), big buttons, then the sync dial when needed. Same dark look as Drum Swell Lab. */
+
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--sans);font-size:16px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px}
+.wrap{max-width:1040px;margin:0 auto;display:grid;gap:16px}
+h1{font-size:20px;font-weight:600;margin:0}
+.sub{margin:4px 0 0;color:var(--dim)}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;min-width:0}
+.pic{overflow-x:auto}
+svg.one{display:block;width:100%;min-width:680px;height:auto}
+.wire{stroke:var(--off);stroke-width:6;fill:none}
+.flow{stroke:var(--power);stroke-width:6;fill:none;stroke-dasharray:10 14;opacity:0}
+.flow.on{opacity:1;animation:f .9s linear infinite}
+.flow.rev{animation-direction:reverse}
+@keyframes f{to{stroke-dashoffset:-24}}
+.lbl{fill:var(--fg);font:600 16px var(--sans);text-anchor:middle}
+.small{fill:var(--dim);font:13px var(--sans);text-anchor:middle}
+.tap{cursor:pointer}
+.tap:hover .hl,.tap:focus .hl{stroke:var(--power)}
+.tap:focus{outline:none}
+.brk rect{fill:var(--panel);stroke-width:3}
+.brk text{font:600 16px var(--sans);text-anchor:middle}
+.fan{transform-box:fill-box;transform-origin:center}
+.spin{animation:s 1s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+.btns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:640px){.btns{grid-template-columns:minmax(0,1fr)}}
+.b{font:600 16px var(--sans);color:var(--fg);background:transparent;border:2px solid var(--line);border-radius:6px;padding:12px;cursor:pointer;text-align:left;display:grid;gap:2px}
+.b small{font-weight:400;color:var(--dim);font-size:13px}
+.b.closed{border-color:var(--run)}.b.open{border-color:var(--stop)}
+.b:focus-visible{outline:2px solid var(--power);outline-offset:2px}
+.say{font-size:16px;line-height:1.5;margin:0}
+.say b{color:var(--power)}
+.warn{color:var(--run);font-size:16px;min-height:1.5em;margin:8px 0 0}
+.info{font-size:16px;margin:0}
+.info b{color:var(--power)}
+.sync{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;align-items:center}
+@media (max-width:560px){.sync{grid-template-columns:minmax(0,1fr)}}
+.sync svg{width:200px;height:200px;display:block;margin:0 auto}
+.lab{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:0 0 8px}
+.note{font-size:13px;color:var(--dim)}
+.vals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:640px){.vals{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.v{border:1px solid var(--line);border-radius:6px;padding:8px 8px;font-size:12px;color:var(--dim)}
+.v b{display:block;font:500 16px var(--sans);color:var(--fg);font-variant-numeric:tabular-nums}
+.terms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 24px}
+@media (max-width:700px){.terms{grid-template-columns:minmax(0,1fr)}}
+.terms p{margin:0;font-size:14px}
+.terms b{color:var(--power)}
+@media (prefers-reduced-motion:reduce){.flow.on,.spin{animation:none}}
+
+/* ---- plant tools standard v1: one font, sizes 12/13/14/16/20, weights 400/500/600, 4 px spacing grid, radius 6 and 10 ---- */
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg);margin:0}
+body{font-family:var(--sans);font-size:14px;line-height:1.5;font-variant-numeric:tabular-nums;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-size:20px;font-weight:600;line-height:1.3;margin:0}h2{font-size:16px;font-weight:600;line-height:1.35}h3{font-size:14px;font-weight:600}
+b,strong{font-weight:600}
+.sub{color:var(--muted);font-size:14px;margin:4px 0 0;max-width:76ch}
+.box,.sheet,.rule,.tip,.step,figure{background:var(--paper);border:1px solid var(--edge);border-radius:10px}
+.box{padding:16px}
+.lab,.label,.gh{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted);margin:0 0 8px}
+.note,.src,.hint{font-size:13px;color:var(--muted)}
+button,.b,.btn,.f,.st{font-family:var(--sans);min-height:36px;border-radius:6px}
+.b,.st{font-size:14px;font-weight:600;border-width:1px;padding:8px 12px}
+.b small{font-size:12px;font-weight:400}
+.b.on,.f.on,.b.on.l{border-color:var(--accent);background:var(--selbg);box-shadow:inset 0 0 0 1px var(--accent)}
+button:focus-visible,.b:focus-visible,.f:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible,.tap:focus-visible,.part:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=range]{accent-color:var(--accent);min-height:32px}
+.say,.now,.info{font-size:16px;line-height:1.5}
+.say b,.info b,.terms b,.now strong{color:var(--fg)}
+a{color:var(--accent)}
+.seg button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+dl dt{color:var(--fg);font-weight:600}
+.tag{color:var(--fg);font-weight:500}
+.g .v,.ro b,.v b{font-size:16px;font-weight:600}
+.st b{letter-spacing:0;font-weight:500}
+.cw{color:var(--fg);text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px;text-decoration-color:var(--cw)}
+.appbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-height:32px;margin:0}
+.appbar a{color:var(--accent);text-decoration:none;font-weight:500;display:inline-flex;align-items:center;min-height:32px}
+.appbar a:hover{text-decoration:underline}
+.appbar i{font-style:normal;color:var(--muted)}
+.seq i,.g .seq i{color:var(--muted)}
+summary{padding-block:8px}
+@media (max-width:640px){button,.b,.btn,.f,.st,.appbar a,summary{min-height:44px}input[type=range]{min-height:44px}.box{overflow-x:auto}.box>svg,.box>canvas{min-width:640px}}
+</style>
+
+<div class="wrap"><div class="appbar"><a href="index.html">Plant Tools</a><i>/</i><span>52G and 52L Lab</span></div>
+<div>
+  <h1>52G at 52L, ayos ng planta</h1>
+  <p class="sub">Ang dilaw na gumagalaw ay kuryente. Pindutin ang kahit anong bahagi ng larawan para sa simpleng paliwanag.</p>
+</div>
+
+<div class="box pic">
+<svg class="one" viewBox="0 0 1000 400" role="img" aria-label="Generator, 52G, main transformer, 52L, grid, and the unit transformer that feeds the plant pumps and fans">
+  <!-- wires -->
+  <path class="wire" d="M155 130 H560"/><path class="wire" d="M600 130 H880"/>
+  <path class="wire" d="M340 130 V215"/><path class="wire" d="M340 285 V320 H760"/>
+  <path class="wire" d="M560 130 H600"/>
+  <path id="fGen" class="flow" d="M155 130 H340"/>
+  <path id="fMT" class="flow" d="M340 130 H880"/>
+  <path id="fAux" class="flow" d="M340 130 V320 H760"/>
+
+  <!-- generator -->
+  <g class="tap" tabindex="0" data-k="gen">
+    <circle class="hl" cx="95" cy="130" r="58" fill="var(--panel)" stroke="var(--fg)" stroke-width="3"/>
+    <g id="rot" class="fan"><path d="M95 86 L106 130 L95 174 L84 130Z" fill="var(--fg)"/><path d="M51 130 L95 119 L139 130 L95 141Z" fill="var(--fg)" opacity=".6"/></g>
+    <text class="lbl" x="95" y="215">Generator</text>
+    <text class="small" x="95" y="235">150 MW, 13.8 kV, 60 Hz</text>
+    <text id="genTxt" class="small" x="95" y="255">umiikot</text>
+  </g>
+  <!-- 52G -->
+  <g class="tap brk" tabindex="0" data-k="g" id="b52G"><rect class="hl" x="205" y="108" width="80" height="44" rx="4"/><text x="245" y="137">52G</text></g>
+  <text class="small" x="245" y="95">13.8 kV, SF6</text>
+  <!-- main transformer -->
+  <g class="tap" tabindex="0" data-k="mt">
+    <circle class="hl" cx="440" cy="130" r="32" fill="var(--panel)" stroke="var(--fg)" stroke-width="3"/>
+    <circle class="hl" cx="482" cy="130" r="32" fill="none" stroke="var(--fg)" stroke-width="3"/>
+    <text class="lbl" x="410" y="188" style="text-anchor:start">Main transformer</text>
+    <text class="small" x="410" y="206" style="text-anchor:start">13.8 kV papuntang 230 kV</text>
+    <text class="small" x="410" y="222" style="text-anchor:start">180/225 MVA</text>
+  </g>
+  <!-- 52L -->
+  <g class="tap brk" tabindex="0" data-k="l" id="b52L"><rect class="hl" x="620" y="108" width="80" height="44" rx="4"/><text x="660" y="137">52L</text></g>
+  <text class="small" x="660" y="95">230 kV</text>
+  <!-- grid -->
+  <g class="tap" tabindex="0" data-k="grid">
+    <rect class="hl" x="860" y="40" width="130" height="200" fill="transparent" stroke="transparent"/>
+    <g fill="none" stroke="var(--fg)" stroke-width="3"><path d="M880 210 L910 80 L940 210 M890 170 H930 M898 125 H922"/><path d="M940 210 L962 105 L984 210 M948 175 H976 M954 140 H970" opacity=".6"/></g>
+    <text class="lbl" x="930" y="245">Grid</text>
+    <text class="small" x="930" y="263">NGCP, 230 kV</text>
+  </g>
+  <!-- unit aux transformer -->
+  <g class="tap" tabindex="0" data-k="uat">
+    <circle class="hl" cx="340" cy="232" r="22" fill="var(--panel)" stroke="var(--fg)" stroke-width="3"/>
+    <circle class="hl" cx="340" cy="266" r="22" fill="none" stroke="var(--fg)" stroke-width="3"/>
+    <text class="lbl" x="375" y="255" style="text-anchor:start">Unit transformer</text>
+    <text class="small" x="375" y="274" style="text-anchor:start">13.8 kV papuntang 6.6 kV, 34/44 MVA</text>
+  </g>
+  <!-- plant -->
+  <g class="tap" tabindex="0" data-k="plant">
+    <rect class="hl" x="440" y="330" width="320" height="60" rx="6" fill="var(--panel)" stroke="var(--fg)" stroke-width="3"/>
+    <g id="f1" class="fan"><path d="M480 342 l5 18 l-5 18 l-5 -18z M462 360 l18 -5 l18 5 l-18 5z" fill="var(--fg)"/></g>
+    <g id="f2" class="fan"><path d="M525 342 l5 18 l-5 18 l-5 -18z M507 360 l18 -5 l18 5 l-18 5z" fill="var(--fg)"/></g>
+    <g id="f3" class="fan"><path d="M570 342 l5 18 l-5 18 l-5 -18z M552 360 l18 -5 l18 5 l-18 5z" fill="var(--fg)"/></g>
+    <text class="small" x="605" y="365" style="text-anchor:start">6.6 kV: BFP, fans, pumps</text>
+  </g>
+</svg>
+</div>
+
+<div class="box"><p class="lab">Values ngayon</p><div class="vals" id="vals"></div></div>
+
+<div class="box"><p class="info" id="info"><b>Pindutin ang isang bahagi ng larawan.</b> Lalabas dito ang paliwanag.</p></div>
+
+<div class="btns">
+  <button class="b" id="bt52G"></button>
+  <button class="b" id="bt52L"></button>
+  <button class="b" id="btGen"></button>
+</div>
+
+<div class="box">
+  <p class="say" id="say"></p>
+  <p class="warn" id="warn"></p>
+</div>
+
+<div class="box" id="syncBox" hidden>
+  <p class="lab">Pag-sync</p>
+  <div class="sync">
+    <svg viewBox="0 0 200 200" aria-label="Synchroscope">
+      <circle cx="100" cy="100" r="88" fill="var(--panel)" stroke="var(--fg)" stroke-width="3"/>
+      <path d="M100 12 A88 88 0 0 1 115 13.3 L100 100 Z M100 12 A88 88 0 0 0 85 13.3 L100 100 Z" fill="var(--stop)" opacity=".5"/>
+      <text x="100" y="40" fill="var(--fg)" font-size="16" font-weight="600" text-anchor="middle" font-family="IBM Plex Sans, sans-serif">12</text>
+      <line id="needle" x1="100" y1="100" x2="100" y2="22" stroke="var(--power)" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="100" cy="100" r="7" fill="var(--fg)"/>
+    </svg>
+    <div>
+      <p class="info" style="margin:0 0 8px"><b>Ang karayom</b> ay nagsasabi kung sabay na ang ikot ng generator at ng grid. Kapag nasa <b>alas-12</b> (berdeng bahagi), sabay na sila at puwede nang isara ang breaker.</p>
+      <p class="info" style="margin:0 0 8px;font-family:var(--mono);font-size:14px">Generator 60.11 Hz, 13.8 kV<br>Grid 60.00 Hz, 13.8 kV (sa 52G)<br>Slip 0.11 Hz: isang ikot ng karayom bawat 9 s</p>
+      <p class="info" style="margin:0 0 10px">Parang pagsakay sa umaandar na jeep: kasing-bilis mo na ito at nasa tapat ka na ng pinto.</p>
+      <button class="b closed" id="btSync" style="width:100%"></button>
+    </div>
+  </div>
+</div>
+
+<div class="box">
+  <p class="lab">Electrical terms, sa simpleng salita</p>
+  <div class="terms">
+    <p><b>kV (boltahe, voltage).</b> Lakas ng tulak ng kuryente, parang pressure sa tubo. Generator 13.8 kV, grid 230 kV, motors 6.6 kV.</p>
+    <p><b>A (current, ampere).</b> Dami ng dumadaloy na kuryente, parang flow sa tubo. Generator rated 7,384 A.</p>
+    <p><b>MW (real power).</b> Ang kuryenteng gumagawa ng trabaho. Ito ang ibinebenta. Unit 1 = 150 MW.</p>
+    <p><b>MVA at power factor.</b> MVA ang kabuuang kaya ng makina. Ang power factor (0.85) ang bahagi nitong nagiging MW. 176.5 MVA x 0.85 = 150 MW.</p>
+    <p><b>Mvar (reactive power).</b> Ang bahaging hindi gumagawa ng trabaho pero kailangan para tumayo ang boltahe ng grid. Inaayos ito ng AVR.</p>
+    <p><b>Hz (frequency).</b> Ilang beses bumabalik ang kuryente bawat segundo. 60 Hz = 3600 rpm ng turbine. Kapag bumagal ang turbine, bumababa ang Hz.</p>
+    <p><b>Excitation, 41 at AVR.</b> Ang 41 (field breaker) ang nagbibigay ng magnet sa loob ng generator. Walang magnet, walang boltahe. Ang AVR ang awtomatikong humahawak sa 13.8 kV.</p>
+    <p><b>Synchronize, synchroscope at 25.</b> Pagsabay ng generator sa grid: parehong Hz, parehong kV, at karayom sa alas-12. Ang relay 25 ang pumapayag na isara ang 52G.</p>
+    <p><b>Slip.</b> Diperensya ng Hz ng generator at grid. Kapag maliit ang slip, mabagal ang ikot ng karayom at madaling tumiyempo.</p>
+    <p><b>Breaker (52) at SF6.</b> Malaking switch na kayang pumutol ng malaking kuryente. Ang SF6 ay gas na pumapatay ng spark sa loob ng 52G.</p>
+    <p><b>Lockout 86G.</b> Relay na nagla-latch kapag may sira sa generator. Binubuksan ang 52G at 41, at tinitrip ang turbine. Kailangang i-reset nang mano-mano.</p>
+    <p><b>Back-feed.</b> Pabaligtad na daloy: galing sa grid papunta sa planta, dumadaan sa main transformer. Ganito sa start-up.</p>
+    <p><b>House load.</b> Bukas ang 52L, sarado ang 52G. Ang generator ay sariling planta na lang ang pinapatakbo. May alarm pagkalipas ng 2 oras.</p>
+    <p><b>Tap changer (OLTC).</b> Sa main transformer, naglilipat ng tap habang may load para ayusin ang boltahe.</p>
+  </div>
+</div>
+
+<p class="note">Ayos ng planta ayon sa turbine at electrical study notes (05-turbine-electrical): generator 13.8 kV, 52G, main transformer 230/13.8 kV, 52L sa 230 kV papunta sa NGCP; ang unit auxiliary transformer 13.8/6.6 kV ay nakakabit sa pagitan ng 52G at main transformer. Interlock: ang 52G ay naisasara lang kapag sarado ang 52L at nag-OK ang sync check relay 25; ang turbine trip ay nagbubukas ng 52G; ang 52L ay bumubukas sa grid frequency trip (57.2 o 62.8 Hz, 2 s), pole slip, o lockout ng switchyard o transformer. Generator rating 176.5 MVA, 0.85 power factor, 13.8 kV, 7,384 A; main transformer 180/225 MVA; unit transformer 34/44 MVA (equipment data sa study notes). Mula sa grid 15 hanggang 16 MW = backup power mula NGCP (PR-OPE-5003). Ang konsumo ng planta sa 150 MW at ang Hz at slip sa sync dial ay hindi galing sa docs; halimbawa lang ang 60.11 Hz (ang start-up procedure ay nagsasabing medyo mas mataas ang generator kaysa grid). Kulay ng breaker: pula = sarado, berde = bukas.</p>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+let s={g:true,l:true,run:true};
+let ang=0,last=0;
+const INFO={
+  gen:"<b>Generator.</b> Dito ginagawa ang kuryente. Pinapaikot ito ng turbine sa 3600 rpm, kaya 60 Hz. Rating: 176.5 MVA, power factor 0.85, kaya 150 MW, 13.8 kV, 7,384 A. Ang magnet sa loob ay galing sa excitation (41 at AVR).",
+  g:"<b>52G, generator circuit breaker (SF6, 13.8 kV).</b> Ito ang nagkakabit o naghihiwalay ng generator sa planta at grid. Isinasara lang kapag sabay na ang ikot (pag-sync). Kusang bumubukas kapag nag-trip ang turbine o ang generator.",
+  mt:"<b>Main transformer, 230/13.8 kV, 180/225 MVA, may tap changer.</b> Pampataas ng boltahe, mula 13.8 kV hanggang 230 kV, para makarating ang kuryente nang malayo sa grid. Gumagana rin ito pabaligtad: kapag galing sa grid ang kuryente, ibinababa nito sa 13.8 kV para sa planta.",
+  l:"<b>52L, 230 kV circuit breaker (ABB HPL 245B1).</b> Ito ang nagkakabit o naghihiwalay ng buong planta sa grid. Hindi ito bumubukas sa normal na turbine trip. Bumubukas ito sa under/over frequency (relay 81: 57.2 o 62.8 Hz nang 2 s), pole slip (relay 78), o lockout ng switchyard o transformer.",
+  grid:"<b>Grid, NGCP 230 kV, 60 Hz.</b> Ang linya ng NGCP. Dito ipinapadala ang kuryenteng gawa natin. Dito rin kumukuha ang planta kapag nakatigil ang generator.",
+  uat:"<b>Unit auxiliary transformer, 13.8/6.6 kV, 34/44 MVA.</b> Pampababa ng boltahe, mula 13.8 kV hanggang 6.6 kV, para sa malalaking motor ng planta. Nakakabit ito sa pagitan ng 52G at ng main transformer, kaya puwede itong pakainin ng generator o ng grid.",
+  plant:"<b>Mga motor ng planta.</b> BFP, fans, pumps. Kailangan nila ng kuryente para tumakbo ang boiler at turbine. Kapag umiikot ang mga fan sa larawan, may kuryente sila."
+};
+document.querySelectorAll(".tap").forEach(e=>{const f=()=>{$("info").innerHTML=INFO[e.dataset.k];};e.addEventListener("click",f);e.addEventListener("keydown",ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();f();}});});
+
+function needSync(){return s.run&&!s.g&&s.l;}
+function render(){
+  const gen=s.run&&s.g, grid=s.l, plant=gen||grid;
+  $("fGen").classList.toggle("on",gen);
+  $("fAux").classList.toggle("on",plant);
+  const mt=$("fMT");
+  if(grid&&gen){mt.classList.add("on");mt.classList.remove("rev");}
+  else if(grid){mt.classList.add("on","rev");}
+  else mt.classList.remove("on");
+  $("rot").classList.toggle("spin",s.run);
+  ["f1","f2","f3"].forEach(id=>$(id).classList.toggle("spin",plant));
+  $("genTxt").textContent=s.run?(s.g?"umiikot, nakakabit":"umiikot, hiwalay pa"):"nakatigil (trip)";
+  const col=c=>c?"var(--run)":"var(--stop)";
+  [["b52G",s.g],["b52L",s.l]].forEach(([id,c])=>{$(id).querySelector("rect").style.stroke=col(c);$(id).querySelector("text").style.fill=col(c);});
+  btn("bt52G",s.g,"52G");btn("bt52L",s.l,"52L");
+  const g=$("btGen");g.className="b "+(s.run?"closed":"open");
+  g.innerHTML=s.run?"Turbine trip<small>Turbine: tumatakbo</small>":"Paandarin ulit ang turbine<small>Turbine: nakatigil</small>";
+  let t;
+  if(gen&&grid)t="<b>Normal na takbo.</b> Ang generator ang nagpapatakbo ng mga motor ng planta, at ang sobra ay ipinapadala sa grid.";
+  else if(gen&&!grid)t="<b>House load.</b> Natanggal ang grid. Ang generator na lang ang nagpapatakbo ng sariling planta.";
+  else if(!gen&&grid)t=s.run?"<b>Umiikot na ang generator pero hiwalay pa.</b> Ang grid ang nagpapatakbo ng planta. Kailangan munang i-sync bago isara ang 52G.":"<b>Kuryente galing sa grid.</b> Nakatigil ang generator. Pabaligtad na dumadaan ang kuryente sa main transformer, papunta sa mga motor ng planta.";
+  else t="<b>Blackout.</b> Walang generator at walang grid. Patay ang mga motor ng planta.";
+  $("say").innerHTML=t;
+  const V=(k,v)=>'<div class="v">'+k+'<b>'+v+'</b></div>';
+  let vv;
+  if(gen&&grid)vv=V("Generator","150 MW")+V("Boltahe","13.8 kV")+V("Frequency","60.0 Hz")+V("Daloy sa 52L","palabas sa grid");
+  else if(gen&&!grid)vv=V("Generator","konsumo lang ng planta")+V("Boltahe","13.8 kV")+V("Frequency","turbine ang humahawak")+V("Daloy sa 52L","wala, bukas");
+  else if(grid)vv=V("Generator",s.run?"0 MW, hiwalay":"0 MW, nakatigil")+V("Mula sa grid","15 hanggang 16 MW")+V("Frequency","60.0 Hz, galing grid")+V("Daloy sa 52L","papasok sa planta");
+  else vv=V("Generator","0 MW")+V("Mula sa grid","0 MW")+V("Motors","patay")+V("Daloy sa 52L","wala");
+  $("vals").innerHTML=vv;
+  $("syncBox").hidden=!needSync();
+  $("btSync").innerHTML="Isara ang 52G ngayon<small>Pindutin kapag nasa alas-12 ang karayom</small>";
+}
+function btn(id,closed,name){const e=$(id);e.className="b "+(closed?"closed":"open");
+  e.innerHTML=(closed?"Buksan ang ":"Isara ang ")+name+"<small>"+name+": "+(closed?"SARADO":"BUKAS")+"</small>";}
+const warn=t=>{$("warn").textContent=t;};
+$("bt52G").onclick=()=>{warn("");
+  if(s.g){s.g=false;render();return;}
+  if(!s.run){warn("Hindi puwede: nakatigil ang generator. Paandarin muna ang turbine.");return;}
+  if(!s.l){warn("Hindi puwede: bukas ang 52L. Sa planta, kailangang sarado ang 52L bago isara ang 52G.");return;}
+  warn("Gamitin ang pag-sync sa ibaba. Hindi puwedeng isara ang 52G hangga't hindi sabay ang ikot.");};
+$("bt52L").onclick=()=>{warn("");
+  if(s.l){s.l=false;if(s.run&&s.g)warn("Bumukas ang 52L: house load na. Ganito ang mangyayari kapag nag-trip ang grid.");render();return;}
+  if(s.run&&s.g){warn("Sa planta, kailangan ding i-sync ito bago isara. Para simple, buksan muna ang 52G, isara ang 52L, tapos i-sync ang 52G.");return;}
+  s.l=true;render();};
+$("btGen").onclick=()=>{warn("");
+  if(s.run){s.run=false;if(s.g){s.g=false;warn("Turbine trip: kusang bumukas ang 52G.");}}
+  else{s.run=true;ang=200;warn("Umiikot na ang generator, pero hiwalay pa. Tingnan ang pag-sync sa ibaba.");}
+  render();};
+$("btSync").onclick=()=>{
+  const a=((ang%360)+360)%360,d=Math.min(a,360-a);
+  if(d<=10){s.g=true;warn("Sarado na ang 52G. Sa planta, 4.5 MW agad ang unang load (start-up procedure).");render();}
+  else warn("Hindi pa. Masyadong malayo ang karayom sa alas-12. Kapag isinara ngayon, mabibigla ang makina. Hintayin ang berdeng bahagi.");};
+function tick(ts){const dt=Math.min(.1,(ts-last)/1000||0);last=ts;
+  if(needSync()){ang+=dt*40;$("needle").setAttribute("transform","rotate("+ang.toFixed(1)+" 100 100)");}
+  requestAnimationFrame(tick);}
+requestAnimationFrame(tick);
+render();
+})();
+</script>
+<script>if("serviceWorker" in navigator&&location.protocol!=="file:")navigator.serviceWorker.register("sw.js")</script></body></html>
