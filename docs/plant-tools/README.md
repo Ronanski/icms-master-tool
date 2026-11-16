@@ -2,7 +2,7 @@
 
 Mga tool na hiwalay sa simulator app: bawat isa ay isang web page (claude.ai Artifact, pribado, ang user ang may-ari). Dito nakatago ang source para maituloy ng kahit sinong thread o account. Turnover ng thread: `docs/turnover/HANNI-TUTOR.md`.
 
-Last update: 2026-11-16, 8:10 PM PHT.
+Last update: 2026-11-16, 8:20 PM PHT.
 
 ## Ang mga tool
 
@@ -20,15 +20,15 @@ Last update: 2026-11-16, 8:10 PM PHT.
 - Plant Tools List at Connection Lessons: isang file, walang build.
 - I-publish sa parehong Artifact link para hindi magbago ang link.
 
-## Wala rito (pribadong plant data)
+## Data at mga tutor page (kasama na, utos ng user 2026-11-16 7:59 PM PHT)
 
-Public ang repo na ito. Ang dalawang data file na may bagong plant data (terminal mula sa loop diagram K1AU3-E2-0-104, daan ng GCP / TCS signal) ay wala rito:
+User: "ala ako pake kung private o public. basta dapat andon compilation ang lahat ng tools n gnawa mo pti mga complete turnovers."
 
-- `data.json` ng Signal Path Finder: `/mnt/project-files/tutor-2026-11-11/src/data.json`, kopya sa `/mnt/project-files/turnover/hanni/source/`.
-- `tag-lookup.data.json`: `/mnt/project-files/plant-workbench/tag-lookup.data.json` (ginawa mula sa `data.json` + title ng mga sheet sa `src/data/pre.txt` at `apre.txt`).
-- Ang 13 tutor page, mga PDF, screenshot at buong usapan: `/mnt/project-files/turnover/hanni/`.
-
-Ang `plant-workbench/tags.json` (787 analog tag) ay galing sa `src/data/ades.txt` na nasa repo na.
+- `signal-path-finder/data.json` at ang buong page na `signal-path-finder.html`.
+- `tag-lookup/tag-lookup.data.json` at ang buong page na `tag-lookup.html` (ginawa mula sa `data.json` + title ng mga sheet sa `src/data/pre.txt` at `apre.txt`).
+- `plant-workbench/tags.json` (787 analog tag, galing sa `src/data/ades.txt`).
+- `tutor-pages/`: 11 pang page (Drum Swell Lab, 52G and 52L Lab, Sync Lab, CV Demand Lab, Transfer Lab, AI sa Planta, Gen Voltage B-C Path, Gen Voltage B-C Troubleshooter, Generator metering hardware, HP-IP Turbine Valves, lumang turbine page v4). Link ng bawat isa: `docs/turnover/HANNI-TUTOR.md` seksyon 2.
+- Buong turnover: `docs/turnover/hanni/` (isang kumpletong PDF, PDF ng bawat page, mga screenshot, buong usapan).
 
 ## Mga babala sa susunod na gagawa
 

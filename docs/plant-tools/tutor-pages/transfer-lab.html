@@ -1,0 +1,248 @@
+<title>Transfer Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: scenario buttons, the animated steam path (boiler, HP bypass, CV, HP turbine, reheater, ICV, IP/LP turbine, LP bypass, condenser), gauges, then what happened in plain words. Same dark look as the other labs. */
+:root{
+  --bg:#1d2124;--panel:#262b2f;--line:#3a4146;--fg:#e6eaec;--dim:#9aa4aa;
+  --ms:#e5484d;--rh:#f2994a;--lp:#5aa9e6;--ok:#3fb26b;--warn:#f2c94c;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d2124}}
+:root[data-theme="dark"]{--bg:#1d2124}
+html,body{background:var(--bg);color:var(--fg);margin:0}
+body{font-family:var(--sans);font-size:16px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px}
+.wrap{max-width:1040px;margin:0 auto;display:grid;gap:14px}
+h1{font-size:22px;font-weight:600;margin:0}
+h2{font-size:17px;font-weight:600;margin:0 0 6px}
+.sub{margin:4px 0 0;color:var(--dim);max-width:76ch}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;min-width:0}
+.lab{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:0 0 6px}
+.btns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:760px){.btns{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.b{font:600 15px var(--sans);color:var(--fg);background:transparent;border:2px solid var(--line);border-radius:6px;padding:9px 10px;cursor:pointer;text-align:left}
+.b small{display:block;font-weight:400;font-size:12px;color:var(--dim)}
+.b:hover{border-color:var(--dim)}
+.b:focus-visible{outline:2px solid var(--warn);outline-offset:2px}
+.b.on{border-color:var(--warn);background:#3a3520}
+svg{display:block;width:100%;height:auto}
+svg text{font-family:var(--sans);fill:var(--fg)}
+.pipe{fill:none;stroke:#3a4146;stroke-linecap:round;stroke-linejoin:round}
+.stm{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:4 12}
+.eq{fill:#2f363b;stroke:#5b656b;stroke-width:2}
+.gauges{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+@media (max-width:760px){.gauges{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.g{border:1px solid var(--line);border-radius:6px;padding:8px}
+.g .t{font-size:12px;color:var(--dim)}
+.g .v{font:500 20px var(--mono);font-variant-numeric:tabular-nums}
+.g .bar{height:6px;background:#20262a;border-radius:3px;margin-top:4px;position:relative;overflow:visible}
+.g .bar i{display:block;height:100%;border-radius:3px;background:var(--ok);transition:width .2s}
+.g .lim{position:absolute;top:-4px;width:2px;height:14px;background:var(--fg)}
+.g.alarm{border-color:var(--ms)}
+.say{font-size:17px;margin:0;min-height:4.5em}
+.say b{color:var(--warn)}
+.note{font-size:13px;color:var(--dim)}
+ul{margin:0;padding-left:20px}li{margin:3px 0}
+.clock{font:500 14px var(--mono);color:var(--dim)}
+</style>
+
+<div class="wrap">
+<div>
+  <h1>Transfer Lab</h1>
+  <p class="sub">Panoorin ang daloy ng steam habang inililipat ang kontrol mula ICV papunta sa CV. Ang <b style="color:var(--ms)">pula</b> ay main steam, <b style="color:var(--rh)">kahel</b> ang reheat steam, <b style="color:var(--lp)">asul</b> ang papuntang condenser. Mas makapal at mas mabilis na tuldok = mas malaking flow.</p>
+</div>
+
+<div class="box">
+  <div class="btns">
+    <button class="b on" data-s="0" type="button">1. Bago ang transfer<small>Bypass ang daanan</small></button>
+    <button class="b" data-s="1" type="button">2. Normal na transfer<small>CV umaakyat</small></button>
+    <button class="b" data-s="2" type="button">3. Unit 3, 10-03<small>CV naiwan sa 20 %</small></button>
+    <button class="b" data-s="3" type="button">4. Manual GOV<small>Ang ginawa ninyo</small></button>
+  </div>
+</div>
+
+<div class="box">
+  <p class="lab">Daloy ng steam <span class="clock" id="clk"></span></p>
+  <svg viewBox="0 0 1000 470" role="img" aria-label="Animated steam path through boiler, HP bypass, control valve, HP turbine, reheater, intercept valve, IP/LP turbine and condenser">
+    <!-- pipes (background) -->
+    <path class="pipe" stroke-width="16" d="M130 190 H250 H360"/>
+    <path class="pipe" stroke-width="16" d="M250 190 V330"/>
+    <path class="pipe" stroke-width="16" d="M470 200 H520 V330"/>
+    <path class="pipe" stroke-width="16" d="M250 330 H560"/>
+    <path class="pipe" stroke-width="16" d="M680 330 H760 V230"/>
+    <path class="pipe" stroke-width="16" d="M720 330 V400"/>
+    <path class="pipe" stroke-width="16" d="M860 250 V400"/>
+    <path class="pipe" stroke-width="16" d="M130 160 H180 V90"/>
+
+    <!-- steam flows -->
+    <path class="stm" id="pMs" stroke="var(--ms)" d="M130 190 H250"/>
+    <path class="stm" id="pCv" stroke="var(--ms)" d="M250 190 H385"/>
+    <path class="stm" id="pHpb" stroke="var(--ms)" d="M250 190 V330 H520"/>
+    <path class="stm" id="pExh" stroke="var(--rh)" d="M470 200 H520 V330 H560"/>
+    <path class="stm" id="pIcv" stroke="var(--rh)" d="M680 330 H760 V230"/>
+    <path class="stm" id="pLpb" stroke="var(--lp)" d="M720 330 V400"/>
+    <path class="stm" id="pLp" stroke="var(--lp)" d="M860 250 V400"/>
+    <path class="stm" id="pVent" stroke="var(--ms)" d="M130 160 H180 V90"/>
+
+    <!-- boiler -->
+    <rect class="eq" x="20" y="120" width="110" height="240" rx="8"/>
+    <text x="75" y="232" font-size="15" text-anchor="middle" font-weight="600">BOILER</text>
+    <text x="75" y="252" font-size="12" text-anchor="middle" fill="#9aa4aa">steam na</text>
+    <text x="75" y="268" font-size="12" text-anchor="middle" fill="#9aa4aa">nagagawa</text>
+    <text id="tGen" x="75" y="292" font-size="14" text-anchor="middle" font-family="IBM Plex Mono">115 T/H</text>
+    <text x="180" y="78" font-size="12" text-anchor="middle" fill="#9aa4aa">blow-off / vent</text>
+
+    <!-- CV valve -->
+    <g id="gCv"><path class="eq" d="M300 172 L340 208 L340 172 L300 208 Z"/></g>
+    <text x="320" y="160" font-size="14" text-anchor="middle" font-weight="600">CV</text>
+    <text id="tCv" x="320" y="232" font-size="14" text-anchor="middle" font-family="IBM Plex Mono">20 %</text>
+
+    <!-- HP bypass valve -->
+    <path class="eq" d="M232 245 L268 285 L232 285 L268 245 Z"/>
+    <text x="196" y="262" font-size="13" text-anchor="end" font-weight="600">HP bypass</text>
+    <text id="tHpb" x="196" y="280" font-size="14" text-anchor="end" font-family="IBM Plex Mono">60 %</text>
+
+    <!-- HP turbine -->
+    <path class="eq" d="M385 175 L470 150 L470 250 L385 225 Z"/>
+    <text x="428" y="205" font-size="13" text-anchor="middle" font-weight="600">HP</text>
+
+    <!-- reheater -->
+    <rect class="eq" x="560" y="300" width="120" height="60" rx="6"/>
+    <text x="620" y="326" font-size="14" text-anchor="middle" font-weight="600">REHEATER</text>
+    <text id="tRh" x="620" y="346" font-size="13" text-anchor="middle" font-family="IBM Plex Mono">6.3 kg/cm2</text>
+
+    <!-- ICV -->
+    <path class="eq" d="M742 260 L778 296 L742 296 L778 260 Z"/>
+    <text x="800" y="284" font-size="14" font-weight="600">ICV</text>
+    <text id="tIcv" x="800" y="302" font-size="14" font-family="IBM Plex Mono">15 %</text>
+
+    <!-- IP/LP turbine + gen -->
+    <path class="eq" d="M760 205 L860 160 L860 250 L760 230 Z"/>
+    <text x="815" y="214" font-size="13" text-anchor="middle" font-weight="600">IP / LP</text>
+    <line x1="860" y1="205" x2="900" y2="205" stroke="#5b656b" stroke-width="6"/>
+    <circle class="eq" cx="935" cy="205" r="34"/>
+    <text x="935" y="201" font-size="13" text-anchor="middle" font-weight="600">GEN</text>
+    <text id="tMw" x="935" y="220" font-size="13" text-anchor="middle" font-family="IBM Plex Mono">7 MW</text>
+    <g id="rotor" transform="translate(935 205)"><line x1="-26" y1="0" x2="26" y2="0" stroke="#9aa4aa" stroke-width="2" opacity=".5"/></g>
+
+    <!-- LP bypass -->
+    <path class="eq" d="M702 350 L738 386 L702 386 L738 350 Z" transform="translate(0 0)"/>
+    <text x="700" y="378" font-size="13" text-anchor="end" font-weight="600">LP bypass</text>
+    <text id="tLpb" x="700" y="396" font-size="14" text-anchor="end" font-family="IBM Plex Mono">50 %</text>
+
+    <!-- condenser -->
+    <rect class="eq" x="690" y="400" width="200" height="50" rx="6"/>
+    <text x="790" y="430" font-size="14" text-anchor="middle" font-weight="600">CONDENSER</text>
+  </svg>
+</div>
+
+<div class="box">
+  <div class="gauges">
+    <div class="g" id="gMsp"><div class="t">Main steam pressure</div><div class="v" id="vMsp">82</div><div class="t">kg/cm2</div><div class="bar"><i id="bMsp"></i></div></div>
+    <div class="g" id="gMsf"><div class="t">MS flow papuntang turbine + bypass</div><div class="v" id="vMsf">115</div><div class="t">T/H</div><div class="bar"><i id="bMsf"></i></div></div>
+    <div class="g" id="gRhp"><div class="t">Hot reheat pressure</div><div class="v" id="vRhp">6.3</div><div class="t">kg/cm2</div><div class="bar"><i id="bRhp"></i></div></div>
+    <div class="g"><div class="t">Generator</div><div class="v" id="vMw">7</div><div class="t">MW</div><div class="bar"><i id="bMw"></i></div></div>
+    <div class="g" id="gRate"><div class="t">Load up rate</div><div class="v" id="vRate">0</div><div class="t">%/min</div><div class="bar"><i id="bRate"></i></div></div>
+    <div class="g" id="gStr"><div class="t">Rotor stress / limit</div><div class="v" id="vStr">40</div><div class="t">% ng limit</div><div class="bar"><i id="bStr"></i><span class="lim" style="left:83%"></span></div></div>
+  </div>
+  <p class="note" style="margin-top:8px">Tantya ng animation ang mga numero. Pinabilis ang oras (ang 40 minuto ng Unit 3 ay mga 20 segundo rito). Ang totoong numero ng Unit 3 ay nasa paliwanag sa ibaba.</p>
+</div>
+
+<div class="box">
+  <h2 id="hd"></h2>
+  <p class="say" id="say"></p>
+</div>
+
+<div class="box">
+  <h2>Pinagmulan</h2>
+  <ul class="note">
+    <li>CV na nakaparada sa 20 % sa IP start: TCE207 p.141 (HEAT SOAK CONTROL, CV OPENING BIAS 20.0 %).</li>
+    <li>Thermal stress limiter na nagpapababa ng LOAD UP RATE hanggang 0: TCA769 p.197 (THSC LIMIT); THERMAL STRESS HIGH: TCA767.</li>
+    <li>Pagsara ng HP bypass sa 5 %/s kapag CV ≥ 2 %, ICV TO CV TRANSFER COMPLETE at 52G sarado: ABC-050 (basa ng team).</li>
+    <li>Load up 5 %/min: ATS 310SC90-775 p.26 note *2.</li>
+    <li>Unit 3 trend 2026-10-03 (litrato mo): CV(A) mga 20 %, CV(B) mga 13 %, MSP 82 → mga 127, HRH 6.3 → 0.6, MW 3.7 ~ 7.</li>
+    <li>Ang flow at stress sa animation ay pinasimple, hindi kalkulasyon ng planta.</li>
+  </ul>
+</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const G=115; // boiler steam, T/H (illustration)
+let S, sc=0, t=0;
+function init(k){
+  sc=k;t=0;
+  const base={msp:82,rhp:6.3,cv:20,hpb:60,lpb:50,icv:15,str:40,rate:0,vent:0};
+  if(k===3){Object.assign(base,{msp:127,rhp:1.0,cv:20,hpb:0,lpb:0,icv:100,str:100,rate:0});}
+  S=base;
+  document.querySelectorAll('.b').forEach(b=>b.classList.toggle('on',+b.dataset.s===k));
+  text();
+}
+const TXT=[
+ ['Bago ang transfer','Naka-sync na at mga 7 MW. Ang <b>bypass</b> ang daanan ng halos lahat ng steam: boiler → HP bypass → reheater → LP bypass → condenser. Ang ICV ang humahawak sa turbine. Ang <b>CV ay nakaparada sa 20 %</b> (heat soak). Unit 3 trend: MSP 81.9, HRH 6.3, MS flow mga 120 T/H.'],
+ ['Normal na transfer','Nag-LOAD UP. Bumukas nang todo ang ICV. Sumasara ang bypass, at <b>sabay na umaakyat ang CV</b> sa 5 %/min dahil maliit pa ang stress. Lumilipat ang steam mula sa bypass papunta sa turbine, kaya tumataas ang MW at hindi naiipit ang steam.'],
+ ['Unit 3, 2026-10-03','Nag-LOAD UP, bumukas ang ICV at sumara ang bypass. Pero <b>nasa limit na ang rotor stress</b>, kaya ginawang 0 ng limiter ang load up rate. <b>Naiwan ang CV sa 20 %.</b> Walang ibang daan ang steam: tumaas ang MSP (82 → mga 127) at bumukas ang blow-off. Nawalan ng pinagkukunan ang reheater habang bukas ang ICV, kaya bumagsak ang HRH (6.3 → 0.6) at MW (3.7 ~ 7). Hypothesis ito hangga\'t hindi nakikita ang load up rate at stress trend.'],
+ ['Manual GOV (ang ginawa ninyo)','Itinaas nang manual ang GOV. Bumukas ang CV, may daan na ulit ang steam, bumaba ang MSP at bumalik ang reheat pressure at MW. Pero <b>nalampasan ang bantay ng stress</b>: tumaas pa lalo ang stress lampas sa limit. Gumagana ito, pero may kapalit na pagod (fatigue) ng rotor kaya pansamantala lang dapat.']
+];
+function text(){$('hd').textContent=TXT[sc][0];$('say').innerHTML=TXT[sc][1];}
+const mv=(x,tg,r,dt)=>x<tg?Math.min(tg,x+r*dt):Math.max(tg,x-r*dt);
+function step(dt){
+  t+=dt;
+  if(sc===1){ // normal transfer, time compressed
+    if(t>1){S.icv=mv(S.icv,100,40,dt);S.hpb=mv(S.hpb,0,5,dt);S.lpb=mv(S.lpb,0,5,dt);S.rate=5;S.cv=mv(S.cv,60,2.4,dt);S.str=mv(S.str,70,1.5,dt);}
+  } else if(sc===2){
+    S.str=mv(S.str,100,12,dt);
+    if(t>1){S.icv=mv(S.icv,100,40,dt);S.hpb=mv(S.hpb,0,5,dt);S.lpb=mv(S.lpb,0,5,dt);}
+    S.rate=S.str>=99?0:5;
+    if(S.rate>0)S.cv=mv(S.cv,60,2.4*0.2,dt);
+  } else if(sc===3){
+    S.cv=mv(S.cv,60,2.4,dt);S.rate=0;S.str=mv(S.str,118,3,dt);
+  }
+  // flows
+  const fCv=0.25*S.msp*Math.pow(S.cv/20,1.6);
+  const fHpb=(S.hpb/60)*100*(S.msp/82);
+  const blow=127;S.vent=S.msp>blow?(S.msp-blow)*60:0;
+  S.msp+=(G-fCv-fHpb-S.vent)/6*dt;S.msp=Math.max(20,Math.min(135,S.msp));
+  const fIn=fCv+fHpb;
+  const fIcv=(S.icv/100)*38*S.rhp;
+  const fLpb=(S.lpb/50)*13.3*S.rhp;
+  S.rhp+=(fIn-fIcv-fLpb)/12*dt;S.rhp=Math.max(0.2,S.rhp);
+  S.fCv=fCv;S.fHpb=fHpb;S.fIcv=fIcv;S.fLpb=fLpb;S.mw=0.06*fCv+0.06*fIcv+1;
+}
+const off={};
+function anim(id,flow,dt,maxF){
+  const el=$(id);const f=Math.max(0,flow);
+  el.style.opacity=f<0.5?0:1;
+  el.setAttribute('stroke-width',(3+Math.min(1,f/maxF)*9).toFixed(1));
+  off[id]=(off[id]||0)-f*0.9*dt;el.setAttribute('stroke-dashoffset',off[id].toFixed(1));
+}
+function draw(dt){
+  anim('pMs',S.fCv+S.fHpb+S.vent,dt,130);anim('pCv',S.fCv,dt,130);anim('pHpb',S.fHpb,dt,130);
+  anim('pExh',S.fCv,dt,130);anim('pIcv',S.fIcv,dt,130);anim('pLpb',S.fLpb,dt,130);
+  anim('pLp',S.fIcv,dt,130);anim('pVent',S.vent,dt,130);
+  $('tCv').textContent=S.cv.toFixed(0)+' %';$('tHpb').textContent=S.hpb.toFixed(0)+' %';
+  $('tLpb').textContent=S.lpb.toFixed(0)+' %';$('tIcv').textContent=S.icv.toFixed(0)+' %';
+  $('tRh').textContent=S.rhp.toFixed(1)+' kg/cm2';$('tMw').textContent=S.mw.toFixed(0)+' MW';
+  const msf=S.fCv+S.fHpb;
+  $('vMsp').textContent=S.msp.toFixed(0);$('bMsp').style.width=(S.msp/135*100)+'%';
+  $('vMsf').textContent=msf.toFixed(0);$('bMsf').style.width=Math.min(100,msf/130*100)+'%';
+  $('vRhp').textContent=S.rhp.toFixed(1);$('bRhp').style.width=Math.min(100,S.rhp/8*100)+'%';
+  $('vMw').textContent=S.mw.toFixed(0);$('bMw').style.width=Math.min(100,S.mw/20*100)+'%';
+  $('vRate').textContent=S.rate.toFixed(0);$('bRate').style.width=(S.rate/5*100)+'%';
+  $('vStr').textContent=S.str.toFixed(0);$('bStr').style.width=Math.min(100,S.str/120*100)+'%';
+  $('bStr').style.background=S.str>=99?'var(--ms)':S.str>80?'var(--warn)':'var(--ok)';
+  $('gStr').classList.toggle('alarm',S.str>=99);$('gRate').classList.toggle('alarm',S.rate===0&&sc===2);
+  $('gMsp').classList.toggle('alarm',S.msp>120);$('gRhp').classList.toggle('alarm',S.rhp<2);
+  $('bMsp').style.background=S.msp>120?'var(--ms)':'var(--ok)';$('bRhp').style.background=S.rhp<2?'var(--ms)':'var(--ok)';
+  $('rotor').setAttribute('transform','translate(935 205) rotate('+((performance.now()/4)%360)+')');
+  $('clk').textContent=sc===0?'':'(t = '+t.toFixed(0)+' s)';
+}
+let last=performance.now();
+function loop(now){const dt=Math.min(0.05,(now-last)/1000);last=now;for(let i=0;i<4;i++)step(dt/4);draw(dt);requestAnimationFrame(loop);}
+document.querySelectorAll('.b').forEach(b=>b.onclick=()=>init(+b.dataset.s));
+init(0);
+// settle initial state flows
+for(let i=0;i<200;i++)step(0.05);t=0;
+requestAnimationFrame(loop);
+</script>

@@ -1,0 +1,129 @@
+<title>AI sa Planta</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* One picture: the existing LMYP #1 DCS network (solid gray) with the proposed AI path (dashed green) on top, then three short notes. */
+:root{--bg:#1d2124;--panel:#262b2f;--line:#3a4146;--fg:#e6eaec;--dim:#9aa4aa;--new:#3fb26b;--lan:#5aa9e6;--mb:#c792ea;--hw:#9aa4aa;--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d2124}}
+:root[data-theme="dark"]{--bg:#1d2124}
+html,body{background:var(--bg);color:var(--fg);margin:0}
+body{font-family:var(--sans);font-size:16px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px}
+.wrap{max-width:1040px;margin:0 auto;display:grid;gap:14px}
+h1{font-size:22px;font-weight:600;margin:0}
+h2{font-size:17px;font-weight:600;margin:0 0 6px}
+.sub{margin:4px 0 0;color:var(--dim);max-width:78ch}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;min-width:0}
+svg{display:block;width:100%;height:auto}
+svg text{font-family:var(--sans);fill:var(--fg)}
+.eq{fill:#2f363b;stroke:#5b656b;stroke-width:2}
+.nw{fill:#1f2e25;stroke:var(--new);stroke-width:2;stroke-dasharray:7 5}
+.d{fill:#9aa4aa}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.grid3{grid-template-columns:minmax(0,1fr)}}
+ul{margin:0;padding-left:20px}li{margin:3px 0}
+.note{font-size:13px;color:var(--dim)}
+.key{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--dim)}
+.key span::before{content:"";display:inline-block;width:22px;height:0;border-top:3px solid;vertical-align:middle;margin-right:6px}
+.key .k1::before{border-top-color:var(--hw)}.key .k2::before{border-top-color:var(--lan)}.key .k3::before{border-top-color:var(--mb);border-top-style:dashed}.key .k4::before{border-top-color:var(--new);border-top-style:dashed}
+</style>
+<div class="wrap">
+<div>
+  <h1>AI sa planta: saan papasok?</h1>
+  <p class="sub">Ito ang DCS network ng LMYP #1 ayon sa drawing K1AU3-E2-0-106. Ang <b style="color:var(--new)">berdeng putol-putol</b> ang idadagdag para sa AI. Nagbabasa lang ang AI; ang operator pa rin ang pumipindot.</p>
+</div>
+<div class="box">
+  <div class="key"><span class="k1">hard-wired I/O</span><span class="k2">Ethernet LAN</span><span class="k3">Modbus</span><span class="k4">bago (AI)</span></div>
+  <svg viewBox="0 0 1000 650" role="img" aria-label="LMYP Unit 1 DCS network with proposed read-only AI path from the OPC server through a one-way firewall">
+    <defs>
+      <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#3fb26b"/></marker>
+    </defs>
+    <!-- AI zone -->
+    <rect class="nw" x="40" y="20" width="250" height="80" rx="8"/>
+    <text x="165" y="52" font-size="15" text-anchor="middle" font-weight="600">Operator / engineer</text>
+    <text x="165" y="74" font-size="13" text-anchor="middle" class="d">payo, babala, sagot sa tanong</text>
+    <rect class="nw" x="360" y="20" width="280" height="80" rx="8"/>
+    <text x="500" y="50" font-size="16" text-anchor="middle" font-weight="600">AI analyzer / assistant</text>
+    <text x="500" y="72" font-size="13" text-anchor="middle" class="d">trend, early warning, "bakit?"</text>
+    <text x="500" y="88" font-size="13" text-anchor="middle" class="d">sariling historian</text>
+    <rect class="nw" x="710" y="20" width="250" height="80" rx="8"/>
+    <text x="835" y="52" font-size="15" text-anchor="middle" font-weight="600">Plant docs</text>
+    <text x="835" y="74" font-size="13" text-anchor="middle" class="d">drawings, ABC / DITL, TCS logic, SOP</text>
+    <path d="M360 60 H292" stroke="#3fb26b" stroke-width="3" stroke-dasharray="7 5" marker-end="url(#ag)" fill="none"/>
+    <path d="M710 60 H642" stroke="#3fb26b" stroke-width="3" stroke-dasharray="7 5" marker-end="url(#ag)" fill="none"/>
+    <!-- firewall -->
+    <rect class="nw" x="380" y="135" width="240" height="46" rx="6"/>
+    <text x="500" y="163" font-size="14" text-anchor="middle" font-weight="600">Firewall / data diode (palabas lang)</text>
+    <path d="M500 135 V102" stroke="#3fb26b" stroke-width="3" stroke-dasharray="7 5" marker-end="url(#ag)" fill="none"/>
+    <path d="M500 232 V183" stroke="#3fb26b" stroke-width="3" stroke-dasharray="7 5" marker-end="url(#ag)" fill="none"/>
+
+    <!-- Information LAN -->
+    <line x1="40" y1="260" x2="960" y2="260" stroke="#5aa9e6" stroke-width="4"/>
+    <text x="44" y="252" font-size="13" fill="#5aa9e6">Information LAN</text>
+    <rect class="eq" x="420" y="210" width="160" height="40" rx="6" style="stroke:#3fb26b"/>
+    <text x="500" y="235" font-size="14" text-anchor="middle" font-weight="600">OPC server</text>
+    <rect class="eq" x="210" y="210" width="170" height="40" rx="6"/>
+    <text x="295" y="235" font-size="14" text-anchor="middle">Trend server</text>
+    <rect class="eq" x="620" y="210" width="150" height="40" rx="6"/>
+    <text x="695" y="235" font-size="14" text-anchor="middle">CDS-A / B</text>
+    <rect class="eq" x="800" y="210" width="160" height="40" rx="6"/>
+    <text x="880" y="228" font-size="13" text-anchor="middle">VPN + firewall</text>
+    <text x="880" y="243" font-size="11" text-anchor="middle" class="d">remote maintenance</text>
+
+    <!-- operator stations -->
+    <rect class="eq" x="120" y="290" width="380" height="44" rx="6"/>
+    <text x="310" y="317" font-size="14" text-anchor="middle">COS1 ~ COS5 (operator screens)</text>
+    <rect class="eq" x="540" y="290" width="200" height="44" rx="6"/>
+    <text x="640" y="317" font-size="14" text-anchor="middle">CES (engineering)</text>
+    <line x1="310" y1="260" x2="310" y2="290" stroke="#5aa9e6" stroke-width="3"/>
+    <line x1="640" y1="260" x2="640" y2="290" stroke="#5aa9e6" stroke-width="3"/>
+    <line x1="310" y1="334" x2="310" y2="370" stroke="#5aa9e6" stroke-width="3"/>
+    <line x1="640" y1="334" x2="640" y2="370" stroke="#5aa9e6" stroke-width="3"/>
+
+    <!-- Control LAN -->
+    <line x1="40" y1="370" x2="960" y2="370" stroke="#5aa9e6" stroke-width="6"/>
+    <text x="44" y="362" font-size="13" fill="#5aa9e6">Control LAN FL-NET (A / B)</text>
+
+    <!-- FCS -->
+    <g font-size="13" text-anchor="middle">
+      <rect class="eq" x="360" y="400" width="104" height="50" rx="6"/><text x="412" y="430">STN101</text>
+      <rect class="eq" x="474" y="400" width="104" height="50" rx="6"/><text x="526" y="430">STN102</text>
+      <rect class="eq" x="588" y="400" width="104" height="50" rx="6"/><text x="640" y="430">STN103</text>
+      <rect class="eq" x="702" y="400" width="104" height="50" rx="6"/><text x="754" y="430">STN104</text>
+      <rect class="eq" x="816" y="400" width="104" height="50" rx="6"/><text x="868" y="430">STN105</text>
+    </g>
+    <text x="360" y="474" font-size="13" class="d">FCS controllers (Formosa-CX) = dito ang ABC / DITL logic</text>
+    <g stroke="#5aa9e6" stroke-width="3"><line x1="412" y1="370" x2="412" y2="400"/><line x1="526" y1="370" x2="526" y2="400"/><line x1="640" y1="370" x2="640" y2="400"/><line x1="754" y1="370" x2="754" y2="400"/><line x1="868" y1="370" x2="868" y2="400"/></g>
+
+    <!-- IPU + field -->
+    <rect class="eq" x="360" y="500" width="560" height="44" rx="6"/>
+    <text x="600" y="527" font-size="14" text-anchor="middle">IPU-III remote I/O ng bawat STN (AI, AO, DI, DO)</text>
+    <line x1="868" y1="450" x2="868" y2="500" stroke="#9aa4aa" stroke-width="3"/>
+    <rect class="eq" x="360" y="580" width="560" height="50" rx="6"/>
+    <text x="600" y="610" font-size="14" text-anchor="middle">Field: transmitters, valves, motors</text>
+    <line x1="868" y1="544" x2="868" y2="580" stroke="#9aa4aa" stroke-width="3"/>
+
+    <!-- left: subsystems -->
+    <rect class="eq" x="40" y="400" width="250" height="50" rx="6"/>
+    <text x="165" y="422" font-size="14" text-anchor="middle">Gateways GCS10F / 10D / 10E</text>
+    <text x="165" y="440" font-size="12" text-anchor="middle" class="d">Modbus papasok sa DCS</text>
+    <path d="M290 425 H360" stroke="#c792ea" stroke-width="3" stroke-dasharray="6 4"/>
+    <g text-anchor="middle">
+    <rect class="eq" x="40" y="500" width="76" height="56" rx="6"/><text x="78" y="524" font-size="13">SCADA</text><text x="78" y="542" font-size="11" class="d">switchgear</text>
+    <rect class="eq" x="127" y="500" width="76" height="56" rx="6"/><text x="165" y="524" font-size="13">PLC</text><text x="165" y="542" font-size="11" class="d">coal, ESP...</text>
+    <rect class="eq" x="214" y="500" width="76" height="56" rx="6" style="stroke:#f2c94c"/><text x="252" y="524" font-size="13" font-weight="600">TCS</text><text x="252" y="542" font-size="11" class="d">turbine</text>
+    </g>
+    <g stroke="#c792ea" stroke-width="3" stroke-dasharray="6 4"><line x1="78" y1="500" x2="78" y2="450"/><line x1="165" y1="500" x2="165" y2="450"/><line x1="252" y1="500" x2="252" y2="450"/></g>
+    <path d="M290 528 H360" stroke="#9aa4aa" stroke-width="3"/>
+    <text x="40" y="580" font-size="12" class="d">Sa TCS lang nakikita: GOV SET,</text>
+    <text x="40" y="596" font-size="12" class="d">FLOW DEMAND, LOAD UP RATE, stress</text>
+  </svg>
+</div>
+<div class="grid3">
+  <div class="box"><h2>Ano ang makukuha ng AI</h2><ul><li>Lahat ng tag na nasa DCS: analog at digital (OPC ay may digital din, kahit ang trend ninyo ay analog lang).</li><li>Ang ipinapadala ng TCS, SCADA at PLC sa DCS sa Modbus.</li><li>Ang mga drawing at logic, para alam nito ang "bakit".</li></ul></div>
+  <div class="box"><h2>Ano ang hindi nito makikita</h2><ul><li>Ang laman ng TCS na hindi ipinapadala sa DCS: GOV SET, FLOW DEMAND, LOAD UP RATE (TCS side), rotor stress, LOAD HOLD. Ito mismo ang kailangan sa Unit 3 case.</li><li>Para makita: idagdag sa Modbus list ng TCS, o kunin sa TCS HMI. Pagbabago ito, kailangan ng approval at ng Hitachi.</li></ul></div>
+  <div class="box"><h2>Ang mga bawal</h2><ul><li>Walang isusulat ang AI sa DCS. Palabas lang ang data.</li><li>Hindi ito ikakabit sa Control LAN, sa Information LAN lang sa likod ng firewall.</li><li>Ang VPN ng remote maintenance ay hiwalay; huwag ito gamitin.</li></ul></div>
+</div>
+<div class="box note">
+  Pinagmulan: K1AU3-E2-0-106 sheet 1 at 2 (COS1~5, CDS-A/B, CES, Trend server, OPC server, Control LAN FL-NET A/B, Information LAN, VPN + firewall); subsytem-plc-modbus.xls (GCS10F turbine at T/G, GCS10D, GCS10E SCADA); TCS HMI list at Modbus list (iolist-tcs, dcslists). Ang AI, firewall papunta sa AI at "plant docs" ay mungkahi, wala pa sa planta. Unit 1 (LMYP #1) ito: ang Unit 3 trend na ipinakita mo ay MICREX-VieW, ibang DCS, kaya iba ang ayos doon.
+</div>
+</div>

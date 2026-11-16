@@ -8,7 +8,7 @@ Purpose of the thread: teach the user (DCS engineer, visual learner) how the pla
 - Source of every page: `/mnt/project-files/tutor-2026-11-11/` (shared project folder, survives threads).
 - Published pages (private claude.ai Artifacts, owner = user): list in section 2.
 - Memory notes used by this thread: `project-signal-path-finder`, `reference-rack-room-layout-unit1`, `reference-scada-path-to-hmi`, `reference-impeccable-cli`.
-- Plant documents are private (Ronanski/icms-plant-documents and the user's PC). Never copy them into this public repo.
+- Plant documents are private (Ronanski/icms-plant-documents and the user's PC). The document files themselves (drawings, lists, manuals) are not copied here. The tool data taken from them is in the repo by the user's order of 2026-11-16 (section 5).
 
 ## 2. Pages made by this thread
 
@@ -30,7 +30,7 @@ Each line: name, link, file in `/mnt/project-files/tutor-2026-11-11/`, state.
 - **Connection Lessons** (2026-11-16): https://claude.ai/artifact/NrXakPC4qHBDZagBt3Ztt1, `docs/plant-tools/connection-lessons/`.
 - **Generator metering hardware**: `gen-metering-hardware.html` (link not confirmed in this note).
 
-Update 2026-11-16, 8:10 PM PHT (user: "save mo lahat sa github repo", "isang repo lng sna tpos mraming tools laman"): the tool sources are now in this repo under `docs/plant-tools/` (read its README first). The two data files with private plant data stay in the project folder.
+Update 2026-11-16, 8:10 PM PHT (user: "save mo lahat sa github repo", "isang repo lng sna tpos mraming tools laman"): the tool sources are now in this repo under `docs/plant-tools/` (read its README first). At 7:59 PM PHT the user said: "ala ako pake kung private o public. basta dapat andon compilation ang lahat ng tools n gnawa mo pti mga complete turnovers." So the data files, all pages and the complete turnover are in the repo too: `docs/plant-tools/` and `docs/turnover/hanni/`.
 
 ## 3. How to continue the Signal Path Finder
 
@@ -77,13 +77,15 @@ Full conversation (private): `/mnt/project-files/turnover/hanni/conversation.md`
 - 2026-11-15 8:37 PM: start the turnover now. 8:39 PM: "Kasama artifacts? Pdf? Mga usapan? Lahat? Covered?"
 - 2026-11-15 8:39 PM (team decision via coordinator): PDF and HTML copies with private plant data go only to `/mnt/project-files/turnover/hanni/`, never to a public repo.
 
-## 6. Private copies (project folder only, not in this repo)
+- 2026-11-16 6:55 PM: "GAWEN MO NA LAHAT NG TOOLS NA SINASABI MO. DIBA MADAMI UN"; 7:01 PM "tapusin mo na lahat"; 7:09 PM "diba sabe ko lahat", "bakit huminto ka". Meaning: build every tool in the Plant Tools List straight through, no stopping to report partway.
+- 2026-11-16 7:55 PM: "save mo lahat sa github repo."; "kailangan ba new repo ? isang repo lng sna tpos mraming tools laman e"; "tpos andun din ang turnover". One repo (this one) holds all tools and the turnover.
+- 2026-11-16 7:59 PM: "ala ako pake kung private o public. basta dapat andon compilation ang lahat ng tools n gnawa mo pti mga complete turnovers." This replaces the 2026-11-15 team decision to keep the copies in the project folder only.
 
-`/mnt/project-files/turnover/hanni/`:
-- `HANNI-TURNOVER-COMPLETE.pdf`: ONE file with everything (reading guide, this note, all 13 pages, full conversation), with bookmarks. Start here.
-- `HANNI-TUTOR.md`: copy of this note.
-- `conversation.md`: the whole thread, every message, PHT times.
-- `html/`: 13 pages as they are published now (12 listed in section 2, plus `turbine-page-v4.html`, an older turbine page).
-- `pdf/`: a PDF of each of the 13 pages (Signal Path Finder printed with signal GCP-AO1005 open).
-- `screenshots/`: 16 pictures (Signal Path Finder versions 7 to 16, rack room layout E2-0-107).
-- `source/`: Signal Path Finder source, data and the check scripts (section 3).
+## 6. Complete turnover files (in this repo since 2026-11-16)
+
+`docs/turnover/hanni/` (same files in `/mnt/project-files/turnover/hanni/`):
+- `HANNI-TURNOVER-COMPLETE.pdf`: ONE file made 2026-11-15 (reading guide, this note as of that day, 13 pages, the conversation up to then), with bookmarks. It does not hold the 2026-11-16 tools; for those read `docs/plant-tools/README.md`.
+- `conversation.md`: the whole thread up to 2026-11-15 8:39 PM PHT, plus an addendum with every user message of 2026-11-16.
+- `pdf/`: a PDF of each of the 13 pages of 2026-11-15.
+- `screenshots/`: Signal Path Finder versions 7 to 16, rack room layout, and the 2026-11-16 tools (Tag Lookup, Workbench, Connection Lessons, Plant Tools List).
+- Pages and sources: `docs/plant-tools/`.

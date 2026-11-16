@@ -1,0 +1,394 @@
+<title>HP-IP Turbine at Control Valves</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: part 1 = clickable steam path (boiler, MSV, CV, HP, NRV, ventilator, reheater, RSV/ICV, IP, LP, condenser, bypasses) with 3 states; part 2 = moving section of one control valve with demand slider and faults; sources at the end. Same dark look as the other labs. */
+:root{
+  --bg:#1d2124;--panel:#262b2f;--line:#3a4146;--fg:#e6eaec;--dim:#9aa4aa;
+  --ms:#e5484d;--rh:#f2994a;--lp:#5aa9e6;--oil:#c9a227;--ok:#3fb26b;--warn:#f2c94c;--metal:#5b656b;--eq:#2f363b;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d2124}}
+:root[data-theme="dark"]{--bg:#1d2124}
+html,body{background:var(--bg);color:var(--fg);margin:0}
+body{font-family:var(--sans);font-size:16px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;gap:14px}
+h1{font-size:22px;font-weight:600;margin:0;text-wrap:balance}
+h2{font-size:18px;font-weight:600;margin:0 0 6px;text-wrap:balance}
+h3{font-size:15px;font-weight:600;margin:0 0 4px}
+p{margin:0 0 8px}
+.sub{margin:4px 0 0;color:var(--dim);max-width:78ch}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;min-width:0}
+.lab{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:0 0 6px}
+.btns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.btns.f4{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:760px){.btns,.btns.f4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.b{font:600 14px var(--sans);color:var(--fg);background:transparent;border:2px solid var(--line);border-radius:6px;padding:8px 10px;cursor:pointer;text-align:left}
+.b small{display:block;font-weight:400;font-size:12px;color:var(--dim)}
+.b:hover{border-color:var(--dim)}
+.b:focus-visible,.part:focus-visible{outline:2px solid var(--warn);outline-offset:2px}
+.b.on{border-color:var(--warn);background:#3a3520}
+.scroll{overflow-x:auto}
+svg{display:block;width:100%;height:auto}
+#map{min-width:720px}
+svg text{font-family:var(--sans);fill:var(--fg)}
+.t-s{font-size:12px;fill:var(--dim)}
+.t-m{font-size:14px;font-weight:600}
+.pipe{fill:none;stroke:#3a4146;stroke-linecap:round;stroke-linejoin:round}
+.stm{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:4 12;transition:opacity .4s}
+.eq{fill:var(--eq);stroke:var(--metal);stroke-width:2}
+.part{cursor:pointer}
+.part:hover .eq,.part.sel .eq{stroke:var(--warn)}
+.vb{stroke:var(--metal);stroke-width:2}
+.split{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px}
+@media (max-width:860px){.split{grid-template-columns:minmax(0,1fr)}}
+.tag{font-family:var(--mono);font-size:13px;color:var(--warn)}
+ul{margin:4px 0 8px;padding-left:20px}
+li{margin:2px 0}
+.src{font-size:13px;color:var(--dim)}
+.note{border-left:3px solid var(--warn);padding:4px 0 4px 10px;color:var(--fg)}
+.read{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+@media (max-width:760px){.read{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.g{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px}
+.g .v{font:500 20px var(--mono);font-variant-numeric:tabular-nums}
+.g .k{font-size:12px;color:var(--dim)}
+.bar{height:6px;background:var(--line);border-radius:3px;margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);width:0;transition:width .3s}
+input[type=range]{width:100%;accent-color:var(--warn)}
+ol{margin:4px 0 8px;padding-left:22px}
+@media (prefers-reduced-motion:reduce){.stm{stroke-dasharray:none}}
+</style>
+
+<div class="wrap">
+<header>
+  <h1>HP at IP turbine ninyo, at paano gumagana ang control valve</h1>
+  <p class="sub">Pindutin ang bawat bahagi sa drawing para makita kung ano ito, ano ang trabaho nito, at anong signal ang meron sa TCS. Daloy ng steam ang drawing at hindi to scale. Sa planta, iisang casing ang HP at IP (HIP casing, counter-flow); dito, hiwalay silang iginuhit para makita ang daloy. Wala pa sa docs ang sectional drawing.</p>
+</header>
+
+<section class="box">
+  <p class="lab">Bahagi 1: daan ng steam</p>
+  <div class="btns" role="group" aria-label="Estado">
+    <button class="b on" id="st0" data-s="0">Bago ang transfer<small>IP start: ICV ang nagpapaandar, sarado ang CV</small></button>
+    <button class="b" id="st1" data-s="1">Pagkatapos ng transfer<small>Normal: CV ang nagkokontrol</small></button>
+    <button class="b" id="st2" data-s="2">10/3 at 11/9<small>Bukas daw ang CV, pero walang daloy</small></button>
+  </div>
+  <p id="stText" class="note" style="margin-top:10px"></p>
+  <div style="display:grid;gap:12px">
+    <div class="scroll">
+    <svg id="map" viewBox="0 0 1000 540" role="img" aria-label="Daan ng steam mula boiler hanggang condenser">
+      <!-- base pipes -->
+      <path class="pipe" stroke-width="9" d="M150 110 H470"/>
+      <path class="pipe" stroke-width="9" d="M230 110 V270"/>
+      <path class="pipe" stroke-width="9" d="M640 140 H700 V270 H150"/>
+      <path class="pipe" stroke-width="7" d="M700 200 H860 V430"/>
+      <path class="pipe" stroke-width="9" d="M150 400 H500"/>
+      <path class="pipe" stroke-width="7" d="M300 400 V490 H760"/>
+      <path class="pipe" stroke-width="9" d="M660 400 H730 V350 H760"/>
+      <!-- steam overlays -->
+      <path class="stm" id="pMs" stroke="var(--ms)" stroke-width="5" d="M150 110 H330"/>
+      <path class="stm" id="pCv" stroke="var(--ms)" stroke-width="5" d="M330 110 H470"/>
+      <path class="stm" id="pHpb" stroke="var(--ms)" stroke-width="5" d="M230 110 V270 H150"/>
+      <path class="stm" id="pExh" stroke="var(--rh)" stroke-width="5" d="M640 140 H700 V270 H150"/>
+      <path class="stm" id="pVent" stroke="var(--lp)" stroke-width="4" d="M700 200 H860 V430"/>
+      <path class="stm" id="pHrh" stroke="var(--rh)" stroke-width="5" d="M150 400 H500"/>
+      <path class="stm" id="pLpb" stroke="var(--lp)" stroke-width="4" d="M300 400 V490 H760"/>
+      <path class="stm" id="pX" stroke="var(--lp)" stroke-width="5" d="M660 400 H730 V350 H760"/>
+
+      <!-- boiler -->
+      <g class="part" data-p="boiler" tabindex="0">
+        <rect class="eq" x="20" y="60" width="130" height="390" rx="6"/>
+        <text class="t-m" x="85" y="90" text-anchor="middle">Boiler</text>
+        <text class="t-s" x="85" y="125" text-anchor="middle">SH outlet</text>
+        <text class="t-s" x="85" y="285" text-anchor="middle">Reheater</text>
+        <text class="t-s" x="85" y="300" text-anchor="middle">(cold RH papasok)</text>
+        <text class="t-s" x="85" y="415" text-anchor="middle">Hot RH palabas</text>
+      </g>
+      <!-- HP bypass -->
+      <g class="part" data-p="hpb" tabindex="0">
+        <polygon class="eq" points="214,180 246,200 214,220 246,220 214,180" style="fill:var(--eq)"/>
+        <polygon class="eq" points="214,180 246,180 230,200"/><polygon class="eq" points="214,220 246,220 230,200"/>
+        <text class="t-s" x="252" y="196">HP bypass</text><text class="t-s" x="252" y="211">PICMS1006</text>
+      </g>
+      <!-- MSV -->
+      <g class="part" data-p="msv" tabindex="0">
+        <rect class="eq" x="290" y="78" width="40" height="64" rx="4"/>
+        <text class="t-m" x="310" y="66" text-anchor="middle">MSV</text>
+        <text class="t-s" x="310" y="160" text-anchor="middle">(A) (B)</text>
+      </g>
+      <!-- CV -->
+      <g class="part" data-p="cv" tabindex="0">
+        <rect class="eq" x="380" y="78" width="40" height="64" rx="4"/>
+        <rect id="cvStem" x="396" y="52" width="8" height="26" fill="var(--oil)"/>
+        <text class="t-m" x="400" y="44" text-anchor="middle">CV</text>
+        <text class="t-s" x="400" y="160" text-anchor="middle">(A) (B)</text>
+      </g>
+      <!-- HP turbine -->
+      <g class="part" data-p="hp" tabindex="0">
+        <polygon class="eq" points="470,90 640,60 640,180 470,150"/>
+        <text class="t-m" x="555" y="118" text-anchor="middle">HP turbine</text>
+        <text class="t-s" x="478" y="82">1st stage</text>
+        <text class="t-s" x="600" y="198" text-anchor="middle">HP exhaust</text>
+      </g>
+      <!-- NRV -->
+      <g class="part" data-p="nrv" tabindex="0">
+        <circle class="eq" cx="560" cy="270" r="18"/>
+        <line id="nrvFlap" class="vb" x1="560" y1="256" x2="560" y2="284"/>
+        <text class="t-s" x="560" y="306" text-anchor="middle">Cold reheat NRV</text>
+      </g>
+      <!-- Ventilator -->
+      <g class="part" data-p="vent" tabindex="0">
+        <polygon class="eq" points="770,184 790,200 770,216"/><polygon class="eq" points="810,184 790,200 810,216"/>
+        <text class="t-s" x="790" y="176" text-anchor="middle">Ventilator valve</text>
+      </g>
+      <!-- RSV / ICV -->
+      <g class="part" data-p="icv" tabindex="0">
+        <rect class="eq" x="410" y="368" width="54" height="64" rx="4"/>
+        <text class="t-m" x="437" y="356" text-anchor="middle">RSV + ICV</text>
+        <text class="t-s" x="437" y="450" text-anchor="middle">(A) (B)</text>
+      </g>
+      <!-- IP turbine -->
+      <g class="part" data-p="ip" tabindex="0">
+        <polygon class="eq" points="500,370 660,345 660,455 500,430"/>
+        <text class="t-m" x="580" y="405" text-anchor="middle">IP turbine</text>
+      </g>
+      <!-- LP turbine -->
+      <g class="part" data-p="lp" tabindex="0">
+        <polygon class="eq" points="760,330 900,300 900,420 760,390"/>
+        <text class="t-m" x="830" y="365" text-anchor="middle">LP turbine</text>
+      </g>
+      <!-- LP bypass -->
+      <g class="part" data-p="lpb" tabindex="0">
+        <polygon class="eq" points="284,440 316,456 284,472"/><polygon class="eq" points="316,440 284,456 316,472" style="opacity:0"/>
+        <polygon class="eq" points="284,440 316,440 300,456"/><polygon class="eq" points="284,472 316,472 300,456"/>
+        <text class="t-s" x="322" y="452">LP bypass</text><text class="t-s" x="322" y="467">PICHR1003</text>
+      </g>
+      <!-- Condenser -->
+      <g class="part" data-p="cond" tabindex="0">
+        <rect class="eq" x="760" y="430" width="200" height="80" rx="6"/>
+        <text class="t-m" x="860" y="476" text-anchor="middle">Condenser</text>
+      </g>
+      <!-- Generator -->
+      <g class="part" data-p="gen" tabindex="0">
+        <rect class="eq" x="920" y="320" width="64" height="80" rx="6"/>
+        <text class="t-m" x="952" y="365" text-anchor="middle">GEN</text>
+        <text id="mwT" class="t-s" x="952" y="420" text-anchor="middle"></text>
+      </g>
+      <line x1="900" y1="360" x2="920" y2="360" stroke="var(--metal)" stroke-width="4"/>
+      <text class="t-s" x="20" y="530">Pula = main steam. Kahel = reheat steam. Asul = papuntang LP o condenser. Gumagalaw na guhit = may daloy.</text>
+    </svg>
+    </div>
+    <div class="box" id="info" style="background:var(--bg)" aria-live="polite"></div>
+  </div>
+</section>
+
+<section class="box">
+  <p class="lab">Bahagi 2: takbo ng mga valve sa IP start</p>
+  <h2>Mula reset hanggang transfer</h2>
+  <ol>
+    <li><b>Reset at chest warming.</b> Na-energize ang master trip solenoid, buo ang trip oil, 100 % ang RSV. Bahagyang bumubukas ang CV(B), saka ang MSV sa internal bypass (0 ~ 3 %) para initin ang CV chest. Isinasara ng TCS ang MSV kapag ang CV chest dT ay lumampas sa 90 C, at binubuksan ulit sa ilalim ng 80 C. <span class="src">(SU; IBD TA-7, TA-29)</span></li>
+    <li><b>Roll hanggang 400 rpm sa CV.</b> CV(A) mga 10 %, CV(B) mga 3 %, saka naka-lock ang CV. <span class="src">(SU; TCA523_1)</span></li>
+    <li><b>400 hanggang 3600 rpm sa ICV.</b> ICV na ang kumokontrol ng speed. Sa dulo ng 3600 rpm hold, buong sumasara ang CV sa mga 5 min at full open ang ventilator valve. <span class="src">(SU)</span></li>
+    <li><b>Sync at initial load.</b> 4.5 MW sa ICV pa rin. Walang steam sa HP; naka-vacuum ito sa ventilator valve. Lahat ng steam ng boiler: HP bypass, reheater, saka ICV at LP bypass. <span class="src">(SU)</span></li>
+    <li><b>Load up at transfer (ICV papuntang CV).</b> Full open ang ICV at CV na ang kumokontrol. Habang bumubukas ang CV, papasok ang steam sa HP, tataas ang HP exhaust pressure, bubukas ang NRV, at sasara ang ventilator valve. Sinasara ng DCS ang HP bypass kapag lumampas sa 2 % ang CV. <span class="src">(SU; ABC-050; IBD TC-17, TC-19)</span></li>
+    <li><b>Transfer complete.</b> Ayon sa MHPS, ang flow sa transfer ay load + 3 ~ 5 %, at bababa lang ang RH sa mga 3 ata, hindi sa 0. <span class="src">(MHPS start-up 503 p2 item k, p4)</span></li>
+    <li><b>Trip.</b> Na-de-energize ang master trip solenoid, natapon ang trip oil, at sabay na sumasara ang MSV, CV, RSV at ICV. Bubukas ang ventilator valve. <span class="src">(Study Book 05)</span></li>
+  </ol>
+</section>
+
+<section class="box">
+  <p class="lab">Bahagi 3: loob ng isang control valve (CV)</p>
+  <h2>Mula sa utos ng TCS hanggang sa daloy ng steam</h2>
+  <ol>
+    <li><b>GOV SET at FLOW DEMAND.</b> Ang TCS ay gumagawa ng iisang flow demand (TCE206, TCE p.140). Demand ito, hindi tunay na daloy.</li>
+    <li><b>Hatian ng ICV at CV (TCE207, IP start).</b> Ang ICV ang unang bumubukas. Ang CV ay bubukas lang kapag lumampas sa CV OPENING BIAS na 20 %. Mas mababa sa 20 % = CV full close (IBD TC-17).</li>
+    <li><b>Kurba ng CV (TCE212).</b> Ginagawang CV(A) at CV(B) POS DEMAND ang flow demand. Hindi naka-print ang kurba (PARA-LIST), kaya hindi pa natin alam ang bukas sa bawat flow demand.</li>
+    <li><b>Servo.</b> Ikinukumpara ng servo card ang POS DEMAND sa posisyong binabasa ng tatlong position transmitter (A, B, C; ZT-ST1904). Kapag magkaiba, pinapapasok ng servo valve ang control oil sa ilalim ng piston.</li>
+    <li><b>Actuator.</b> Itinutulak ng oil ang piston paakyat, kasama ang stem. Ang spring ang nagsasara kapag nawala ang oil. Ito ang pangkalahatang disenyo; hindi ko pa nababasa ang valve drawing ninyo.</li>
+    <li><b>Disc at seat.</b> Ang stem ang humihila sa disc paalis sa seat. Ang puwang sa pagitan nila ang dinadaanan ng steam papuntang 1st stage ng HP turbine.</li>
+    <li><b>Trip.</b> Ang master trip solenoid (A1, A2, B1, B2; ZS-ST1001) ay nagtatapon ng oil, kaya sabay na sumasara ang MSV, CV, RSV at ICV.</li>
+  </ol>
+  <div class="btns" role="group" aria-label="Kondisyon" style="margin-top:6px">
+    <button class="b on" data-f="ok">Normal<small>Lahat tama</small></button>
+    <button class="b" data-f="servo">Servo o oil<small>Hindi sumusunod ang stem</small></button>
+    <button class="b" data-f="disc">Disc naiwan<small>Gumagalaw ang stem, hindi ang disc</small></button>
+    <button class="b" data-f="msv">MSV sarado<small>Walang steam bago ang CV</small></button>
+    <button class="b" data-f="strainer">Barado ang strainer<small>Kaunti o walang dumadaan</small></button>
+    <button class="b" data-f="nrv">NRV sarado<small>Walang labasan ang HP</small></button>
+  </div>
+  <div class="split" style="margin-top:10px">
+    <div>
+      <label for="dem" class="lab" style="display:block">CV POS DEMAND mula sa TCS: <span id="demV" class="tag">20 %</span></label>
+      <input id="dem" type="range" min="0" max="100" value="20">
+      <svg id="valve" viewBox="0 0 520 460" role="img" aria-label="Section ng control valve">
+        <!-- actuator -->
+        <rect x="190" y="20" width="140" height="150" rx="6" fill="var(--eq)" stroke="var(--metal)" stroke-width="2"/>
+        <rect id="oil" x="196" y="140" width="128" height="24" fill="var(--oil)" opacity=".7"/>
+        <g id="piston"><rect x="196" y="120" width="128" height="16" fill="var(--metal)"/></g>
+        <path id="spring" fill="none" stroke="var(--dim)" stroke-width="3"/>
+        <text class="t-s" x="260" y="14" text-anchor="middle">Actuator: spring sa itaas, oil sa ilalim</text>
+        <!-- servo valve -->
+        <rect x="350" y="120" width="70" height="44" rx="4" fill="var(--eq)" stroke="var(--metal)" stroke-width="2"/>
+        <text class="t-s" x="385" y="146" text-anchor="middle">Servo</text>
+        <path id="oilLine" d="M350 152 H324" stroke="var(--oil)" stroke-width="5" fill="none"/>
+        <text class="t-s" x="430" y="140">Control oil</text>
+        <!-- position transmitters + local indicator -->
+        <rect x="140" y="190" width="30" height="80" rx="3" fill="var(--eq)" stroke="var(--metal)"/>
+        <text class="t-s" x="155" y="286" text-anchor="middle">ZT x3</text>
+        <line x1="120" y1="190" x2="120" y2="270" stroke="var(--dim)"/>
+        <g class="t-s"><text x="80" y="194">100 %</text><text x="94" y="274">0 %</text></g>
+        <polygon id="ptr" points="122,270 134,264 134,276" fill="var(--warn)"/>
+        <text class="t-s" x="40" y="300">Local lift indicator</text>
+        <!-- stem -->
+        <rect id="stem" x="252" y="136" width="16" height="200" fill="#8a949a"/>
+        <!-- body -->
+        <path d="M60 330 H200 V300 H320 V330 H330 V440 H190 V380 H60 Z" fill="var(--eq)" stroke="var(--metal)" stroke-width="2"/>
+        <rect x="60" y="340" width="140" height="30" fill="var(--bg)"/>
+        <rect id="inlet" x="60" y="340" width="140" height="30" fill="var(--ms)" opacity=".55"/>
+        <rect id="scr" x="168" y="336" width="8" height="38" fill="none" stroke="var(--dim)" stroke-dasharray="2 3"/>
+        <rect x="200" y="340" width="120" height="50" fill="var(--bg)"/>
+        <rect id="chest" x="200" y="340" width="120" height="50" fill="var(--ms)" opacity=".55"/>
+        <!-- seat -->
+        <rect x="200" y="390" width="40" height="10" fill="var(--metal)"/><rect x="280" y="390" width="40" height="10" fill="var(--metal)"/>
+        <rect x="240" y="400" width="40" height="40" fill="var(--bg)"/>
+        <rect id="outlet" x="240" y="400" width="40" height="40" fill="var(--ms)" opacity="0"/>
+        <!-- disc -->
+        <rect id="disc" x="236" y="372" width="48" height="20" rx="6" fill="#aab3b8"/>
+        <text class="t-s" x="70" y="332">Steam mula MSV</text>
+        <text class="t-s" x="292" y="458">Papuntang 1st stage</text>
+        <text class="t-s" x="336" y="372">Seat</text><line x1="320" y1="392" x2="334" y2="372" stroke="var(--dim)"/>
+        <text class="t-s" x="336" y="350">Disc</text><line x1="284" y1="380" x2="334" y2="352" stroke="var(--dim)"/>
+        <text id="scrT" class="t-s" x="150" y="324" text-anchor="middle"></text>
+        <path id="flowA" class="stm" stroke="var(--ms)" stroke-width="5" d="M60 355 H220 V395 H260 V440"/>
+      </svg>
+    </div>
+    <div>
+      <div class="read">
+        <div class="g"><div class="k">Demand ng TCS</div><div class="v" id="rD">20 %</div></div>
+        <div class="g"><div class="k">Posisyon sa DCS (ZT)</div><div class="v" id="rP">20 %</div></div>
+        <div class="g"><div class="k">Local lift indicator</div><div class="v" id="rL">20 %</div></div>
+        <div class="g"><div class="k">Steam na dumadaan</div><div class="v" id="rF">--</div><div class="bar"><i id="bF"></i></div></div>
+        <div class="g"><div class="k">1st stage pressure</div><div class="v" id="rS">--</div><div class="bar"><i id="bS"></i></div></div>
+      </div>
+      <p id="fText" class="note" style="margin-top:10px"></p>
+      <p class="src">Ang taas ng bar ay hugis lang, hindi tunay na T/H. Ang tunay na kurba ng lift laban sa flow ng CV ay wala sa docs (MHPS, TCE212 PARA-LIST).</p>
+    </div>
+  </div>
+</section>
+
+<section class="box">
+  <h2>Ano ang sinasabi nito sa 10/3 at 11/9</h2>
+  <p>Ang DCS (ABC-050) ay nagsasara ng HP bypass kapag lumampas sa 2 % ang posisyon ng CV. Binabasa nito ang posisyon, hindi ang tunay na daloy. Sa 10/3, mga 20 % at 13 % ang CV, pero bumagsak sa 0 ang MS flow at umakyat ang MSP sa mga 127. Kaya may humarang sa daan ng steam.</p>
+  <p>Ang 1st stage pressure ang naghihiwalay sa mga suspect (pindutin ang bawat fault sa Bahagi 3):</p>
+  <ul>
+    <li><b>Halos 0 ang 1st stage:</b> hindi umaabot ang steam sa HP. MSV, disc ng CV, o strainer.</li>
+    <li><b>Mataas ang 1st stage at HP exhaust:</b> pumasok ang steam pero walang labasan. NRV na hindi bumukas.</li>
+  </ul>
+  <p>Sa 11/9: may alarm na "Cold reheat NRV open" (8:50:54), at 0.6 ang 1st stage at 0.4 ang HP exhaust. Kaya sa 11/9, hindi ang NRV; hindi umabot ang steam sa HP. Sa 10/3, wala pa tayong 1st stage at HP exhaust pressure, kaya bukas pa ang dalawang posibilidad.</p>
+  <p class="note">Trend na kailangan (10/3 10:10 ~ 11:05 at 11/9 8:45 ~ 9:00): 1st stage pressure (PT-ST1001), HP exhaust pressure (PT-CR1901), MSV position (ZT-ST1903), CV position (ZT-ST1904), NRV full close (ZSC-CR1901), ventilator valve (ZSC / ZSO-CR1902).</p>
+</section>
+
+<footer class="src">
+  Sources: TCS Modbus point list (Library &gt; All signals: ZT-ST1903 MSV, ZT-ST1904 CV, ZT-ST1905 RSV / ICV, PT-ST1001 1st stage, PT-CR1901 HP exhaust, ZSC / ZSO-CR1901 NRV, ZSC / ZSO-CR1902 ventilator, ZS-ST1001 master trip solenoid, TE-ST1006 / 1007 IP after 15 / 18 stage). TCE soft logic p.140 (TCE206), TCE207, TCE212; IBD 310SC90-794 TC-17, TC-19 p.73. ABC-050, ABC-052. Alarm history 2026-11-09. MHPS heat balance PPE-13-0106 = PPE-14-0725 (IP / LP mga 75 % ng MW, CALC). Plant Study Book 05 sec. 1 (MTM machine description, SU, IBD TA-6, TA-7, TA-29); Davao maintenance manual p31; MHPS start-up 503. Wala sa docs: sectional drawing ng turbine at ng valve, kurba ng CV, kung may strainer sa MSV.
+</footer>
+</div>
+
+<script>
+(function(){
+const P={
+ boiler:{n:'Boiler (SH at reheater)',d:'Gumagawa ng main steam sa superheater (SH). Ang steam na lumabas sa HP turbine ay bumabalik dito sa reheater para initin ulit, saka pupunta sa IP turbine.',s:['Design: SH 129 kg/cm2, 541 C; RH 541 C (FHI manual Part 2 Sect 7)'],src:'FHI boiler manual; HB PPE-13-0106'},
+ hpb:{n:'HP bypass valve',d:'Kumukuha ng main steam bago ang MSV at ibinababa ito diretso sa cold reheat, may spray para lumamig. Habang start-up, ito ang tanging nagpapadaloy sa reheater. Sa transfer, sinasara ito ng DCS kapag ang posisyon ng CV ay lumampas sa 2 %.',s:['PICMS1006 (ABC-050)','M.070C: CV(A) o CV(B) > 2 %','Sara sa 5 %/s, mga 14 s mula 69 %'],src:'ABC-050; piping M1-211 ~ 213'},
+ msv:{n:'Main stop valve (MSV) A at B',d:'Bukas o sarado lang ito, hindi pang-kontrol. Full open ito habang tumatakbo ang turbine at sumasara agad sa trip. May internal bypass ito (0 ~ 3 %) na ginagamit sa CV chest warming bago mag-roll.',s:['ZT-ST1903-A1 ~ A3, B1 ~ B3: posisyon (3 transmitter bawat valve)','PT-MS1901-1, -2: inlet pressure','TE-MS1902-1 ~ 4: inlet temp','TE-ST1903-B1, B2: MSV(B) metal temp'],src:'TCS Modbus list; Study Book 05 (MTM, SU); IBD TA-7, TA-29'},
+ cv:{n:'Control valve (CV) A at B',d:'Ito ang nagkokontrol kung gaano karaming main steam ang papasok sa HP turbine. Habang IP start, sarado ito at ICV ang nagkokontrol. Sa transfer, bumubukas ito at nagiging pangunahing kontrol ng load. Tingnan ang Bahagi 3 para sa loob nito.',s:['ZT-ST1904-A1 ~ A3, B1 ~ B3: posisyon','TCE212_A1 / A2: CV(A) / (B) POS DEMAND','TE-ST1904-B1, B2: CV(B) metal temp','ZT-ST1008: CV(B) below seat warming drain'],src:'TCS Modbus list; TCS HMI AI list; TCE212'},
+ hp:{n:'HP turbine (HP section ng HIP casing)',d:'Nasa iisang casing ang HP at IP, magkasalungat ang daloy (counter-flow), sa iisang rotor sa bearing No.1 at No.2. Pagdaan sa CV, papasok ang steam sa 1st stage, saka sa mga sumunod na stage, at lalabas sa HP exhaust papuntang cold reheat. Ang 1st stage pressure ang pinakamalinaw na tanda kung may steam talagang dumadaan sa CV.',s:['PT-ST1001-1 ~ 3: 1st stage pressure','PT-CR1901-1 ~ 3: HP exhaust pressure','TE-ST1003-1 ~ 3: HP exhaust temp','TE-ST1001 / 1002: metal temp','ZT-AS1011: HP turbine warming valve'],src:'TCS Modbus list; Study Book 05 (MTM)'},
+ nrv:{n:'Cold reheat non return valve (NRV)',d:'Check valve sa labasan ng HP turbine papuntang reheater. Pinipigilan nito ang balik ng steam mula sa cold reheat papasok sa HP turbine. Bumubukas ito sa transfer. May solenoid at relay dump valve ito, kaya kaya itong hawakan ng logic na sarado.',s:['ZSC-CR1901 / ZSO-CR1901: full close / full open','Logic: IBD TC-19 p.73','11/9 8:50:54: "Cold reheat NRV open"'],src:'TCS Modbus list; IBD TC-19; alarm history'},
+ vent:{n:'Ventilator valve',d:'Bukas ito habang IP start, kapag sarado ang CV, para mailabas ang steam na naiipit sa HP turbine at hindi ito uminit sa friction ng umiikot na blade. Sumasara sa transfer. Ikinokonekta nito ang HP exhaust sa condenser, kaya naka-vacuum ang HP habang sarado ang CV.',s:['ZSC-CR1902 / ZSO-CR1902','11/9 8:50:54: XVCR3902 closed','Utos: TC-17 (VENTILATOR VALVE OPEN COMMAND)'],src:'TCS Modbus list; IBD TC-17; Study Book 05; alarm history'},
+ icv:{n:'Reheat stop valve (RSV) at intercept valve (ICV) A at B',d:'Ang RSV ay bukas o sarado lang, gaya ng MSV. Ang ICV ang nagkokontrol ng reheat steam papuntang IP turbine. Sa IP start, ICV ang nagpapaandar ng turbine; pagkatapos ng transfer, full open ito. Iisang katawan ang RSV at ICV (combined reheat valve), kaya iisa ang tag number nila (ST1905).',s:['ZT-ST1905-A1 ~ A3, B1 ~ B3: RSV posisyon','ZT-ST1905-A4 ~ A6, B4 ~ B6: ICV posisyon'],src:'TCS Modbus list; TCE207; Study Book 05 (MTM)'},
+ ip:{n:'IP turbine (IP section ng HIP casing)',d:'Gamit ang hot reheat steam, sa parehong casing ng HP pero kabaligtaran ang daloy. Kasama ang LP turbine, ito ang gumagawa ng mga 75 % ng MW. Kaya kapag nawala ang reheat pressure, halos nawawala rin ang MW.',s:['TE-ST1006-1, -2: metal temp after 15 stage','TE-ST1007-1, -2: metal temp after 18 stage'],src:'TCS Modbus list; HB PPE-13-0106 (CALC)'},
+ lp:{n:'LP turbine',d:'Huling turbine, single flow, 33.5 inch ang huling blade. Mula sa IP exhaust, dadaan ang steam sa crossover pipe, saka bababa sa condenser na naka-vacuum.',s:['PT-ST1110-1 ~ 3: exhaust hood pressure (vacuum)','TE-ST1110-1 ~ 3: exhaust hood temp','ZSC / ZSO-CD1904: exhaust hood spray'],src:'TCS Modbus list; MTM; Davao manual p31'},
+ lpb:{n:'LP bypass valve',d:'Kumukuha ng hot reheat bago ang RSV at ICV, at ibinababa ito sa condenser. Sumasara ito sa sariling pressure loop kapag bumaba ang reheat pressure sa ilalim ng mga 7.5 kg/cm2.',s:['PICHR1003 (ABC-052)','SV floor 7.5 kg/cm2'],src:'ABC-052; D1-0-039 p4'},
+ cond:{n:'Condenser',d:'Dito nagiging tubig ulit ang steam. Dito rin pumupunta ang LP bypass.',s:[],src:'P&ID'},
+ gen:{n:'Generator',d:'Iisang shaft ang HP, IP, LP at generator. Ang MW ay galing sa steam na tunay na dumaan sa turbine, hindi sa demand.',s:['Gen. MW (A), (B): TCS Modbus 30131, 30132'],src:'TCS Modbus list'}
+};
+const S=[
+ {t:'Bago ang transfer (IP start): bukas ang MSV, sarado ang CV. Ang HP bypass ang nagpapadaloy ng steam papuntang reheater. Ang ICV ang nagpapaandar at nagdadala ng load. Bukas ang ventilator, sarado ang NRV. Bukas din ang LP bypass.',f:{pMs:1,pCv:0,pHpb:1,pExh:0,pVent:.3,pHrh:1,pLpb:.8,pX:.6},cv:0,nrv:0,mw:'mababang MW'},
+ {t:'Pagkatapos ng transfer: bumukas ang CV, kaya dumadaan na ang main steam sa HP turbine. Lumabas ito sa HP exhaust, bumukas ang NRV, at pumunta sa reheater. Sarado na ang ventilator, HP bypass at LP bypass. Full open ang ICV.',f:{pMs:1,pCv:1,pHpb:0,pExh:1,pVent:0,pHrh:1,pLpb:0,pX:1},cv:.5,nrv:1,mw:'tumataas ang MW'},
+ {t:'10/3 at 11/9: bukas daw ang CV (mga 20 % sa 10/3), kaya sinara ng DCS ang HP bypass. Pero walang steam na dumaan sa HP turbine (1st stage 0.6 sa 11/9). Walang pumapasok sa reheater, at nauubos ito sa full open na ICV. MS flow 0, RHP 0, MW halos 0.',f:{pMs:.15,pCv:0,pHpb:0,pExh:0,pVent:0,pHrh:.2,pLpb:0,pX:.2},cv:.2,nrv:0,mw:'MW halos 0'}
+];
+let st=0,off={},sel=null;
+const $=id=>document.getElementById(id);
+function showPart(k){
+  const p=P[k];if(!p)return;sel=k;
+  document.querySelectorAll('#map .part').forEach(g=>g.classList.toggle('sel',g.dataset.p===k));
+  $('info').innerHTML='<h3>'+p.n+'</h3><p>'+p.d+'</p>'+(p.s.length?'<p class="lab">Signal sa TCS / DCS</p><ul>'+p.s.map(x=>'<li class="tag">'+x+'</li>').join('')+'</ul>':'')+'<p class="src">Source: '+p.src+'</p>';
+}
+document.querySelectorAll('#map .part').forEach(g=>{
+  g.addEventListener('click',()=>showPart(g.dataset.p));
+  g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showPart(g.dataset.p);}});
+});
+function setState(i){
+  st=i;document.querySelectorAll('[data-s]').forEach(b=>b.classList.toggle('on',+b.dataset.s===i));
+  $('stText').textContent=S[i].t;
+  const c=S[i];
+  $('cvStem').setAttribute('y',52-c.cv*30);
+  $('nrvFlap').setAttribute('transform',c.nrv?'rotate(70 560 256)':'');
+  $('mwT').textContent=c.mw;
+}
+document.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>setState(+b.dataset.s)));
+
+/* valve section */
+const F={
+ ok:'Normal: sinusunod ng stem ang demand, sumasama ang disc, at may steam bago ang CV. Tumataas ang daloy at ang 1st stage pressure kasabay ng bukas.',
+ servo:'Servo o oil: nag-uutos ang TCS, pero hindi gumagalaw ang stem. Magkaiba ang demand at ang posisyon sa DCS. Ito ang hindi tumugma sa 10/3, dahil umakyat ang posisyon at ang local lift indicator.',
+ disc:'Disc naiwan: umaakyat ang stem, kaya tama ang posisyon sa DCS at ang local lift indicator. Pero nakaupo pa rin ang disc sa seat. Walang daloy, halos 0 ang 1st stage. Papasa pa rin ito sa stroking test. Isang valve lang ang tatamaan nito, kaya mahina ito kung sabay ang CV(A) at CV(B).',
+ msv:'MSV sarado: normal ang galaw ng CV, pero walang steam na dumarating dito. Walang daloy, halos 0 ang 1st stage. Tatamaan nito ang CV(A) at CV(B) nang sabay. Tingnan ang ZT-ST1903 sa trend.',
+ nrv:'NRV sarado: bumubuka ang CV at pumapasok ang steam sa HP, pero walang labasan. Mapupuno ang HP hanggang halos kasing-taas ng MSP, at hihinto ang daloy. Kaya MATAAS ang 1st stage at HP exhaust pressure. Iyon ang pagkakaiba nito sa ibang fault, kung saan halos 0 ang 1st stage.',
+ strainer:'Barado ang strainer: kung may salaan sa loob ng MSV (wala pa sa drawing na nabasa ko), puwede itong mapuno ng scale o slag. Normal ang galaw ng valve, pero kaunti o walang dumadaan. Kadalasan unti-unti ang bara, hindi biglaan.'
+};
+let fault='ok';
+document.querySelectorAll('[data-f]').forEach(b=>b.addEventListener('click',()=>{fault=b.dataset.f;document.querySelectorAll('[data-f]').forEach(x=>x.classList.toggle('on',x===b));upd();}));
+$('dem').addEventListener('input',upd);
+function spring(top,bot){let d='M260 '+(top),n=8,h=(bot-top)/n;for(let i=1;i<=n;i++)d+=' L'+(i%2?236:284)+' '+(top+h*i).toFixed(1);return d;}
+let flowNow=0;
+function upd(){
+  const dem=+$('dem').value;$('demV').textContent=dem+' %';
+  const pos=fault==='servo'?0:dem;
+  const lift=pos/100*40;              /* stem travel, px */
+  const discLift=fault==='disc'?0:lift;
+  const steamIn=fault!=='msv';
+  const pass=fault==='strainer'?.08:1;
+  const flow=fault==='nrv'?0:(steamIn&&discLift>0?Math.min(1,discLift/40*1.6)*pass:0);
+  const full=fault==='nrv'&&discLift>0;
+  flowNow=flow;
+  $('piston').setAttribute('transform','translate(0,'+(-lift)+')');
+  $('oil').setAttribute('y',140-lift);$('oil').setAttribute('height',24+lift);
+  $('spring').setAttribute('d',spring(26,118-lift));
+  $('stem').setAttribute('y',136-lift);
+  $('disc').setAttribute('y',372-discLift);
+  $('ptr').setAttribute('transform','translate(0,'+(-pos/100*80)+')');
+  $('inlet').setAttribute('opacity',steamIn?.55:0);
+  $('chest').setAttribute('opacity',steamIn?(fault==='strainer'?.15:.55):0);
+  $('outlet').setAttribute('opacity',full?.55:(flow>0?.25+flow*.3:0));
+  $('scr').setAttribute('stroke',fault==='strainer'?'var(--warn)':'var(--dim)');
+  $('scrT').textContent=fault==='strainer'?'Strainer: barado':(fault==='msv'?'Walang steam (MSV sarado)':'');
+  $('oilLine').setAttribute('opacity',fault==='servo'?.25:1);
+  $('rD').textContent=dem+' %';$('rP').textContent=pos+' %';$('rL').textContent=pos+' %';
+  const lvl=flow>=.6?'Malaki':flow>=.2?'Katamtaman':flow>0?'Kaunti':'Wala';
+  $('rF').textContent=lvl;$('rS').textContent=full?'Mataas (puno)':(flow>0?(flow>=.2?'Tumataas':'Mababa'):'Halos 0');
+  $('bF').style.width=(flow*100)+'%';$('bS').style.width=(full?100:flow*100)+'%';$('bS').style.background=full?'var(--warn)':'var(--ok)';
+  $('fText').textContent=F[fault];
+}
+/* animation */
+const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+let last=performance.now();
+function tick(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  const f=S[st].f;
+  for(const id in f){const el=$(id);if(!el)continue;el.style.opacity=f[id]>0?1:0;if(!reduce){off[id]=(off[id]||0)-f[id]*60*dt;el.setAttribute('stroke-dashoffset',off[id].toFixed(1));}}
+  const fa=$('flowA');fa.style.opacity=flowNow>0?1:0;
+  if(!reduce){off.fa=(off.fa||0)-flowNow*60*dt;fa.setAttribute('stroke-dashoffset',off.fa.toFixed(1));}
+  requestAnimationFrame(tick);
+}
+setState(0);showPart('cv');upd();requestAnimationFrame(tick);
+})();
+</script>

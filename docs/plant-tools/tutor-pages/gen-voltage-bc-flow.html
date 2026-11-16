@@ -1,0 +1,257 @@
+<title>Gen Voltage B-C Path</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --sans:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  --bg:#eef0f3; --paper:#ffffff; --fg:#1b2129; --muted:#5b6673; --faint:#a3acb6; --edge:#c9d0d8; --fill:#f2f4f6;
+  --ac:#7b4fd6; --ma:#1f6fd1; --io:#0e8a8c; --na:#d23b3b; --nb:#d4a000; --eth:#6b7682; --sw:#0b7a5c; --swbg:#e8f5ef;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#15181c; --paper:#1d2126; --fg:#e4e7ea; --muted:#a3adb8; --faint:#5f6872; --edge:#3a414a; --fill:#252a30;
+  --ac:#a98bf0; --ma:#5ea2f0; --io:#3cc0c2; --na:#ef6a6a; --nb:#e6b938; --eth:#9aa4ae; --sw:#4cc79f; --swbg:#16302a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15181c; --paper:#1d2126; --fg:#e4e7ea; --muted:#a3adb8; --faint:#5f6872; --edge:#3a414a; --fill:#252a30;
+  --ac:#a98bf0; --ma:#5ea2f0; --io:#3cc0c2; --na:#ef6a6a; --nb:#e6b938; --eth:#9aa4ae; --sw:#4cc79f; --swbg:#16302a; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.5;
+  padding:20px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:1400px;margin:0 auto}
+h1{font-size:20px;font-weight:600;margin:0 0 2px}
+.sub{color:var(--muted);margin:0 0 12px}
+.key{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:12.5px;color:var(--muted);margin:0 0 10px}
+.key span{display:inline-flex;align-items:center;gap:7px}
+.key svg{width:34px;height:12px;flex:none}
+.sheet{background:var(--paper);border:1px solid var(--edge);border-radius:8px;overflow-x:auto}
+#d{display:block;width:100%;min-width:1180px;height:auto}
+#d text{font-family:var(--sans);fill:var(--fg);font-size:10.5px}
+#d .mono{font-family:var(--mono)}
+#d .t{font-size:11.5px;font-weight:600}
+#d .m{fill:var(--muted)}
+#d .s{font-size:9.5px}
+#d .at{paint-order:stroke;stroke:var(--paper);stroke-width:4px;stroke-linejoin:round;font-size:11px;font-weight:600;letter-spacing:.06em;fill:var(--muted)}
+#d .area{fill:none;stroke:var(--faint);stroke-dasharray:6 4}
+#d .dev{fill:var(--paper);stroke:var(--fg);stroke-width:1.3}
+#d .devf{fill:var(--fill);stroke:var(--fg);stroke-width:1.3}
+#d .tb{fill:var(--fill);stroke:var(--fg);stroke-width:1}
+#d .ctag{fill:var(--paper)}
+#d .sw{fill:var(--swbg);stroke:var(--sw);stroke-width:1.3}
+#d .swt{fill:var(--sw)}
+details{margin-top:14px;font-size:12.5px;color:var(--muted)}
+summary{cursor:pointer;color:var(--fg);font-weight:600}
+details ul{padding-left:18px;margin:6px 0 0}
+</style>
+<div class="wrap">
+  <h1>Unit 1 generator voltage B-C: hardware and software path</h1>
+  <p class="sub">DCS tag TCS-AI1008 (AI0871) and SCADA point U23 (from AO0582). Hardware on top, software path at the bottom; circled numbers link the two.</p>
+  <div class="key" id="key"></div>
+  <div class="sheet"><svg id="d" viewBox="0 0 1360 1190" role="img" aria-label="Loop drawing of generator voltage B-C, hardware and software path"></svg></div>
+  <details>
+    <summary>Sources</summary>
+    <ul>
+      <li>GCP: GSE-2013-0083 R3 sheets GA126 (VT2), GA229 (X04), GA128 (transducer QT2-93A, in 0~150 V AC, B-C out 0~18 kV), GA187 (X11 to TCS).</li>
+      <li>TCS: Elementary Diagram 331DM07733 TC0751A (GXF2 CH2) and TC0792 (GXF12 CH5); Phase 2 twin 331DM10710 R3; MHPS cable list TRE-16-006 Rev.6 p43 (GXF2-5 is +). GA187 names the strip GXF3; the TCS drawing and 6003C TG list (GXF2) are used.</li>
+      <li>DCS: LMYP-1(#1) WIRING xls (MPL107R row: field strip 7ATB304 15/16, cable 1023-MPL107R-18-AI124 HY, FCS1023 CS2367 32+/33-, DN-AII-04 slot 6 AI7; MPL108F row: FCS1032 CS3285 14+/15-, DN-AOI-02 slot 4 AO6, cable 1032-MPL108F-22-AO184 HY, field strip 8ATB10C 13/14, remark DCS-->SCADA). The wiring list counts channels from 0 (AI7, AO6); the I/O list from 1 (CH8, CH7).</li>
+      <li>DCS software: I/O list (AI0871 TCS-AI1008 0~18 kV, memory B.1077; AO0582 GCP-AO1005 0~100 %, same signal name); loop list STN102 loop 150 TCSAI1008 type ALM. The block that copies TCS-AI1008 to AO0582 is not on any ABC / DITL sheet.</li>
+      <li>Network: K1AU3-E2-0-106 sheet 2 cable list (FL-NET A red, B yellow), K1AU3-E2-0-109 FCS signal schematic, IPU-III manual (CMCU-01, base unit bus).</li>
+      <li>SCADA: LM2-S1-O-001 p41 and SCADA RTU material specs r22, r27 (23AI60, W5DY); K1AU3-E1-0-112 sheets 007, 008 (RTU Panel 1, Front-end #1, SW-HUB, Hosts SYS600, workstations). Still searching: the 23AI60 channel and the MPL108F to RTU Panel 1 cable number.</li>
+    </ul>
+  </details>
+</div>
+<script>
+const NS='http://www.w3.org/2000/svg',D=document.getElementById('d');
+function el(t,a,txt,p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;(p||D).appendChild(e);return e}
+function tx(x,y,s,cls,anc,extra){return el('text',Object.assign({x,y,class:cls||'','text-anchor':anc||'middle'},extra||{}),s)}
+const ST={
+ hv:{s:'var(--ac)',w:4},ac:{s:'var(--ac)',w:1.8},ma:{s:'var(--ma)',w:1.8},jp:{s:'var(--ma)',w:1.1},
+ bus:{s:'var(--muted)',w:3},ioA:{s:'var(--io)',w:2},ioB:{s:'var(--io)',w:2,d:'6 3'},
+ fa:{s:'var(--na)',w:2.4},fb:{s:'var(--nb)',w:2.4},eth:{s:'var(--eth)',w:2.2},shd:{s:'var(--muted)',w:1,d:'3 3'},
+ sw:{s:'var(--sw)',w:1.6,d:'5 4'}};
+function W(pts,k,noHalo){const st=ST[k];const d='M'+pts.map(p=>p.join(' ')).join('L');
+  if(!noHalo)el('path',{d,stroke:'var(--paper)','stroke-width':st.w+5,fill:'none','stroke-linejoin':'round'});
+  return el('path',{d,stroke:st.s,'stroke-width':st.w,fill:'none','stroke-dasharray':st.d||'none','stroke-linejoin':'round'})}
+function dot(x,y){el('circle',{cx:x,cy:y,r:2.4,fill:'var(--fg)'})}
+function area(x,y,w,h,t){el('rect',{x,y,width:w,height:h,rx:6,class:'area'});tx(x+10,y+16,t,'at','start')}
+function tb(x,y0,pins,top,bot){pins.forEach((p,i)=>{el('rect',{x,y:y0+i*14-7,width:22,height:14,class:'tb'});tx(x+11,y0+i*14+3.5,p,'mono s')});
+  if(top)tx(x+11,y0-14,top,'t');if(bot)bot.split('|').forEach((b,i)=>tx(x+11,y0+pins.length*14+6+i*12,b,'m s'))}
+function ctag(cx,y,lines,col){const w=Math.max(...lines.map(l=>l.length))*6.1+10;el('rect',{x:cx-w/2,y:y-11,width:w,height:lines.length*12+4,rx:3,class:'ctag',stroke:col,'stroke-width':1});
+  lines.forEach((l,i)=>tx(cx,y+i*12,l,(i?'m ':'')+'mono s'))}
+function badge(x,y,n){el('circle',{cx:x,cy:y,r:8,fill:'var(--sw)'});tx(x,y+3.5,n,'',null,{style:'fill:var(--paper);font-size:10px;font-weight:600'})}
+function card(x,y,w,h){el('rect',{x,y,width:w,height:h,rx:2,class:'devf'});for(let i=0;i<3;i++)el('circle',{cx:x+w-7,cy:y+8+i*7,r:2,fill:i<2?'#2fb35a':'var(--faint)'})}
+function box(x,y,w,h,lines,cls){el('rect',{x,y,width:w,height:h,rx:4,class:cls||'dev'});const n=lines.length;
+  lines.forEach((l,i)=>tx(x+w/2,y+h/2+(i-(n-1)/2)*12+3.5,l,i?'m s':'t'))}
+function sw(x,y,w,h,label,col){el('rect',{x,y,width:w,height:h,rx:3,class:'devf',stroke:col,'stroke-width':1.6});
+  for(let px=x+8;px<x+w-80;px+=12)el('rect',{x:px,y:y+h-7,width:7,height:5,fill:'var(--faint)'});tx(x+w-6,y+h/2+4,label,'s','end',{style:'font-weight:600'})}
+
+/* ===== legend ===== */
+const KEY=[['hv','13.8 kV generator lead'],['ac','115 V AC from VT (one line per wire)'],['ma','4-20 mA pair (+ and −)'],['jp','Panel wiring / jumper'],['shd','Cable shield / drain'],['bus','Card bus inside a rack'],['ioA','I/O LAN SFTP, A'],['ioB','I/O LAN SFTP, B'],['fa','FL-NET A (red, cable list)'],['fb','FL-NET B (yellow, cable list)'],['eth','SCADA Ethernet (IEC-104)'],['sw','Software data path']];
+document.getElementById('key').innerHTML=KEY.map(([k,t])=>{const s=ST[k];return `<span><svg viewBox="0 0 34 12"><path d="M2 6H32" stroke="${s.s}" stroke-width="${Math.min(s.w,3)}" stroke-dasharray="${s.d||'none'}"/></svg>${t}</span>`}).join('');
+
+/* ================= ROW A: field wiring into STN102 ================= */
+const yA=[190,204,218,232], P=204, M=218;
+area(10,46,165,262,'GENERATOR');
+el('circle',{cx:52,cy:211,r:24,class:'dev'});tx(52,208,'G','t');tx(52,222,'~','m');
+W([[76,211],[100,211]],'hv',1);tx(88,204,'','s');
+el('rect',{x:100,y:180,width:42,height:64,rx:4,class:'dev'});
+el('circle',{cx:115,cy:202,r:8,fill:'none',stroke:'var(--fg)','stroke-width':1.3});el('circle',{cx:127,cy:202,r:8,fill:'none',stroke:'var(--fg)','stroke-width':1.3});
+tx(121,232,'VT2','t');
+yA.forEach((y,i)=>{el('rect',{x:142,y:y-6,width:14,height:12,class:'tb'});tx(149,y+3,String(i+1),'mono s')});
+tx(52,256,'Generator','t');tx(52,269,'13.8 kV','m s');
+tx(121,262,'GA022VT2','m s mono');tx(121,274,'13.8/√3 : 0.115/√3 kV','m s');tx(121,286,'sheet GA126','m s');
+
+area(185,46,440,262,'GCP · GENERATOR CONTROL PANEL');
+['A','B','C','N'].forEach((ph,i)=>W([[156,yA[i]],[225,yA[i]]],'ac',1));
+ctag(190,128,['GA022V003','115 V AC, 4 wires'],'var(--ac)');W([[190,138],[190,186]],'shd',1);
+tb(225,190,['1','2','3','4'],'X04','GA229');
+['A','B','C'].forEach((ph,i)=>{W([[247,yA[i]],[275,yA[i]]],'ac',1);el('rect',{x:275,y:yA[i]-4,width:24,height:8,rx:2,class:'dev'});W([[275,yA[i]],[299,yA[i]]],'ac',1);W([[299,yA[i]],[345,yA[i]]],'ac',1)});
+W([[247,232],[345,232]],'ac',1);
+tx(287,174,'Fuses','t');tx(287,256,'F09 / F08 / F07','m s');tx(287,268,'3 A, EFB-5','m s');
+tb(345,190,['11','22','33','44'],'FJ1','test|terminal');
+['A03','B03','C03'].forEach((w,i)=>{W([[367,yA[i]],[440,yA[i]]],'ac',1);tx(372,yA[i]-2.5,'GA126'+w,'mono','start',{style:'font-size:8.5px;fill:var(--muted)'})});
+['A','B','C','N'].forEach((ph,i)=>tx(166,yA[i]-2.5,ph,'m s','start'));
+el('rect',{x:440,y:166,width:100,height:94,rx:4,class:'dev'});
+['P1','P2','P3'].forEach((p,i)=>tx(445,yA[i]+3.5,p,'mono s','start'));
+tx(534,P+3.5,'9 +','mono s','end');tx(534,M+3.5,'10 −','mono s','end');
+tx(490,158,'Transducer','t');tx(496,236,'QT2-93A','s');tx(496,248,'U01GA101','m s');
+tx(490,282,'in 0~150 V AC, B-C out','m s');tx(490,294,'4~20 mA = 0~18 kV · GA128','m s');
+W([[540,P],[590,P]],'ma',1);W([[540,M],[590,M]],'ma',1);tx(565,196,'GA12813','m s mono');tx(565,236,'GA12814','m s mono');
+tb(590,204,['13','14','15'],'X11','GA187');
+
+/* GCP -> TCS */
+W([[612,P],[690,P]],'ma');W([[612,M],[690,M]],'ma');
+el('ellipse',{cx:651,cy:211,rx:6,ry:14,fill:'none',stroke:'var(--muted)','stroke-width':1});
+W([[612,232],[651,232],[651,225]],'shd',1);
+ctag(651,128,['GA236Z005','4-20 mA, shielded'],'var(--ma)');W([[651,138],[651,197]],'shd',1);
+tx(676,P-4,'+','s');tx(676,M+11,'−','s');
+
+area(668,46,240,262,'TCS-7 · TURBINE CONTROL (MHPS)');
+card(690,160,40,104);tb(690,204,['5','6']);tx(710,152,'GXF2 CH2','t');tx(710,278,'TC0751A','m s');tx(710,290,'input card','m s');
+W([[730,212],[762,212]],'bus',1);
+box(762,180,58,64,['TCS','controller']);badge(820,180,'1');
+W([[820,212],[850,212]],'bus',1);
+card(850,160,40,104);tb(868,204,['9','10']);tx(870,152,'GXF12 CH5','t');tx(870,278,'TC0792','m s');tx(870,290,'output card','m s');
+
+/* TCS -> MPL107R */
+W([[890,P],[968,P]],'ma');W([[890,M],[968,M]],'ma');
+ctag(929,112,['TC0792Z005','4-20 mA'],'var(--ma)');W([[929,122],[929,197]],'shd',1);
+
+area(948,46,160,262,'MPL107R · MARSHALLING');
+tb(968,204,['15','16'],'7ATB304','field side');
+W([[990,P],[1062,P]],'jp',1);W([[990,M],[1062,M]],'jp',1);
+tb(1062,204,['15','16'],'15 / 16','system side');
+
+/* MPL107R -> FCS1023 */
+W([[1084,P],[1140,P]],'ma');W([[1084,M],[1140,M]],'ma');
+ctag(1112,116,['1023-MPL107R-','18-AI124','type HY'],'var(--ma)');W([[1112,150],[1112,197]],'shd',1);
+
+area(1120,46,232,262,'FCS1023 · STN102 NODE 6');
+tb(1140,204,['32+','33−'],'CS2367');
+W([[1162,P],[1190,P]],'jp',1);W([[1162,M],[1190,M]],'jp',1);
+card(1190,164,36,100);tx(1208,156,'DN-AII-04','t');tx(1208,278,'slot 6, CH8','m s');tx(1208,290,'AI0871','s mono');
+W([[1226,180],[1318,180],[1318,232]],'bus',1);W([[1262,180],[1262,232]],'bus',1);dot(1262,180);
+tx(1290,174,'base unit bus','m s');
+box(1240,232,44,30,['MCU-A']);box(1296,232,44,30,['MCU-B']);tx(1290,282,'CMCU-01','m s');
+
+/* ================= ROW B: STN102, FL-NET, control room, STN103 ================= */
+/* I/O LAN STN102 */
+W([[1262,262],[1262,452]],'ioA');W([[1318,262],[1318,522]],'ioB');
+tx(1256,330,'A7-MON6','mono s','end');tx(1324,330,'B7-MON6','mono s','start');tx(1256,342,'5 m','m s','end');tx(1324,342,'5 m','m s','start');
+el('rect',{x:1100,y:430,width:252,height:150,rx:6,class:'area'});tx(1342,574,'FCS1021 · STN102','at','end');
+box(1238,452,48,30,['MBA0-A','I/O LAN']);tx(1262,446,'port 7','m s');
+box(1294,522,48,30,['MBA0-B','I/O LAN']);tx(1318,516,'port 7','m s');
+box(1150,445,60,40,['FCS102-A','controller']);badge(1150,445,'2');
+box(1150,515,60,40,['FCS102-B','controller']);
+W([[1210,466],[1240,466]],'ioA');tx(1213,500,'A16-102AM0','mono s','start');
+W([[1210,536],[1294,536]],'ioB');tx(1253,531,'B16-102BM0','mono s');
+/* FL-NET hubs */
+sw(760,395,465,22,'hub-2A · FL-NET A switch · MOXA EDS-316 · in FCS1013','var(--na)');
+sw(760,610,465,22,'hub-2B · FL-NET B switch · MOXA EDS-316 · in FCS1013','var(--nb)');
+badge(760,395,'3');
+/* FCS102 FL-NET */
+W([[1180,445],[1180,417]],'fa');tx(1186,433,'2A04','mono s','start');
+W([[1150,475],[1130,475],[1130,610]],'fb');tx(1126,600,'2B04','mono s','end');
+W([[1150,525],[1115,525],[1115,417]],'fa');tx(1111,433,'2A05','mono s','end');
+W([[1180,555],[1180,610]],'fb');tx(1186,600,'2B05','mono s','start');
+tx(1150,592,'3 m','m s');
+/* FCS103 */
+el('rect',{x:715,y:430,width:175,height:150,rx:6,class:'area'});tx(725,574,'FCS1031 · STN103','at','start');
+box(800,445,60,40,['FCS103-A','controller']);badge(800,445,'5');
+box(800,515,60,40,['FCS103-B','controller']);
+box(718,452,48,30,['MBA0-A','I/O LAN']);
+box(718,522,48,30,['MBA0-B','I/O LAN']);
+W([[766,466],[800,466]],'ioA');W([[766,536],[800,536]],'ioB');tx(783,461,'A16','mono s');tx(783,531,'B16','mono s');
+W([[830,445],[830,417]],'fa');tx(836,433,'2A06','mono s','start');
+W([[860,475],[875,475],[875,610]],'fb');tx(879,600,'2B06','mono s','start');
+W([[860,525],[890,525],[890,417]],'fa');tx(894,433,'2A07','mono s','start');
+W([[830,555],[830,610]],'fb');tx(824,600,'2B07','mono s','end');
+tx(930,592,'7 m','m s');
+/* hub interlinks */
+W([[760,406],[560,406]],'fa');ctag(660,388,['1A16-H-2A16 · 50 m'],'var(--na)');
+W([[760,621],[560,621]],'fb');ctag(660,652,['1B16-H-2B16 · 50 m'],'var(--nb)');
+/* control room */
+area(10,346,598,318,'CONTROL ROOM');
+sw(30,395,530,22,'hub-1A · FL-NET A switch · MOXA EDS-316','var(--na)');
+sw(30,610,530,22,'hub-1B · FL-NET B switch · in COS1 / COS2 desks','var(--nb)');
+const CR=[['COS1','operator','1A5','1B5'],['COS2','operator','1A6','1B6'],['COS3','operator','1A7','1B7'],['COS4','operator','1A8','1B8'],['COS5','operator','1A10','1B10'],['CDS-A','data server','1A3','1B3'],['CDS-B','data server','1A4','1B4'],['OPC','OPC server','1A9','1B9']];
+CR.forEach((c,i)=>{const x=44+i*64,cx=x+26;
+  W([[cx,417],[cx,488]],'fa');W([[cx,530],[cx,610]],'fb');
+  tx(cx+4,446,c[2],'mono s','start');tx(cx+4,580,c[3],'mono s','start');
+  if(i<5){el('rect',{x,y:488,width:52,height:34,rx:3,class:'dev'});el('rect',{x:x+5,y:492,width:42,height:22,fill:'#0f2233'});el('rect',{x:x+18,y:522,width:16,height:8,class:'devf'});tx(cx,507,c[0],'',null,{style:'fill:#d6ecff;font-size:10px;font-weight:600'})}
+  else{el('rect',{x:x+8,y:488,width:36,height:42,rx:3,class:'devf'});[496,503,510].forEach(y=>el('line',{x1:x+13,y1:y,x2:x+39,y2:y,stroke:'var(--muted)'}));el('circle',{cx,cy:522,r:2,fill:'#2fb35a'});tx(cx,544,c[0],'t')}
+  tx(cx,c[1]==='operator'?542:556,c[1]==='operator'?'operator':c[1],'m s')});
+badge(44,488,'4');
+
+/* ================= ROW C: STN103 output to SCADA ================= */
+W([[718,466],[700,466],[700,728]],'ioA');W([[744,552],[744,590],[756,590],[756,728]],'ioB');
+tx(694,690,'A5-MON4','mono s','end');tx(762,690,'B5-MON4','mono s','start');tx(694,702,'3 m','m s','end');tx(762,702,'3 m','m s','start');
+area(660,700,330,212,'FCS1032 · STN103 NODE 4');
+box(678,728,44,30,['MCU-A']);box(734,728,44,30,['MCU-B']);tx(728,772,'CMCU-01','m s');
+W([[700,758],[700,786],[834,786]],'bus',1);W([[756,758],[756,786]],'bus',1);dot(756,786);tx(780,800,'base unit bus','m s');
+card(834,760,36,104);tx(852,752,'DN-AOI-02','t');tx(852,878,'slot 4, CH7','m s');tx(852,890,'AO0582','s mono');
+const yC=[815,829];
+W([[870,815],[910,815]],'jp',1);W([[870,829],[910,829]],'jp',1);
+tb(910,815,['14+','15−'],'CS3285');
+W([[932,815],[1020,815]],'ma');W([[932,829],[1020,829]],'ma');
+ctag(976,744,['1032-MPL108F-','22-AO184','type HY'],'var(--ma)');W([[976,778],[976,808]],'shd',1);
+area(1000,700,180,212,'MPL108F · MARSHALLING');
+tb(1020,815,['13','14'],'13 / 14','system side');
+W([[1042,815],[1120,815]],'jp',1);W([[1042,829],[1120,829]],'jp',1);
+tb(1120,815,['13','14'],'8ATB10C','field side');
+/* hardwired to SCADA */
+W([[1142,815],[1200,815],[1200,944],[575,944],[575,844]],'ma');
+W([[1142,829],[1188,829],[1188,930],[599,930],[599,844]],'ma');tx(570,858,'+','s','end');tx(604,858,'−','s','start');
+ctag(900,962,['4-20 mA pair, DCS --> SCADA','(wiring list remark)'],'var(--ma)');W([[900,951],[900,944]],'shd',1);
+/* SCADA */
+area(10,712,640,250,'SCADA · RTU PANEL 1 / SCADA PANEL 1');
+box(560,800,54,44,['W5DY','isolator']);tx(587,794,'M-System','m s');
+W([[560,815],[528,815]],'jp',1);W([[560,829],[528,829]],'jp',1);
+card(492,776,36,90);tx(510,768,'23AI60','t');tx(510,880,'AI board','m s');tx(510,892,'6 channels','m s');
+W([[492,822],[460,822]],'bus',1);
+box(400,792,60,60,['RTU560','CPU']);badge(400,792,'6');
+W([[400,822],[350,822]],'eth');tx(375,816,'IEC-104','m s');
+box(270,800,80,44,['Front-end #1','SCADA Panel 1']);
+W([[270,822],[220,822]],'eth');
+sw(160,760,60,124,'','var(--eth)');tx(190,818,'SW-HUB','t');tx(190,830,'MAIN 1/2','m s');
+W([[160,770],[120,770]],'eth');
+box(40,750,80,40,['Hosts #1 / #2','SYS600']);badge(40,750,'7');
+W([[160,850],[120,850]],'eth');
+el('rect',{x:30,y:826,width:90,height:52,rx:3,class:'dev'});el('rect',{x:36,y:831,width:78,height:36,fill:'#0f2233'});
+tx(75,846,'U23','',null,{style:'fill:#ff6b5e;font-size:11px;font-weight:600;font-family:var(--mono)'});tx(75,860,'B-C kV','',null,{style:'fill:#d6ecff;font-size:9.5px'});
+tx(75,892,'SCADA workstation','t');tx(75,904,'(SCADA screen)','m s');
+
+/* ================= SOFTWARE PATH ================= */
+el('rect',{x:10,y:982,width:1340,height:198,rx:6,fill:'none',stroke:'var(--sw)','stroke-dasharray':'6 4'});
+tx(22,1000,'SOFTWARE PATH · data inside the controllers and servers','at','start',{style:'fill:var(--sw)'});
+const SB=[
+ [20,1012,'1','TCS-7 controller',['Reads GXF2 CH2 (4-20 mA)','Sends the same value out','on GXF12 CH5 (4-20 mA)']],
+ [270,1012,'2','FCS102 controller (STN102)',['AI0871 → loop 150 TCSAI1008','Type ALM (indicator + alarm), 0~18 kV','Memory B.1077 · in no ABC / DITL sheet']],
+ [520,1012,'3','FL-NET cyclic data',['FCS102 shares TCS-AI1008 on FL-NET','A and B, through hub-2 and hub-1','to the other stations and the PCs']],
+ [770,1012,'4','COS1~5, CDS-A / B, OPC',['COS: shows TCS-AI1008 in kV','CDS: trend and history','OPC: data to other computer systems']],
+ [520,1098,'5','FCS103 controller (STN103)',['AO0582 GCP-AO1005, range 0~100 %','Value = TCS-AI1008 (same signal name','in the I/O list) · copy block not on sheets']],
+ [770,1098,'6','SCADA RTU560',['23AI60 reads the 4-20 mA','RTU560 sends it by IEC-104','to Front-end #1']],
+ [1020,1098,'7','SCADA hosts SYS600',['Point U23 in the SCADA database','Shown on the SCADA workstation','(from the DCS, not from the GCP)']]];
+SB.forEach(([x,y,n,t,ls])=>{el('rect',{x,y,width:230,height:70,rx:5,class:'sw'});badge(x+14,y+14,n);tx(x+28,y+18,t,'t swt','start');ls.forEach((l,i)=>tx(x+12,y+35+i*12,l,'s','start'))});
+const ar=(pts)=>{W(pts,'sw',1);const [a,b]=pts.slice(-2);const ang=Math.atan2(b[1]-a[1],b[0]-a[0]);const L=7;
+  el('path',{d:`M${b[0]} ${b[1]}L${b[0]-L*Math.cos(ang-0.45)} ${b[1]-L*Math.sin(ang-0.45)}L${b[0]-L*Math.cos(ang+0.45)} ${b[1]-L*Math.sin(ang+0.45)}Z`,fill:'var(--sw)'})};
+ar([[250,1047],[270,1047]]);ar([[500,1047],[520,1047]]);ar([[750,1047],[770,1047]]);ar([[635,1082],[635,1098]]);ar([[750,1133],[770,1133]]);ar([[1000,1133],[1020,1133]]);
+</script>
