@@ -954,7 +954,9 @@ function anProcStep(S, dt) {
       AN_CYC.cbd = loss;
       /* a feedwater heater with its tubes and its bypass shut stops the feedwater (unit.js anHtrPath) */
       if (typeof AN_UNIT !== 'undefined' && AN_UNIT.on && isFinite(AN_UNIT.fwPath)) ffw *= AN_UNIT.fwPath;
-      q.y = Math.max(lo, Math.min(lo + span, q.y + dt * AN_CYC.rate('dr') * (ffw - fst - loss - lhdQ)));
+      /* 3.2.4-beta.7: a tube leak (unit.js anTubeLeak): the water wall leak leaves the drum water, the economizer leak never reaches it */
+      const tlQ = typeof AN_UNIT !== 'undefined' && AN_UNIT.on ? (AN_UNIT.tlW || 0) + (AN_UNIT.tlE || 0) : 0;
+      q.y = Math.max(lo, Math.min(lo + span, q.y + dt * AN_CYC.rate('dr') * (ffw - fst - loss - lhdQ - tlQ)));
       /* 3.2.3 THERMAL EXPANSION of the boiler water (PR-OPE-5002 5697: "Observe steam drum level: swelling approximately > 100 C; use
          lowering header drain ... above 10 kg/cm2 the MBD and CBD"). The economizer, waterwall and downcomers stay full of water: when it
          heats its density falls (anWaterRho, steam table) and the water it no longer holds goes into the drum, kg = AN_THERM.vEvap x the
@@ -968,7 +970,7 @@ function anProcStep(S, dt) {
         q.rhoE = r;
       }
       AN_CYC.y.dr = q.y;
-      AN_CYC.dl = fst + loss + lhdQ; /* water and steam that leave the drum */
+      AN_CYC.dl = fst + loss + lhdQ + tlQ; /* water and steam that leave the drum (and the cycle, a tube leak) */
       AN_CYC.ffw = ffw; /* the deaerator gives this water (condensate cycle balance) */
       /* 2.2.0-beta.12 (M3): SHRINK / SWELL. A fast change of the drum pressure moves the level the other way for a while (the steam
          bubbles in the water collapse when the pressure rises after a turbine trip, grow when it falls after an MFT): the level

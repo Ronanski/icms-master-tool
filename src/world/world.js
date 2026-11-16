@@ -1242,6 +1242,15 @@
     W.busy = true;
     return on ? JAM_T(id) : 'cleared: ' + JAM_T(id);
   };
+  /* 3.2.4-beta.7 (JENNIE): a boiler tube leak, a trainer fault (unit.js anTubeLeak: one 10 mm hole). No DITL contact: the DCS has no
+     leak detector; the operator finds it from the feedwater against the steam, the make-up and the furnace draft */
+  const TL = { 'tl.ww': 'Boiler tube leak: furnace water wall (10 mm hole)', 'tl.eco': 'Boiler tube leak: economizer (10 mm hole)' };
+  const tlSet = (id, on) => {
+    if (on) W.ft.add(id);
+    else W.ft.delete(id);
+    W.busy = true;
+    return on ? TL[id] : 'cleared: ' + TL[id] + ' (tube repaired)';
+  };
   const BO = 'el.1am',
     BO_T = 'Unit black-out: 6.6 kV bus 1AM lost (no bus transfer)';
   /* the undervoltage relay of one motor drawing: open = the motor stopped (s._ftrip) and the trip contact into the logic (the ELECTRIC
@@ -1293,9 +1302,11 @@
       return Object.keys(FT)
         .map(k => ({ id: k, g: 'mt', t: FT[k].t, on: W.ft.has(k) }))
         .concat([{ id: BO, g: 'el', t: BO_T, on: W.ft.has(BO) }])
-        .concat(Object.keys(JAM).map(k => ({ id: k, g: 'cf', t: JAM_T(k), on: W.ft.has(k) })));
+        .concat(Object.keys(JAM).map(k => ({ id: k, g: 'cf', t: JAM_T(k), on: W.ft.has(k) })))
+        .concat(Object.keys(TL).map(k => ({ id: k, g: 'tl', t: TL[k], on: W.ft.has(k) })));
     if (id === BO) return boSet(on);
     if (JAM[id]) return jamSet(id, on);
+    if (TL[id]) return tlSet(id, !!on);
     const f = FT[id],
       s = f && ftSheet(f.sh);
     if (!s) return '';
