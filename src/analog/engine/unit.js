@@ -630,6 +630,7 @@ function anUnitStart() {
   /* 3.2.1 (IRENE: FEEDWATER): the motor of the DITL drawing too (BFWP A / B = DITL-23A / #B): a FIELD TRIP (protection relay) stops the
      water although ABC-010 M.3343 (DITL-23A output 55 RUNNING) still reads 1 */
   U.mul[0].drw = U.mul[0].run.length === 2 ? ['DITL-23A', 'DITL-23A #B'] : null;
+  U.mul[0].suc = U.mul[0].run.length === 2 ? ['V-FW1001', 'V-FW1002'] : null;
   U.mul[0].dis =
     U.mul[0].run.length === 2
       ? [
@@ -5009,8 +5010,10 @@ function anUnitStep0(dt) {
           m.run.reduce((a, r, i) => {
             if (!(+r.S.rt.v[r.n] > 0.5)) return a;
             if (m.drw && anDitlRun(m.drw[i]) === 0) return a;
-            /* 3.2.1 (IRENE): no water through a BFWP whose suction manual valve is closed (V-FW1001 / 1002) */
-            if (m.drw && anFv(['V-FW1001', 'V-FW1002'][i]) < 5) return a;
+            /* 3.2.1 (IRENE): no water through a BFWP whose suction manual valve is closed (V-FW1001 / 1002).
+               3.2.3-beta.265 (SOHEE, Mina S194-2 CRITICAL): only the BFWP line (m.suc); the PA / SA fans have drw too (boiler.js, DITL-26A /
+               27A) and V-FW1001 closed zeroed both fan flows at 150 MW -> PA / SA flow L.L. -> MFT */
+            if (m.suc && anFv(m.suc[i]) < 5) return a;
             const d = m.dis && m.dis[i];
             if (!d) return a + 1;
             const pm = anDitlPos(d[0], 0),

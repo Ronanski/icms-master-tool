@@ -269,6 +269,10 @@ function anResetAll() {
         }
         b.proc.hopReq = null;
         b.proc.integLoss = 0;
+        /* 3.2.3-beta.191 (SOHEE, reset_worker): pr.nsat (the reheat spray range of the unit model, unit.js) is made by the run: gone
+           after Reset as on a fresh page, by the same rule as hop / Ka */
+        if (b.proc0 && 'nsat' in b.proc0) b.proc.nsat = undefined;
+        else delete b.proc.nsat;
       }
     const v = AN.sv[sh.name];
     if (v && v.p)

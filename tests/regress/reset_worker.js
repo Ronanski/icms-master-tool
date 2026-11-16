@@ -36,6 +36,10 @@ const resetAndRead = async (page, worker) => {
       on: !!DITL150.on, sig, sel: AN.sel == null, toast: (document.getElementById('toast') || {}).textContent || '',
       sv: js(AN.sv), ls: (() => { try { return js(JSON.parse(localStorage.getItem('ditl.an'))); } catch (e) { return 'unreadable'; } })(), probe: Object.keys(AN.sv).filter(k => /^__winter/.test(k)),
       abc: jsK(AN.engState.capture()), ditl: js(ditlCapture()),
+      /* 3.2.3-beta.191: the nets a page READ computes (D.outVal -> simRead, the overview and strip values, src/digital/parts/03b-sim.js):
+         kept on a local page (the page is the engine there), given back but not kept on the Worker's mirror (03b-sim.js, mir). Which
+         sheets the page reads after Reset depends on the page on screen, so local and Worker are compared without that cache (nl._v) */
+      ditlNoV: JSON.stringify(ditlCapture(), (k, v) => (k === '_v' ? undefined : typeof v === 'number' ? f(v) : srt(v))),
       wabc: w ? jsK(w.kf) : null, wditl: w ? js(w.kd) : null, mode: window.ENG ? ENG.mode : '-', bar: !!document.getElementById('engerr'), err: window.ENG && ENG.err ? JSON.stringify(ENG.err).slice(0, 400) : ''
     };
   }, worker);
@@ -87,7 +91,7 @@ async function mode(worker) {
   /* one browser at a time (team-files/TEST_LOCK_RULE.md) */
   const L = await mode(false);
   const W = await mode(true);
-  ck(L.abc === W.abc && L.ditl === W.ditl && L.sv === W.sv, 'Reset local = Reset in the worker (ABC ' + (L.abc === W.abc) + ', DITL ' + (L.ditl === W.ditl) + ', saved values ' + (L.sv === W.sv) + ')' + (L.abc === W.abc ? '' : '\n   ' + dif(L.abc, W.abc)));
+  ck(L.abc === W.abc && L.ditlNoV === W.ditlNoV && L.sv === W.sv, 'Reset local = Reset in the worker (ABC ' + (L.abc === W.abc) + ', DITL ' + (L.ditlNoV === W.ditlNoV) + ' without the read cache nl._v, saved values ' + (L.sv === W.sv) + ')' + (L.abc === W.abc ? '' : '\n   ' + dif(L.abc, W.abc)) + (L.ditlNoV === W.ditlNoV ? '' : '\n   ' + dif(L.ditlNoV, W.ditlNoV)));
   console.log(fail ? 'FAILED ' + fail : 'ALL PASS');
   process.exit(fail ? 1 : 0);
 })();
