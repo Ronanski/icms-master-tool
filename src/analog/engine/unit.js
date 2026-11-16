@@ -4914,7 +4914,9 @@ function anUnitStep0(dt) {
       hFg = T => 1.08 * T + 0.0001065 * T * T,
       mAir = (av[0] + av[1] + av[2]) / 3.6,
       gcp = (mAir + fg) * anHxCp(U.Tb) /* kW/K, flue gas at the bed */,
-      uRel = U.taf0 > 0 ? (taf / U.taf0) * ((U.Tb + 273) / (U.Tb0 + 273)) : 0,
+      /* 3.2.4-beta.16 (user "Physics nga"): the gas that lifts the solids is the air AND the steam of a water wall tube leak, which boils in
+         the bed: per kg 28.9 / 18 times the volume of air (ideal gas, same temperature and pressure) */
+      uRel = U.taf0 > 0 ? ((taf + ((U.tlW || 0) * 28.9) / 18) / U.taf0) * ((U.Tb + 273) / (U.Tb0 + 273)) : 0,
       phi = Math.min(1.2, Math.max(0, isFinite(U.bedI) ? U.bedI / AN_BI.t0 : 1)) * Math.pow(Math.min(1.2, uRel), AN_BB.nU),
       /* beta.263: the lower furnace refractory is its own lump. 25 mm castable k 1.5 W/m K over the tubes (13-thermal-masses), bed film
          300 W/m2 K (textbook), 359 m2: bed -> refractory centre 1 / (1/300 + 0.0125/1.5) = 85.7 W/m2 K = 30.8 kW/K, centre -> water
@@ -5239,6 +5241,19 @@ function anUnitStep0(dt) {
         U.taf && U.taf.length === 3 ? Math.max(0, +U.tafS.rt.v[U.taf[2]]) : null
       );
     for (const [L, a] of U.bedDp || []) if (L.length) anUnitWrite(L, a * k);
+    /* 3.2.4-beta.16 (user "Physics nga"): the split of the bed DP. Plenum / upper (DPT-FG1081 / 1082, above) = the weight of all the
+       solids in the furnace. Of them, the upper furnace holds the solids the gas lifts: its density is the share phi of the bed balance
+       (the same suspension that carries the heat to the walls, AN_BB.nU), so lower / upper (DPT-FG1083 / 1183) = its anchor x phi, and
+       plenum / lower (DPT-FG1084 / 1184) loses what is lifted. Anchors: the HMI snapshot 1016 / 1014 and 70 / 41 mmH2O (hmi-op.js).
+       More gas (load up, more air, a tube leak's steam) lifts more: the upper DP rises, the bed DP falls, the total stays. Not on any
+       DCS logic sheet (display only): U.dpLo / U.dpUp, read by the HMI page (hmi2.js) */
+    {
+      const kq = U.bedK > 0 && U.bedI > 0 ? k / (U.bedI / AN_BI.t0) : 0,
+        fr = U.bedI / AN_BI.t0,
+        ph = isFinite(U.phi) ? U.phi : fr;
+      U.dpUp = [70, 41].map(a => a * kq * ph);
+      U.dpLo = [[1016, 70], [1014, 41]].map(([b, a]) => Math.max(0, b * k - a * kq * (ph - fr)));
+    }
   }
   /* PA to the furnace follows the PAF flow */
   if (U.paNet >= 0 && U.pa.length) anUnitWrite(U.pa, Math.max(0, +U.tafS.rt.v[U.paNet]) * AN_PA_FURN);
