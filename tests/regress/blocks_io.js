@@ -119,7 +119,7 @@ for(const plant of PL==='both'?['off','on']:[PL]){
     else if(b.k==='LAG'&&P.tau>0){const T=P.tau,d=T/50;set(b.i[0],0);step(Math.ceil(10*T/d)>3000?3000:Math.ceil(10*T/d),d);set(b.i[0],100);step(50,d);C(63.2,'step 0 -> 100: 63.2 at T = '+T+' s',1.5)}
     else if((b.k==='RATE'||b.k==='RAMPB')&&b.main!==undefined&&!(b.up!==undefined&&b.dn===undefined)){
      const d=1;if(b.byp>=0)set(b.byp,0);let rate=P.rate;
-     if(b.tpar!==undefined&&b.tpar>=0){set(b.tpar,10);rate=b.span/(10*.036)}
+     if(b.tpar!==undefined&&b.tpar>=0){set(b.tpar,10);/* 3.2.3: beta.241 ABC-052 LN11 = full stroke time in s (b.tsec) */rate=b.tsec?b.span/10:b.span/(10*.036)}
      if(b.up!==undefined){set(b.up,.5);set(b.dn,.5);rate=.5}
      if(!(rate>0)){skip(b.k,'ramp rate 0 = no limit (drawing has no value)',b);clr();continue}
      set(b.main,v[b.main]);step(2,d);/* 2.5.0-beta.10: a SET of the drawing (ABC-050 "IF M.0704 = 1 SET SV = 109") writes the wire, not the ramp: the ramp keeps its own value
