@@ -2311,7 +2311,8 @@ function anFwStep(U, dt) {
     ].map(([d, m, v]) => (anFv(v) < 5 ? 0 : dr(d) != null ? (dr(d) === 1 ? 1 : 0) : srcBit([m]) > 0.5 ? 1 : 0)),
     n = run[0] + run[1],
     ffw = typeof AN_CYC !== 'undefined' && isFinite(AN_CYC.ffw) ? Math.max(0, AN_CYC.ffw) : 0,
-    q = n ? Math.max(K.qMin, ffw / K.sg / n) : 0,
+    /* an HP heater tube leak passes the pumps too (anHpLeak, last step) */
+    q = n ? Math.max(K.qMin, (ffw + (U.hlW ? U.hlW[0] + U.hlW[1] : 0)) / K.sg / n) : 0,
     ps = typeof window !== 'undefined' && window.WORLD && WORLD.sucP ? WORLD.sucP() : NaN,
     Ps = isFinite(ps) ? ps : 0,
     P0 = swInterp(K.pQ, K.pP, K.q0);
@@ -2587,7 +2588,35 @@ const AN_HD = {
   /* the alternates from their valve sheets, E2-0-123 (team-files/plant-study/12-assumptions.md); H5 = its primary */
   alt: { H6: 142, H3: 27.0, H2: 37.5, H1: 57.3 }
 };
+/* 3.2.4 (JENNIE, priority list: HP heater tube leak): trainer faults 'hl.1' / 'hl.2' (world.js), a tube of the No.1 / No.2 HP heater
+   leaks feedwater into the shell. Physics: the feedwater (BFWP discharge U.fwPd, PT-FW1011) is far below its saturation at the shell
+   pressure (No.2 HPH tube 195.7 ~ 245.4 C, shell 36.48 kg/cm2 A sat 245 C; No.1 HPH tube 160.7 ~ 195.7 C, shell 14.12 sat 196 C, plant-study
+   09 section 5), so it does not flash in the hole: a sharp orifice, w = Cd A sqrt(2 rho dP), Cd 0.61 (textbook), rho of the tube water.
+   The hole: 3 mm (NO-SOURCE, trainer setting); like the boiler tube leak (AN_TL) its jet cuts the next tubes and the open area doubles
+   every 10 min (NO-SOURCE), with no cap: "a tube which bursts will cause the surrounding tubes to burst" (HP heater O&M, FHI 2015, Sect 2 p2), so it keeps failing until the operator takes it out; the pump curve (anFwStep) limits the flow. The tubes leak only while they are
+   pressurised: the inlet or the outlet valve open (V-FW1012 / 1013 No.2, V-FW1009 / 1010 No.1); bypassed and isolated = no leak.
+   Where it goes: into the shell with the condensate of the extraction (anHdStep): the drain valves open, the alternate to the condenser
+   takes the rest, then LEVEL HIGH-HIGH (LS-HD1106 / 1105, DITL-94 / 95 close the extraction MOV). The BFWP passes it too (anFwStep).
+   The water comes back by the drains, so the cycle inventory does not change; the heat to bring the leak water to the shell saturation
+   (about 1 % of the extraction per 26 T/H) is left out. U.hlW = [No.1, No.2] T/H, U.hlA = area / 3 mm hole */
+const AN_HL = { d: 0.003 /* m, NO-SOURCE */, cd: 0.61, t2: 600 /* s, NO-SOURCE, as AN_TL */, rho: [880, 840] /* kg/m3, tube water ~178 / ~220 C, AN_WATER_RHO */ };
+function anHpLeak(U, dt) {
+  const W = typeof window !== 'undefined' ? window.WORLD : null,
+    K = AN_HL,
+    th = p => Math.max(0, Math.min(1, p / 20)),
+    A0 = (Math.PI * K.d * K.d) / 4,
+    Ps = U.hpPs || [0, 0],
+    pz = [Math.max(th(anFv('V-FW1009')), th(anFv('V-FW1010'))), Math.max(th(anFv('V-FW1012')), th(anFv('V-FW1013')))];
+  U.hlA = U.hlA || [1, 1];
+  U.hlW = [0, 1].map(i => {
+    const on = !!(W && W.ft && W.ft.has('hl.' + (i + 1)));
+    U.hlA[i] = on ? (U.hlA[i] > 1 ? U.hlA[i] : 1) * Math.pow(2, (dt > 0 ? dt : 0) / K.t2) : 1;
+    const dP = Math.max(0, ((isFinite(U.fwPd) ? U.fwPd : 0) * pz[i] - Math.max(0, +Ps[i] || 0)) * 98066.5);
+    return on ? (K.cd * A0 * U.hlA[i] * Math.sqrt(2 * K.rho[i] * dP) * 3600) / 1000 : 0;
+  });
+}
 function anHdStep(U, dt) {
+  anHpLeak(U, dt);
   if (!U.hd || !U.hd.length) return;
   const K = AN_HD,
     ms = Math.max(0, +U.ms || 0),
@@ -2631,7 +2660,9 @@ function anHdStep(U, dt) {
     if (k === 'H6') ein = isFinite(U.hpF2) ? U.hpF2 : 0;
     else if (k === 'H5') ein = isFinite(U.hpF1) && isFinite(U.hpF2) ? U.hpF1 - U.hpF2 : 0;
     else ein = ext * anHb('f' + k.slice(1), ms) * thr(pos(mov)) * (U.lpS && isFinite(U.lpS[k]) ? U.lpS[k] : 1);
-    const win = ein + (from && out[from] ? out[from] : 0);
+    /* an HP heater tube leak (anHpLeak) joins the condensate in the shell */
+    const hl = U.hlW ? (k === 'H5' ? U.hlW[0] : k === 'H6' ? U.hlW[1] : 0) : 0;
+    const win = ein + hl + (from && out[from] ? out[from] : 0);
     const c2 = (K.alt[k] != null ? K.alt[k] : cap1) * sq;
     /* the split range of the drawing (ABC-035 ~ 039): the primary controller MV goes to the primary valve by an F(X) (LN38 ...) and,
        while the primary is AUTO (M.0236 ... = NOT .MAN), to the alternate station by a second F(X) (LN39 ..., EX-MV); the valve
