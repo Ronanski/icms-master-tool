@@ -237,6 +237,11 @@
   /* values that no DCS logic sheet uses: the plant estimate from the live values E (snapshot anchors, ASSUMED proportions).
      kb = bed temperature rise over the 150 MW one (7.PNG average 937 C), gas = (PA + SA + FA) / 594 T/H with the IDF running,
      pa / sa / fa = the flow over the 7.PNG / 9.png one */
+  const dpU = (k, i) => {
+    const U = window.AN && AN.unit,
+      v = U && U.on && Array.isArray(U[k]) ? +U[k][i] : NaN;
+    return isFinite(v) ? v : null;
+  };
   const EST = {
     /* gas temperatures: ambient + (snapshot - ambient) x kb; after a heat exchanger also a little lower at low gas flow */
     TIFG1092A: E => E.T(905, 0),
@@ -281,10 +286,11 @@
     PIFG1009A2: E => E.pf + 549 * clamp(E.fa, 0, 1.2),
     PIFG1009B2: E => E.pf + 324 * clamp(E.fa, 0, 1.2),
     /* bed DPs: distributor and bed, with the primary air (7.PNG) */
-    DPIFG1084: E => 1016 * clamp(E.pa, 0, 1.3) ** 2,
-    DPIFG1184: E => 1014 * clamp(E.pa, 0, 1.3) ** 2,
-    DPIFG1083: E => 70 * clamp(E.pa, 0, 1.3),
-    DPIFG1183: E => 41 * clamp(E.pa, 0, 1.3),
+    /* 3.2.4-beta.16: the plant model's split of the bed DP (unit.js U.dpLo / U.dpUp: the solids the gas lifts); before, PA ratio fits */
+    DPIFG1084: () => dpU('dpLo', 0),
+    DPIFG1184: () => dpU('dpLo', 1),
+    DPIFG1083: () => dpU('dpUp', 0),
+    DPIFG1183: () => dpU('dpUp', 1),
     /* air side: fan heat (outlet = inlet + rise x flow^2), pressures x flow^2 */
     TIFA1073: E => AN.aphAir(E.tpa, E.paf ? E.pa : 0, 'p'),
     TIFA1074: E => AN.aphAir(E.tpa, E.paf ? E.pa : 0, 'p'),
