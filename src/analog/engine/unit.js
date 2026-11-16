@@ -4468,9 +4468,16 @@ function anUnitStep0(dt) {
   /* coal of the three feeders (T/H) -> steam made in the drum (T/H), first order */
   /* 2.2.0-beta.14: + the oil of the start-up burners (ao x coal); the offset of the firing line fades out below 30 % of the anchor coal */
   /* 3.2.0 P1 #6: the coal of a feeder through its outlet discharge valve (DITL-20) */
+  /* 3.2.4: a trainer fault 'cf.jamA / B / C' (world.js WORLD.ftrip): the discharge chute of the feeder is plugged. The feed rate of the
+     feeder is the belt load times the belt speed (Yamato GM-BSC22-36, CFC-201, Final Drawing P4 / P8): the coal stays on the running belt,
+     so the load cells and the feed rate signal AI0480 / 0512 / 0544 read as before while no coal reaches the furnace */
+  const jam = i => {
+    const W = typeof window !== 'undefined' ? window.WORLD : null;
+    return !!(W && W.ft && W.ft.has('cf.jam' + 'ABC'[i]));
+  };
   const F = U.fuel.reduce((a, l, i) => {
       const o = U.cfo ? anDitlPos(U.cfo[i], 0) : null;
-      return a + (anUnitVal(l) || 0) * (o == null ? 1 : o / 100);
+      return jam(i) ? a : a + (anUnitVal(l) || 0) * (o == null ? 1 : o / 100);
     }, 0),
     oil = (U.oilN || []).reduce((a, x) => a + Math.max(0, +x.S.rt.v[x.n] || 0), 0),
     bf = Math.max(0, Math.min(1, (U.Tb - U.Tburn0) / (U.Tburn1 - U.Tburn0))),
