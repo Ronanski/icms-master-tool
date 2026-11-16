@@ -210,6 +210,9 @@
         .setAttribute('aria-label', (c.second ? 'Permissive, trend, monitor: ' : 'Control: ') + d.name);
     }
     if (c.second) paintTrend(c, d);
+    /* a card that grew (its rows arrived) stays inside the window */
+    const r = c.el.getBoundingClientRect();
+    if (r.height && r.bottom > innerHeight - 8) c.el.style.top = Math.max(8, innerHeight - r.height - 8) + 'px';
   }
   function place(c) {
     const a = c.anchor && spot(c.anchor),

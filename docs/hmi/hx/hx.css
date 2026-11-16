@@ -46,6 +46,19 @@
   --hx-pen4: #178a8e;
   --hx-pen5: #7a52c7;
   --hx-pen6: #55626f;
+  /* realistic look (hx-real.js): steel from light to dark, the edge of a body, the inside of a cut, concrete, a display */
+  --rx-st1: #ffffff;
+  --rx-st2: #c9d2db;
+  --rx-st3: #8b98a5;
+  --rx-edge: #36424e;
+  --rx-void: #dbe2e9;
+  --rx-conc: #bcc5ce;
+  --rx-col: #d9dfe5;
+  --rx-chip: #ffffff;
+  --rx-hot: #e07a2e;
+  --rx-coil0: #a8479a;
+  --rx-coil1: #e2553c;
+  --rx-wt: #58a6dc;
   --hx-font: 'IBM Plex Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --hx-cond: 'IBM Plex Sans Condensed', 'IBM Plex Sans', system-ui, sans-serif;
   --hx-mono: 'IBM Plex Mono', 'JetBrains Mono', ui-monospace, Consolas, monospace;
@@ -95,6 +108,18 @@
     --hx-pen4: #3fbfc3;
     --hx-pen5: #a98bf0;
     --hx-pen6: #aab4bf;
+    --rx-st1: #c3ced9;
+    --rx-st2: #6b7885;
+    --rx-st3: #323c46;
+    --rx-edge: #090d11;
+    --rx-void: #0c1116;
+    --rx-conc: #2a323b;
+    --rx-col: #20272f;
+    --rx-chip: #080c10;
+    --rx-hot: #ff8a3c;
+    --rx-coil0: #c46fae;
+    --rx-coil1: #ff9166;
+    --rx-wt: #2f7fc0;
     color-scheme: dark;
   }
 }
@@ -142,6 +167,18 @@
   --hx-pen4: #3fbfc3;
   --hx-pen5: #a98bf0;
   --hx-pen6: #aab4bf;
+  --rx-st1: #c3ced9;
+  --rx-st2: #6b7885;
+  --rx-st3: #323c46;
+  --rx-edge: #090d11;
+  --rx-void: #0c1116;
+  --rx-conc: #2a323b;
+  --rx-col: #20272f;
+  --rx-chip: #080c10;
+  --rx-hot: #ff8a3c;
+  --rx-coil0: #c46fae;
+  --rx-coil1: #ff9166;
+  --rx-wt: #2f7fc0;
   color-scheme: dark;
 }
 
@@ -271,6 +308,103 @@
 .hx-lane { font: 600 10.5px var(--hx-cond); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--hx-mute) !important; }
 .hx-note { font-size: 11px; fill: var(--hx-mute) !important; }
 
+/* ---- REAL: the realistic look (hx-real.js). Shapes only: no picture, no filter. Movement only where something runs or flows ---- */
+.rx, .rxv, .rxd, .rxs, .rxvoid { stroke: var(--rx-edge); stroke-width: 0.9; stroke-linejoin: round; }
+.rx { fill: url(#rxh); }
+.rxv { fill: url(#rxv); }
+.rxd { fill: var(--rx-st3); }
+.rxs { fill: var(--hx-none); }
+.hx-run .rxs { fill: var(--hx-run); }
+.hx-stop .rxs { fill: var(--hx-stop); }
+.hx-trip .rxs { fill: var(--hx-run); animation: hx-blink 1s steps(2) infinite; }
+.rxvoid { fill: var(--rx-void); stroke-width: 0.7; }
+.rxe { fill: none; stroke: var(--rx-edge); stroke-width: 1; stroke-linecap: round; opacity: 0.7; }
+.rxst { fill: none; stroke: var(--rx-st2); stroke-width: 1.7; stroke-linecap: round; }
+.rxk { fill: var(--rx-edge); }
+.rxw { fill: none; stroke: var(--rx-st2); stroke-width: 1.9; }
+.rxhi { fill: none; stroke: #fff; stroke-width: 1.5; stroke-linecap: round; opacity: 0.45; }
+.rxix { fill: var(--hx-ink); transition: transform 0.9s ease; }
+.rxar { fill: none; stroke: var(--rx-edge); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.rxpe { fill: none; stroke: var(--rx-st2); stroke-width: 2.4; stroke-linejoin: round; }
+.rxlq { fill: none; stroke: var(--hx-m-condensate); stroke-width: 1.7; stroke-linecap: round; }
+.rxglow { fill: url(#rxglow); }
+.rxwall { fill: none; stroke: var(--rx-st2); stroke-width: 6; }
+.rxm { fill: var(--hx-m-reheat); stroke: var(--rx-edge); stroke-width: 0.7; }
+.rxtb { fill: url(#rxtube); stroke: var(--rx-st3); stroke-width: 0.8; }
+.rxwt { fill: var(--rx-wt); }
+.rxconc { fill: var(--rx-conc); stroke: var(--rx-edge); stroke-width: 0.6; }
+.rxcol { fill: var(--rx-col); }
+.rxscr { fill: var(--rx-chip); stroke: var(--rx-edge); stroke-width: 0.8; }
+.rxfr { fill: none; stroke: var(--rx-st2); stroke-width: 1.4; }
+.rxbl { fill: none; stroke: var(--hx-none); stroke-width: 3.2; stroke-linecap: round; transform-box: fill-box; transform-origin: center; transition: transform 0.9s ease; }
+.hx-run .rxbl { stroke: var(--hx-run); }
+.hx-stop .rxbl { stroke: var(--hx-stop); }
+.rxhd { fill: var(--rx-st1); stroke: var(--rx-edge); stroke-width: 1; }
+.hx-tap:hover .rxhd, .hx-tap:focus-visible .rxhd { fill: var(--hx-accent); }
+.rx-chip { fill: var(--rx-chip); stroke: var(--hx-rule); stroke-width: 1; }
+.hx-node[data-open]:hover .rxs, .hx-node[data-open]:focus-visible .rxs, .hx-node[data-open]:hover .rxfr, .hx-node[data-open]:hover .rxscr { stroke: var(--hx-accent); stroke-width: 2; }
+/* pipes */
+.rx-pe, .rx-pb, .rx-ph { fill: none; stroke-linejoin: round; }
+.rx-pe { stroke: var(--rx-edge); }
+.rx-pb { stroke: var(--m); }
+.rx-ph { stroke: #fff; opacity: 0.38; }
+.rx-pj { fill: none; stroke: var(--rx-edge); stroke-dasharray: 1.1 47; opacity: 0.5; }
+.hx-idle > .rx-pb { stroke: color-mix(in srgb, var(--m) 32%, var(--rx-st2)); }
+.hx-idle > .rx-ph { opacity: 0.2; }
+.hx-real .hx-lnf { stroke: #fff; stroke-width: 1.5; stroke-dasharray: 5 15; stroke-linecap: butt; }
+.hx-real .hx-on > .hx-lnf { opacity: 0.92; animation: rx-flow 1s steps(20) infinite; }
+.rx-chev { fill: none; stroke: #fff; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.8; }
+.hx-idle > .rx-chev { opacity: 0.45; }
+/* inside the equipment */
+.rx-disc { fill: none; stroke: var(--rx-st3); stroke-width: 5.4; }
+.rx-blade { fill: none; stroke: var(--rx-st1); stroke-width: 4; stroke-dasharray: 1.7 1.3; }
+.rx-dia { fill: none; stroke: var(--rx-st3); stroke-width: 1.6; }
+.rx-steam { fill: var(--m); stroke: none; opacity: 0; transition: opacity 1.2s; }
+.rx-jet { fill: none; stroke: var(--m); stroke-width: 1.6; stroke-dasharray: 4 10; stroke-linecap: round; opacity: 0; }
+.rx-rip { fill: none; stroke: #fff; stroke-width: 1; opacity: 0.6; }
+.rx-gas { fill: none; stroke: var(--rx-hot); stroke-width: 1.8; stroke-dasharray: 3 17; stroke-linecap: round; opacity: 0; }
+.rx-bank { fill: none; stroke: var(--m); stroke-width: 2; opacity: 0.4; }
+.rx-coile { fill: none; stroke: var(--rx-edge); stroke-width: 5.2; }
+.rx-coil { fill: none; stroke: url(#rxcoil); stroke-width: 3.4; }
+.rx-coilf { fill: none; stroke: #fff; stroke-width: 1.2; stroke-dasharray: 3 13; opacity: 0; }
+.rx-mist { fill: none; stroke: var(--hx-m-water); stroke-width: 1.3; stroke-dasharray: 1.6 3; stroke-linecap: round; opacity: 0; }
+.rx-plume circle { fill: var(--rx-st1); opacity: 0; transform-box: fill-box; transform-origin: center; }
+.hx-run .rx-steam { opacity: 0.26; }
+.hx-run .rx-blade { animation: rx-blade 0.3s steps(6) infinite; }
+.hx-run .rx-jet { opacity: 0.95; animation: rx-jet 0.7s steps(14) infinite; }
+.hx-run .rx-rip { animation: rx-rip 2.6s steps(13) infinite; }
+.hx-on > .rx-gas { opacity: 0.85; animation: rx-flow 1.6s steps(20) infinite; }
+.hx-on > .rx-coilf { opacity: 0.9; animation: hx-flow 1.6s steps(32) infinite; }
+.hx-on > .rx-mist { opacity: 1; animation: rx-mist 0.5s steps(8) infinite; }
+.hx-on > .rx-plume circle { animation: rx-plume 2.4s ease-out infinite; }
+.hx-on > .rx-plume circle:nth-child(2) { animation-delay: 0.8s; }
+.hx-on > .rx-plume circle:nth-child(3) { animation-delay: 1.6s; }
+@keyframes rx-flow { to { stroke-dashoffset: -20; } }
+@keyframes rx-blade { to { stroke-dashoffset: -3; } }
+@keyframes rx-jet { to { stroke-dashoffset: -14; } }
+@keyframes rx-mist { to { stroke-dashoffset: -9.2; } }
+@keyframes rx-rip { 50% { transform: translateY(1.3px); } }
+@keyframes rx-plume { 0% { opacity: 0; transform: translateY(9px) scale(0.5); } 25% { opacity: 0.7; } 100% { opacity: 0; transform: translateY(-15px) scale(1.5); } }
+/* the realistic drawing is wide (1760): its words are a little larger, so they stay readable when the page fits one screen */
+.hx-real .hx-name { font-size: 13.4px; }
+.hx-real .hx-tag { font-size: 10.4px; }
+.hx-real .hx-lab { font-size: 12px; }
+.hx-real .hx-val { font-size: 13.2px; }
+.hx-real .hx-unit { font-size: 10.8px; }
+.hx-real .hx-st { font-size: 12px; }
+.hx-real .hx-end { font-size: 10.8px; }
+.hx-real .hx-zone { font-size: 11.4px; }
+.hx-process svg.hx-real { min-width: 1280px; }
+/* words inside the equipment */
+.hx-process svg .hx-node text.rx-in, .hx-process svg .hx-node text.rx-pv, .hx-process svg .hx-node text.rx-sl, .hx-process svg .hx-node text.rx-sv { stroke: none; }
+.hx-process svg .hx-node text.rx-in2 { stroke: var(--rx-void); stroke-width: 3px; }
+.rx-in { font: 600 8px var(--hx-cond); letter-spacing: 0.09em; text-transform: uppercase; fill: var(--hx-mute) !important; }
+.rx-in2 { font: 600 8.8px var(--hx-cond); fill: var(--hx-ink2) !important; }
+.rx-pv { font: 600 15px var(--hx-mono); font-variant-numeric: tabular-nums; }
+.rx-sl { font: 600 8.4px var(--hx-cond); letter-spacing: 0.08em; text-transform: uppercase; fill: var(--hx-mute) !important; }
+.rx-sv { font: 600 11px var(--hx-mono); font-variant-numeric: tabular-nums; }
+.rx-su { font: 400 9px var(--hx-font); fill: var(--hx-mute) !important; }
+
 /* status lists (permissives, trips): Y = red = true, N = green */
 .hx-lists { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; padding: 8px 6px 4px; }
 .hx-lists > div { border: 1px solid var(--hx-rule); border-radius: 8px; padding: 8px 10px; }
@@ -320,13 +454,15 @@
 .hx-pens b { font: 600 12.5px var(--hx-mono); font-variant-numeric: tabular-nums; }
 .hx-pens small { color: var(--hx-mute); font-size: 10.5px; }
 
-@media (max-width: 1100px) {
+@media (max-width: 1500px) {
   .hx-shell { grid-template-columns: minmax(0, 1fr); }
   .hx-nav { display: none; }
   .hx-pick { display: block; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hx-run .hxr, .hx-on > .hx-lnf, .hx-trip .hxs, .hx-st.trip { animation: none; }
+  .hx-run .hxr, .hx-on > .hx-lnf, .hx-trip .hxs, .hx-st.trip, .hx-real .hx-on > .hx-lnf, .hx-run .rx-blade, .hx-run .rx-jet, .hx-run .rx-rip, .hx-on > .rx-gas, .hx-on > .rx-coilf, .hx-on > .rx-mist, .hx-trip .rxs { animation: none; }
+  .hx-on > .rx-plume circle { animation: none; opacity: 0.5; }
+  .rxix, .rxbl { transition: none; }
 }
 
 /* ---- mini pop-ups (hx-cards-ui.js): CONTROL card and PERMISSIVE · TREND · MONITOR card, tethered to their equipment ---- */

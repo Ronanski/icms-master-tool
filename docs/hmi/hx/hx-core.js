@@ -18,7 +18,8 @@
   const NS = 'http://www.w3.org/2000/svg',
     W = 1280,
     H = 640,
-    SYM = window.HXSYM;
+    SYM = window.HXSYM,
+    REAL = window.HXREAL || {};
   const HX = (window.HX = { pages: [], byId: {}, W, H, data: null });
   const esc = s =>
     String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -105,6 +106,14 @@
     `<path class="hx-ln" d="${d}" style="stroke:var(--hx-m-${med});stroke-width:${w}${dash ? ';stroke-dasharray:6 5' : ''}"/>` +
     (w >= 3.5 ? `<path class="hx-lnh" d="${d}" style="stroke-width:${Math.max(1, w * 0.26)}"/>` : '') +
     `<path class="hx-lnf" d="${d}"/>`;
+
+  /* the same pipe in the realistic look (hx-real.js): a dark edge, the body in the colour of its medium (--m, set on the group;
+     cold steel while nothing flows), a light line along it, the joints of the cladding on a large line, the moving dashes */
+  const tubeR = (d, w) =>
+    `<path class="rx-pe" d="${d}" style="stroke-width:${n1(w + 2.4)}"/><path class="rx-pb" d="${d}" style="stroke-width:${w}"/>` +
+    (w >= 3.4 ? `<path class="rx-ph" d="${d}" style="stroke-width:${n1(Math.max(1, w * 0.3))}"/>` : '') +
+    (w >= 6 ? `<path class="rx-pj" d="${d}" style="stroke-width:${w}"/>` : '') +
+    `<path class="hx-lnf" d="${d}"${w >= 6 ? ' style="stroke-width:1.9"' : ''}/>`;
 
   /* ---------- geometry ---------- */
   const rpath = (p, r) => {
@@ -233,7 +242,7 @@
   /* rot: a symbol may be turned (90, -90) to sit on a vertical line. lab: where its words go: 't' name above and details below,
      'b' all below, 'r' / 'l' all beside it */
   const rotP = (p, r) => (r === 90 ? [-p[1], p[0]] : r === -90 ? [p[1], -p[0]] : r === 180 ? [-p[0], -p[1]] : p);
-  function drawNode(it, pageId) {
+  function drawNode(it, pageId, real) {
     const x = it._x,
       y = it._y;
     if (it.k === 'link') {
@@ -244,10 +253,17 @@
       it._box = [x - w / 2, y - 13, x + w / 2, y + 13];
       return `<g class="hx-link" data-go="${esc(it.to)}" tabindex="0" role="link" transform="translate(${n1(x)} ${n1(y)})"><rect x="${n1(-w / 2)}" y="-13" width="${n1(w)}" height="26" rx="13"/><text x="0" y="4" text-anchor="middle">${back ? '‹ ' : ''}${esc(t)}${back ? '' : ' ›'}</text></g>`;
     }
-    const sy = SYM[it.sym](Object.assign({ id: pageId + '-' + it._id }, it)),
-      rot = it.rot || 0;
+    const sy = ((real && REAL[it.sym]) || SYM[it.sym])(Object.assign({ id: pageId + '-' + it._id }, it)),
+      rot = it.rot || 0,
+      sc = it.sc || 1;
     let box = sy.box,
       ports = sy.ports;
+    /* sc: a large piece may be drawn larger than its own measure (the turbine, a boiler pass) */
+    if (sc !== 1) {
+      box = box.map(v => v * sc);
+      ports = Object.fromEntries(Object.entries(ports).map(([k, q]) => [k, [q[0] * sc, q[1] * sc]]));
+      sy.svg = `<g transform="scale(${sc})">${sy.svg}</g>`;
+    }
     if (rot) {
       const c = [
         [box[0], box[1]],
@@ -471,13 +487,17 @@
   function drawPlan(def) {
     const P = def.plan,
       byId = {};
+    const real = P.look === 'real';
     let uid = 0,
-      nodes = '';
+      nodes = '',
+      under = '';
     for (const it of P.items) {
       it._id = it.id || 'p' + ++uid;
       it._x = it.x;
       it._y = it.y;
-      nodes += drawNode(it, def.id);
+      /* under: large equipment that the pipes pass in front of (a turbine on its foundation, a boiler pass) */
+      if (it.under) under += drawNode(it, def.id, real);
+      else nodes += drawNode(it, def.id, real);
       byId[it._id] = it;
     }
     const pt = (q, prev) => {
@@ -504,10 +524,15 @@
       }
       return o;
     };
-    const head = (a, b, med, at) => {
+    const head = (a, b, med, at, w) => {
       const an = (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI,
-        m = at || [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-      return `<path class="hx-arw" transform="translate(${n1(m[0])} ${n1(m[1])}) rotate(${n1(an)})" d="M-5 -4.6L5 0L-5 4.6Z" style="fill:var(--hx-m-${med})"/>`;
+        m = at || [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2],
+        tr = `transform="translate(${n1(m[0])} ${n1(m[1])}) rotate(${n1(an)})"`;
+      /* realistic look: the direction is painted on the pipe itself, as on a real line */
+      if (real && !at && w >= 5)
+        return `<path class="rx-chev" ${tr} d="M-2.4 ${n1(-w / 2 + 1.5)}L1.6 0L-2.4 ${n1(w / 2 - 1.5)}M-7.4 ${n1(-w / 2 + 1.5)}L-3.4 0L-7.4 ${n1(w / 2 - 1.5)}"/>`;
+      if (real) return `<path class="hx-arw" ${tr} d="M-3.6 -3.4L3.8 0L-3.6 3.4Z" style="fill:var(--hx-m-${med})"/>`;
+      return `<path class="hx-arw" ${tr} d="M-5 -4.6L5 0L-5 4.6Z" style="fill:var(--hx-m-${med})"/>`;
     };
     let ls = '',
       ends = '';
@@ -524,18 +549,20 @@
           const l = Math.hypot(o[i][0] - o[i - 1][0], o[i][1] - o[i - 1][1]);
           if (l > bl) ((bl = l), (bi = i));
         }
-        if (bl >= 44) ar = head(o[bi - 1], o[bi], pp.med);
+        if (bl >= 44) ar = head(o[bi - 1], o[bi], pp.med, null, w);
       }
       if (pp.to) {
         const a = o[o.length - 2],
           b = o[o.length - 1],
           dx = Math.sign(Math.round(b[0] - a[0])),
           dy = Math.sign(Math.round(b[1] - a[1]));
-        ar += head(a, b, pp.med, [b[0] + dx * 4, b[1] + dy * 4]);
-        ends += `<text class="hx-end" x="${n1(b[0] + dx * 13 + (pp.toSide === 'r' ? 8 : 0))}" y="${n1(b[1] + dy * 13 + (dy > 0 ? 8 : dy < 0 ? -2 : 3.5) - (pp.toSide === 'r' ? 9 : 0))}" text-anchor="${dx > 0 || pp.toSide === 'r' ? 'start' : dx < 0 ? 'end' : 'middle'}">${esc(pp.to)}</text>`;
+        ar += head(a, b, pp.med, [b[0] + dx * 4, b[1] + dy * 4], w);
+        ends += `<text class="hx-end" x="${n1(b[0] + dx * 13 + (pp.toSide === 'r' ? 8 : 0) + (pp.tox || 0))}" y="${n1(b[1] + dy * 13 + (dy > 0 ? 8 : dy < 0 ? -2 : 3.5) - (pp.toSide === 'r' ? 9 : 0) + (pp.toy || 0))}" text-anchor="${dx > 0 || pp.toSide === 'r' ? 'start' : dx < 0 ? 'end' : 'middle'}">${esc(pp.to)}</text>`;
       }
-      const d = rpath(o, pp.r);
-      ls += `<g class="hx-idle" data-flow="${esc(pp.flow || '')}">${tube(d, pp.med, w)}${ar}</g>`;
+      const d = rpath(o, pp.r || (real ? Math.max(7, w * 1.7) : null));
+      ls += real
+        ? `<g class="hx-idle" data-flow="${esc(pp.flow || '')}" style="--m:var(--hx-m-${pp.med})">${tubeR(d, w)}${ar}</g>`
+        : `<g class="hx-idle" data-flow="${esc(pp.flow || '')}">${tube(d, pp.med, w)}${ar}</g>`;
     }
     let sig = '';
     for (const sg of P.signals || []) sig += `<path class="hx-sig" d="${rpath(path(sg), 4)}"/>`;
@@ -544,14 +571,38 @@
     for (const t of P.taps || []) {
       const sd = t.side || 't',
         an = sd === 'r' ? 'start' : sd === 'l' ? 'end' : 'middle',
-        bx = sd === 'r' ? 9 : sd === 'l' ? -9 : 0,
-        y0 = sd === 't' ? -37 : sd === 'b' ? 21 : -9,
         dp = t.dp == null ? 1 : t.dp;
       const val = t.key
         ? `<tspan class="hx-val" data-hv="${esc(t.key)}" data-dp="${dp}">-----</tspan>${t.key2 ? ` / <tspan class="hx-val" data-hv="${esc(t.key2)}" data-dp="${dp}">-----</tspan>` : ''}<tspan class="hx-unit"> ${esc(t.unit || '')}</tspan>`
         : `<tspan class="hx-val hx-nov">-----</tspan><tspan class="hx-unit"> ${esc(t.unit || '')}</tspan>`;
+      const open = t.key ? ` data-open="value:${esc(t.key)}" tabindex="0" role="button"` : '';
+      if (real) {
+        /* realistic look: the transmitter stands on its line, its value in a small display */
+        const digits = t.digits || (dp ? 4.6 : 3.4),
+          cw = Math.round(
+            12 + digits * 7.9 * (t.key2 ? 2 : 1) + (t.key2 ? 17 : 0) + (t.unit ? 4 + t.unit.length * 5.5 : 0)
+          ),
+          v = sd === 't' || sd === 'b',
+          sg = sd === 't' || sd === 'l' ? -1 : 1,
+          stalk = v ? `M0 0V${sg * 6}` : `M0 0H${sg * 6}`,
+          hx = v ? 0 : sg * 9,
+          hy = v ? sg * 9 : 0,
+          ox = t.dx || 0,
+          x0 = (v ? -cw / 2 : sd === 'r' ? 15 : -15 - cw) + ox,
+          tx0 = (v ? 0 : sd === 'r' ? 15 : -15) + ox,
+          yl = sd === 't' ? -46 : sd === 'b' ? 24 : -12,
+          yc = sd === 't' ? -42 : sd === 'b' ? 28 : -8,
+          yt = sd === 't' ? -17 : sd === 'b' ? 53 : 18;
+        taps +=
+          `<g class="hx-node hx-tap"${open} aria-label="${esc(t.label)}" transform="translate(${n1(t.x)} ${n1(t.y)})"><path class="rxst" d="${stalk}"/><circle class="rxhd" cx="${hx}" cy="${hy}" r="3.3"/>` +
+          `<text class="hx-lab" x="${tx0}" y="${yl}" text-anchor="${an}">${esc(t.label)}</text><rect class="rx-chip" x="${n1(x0)}" y="${yc}" width="${cw}" height="15" rx="3"/>` +
+          `<text x="${n1(x0 + cw / 2)}" y="${yc + 11.2}" text-anchor="middle">${val}</text>${t.tag ? `<text class="hx-tag" x="${tx0}" y="${yt}" text-anchor="${an}">${esc(t.tag)}</text>` : ''}</g>`;
+        continue;
+      }
+      const bx = sd === 'r' ? 9 : sd === 'l' ? -9 : 0,
+        y0 = sd === 't' ? -37 : sd === 'b' ? 21 : -9;
       const lead = sd === 't' ? 'M0 -3V-9' : sd === 'b' ? 'M0 3V9' : sd === 'r' ? 'M3 0H7' : 'M-3 0H-7';
-      taps += `<g class="hx-node hx-tap"${t.key ? ` data-open="value:${esc(t.key)}" tabindex="0" role="button"` : ''} aria-label="${esc(t.label)}" transform="translate(${n1(t.x)} ${n1(t.y)})"><path class="hxd" d="${lead}"/><circle class="hx-dot" r="3.2"/><text class="hx-lab" x="${bx}" y="${y0}" text-anchor="${an}">${esc(t.label)}</text><text x="${bx}" y="${y0 + 14}" text-anchor="${an}">${val}</text>${t.tag ? `<text class="hx-tag" x="${bx}" y="${y0 + 25}" text-anchor="${an}">${esc(t.tag)}</text>` : ''}</g>`;
+      taps += `<g class="hx-node hx-tap"${open} aria-label="${esc(t.label)}" transform="translate(${n1(t.x)} ${n1(t.y)})"><path class="hxd" d="${lead}"/><circle class="hx-dot" r="3.2"/><text class="hx-lab" x="${bx}" y="${y0}" text-anchor="${an}">${esc(t.label)}</text><text x="${bx}" y="${y0 + 14}" text-anchor="${an}">${val}</text>${t.tag ? `<text class="hx-tag" x="${bx}" y="${y0 + 25}" text-anchor="${an}">${esc(t.tag)}</text>` : ''}</g>`;
     }
     let tx = '';
     for (const t of P.texts || [])
@@ -562,7 +613,7 @@
       used.map(m => `<span><i style="background:var(--hx-m-${m})"></i>${MEDIA[m] || m}</span>`).join('') +
       `<em>Red = running / open · Green = stopped / closed · Grey = no signal in the app yet</em>`;
     return {
-      svg: `<svg viewBox="0 0 ${W} ${P.h}" role="img" aria-label="${esc(def.title)} process">${tx}${ls}${sig}${ends}${nodes}${taps}</svg>`,
+      svg: `<svg viewBox="0 0 ${P.w || W} ${P.h}"${real ? ' class="hx-real"' : ''} role="img" aria-label="${esc(def.title)} process">${under}${tx}${ls}${sig}${ends}${nodes}${taps}</svg>`,
       legend
     };
   }
@@ -717,7 +768,9 @@
     d.setAttribute('aria-hidden', 'true');
     d.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
     d.innerHTML =
-      '<svg width="0" height="0"><defs><linearGradient id="hxg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--hx-g1)"/><stop offset="0.5" style="stop-color:var(--hx-g2)"/><stop offset="1" style="stop-color:var(--hx-g3)"/></linearGradient></defs></svg>';
+      '<svg width="0" height="0"><defs><linearGradient id="hxg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--hx-g1)"/><stop offset="0.5" style="stop-color:var(--hx-g2)"/><stop offset="1" style="stop-color:var(--hx-g3)"/></linearGradient>' +
+      (REAL._defs || '') +
+      '</defs></svg>';
     document.body.append(d);
   }
 
@@ -775,6 +828,12 @@
       }
     });
     const Q = s => page.querySelectorAll(s);
+    /* realistic look: the mark on a valve stem rises with the opening, the blades of a louver turn with it (hx.css eases both) */
+    const travel = (e, pc) => {
+      const f = Math.max(0, Math.min(1, (pc || 0) / 100));
+      e.querySelectorAll('[data-stem]').forEach(s => (s.style.transform = `translateY(${n1(-s.dataset.stem * f)}px)`));
+      e.querySelectorAll('[data-blr]').forEach(b => (b.style.transform = `rotate(${n1(90 * f)}deg)`));
+    };
     const setCls = (e, c) => {
       const cur = e.getAttribute('class').replace(/\s*hx-(run|stop|trip|none)\b/g, '');
       e.setAttribute('class', cur + ' hx-' + c);
@@ -824,10 +883,12 @@
           const v = D.valve(e.dataset.vv) || {},
             o = v.open != null ? v.open : v.pct != null ? v.pct > 1 : null;
           setCls(e, o == null ? 'none' : o ? 'run' : 'stop');
+          travel(e, v.pct != null ? v.pct : o ? 100 : 0);
         });
         Q('.hx-node[data-lv2]').forEach(e => {
           const mv = (D.loop(e.dataset.lv2) || {}).mv;
           setCls(e, mv == null ? 'none' : mv > 1 ? 'run' : 'stop');
+          travel(e, mv);
           e.querySelectorAll('[data-bl]').forEach(b =>
             b.setAttribute('transform', `rotate(${n1(90 * Math.max(0, Math.min(1, (mv || 0) / 100)))})`)
           );
