@@ -5249,7 +5249,14 @@ function anUnitStep0(dt) {
      the 6.4 / 2.2 % of one snapshot has no source, it stood the B side on LOW-LOW at 150 MW */
   if (U.afs > 0) {
     const taf = U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0),
-      o2s = Math.max(0, Math.min(21, 21 * (1 - ((Fe - Fb * (1 - (U.coalR || 1))) * U.afs) / Math.max(1, taf))));
+      o2a = Math.max(0, Math.min(21, 21 * (1 - ((Fe - Fb * (1 - (U.coalR || 1))) * U.afs) / Math.max(1, taf)))),
+      /* 3.2.4 (JENNIE): the analyzers sit at the air heater gas inlet (plant service reports "AT-FG3122 / 3123 GAH INLET O2
+         ANALYZER", unit 3 of the same design) and read the gas as it is, wet (the stack design O2 of K1AU3-E2-0-005 sheet 2 is
+         "4.22 % Vol, wet base"). A tube leak (water wall U.tlW, economizer U.tlE) adds steam that brings no oxygen: the same O2 in
+         more moles, O2 x n / (n + leak). Moles of the gas: the air, 28.9 kg/kmol; the leak, 18. The air does not change */
+      nA = taf / 28.9,
+      nL = ((U.tlW || 0) + (U.tlE || 0)) / 18,
+      o2s = nA > 0 ? (o2a * nA) / (nA + nL) : o2a;
     U.o2v += ((o2s - U.o2v) * dt) / U.tauO2;
     for (const L of U.o2) anUnitWrite(L, U.o2v);
   }
