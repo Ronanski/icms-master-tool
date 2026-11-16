@@ -1220,6 +1220,8 @@
     'mt.idf': { t: 'ID fan trips in the field (MIT-F1056)', sh: 'DITL-25A' },
     'mt.cfa': { t: 'Coal feeder A trips in the field (MIR-CL1061-A)', sh: 'DITL-19' },
     'mt.cepa': { t: 'Condensate pump A trips in the field (MIT-P1116A)', sh: 'DITL-61A' },
+    /* 3.2.4 (JENNIE): the running FA blower (A at 150 MW, B standby: boiler.js AN_FN fa), IO STN103 I.0047 MIT-F1055A */
+    'mt.faa': { t: 'FA blower A trips in the field (MIT-F1055A)', sh: 'DITL-28A' },
     /* Mina beta.170: "Seawater pump A trip" tripped a pump that stands STOPPED at 150 MW (snapshot: SWP-A stopped R M, SWP-B 242.5 A and
        SWP-C 207.6 A running; ditl150.js), so nothing followed. The fault trips SWP-B, a running pump (machine B of DITL-29A) */
     'mt.swpb': { t: 'Seawater pump B trips in the field (MIT-P1501B)', sh: 'DITL-29A #B' }
@@ -1261,13 +1263,13 @@
   /* 3.2.4 (JENNIE): an HP heater tube leak (unit.js anHpLeak), the same set as TL */
   const HL = { 'hl.1': 'No.1 HP heater tube leak (grows)', 'hl.2': 'No.2 HP heater tube leak (grows)' };
   /* 3.2.4 (JENNIE): the air heater plugged on the gas side (boiler.js AN_APL), the same set as TL */
-  const AP = { 'aph.plug': 'Air heater plugged, gas side (grows)' };
+  const AP = { 'aph.plug': 'Air heater plugged, gas side (grows)', 'cd.air': 'Condenser air in-leakage (grows)' };
   const tlSet = (id, on) => {
     if (on) W.ft.add(id);
     else W.ft.delete(id);
     W.busy = true;
     const t = TL[id] || HL[id] || AP[id];
-    return on ? t : 'cleared: ' + t + (AP[id] ? ' (washed)' : ' (tube repaired)');
+    return on ? t : 'cleared: ' + t + (id === 'aph.plug' ? ' (washed)' : id === 'cd.air' ? ' (sealed)' : ' (tube repaired)');
   };
   /* 3.2.4-beta.13 (JENNIE, priority list item: coal quality): wet coal, a trainer fault (unit.js anCoalWet: the coal moisture 33.96 % of the
      performance coal, FHI P2S7 Tab 2, rises to 40 %, NO-SOURCE trainer setting: rain on the coal yard). No DITL contact: the DCS has no
