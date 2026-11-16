@@ -4772,8 +4772,13 @@ function anUnitStep0(dt) {
      TIFG1009 furnace) follow the bed: ambient + (snapshot - ambient) x bed rise / anchor bed rise. Before, they kept the 150 MW
      snapshot (933 C) in Cold: ABC-027 SI0122 > 700 C = M.2504 "ADEQUATE FOR COAL FIRING (PURGE BY-PASS)" was 1 on a cold boiler,
      DITL-02 completed the purge by itself and reset the MFT before the operator could press FURNACE PURGE START */
+  /* 3.2.3-beta.273 (live run beta.272: the 150 MW start showed bed 881 C on the overview and TIFG1090 / 1091 HIGH-HIGH 980 C on every
+     thermocouple): the anchor of the thermocouples is the bed the snapshot thermocouples read (the average of the eighteen lower layer
+     TT-FG1090 / 1091 A ~ I, 937 C), not the model anchor Tb0 850 C. Their average is now the bed temperature U.Tb, each with its own
+     snapshot spread; one bed for the overview, the logic (ABC-026 alarms 950 / 980 / 820) and the pages */
+  const tbA = (() => { const a0 = anGasA0(); return isFinite(a0.u) && isFinite(a0.l) ? (a0.u + a0.l) / 2 : U.Tb0; })();
   if (U.tbed && U.tbed.length) {
-    const k = Math.max(0, (U.Tb - U.Tamb) / Math.max(1, U.Tb0 - U.Tamb));
+    const k = Math.max(0, (U.Tb - U.Tamb) / Math.max(1, tbA - U.Tamb));
     for (const L of U.tbed) anUnitWrite(L, i => U.Tamb + (L.a0[i] - U.Tamb) * k);
   }
   /* 3.2.3-beta.212 (live Cold sweep F16: AIR AND FLUE GAS page '-----' for the furnace, cyclone outlet and seal pot temperatures with
@@ -4783,7 +4788,7 @@ function anUnitStep0(dt) {
      thermocouples, each on its own snapshot value (hmi-op.js AN_HMI_AI). U.gFu / U.gFl = the average of the nine lower layer above /
      under thermocouples TT-FG1091-A ~ I / TT-FG1090-A ~ I the page shows as one value. Numbers only on U (SAVE keeps U as JSON) */
   {
-    const k = Math.max(0, (U.Tb - U.Tamb) / Math.max(1, U.Tb0 - U.Tamb)),
+    const k = Math.max(0, (U.Tb - U.Tamb) / Math.max(1, tbA - U.Tamb)),
       a0 = anGasA0(),
       t = x => (isFinite(x) ? U.Tamb + (x - U.Tamb) * k : NaN);
     U.gFu = t(a0.u);
