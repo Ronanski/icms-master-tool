@@ -1369,7 +1369,11 @@ function anStep(S, dt) {
              return to AUTO is bumpless). Before, only a press on the faceplate set it: the boiler master came back to AUTO with a
              step of -11 % (36 -> 25 %), the main steam pressure fell to 89 kg/cm2 and the coal master was forced to manual at its
              top. Only the status this rule set is cleared by it (a MAN pressed by the operator stays) */
-          if (dr && dr.sel != null && dr.sel >= 0 && !S.ext.includes(dr.sel) && rt.st[dr.id] && b.tag && AN.modeNets) {
+          /* 3.2.3-beta.265 (SOHEE, Jennie): a select that comes into the sheet from the logic of another sheet (an address linked in,
+             S.xlk) is the drawing too, not an operator input. ABC-009B SICL1060D: its A / M switch AMT#2 is selected by M.334F (DITL-21D
+             SPEED CONTROL AUTO MODE, linked in) where ABC-009A SICL1060A ~ C get the same pulse through a LINK. D was skipped, its .MAN
+             (009B net 13 and 009A net 107 "SICL1060D.MAN", AND#109 with A ~ C) stayed 0, and PIC-BASC (AMT#7 B/T) never tracked its COS */
+          if (dr && dr.sel != null && dr.sel >= 0 && (!S.ext.includes(dr.sel) || !!(S.xlk && S.xlk[dr.sel])) && rt.st[dr.id] && b.tag && AN.modeNets) {
             if (dr._cosB === undefined)
               dr._cosB = dr.b != null && /^COS manual/.test(AN.nm(S, dr.b) || '') && !(b.o || []).includes(dr.a);
             if (dr._cosB) {

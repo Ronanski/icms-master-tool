@@ -1,4 +1,4 @@
-// 3.2.3-beta.266 (SOHEE): the start-up feedwater valve FCV-FW1130-2 (LICBR1001B) takes P1 = the BFWP discharge of the plant model
+// 3.2.3-beta.268 (SOHEE): the start-up feedwater valve FCV-FW1130-2 (LICBR1001B) takes P1 = the BFWP discharge of the plant model
 // (U.fwPd = PT-FW1011) instead of the fixed sheet P1 214.5. Checks: the valve formula with the sheet anchor (76 %, drum 64.6 -> 120 T/H);
 // the fallback without a pump step; at 150 MW with one stepSet per 0.5 s (WORLD.live) U.fwPd is the PT-FW1011 of the model and the valve
 // flow at 47 % / drum 37 follows it; no page error.

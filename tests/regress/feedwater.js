@@ -71,7 +71,7 @@ const html = process.argv.find(a => /\.html$/.test(a)) || 'dist/' + fs.readdirSy
   });
   console.log(JSON.stringify(r));
   const b = r.base;
-  /* 3.2.3-beta.266 (SOHEE, Jennie 2026-11-16): since beta.260 / 261 the Start at 150 MW is the steady state of the plant model (MHPS heat
+  /* 3.2.3-beta.268 (SOHEE, Jennie 2026-11-16): since beta.260 / 261 the Start at 150 MW is the steady state of the plant model (MHPS heat
      balance PPE-13-0106, 460 T/H steam + sprays + blowdown = feedwater about 472 T/H); the 03.png plant snapshot (499.1 T/H at a worse heat
      rate) is a plant check (+-6 %) only. The pump values are checked at the model flow Q by the KSB HGC 5/1+6 data sheet (O&M L7 BFP, curve
      Q43446D at 3580 rpm, sp. gr. 0.9093): outlet = suction header - branch loss 0.4 x (Q / 549)^2 + head(Q) x 0.9093 / 10, current =

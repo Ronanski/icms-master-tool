@@ -1984,10 +1984,16 @@ function netlistCore(sh, strict) {
       .slice()
       .sort((x, y) => x.row - y.row)
       .forEach(z => {
-        const tg = ((sh.cells && sh.cells[z.row + ':T']) || []).map(q => q.t.trim()).filter(q => /^M\.[0-9A-F]{4}$/.test(q));
+        const all = ((sh.cells && sh.cells[z.row + ':T']) || []).map(q => q.t.trim()),
+          tg = all.filter(q => /^M\.[0-9A-F]{4}$/.test(q));
         if (tg.length !== 1) return;
-        const f = firstOf[tg[0]];
-        if (!f) firstOf[tg[0]] = z;
+        /* 3.2.3-beta.266 (SOHEE): the same address = the whole address list of the cell. DITL-21E row 25 "M.2148/2150 M.2158" (B~D START
+           COMMAND, one address per cooler) is not row 2 "M.2158" (cooler D only): read as one bit, the B~D block saw cooler D's start in
+           place of its own (21E-70), its 15 min timer TR575 never ran and cooler B never got its cycle stop. Rows with the same list
+           (DITL-29A rows 4 / 19 "M.1152/1162 M.1172", DITL-30 rows 4 / 16) stay one bit */
+        const key = tg[0] + ' ' + all.filter(q => /^[IMOB]\.[0-9A-F]{4}\s*\//.test(q)).join(' ');
+        const f = firstOf[key];
+        if (!f) firstOf[key] = z;
         else if (f.row !== z.row && !NL.mir.some(m => m.row === z.row)) NL.mir.push({ row: z.row, n: f.n, adr: tg[0] });
       });
   }

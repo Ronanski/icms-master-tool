@@ -178,9 +178,12 @@
     }
     return (s._mach = n);
   }
-  /* the machine letter of a text: the LAST machine named ("BFWP A AUX. LOP B TRIP" = B) */
+  /* the machine letter of a text: the LAST machine named ("BFWP A AUX. LOP B TRIP" = B). 3.2.3-beta.266: "COLLER" is the spelling of the
+     titles of DITL-117 / 118 BOTTOM ASH SCREW COLLER A INLET VALVE (1) / (2) (GROUP below already reads it as COOLER): without it the
+     family of the drawing was unknown, so DITL-117 #B ~ #D row 18 "COOLER A AUTO SEQUENCE STOP COMMAND" (21B-59, M.2161/2171/2181/2191)
+     read cooler A's 21B, and the drain stop of A stopped B ~ D too */
   const MRX =
-    /\b(?:BFWP|FAB|BURNER|BNR|FEEDER|PUMP|BLOWER|COOLER|IGNITER|COMPRESSOR|DRYER|IWP|MWP|DOP|SWBP|SWP|LOP|CWP|CP|VALVE|SILO)\s*-?\(?([A-D])\)?(?![A-Z0-9])/gi;
+    /\b(?:BFWP|FAB|BURNER|BNR|FEEDER|PUMP|BLOWER|COOLER|COLLER|IGNITER|COMPRESSOR|DRYER|IWP|MWP|DOP|SWBP|SWP|LOP|CWP|CP|VALVE|SILO)\s*-?\(?([A-D])\)?(?![A-Z0-9])/gi;
   const machOfDitl = t => {
     const all = [...String(t || '').matchAll(MRX)];
     return all.length ? all[all.length - 1][1].toUpperCase() : null;
@@ -379,6 +382,41 @@
         }
       }
     }
+    /* 3.2.3-beta.266 (SOHEE, Jennie): a drawing with a block for a RANGE of machines. DITL-21E BOTTOM ASH SCREW COOLER AUTO SEQUENCE (4):
+       the upper half is cooler A, the lower half is ONE block for coolers B ~ D (outputs "B~D CYCLE SEQ. START / STOP COMMAND", inputs
+       with three addresses: row 15 M.1112/1122/1492 B~D AUTO SEQUENCE SELECTED, row 23 I.0530/0640/0680 B~D FORWARD RUNNING, row 25
+       M.2148/2150/2158 B~D START COMMAND; timers TR573/583/593). Each block input that names the range A~C is the cooler BEFORE it (row 16
+       M.2140/2148/2150 START COMMAND, row 17 I.0250/0530/0640 FORWARD RUNNING): the chain A > B > C > D, and the A half reads cooler D
+       (row 2 "(21E-70)" M.2158, row 5 "(21E-74)" M.2159). The block is one machine per letter: the sheet itself is the first letter (B),
+       a copy each for the others (#C, #D) that reads the k-th address of the block rows. Before, one block ran B, C and D in step */
+    /* the machines of a block row as the drawing writes them (no completion from other drawings: DITL-21E row 17 "I.0250/0530 I.0640"
+       = coolers A ~ C, completed from DITL-21A it would read four) */
+    const blkN = (s, i) => Math.max(addrList0(cellTxt(s, i, 'T')).length, addrList0(cellTxt(s, i, 'S')).length);
+    const RNG = t => {
+      const r = /\b([A-D])\s*~\s*([A-D])\b/.exec(String(t || ''));
+      if (!r) return null;
+      const a = LET.indexOf(r[1].toUpperCase()),
+        b = LET.indexOf(r[2].toUpperCase());
+      return b > a ? LET.slice(a, b + 1) : null;
+    };
+    for (const s of S.sheets) {
+      const L = W.instOf.get(s);
+      if (!L || L.length !== 1 || machinesOf(s) !== 1 || !s.nl || isSB(s)) continue;
+      const outs = [...new Set((s.nl.outs || []).map(o => o.row))].map(r => RNG(cellTxt(s, r, 'RS'))).filter(x => x);
+      if (!outs.length || outs.some(x => x.join() !== outs[0].join())) continue;
+      const lets = outs[0],
+        m = lets.length;
+      if (!s.rows.some((_, i) => blkN(s, i) === m)) continue;
+      s._blk = { lets, m, L };
+      s._inst.lbl = lets[0];
+      for (let j = 1; j < m; j++) {
+        const nm = s.name + ' #' + lets[j],
+          x = old.get(nm) || makeInst(s, j, lets[j]);
+        x._inst.blk = 1;
+        W.inst.push(x);
+        L.push(x);
+      }
+    }
     /* 3.2.1 d2: the row of a sootblower sheet that names one sootblower (output RS text without its addresses), for the copies of DITL-80G */
     const sbN = t => String(t || '').replace(/\b[IMOB]\.[0-9A-F]{4}\b/g, ' ').replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
     let sbIdx = null;
@@ -413,6 +451,8 @@
       byLetter = [],
       bySister = [],
       byTo = [],
+      byMach = [],
+      byBlk = [],
       noMach = [];
     const addIn = (s, row, src) => {
       if (!din.has(s)) din.set(s, new Map());
@@ -425,10 +465,37 @@
       const it = d && ditlItem(d, nn);
       return it && it.side === 'R' ? { d, row: it.i } : null;
     };
+    const RNGo = (d, r, col) => {
+      const x = /\b([A-D])\s*~\s*([A-D])\b/.exec(cellTxt(d, r, col || 'RS'));
+      if (!x) return null;
+      const a = LET.indexOf(x[1].toUpperCase()),
+        b = LET.indexOf(x[2].toUpperCase());
+      return b > a ? LET.slice(a, b + 1) : null;
+    };
     /* the instance (or sister sheet) that a row of machine-instance k of sheet sb gives for the output (d, orow) */
     const target = (sb, k, i, d, orow, other) => {
       /* 3.2.0: a DITL-38 valve reads its own outputs (open / closed feedback), not those of the first valve of the table */
-      if (d === sb && d._inst && d._inst.lbl && inst(d, k)) return inst(d, k);
+      if (d === sb && d._inst && d._inst.lbl && !d._blk && inst(d, k)) return inst(d, k);
+      /* 3.2.3-beta.266: a block (DITL-21E B~D): the output of the block goes to the copy of the reader's machine (DITL-21B #C row 13 reads
+         the B~D CYCLE SEQ. START of 21E #C) */
+      if (d._blk && d !== sb && RNGo(d, orow)) {
+        const Lk = W.instOf.get(sb).length > 1 ? LET[k] : machOfDitl(cellTxt(sb, i, 'S')),
+          j = d._blk.lets.indexOf(Lk);
+        return j >= 0 ? d._blk.L[j] : d;
+      }
+      /* a row of the block reads the machine of its range at k ("A~C" = the cooler before, "B~D" = its own) */
+      if (sb._blk && blkN(sb, i) === sb._blk.m) {
+        const rg = RNGo(sb, i, 'S'),
+          Lk = rg && rg.length === sb._blk.m ? rg[k] : sb._blk.lets[k],
+          nd2 = machinesOf(d);
+        if (nd2 > 1) {
+          const la = rowList(sb, i),
+            lo = addrList(cellTxt(d, orow, 'RS') + ' ' + cellTxt(d, orow, 'RT')),
+            j = lo.indexOf(la[k]);
+          return inst(d, j >= 0 ? j : LET.indexOf(Lk)) || d;
+        }
+        return (Lk !== 'A' && sister(d, Lk)) || d;
+      }
       const nd = machinesOf(d),
         rowT = cellTxt(sb, i, 'S') + ' ' + cellTxt(sb, i, 'T'),
         n = machinesOf(sb);
@@ -497,13 +564,60 @@
               return;
             }
           }
-          for (const f of refsOf(ft)) {
+          let rf = refsOf(ft);
+          /* 3.2.3-beta.265 (SOHEE, Jennie): one FROM cell, one reference per machine. DITL-21B row 11 "21E-58 21E-72" / row 13 "21E-55 21E-69":
+             DITL-21E (one drawing for the four coolers) out 58 = COOLER A CYCLE SEQ. STOP, out 72 = COOLER B~D CYCLE SEQ. STOP. Machine k of
+             the row reads only the output that names its own machine (A, or the range B~D). Before, every cooler read both: the B~D cycle
+             start of the A stop started A again 3 s after its drain stop, and the four ran in step. Only a drawing with machine copies (#B ~ #D):
+             the B~D half of DITL-21E is one drawing for three coolers and reads both (row 16 "21E-56 (21E-70)") */
+          if (rf.length > 1 && k < LET.length && !sb._blk && W.instOf.get(sb).length > 1 && new Set(rf.map(f => f.code)).size === 1) {
+            const lets = f => {
+              const o = outRow(f.code, f.nn, sb);
+              if (!o || machinesOf(o.d) > 1) return null;
+              const t = cellTxt(o.d, o.row, 'RS'),
+                r = /\b([A-D])\s*~\s*([A-D])\b/.exec(t);
+              if (r) return LET.slice(LET.indexOf(r[1].toUpperCase()), LET.indexOf(r[2].toUpperCase()) + 1);
+              const m = machOfDitl(t);
+              return m ? [m] : null;
+            };
+            const ls = rf.map(lets);
+            if (ls.every(x => x && x.length) && ls.flat().length === new Set(ls.flat()).size) {
+              const mine = rf.filter((f, j) => ls[j].includes(LET[k]));
+              if (mine.length && mine.length < rf.length) {
+                byMach.push(s.name + ' r' + (i + 1) + ' -> ' + mine.map(f => f.code + '-' + f.nn).join(' '));
+                rf = mine;
+              }
+            }
+          }
+          /* 3.2.3-beta.266: a block reads its own outputs along the chain. A row of the block (three addresses) with "21E-56 (21E-70)"
+             (row 16 M.2140/2148/2150): cooler B reads 21E-56 (A START COMMAND of the upper half), C and D the bracket 21E-70 (B~D START
+             COMMAND) of the cooler before (B, C). A row of the A half with a bracket (row 2 "(21E-70)" M.2158) reads the last copy (D) */
+          if (sb._blk) {
+            const B = sb._blk,
+              inB = blkN(sb, i) === B.m,
+              self = rf.filter(f => dSheet(f.code, sb) === sb);
+            if (self.length) {
+              const own = self.filter(f => !f.other),
+                oth = self.filter(f => f.other),
+                use = !inB ? self : k > 0 && oth.length ? oth : own.length ? own : oth;
+              for (const f of use) {
+                const o = outRow(f.code, f.nn, sb);
+                if (!o) continue;
+                const d = !f.other ? s : inB ? (k > 0 ? B.L[k - 1] : sb) : B.L[B.m - 1];
+                addIn(s, i, { k: 'd', d, row: o.row, ref: f.code + '-' + f.nn });
+                if (d !== s) byBlk.push(s.name + ' r' + (i + 1) + ' <- ' + d.name + ' ' + f.code + '-' + f.nn);
+                dd++;
+              }
+              rf = rf.filter(f => !self.includes(f));
+            }
+          }
+          for (const f of rf) {
             const o = outRow(f.code, f.nn, sb);
             if (!o) continue;
             /* 2.2.0-beta.6: machine k of this row on a drawing made for one machine: the output whose TO column names this row
                in brackets is the one of the other machine (DITL-03B out 70 FAB A STOPPED TO 28A-29, out 71 FAB B STOPPED TO
                "(28A-29)"): FAB B of DITL-28A #B row 29 reads out 71, not out 70 */
-            if (k > 0 && machinesOf(o.d) < 2) {
+            if (k > 0 && machinesOf(o.d) < 2 && !sb._blk && !o.d._blk) {
               const me = codeOf(sb.name) + '-' + String(+sb.rows[i].n).padStart(2, '0'),
                 alt = o.d.rows
                   .map((_, j) => j)
@@ -1017,6 +1131,8 @@
       byLetter: byLetter.length,
       bySister: bySister.length,
       byTo,
+      byMach,
+      byBlk,
       noMach,
       digFix,
       fromDitl: fa,
