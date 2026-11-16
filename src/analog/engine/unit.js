@@ -129,6 +129,12 @@ const AN_UNIT = {
      110.5 % (IBD SC90794 sheet 35) is the IBD logic of the app (tcs-ibd-data.js) */
   droop: 0.06,
   flowSpan: 0.873,
+  /* 3.2.4-beta.11 (priority list: load rejection): the steam between the valves and the blading still drives the shaft after the valves
+     close. HP part (behind the CVs): steam chest tSc; IP / LP part (behind the ICVs): the crossover pipe to the LP turbine tXo. Textbook
+     typical values of the IEEE steam turbine model (Kundur, Power System Stability and Control, ch. 9: T_CH 0.2 ~ 0.3 s, T_CO 0.4 ~ 0.6 s);
+     NO-SOURCE for this unit. The HP / IP-LP split is the heat balance of AN_TBW (HP about 25 %, IP / LP about 75 % of the shaft) */
+  tSc: 0.3,
+  tXo: 0.5,
   Hgen: 4.01,
   dbRpm: 7.2,
   /* GOVERNOR RUNBACK (TCE p.128 TCE182: TW 60 s of HOUSE LOAD OPERATION, or PLU OPERATED): GOV.SET = the runback position (TCE p.136
@@ -4802,20 +4808,20 @@ function anUnitStep0(dt) {
       if (tb.hlT <= U.rbT || !isFinite(tb.gs)) tb.gs = U.rbIP;
       else tb.gs = Math.max(0, Math.min(1.4, tb.gs + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
       const dem = Math.max(
-          0.02,
+          0,
           Math.min(1.4, tb.gs - (U.flowSpan * anDb((tb.rpm || 3600) - 3600, U.dbRpm || 0)) / ((U.droop || 0.06) * 3600))
         ),
-        r = dt / U.tauTrip;
-      U.gv += Math.max(-r, Math.min(r, dem - U.gv));
-      /* the ICV takes the same flow demand (TCE p.141 TCE207: the CV and ICV demands come from the one flow demand; the ICV curve itself
-         is NO-SOURCE, here ICV = flow demand): with the HP bypass open the reheater feeds the IP turbine (about 75 % of the shaft, AN_TBW) */
-      tb.icv = Math.max(
-        0,
-        Math.min(
-          1,
-          (tb.icv == null ? 1 : tb.icv) + Math.max(-r, Math.min(r, Math.min(1, dem) - (tb.icv == null ? 1 : tb.icv)))
-        )
-      );
+        r = dt / U.tauTrip,
+        B = U.cvBias || 0.2,
+        cvD = Math.max(0, Math.min(1.4, (dem - B) / (1 - B))),
+        icvD = Math.max(0, Math.min(1, dem / B)),
+        i0 = tb.icv == null ? 1 : tb.icv;
+      /* 3.2.4-beta.11: the CV and ICV demands from the one flow demand as on the grid (TCE p.141 TCE207, anTbFlow): ICV = demand / CV
+         OPENING BIAS, CV = (demand - bias) / (1 - bias). Before, both took the demand itself: at the house load demand (under the 20 % bias)
+         the CVs stayed open and the ICVs nearly shut. Now the CVs stay shut and the ICVs pass the no-load flow from the reheater, which the
+         HP bypass feeds (TG manual STIE-14752: "at about 102 % speed the ICVs open to pass no-load flow") */
+      U.gv += Math.max(-r, Math.min(r, cvD - U.gv));
+      tb.icv = Math.max(0, Math.min(1, i0 + Math.max(-r, Math.min(r, icvD - i0))));
     } else {
       tb.gs = NaN;
       tb.hlT = 0;
@@ -4989,10 +4995,24 @@ function anUnitStep0(dt) {
      (anRp32) sees the negative power */
   const qip = U.m0 * U.rr * tb.icv,
     MWss = onGrid ? anTbGen(U.ms, qip) - anVacMW(U) + (U.dMWx || 0) : 0;
-  U.MW += ((MWss - U.MW) * dt) / U.tauMW;
-  U.Pm = MWss;
+  /* 3.2.4-beta.11: the shaft power on the swing equation (U.Pm): the HP and IP / LP parts of anTbGen, each behind its steam volume (tSc,
+     tXo above; exact first order for the step dt), so the steam left behind the closed valves still drives the shaft. Before, Pm fell
+     with the valves at once and a load rejection from 150 MW peaked at 102.2 % (TG manual STIE-14752: about 106 % within about 1 s) */
+  {
+    const hp = onGrid ? (Math.max(0, U.ms) * anTbW('wh', U.ms)) / 1000 : 0,
+      ip = onGrid ? (Math.max(0, qip) * anTbW('wi', qip)) / 1000 : 0,
+      f = T => 1 - Math.exp(-dt / Math.max(0.01, T));
+    tb.pH = isFinite(tb.pH) ? tb.pH + (hp - tb.pH) * f(U.tSc || 0.3) : hp;
+    tb.pI = isFinite(tb.pI) ? tb.pI + (ip - tb.pI) * f(U.tXo || 0.5) : ip;
+    const sh = tb.pH + tb.pI;
+    U.Pm = onGrid ? sh - AN_TBW.lo - AN_TBW.kq * sh * sh - anVacMW(U) + (U.dMWx || 0) : 0;
+  }
+  /* 3.2.4-beta.11: on house load (52L1 open) the generator gives what the house load takes (elec.js): its MW is that load, at once.
+     Before, the MW fell from 150 to the house load with the 10 s steam lag (tauMW) while the breaker was open */
+  if (onGrid && U.el && U.el.l52 === false && tb.xfer && !trip && isFinite(D)) U.MW = D;
+  else U.MW += ((MWss - U.MW) * dt) / U.tauMW;
   anRp32(U, onGrid && !trip, dt);
-  anTbSpeed(U, tb, dt, onGrid && !trip && tb.xfer, MWss, D);
+  anTbSpeed(U, tb, dt, onGrid && !trip && tb.xfer, U.Pm, D);
   /* 52G open: no load on the machine */
   if (U.tc && (tb.st === 'off' || tb.st === 'roll')) U.MW = 0;
   U.rpm = tb.rpm;
