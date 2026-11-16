@@ -213,7 +213,6 @@
     ['operate', 'Plant view', 'Plant graphics with the faceplates (A / M / R, SV, MV) like the operator station; on a PC it opens in its own window'],
     ['logic', 'Logic', 'The ABC (analog), DITL (digital) and TCS (turbine) drawings: trace, run, force'],
     ['library', 'Library', 'I/O list, memory list, wiring, relay / SER, calculations'],
-    ['training', 'Training', 'The start-up procedure PR-OPE-5002 step by step, with a check box for every step'],
     ['tools', 'Tools', 'Block tests, audit, health, project files, drawing edit', 1]
   ];
   let tab = null,

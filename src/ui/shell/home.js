@@ -123,7 +123,6 @@
     g.append(
       card('go', 'Continue', 'Back to ' + NAMES[lastT] + (lastT === 'logic' && rs.sh[0] ? ' · ' + rs.sh[0] : ''), () => (lastT === 'operate' ? goPlant() : tab(lastT)), 'hmmain'),
       card('plant', 'Operate the plant', 'Plant graphics and faceplates: A / M / R, SV, MV, like the operator station', goPlant),
-      card('learn', 'Learn the start-up', 'PR-OPE-5002 step by step, with a check box for every step', () => tab('training')),
       card('find', 'Find a signal · Why?', 'Search a tag or address: where it comes from, where it goes, why it has its value', search),
       card('logic', 'Read the logic', 'The ABC and DITL drawings: trace a wire, run, force an input', () => tab('logic')),
       card('curve', 'F(X) curves', 'Each linear curve as in the workbook: edit it, see what it does', () => window.lsFx && lsFx()),
