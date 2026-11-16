@@ -1222,6 +1222,26 @@
      MCC-EMP11 (K1AU3E1-0032: main oil pumps M-1922A / B, vapour extractor M-1937, turning gear M-1906, diesel oil pump A M-0702A), the
      DC charger DC-11, UPS-11, EPDP-11. The turbine oil side is in tcs.js (tcsOil, AN_EL_BO). No DITL drawing has a motor of EMP-11, so
      every DITL motor stops. Clear = the bus is back (unit 2 or the grid): the operator starts the motors again */
+  /* 3.2.4 (JENNIE): a coal feeder with its discharge chute plugged, a trainer fault (the coal of that feeder does not reach the furnace:
+     unit.js anUnitStep0 'cf.jam'). Yamato Final Drawing for LMYP-1 (L12 Coal Feeder): the feeder has a chute plugging detector, P7, and
+     sends DISCHARGE PLUGGING to the DCS as a no-voltage contact, P8 signal 18. DITL-19 (the same for B and C) takes it from the local
+     panel as MIA-CL1061-A4 straight to output 65 COAL FEEDER A DISCHARGE PLUGED (CRT, ANN): an alarm only, no gate of the start / stop
+     latch reads it, so the feeder keeps running and its feed rate reads as before (belt load x belt speed). The plug stands until the
+     fault is cleared (the coal poking hole, Instruction Manual 11-3) */
+  const JAM = { 'cf.jamA': 'DITL-19', 'cf.jamB': 'DITL-19 #B', 'cf.jamC': 'DITL-19 #C' },
+    JAM_T = k => 'Coal feeder ' + k.slice(-1) + ' discharge chute plugged (no coal to the furnace)';
+  const jamSet = (id, on) => {
+    on = !!on;
+    const s = ftSheet(JAM[id]);
+    if (!s) return '';
+    if (!s.nl && typeof netlist === 'function') s.nl = netlist(s);
+    s.usw = s.usw || {};
+    for (const u of (s.nl && s.nl.usr) || []) if (u.key === 'FIMIA-CL1061-A4') s.usw[u.key] = on;
+    if (on) W.ft.add(id);
+    else W.ft.delete(id);
+    W.busy = true;
+    return on ? JAM_T(id) : 'cleared: ' + JAM_T(id);
+  };
   const BO = 'el.1am',
     BO_T = 'Unit black-out: 6.6 kV bus 1AM lost (no bus transfer)';
   /* the undervoltage relay of one motor drawing: open = the motor stopped (s._ftrip) and the trip contact into the logic (the ELECTRIC
@@ -1272,8 +1292,10 @@
     if (id == null)
       return Object.keys(FT)
         .map(k => ({ id: k, g: 'mt', t: FT[k].t, on: W.ft.has(k) }))
-        .concat([{ id: BO, g: 'el', t: BO_T, on: W.ft.has(BO) }]);
+        .concat([{ id: BO, g: 'el', t: BO_T, on: W.ft.has(BO) }])
+        .concat(Object.keys(JAM).map(k => ({ id: k, g: 'cf', t: JAM_T(k), on: W.ft.has(k) })));
     if (id === BO) return boSet(on);
+    if (JAM[id]) return jamSet(id, on);
     const f = FT[id],
       s = f && ftSheet(f.sh);
     if (!s) return '';
@@ -1288,6 +1310,7 @@
   };
   W.ftClear = () => {
     if (W.ft.has(BO) && window.AN && AN.elecBo) AN.elecBo(false);
+    for (const k of Object.keys(JAM)) if (W.ft.has(k)) jamSet(k, false);
     W.ft.clear();
   };
   /* the trainer fault that stands on a drawing (its name), or null: the RESET of the protection relay on the motor faceplate clears it
