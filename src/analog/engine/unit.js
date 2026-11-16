@@ -129,6 +129,12 @@ const AN_UNIT = {
      110.5 % (IBD SC90794 sheet 35) is the IBD logic of the app (tcs-ibd-data.js) */
   droop: 0.06,
   flowSpan: 0.873,
+  /* 3.2.4-beta.11 (priority list: load rejection): the steam between the valves and the blading still drives the shaft after the valves
+     close. HP part (behind the CVs): steam chest tSc; IP / LP part (behind the ICVs): the crossover pipe to the LP turbine tXo. Textbook
+     typical values of the IEEE steam turbine model (Kundur, Power System Stability and Control, ch. 9: T_CH 0.2 ~ 0.3 s, T_CO 0.4 ~ 0.6 s);
+     NO-SOURCE for this unit. The HP / IP-LP split is the heat balance of AN_TBW (HP about 25 %, IP / LP about 75 % of the shaft) */
+  tSc: 0.3,
+  tXo: 0.5,
   Hgen: 4.01,
   dbRpm: 7.2,
   /* GOVERNOR RUNBACK (TCE p.128 TCE182: TW 60 s of HOUSE LOAD OPERATION, or PLU OPERATED): GOV.SET = the runback position (TCE p.136
@@ -283,7 +289,7 @@ function anUnitStop() {
   U.fwC = null; /* 3.2.1 anFwTagStep: its controllers and F(X) are found again */
   U.asC = null; /* 3.2.1 anAsTagStep: page 08 values */
   U.asT15 = U.asTgs = undefined;
-  if (U.fwp && U.fwp.pr) U.fwp.pr.op = undefined;
+  if (U.fwp && U.fwp.pr) U.fwp.pr.op = U.fwp.pr.hx = undefined; /* 3.2.4-beta.6: hx = the main valve flow (anMainFw) */
   for (const p of U.fp || []) {
     p.pr.uf = undefined;
     p.pr.ld = 0;
@@ -643,6 +649,7 @@ function anUnitStart() {
      the snapshots show it at 0.1 % M at 150 MW */
   U.suv = ctlOut('ABC-010', 'LICBR1001B');
   U.fwp = procOf('ABC-010', 'FICFW1007');
+  U.fwv = ctlOut('ABC-010', 'FICFW1007'); /* 3.2.4-beta.6: the command of the main feedwater valve FCV-FW1130-1 (anMainFw) */
   U.ksu = 0.3; /* 3.2.3: no longer used for the flow (anSuFw, the valve sheet); kept for the probes that read it */
   /* furnace pressure: the two IDF actuators in series (hydraulic coupling PICFG108, inlet damper PICFG108A) take the flue gas out */
   U.fp = procsOf('ABC-008', ['PICFG108', 'PICFG108A']);
@@ -871,6 +878,7 @@ function anUnitStart() {
   U.cdTs = NaN; /* 3.2.1 AN_CD: the condenser starts at its steady value */
   U.lpT = undefined; /* 3.2.1 AN_LP: the LP heaters too */
   U.bedI = NaN; /* the bed inventory starts again (anBedStep) */
+  U.svOpen = {}; /* 3.2.4-beta.1: the safety valves start seated (AN_SV) */
   U.soxZ = NaN; /* the lime in the bed too (boiler.js anSoxStep) */
   U.bedLeg = 0;
   if (AN_SRC.valve)
@@ -951,6 +959,7 @@ function anUnitCold() {
   U.cdTs = NaN; /* 3.2.1 AN_CD: the condenser starts at its steady value */
   U.lpT = undefined; /* 3.2.1 AN_LP: the LP heaters too */
   U.bedI = NaN; /* the bed inventory starts again (anBedStep) */
+  U.svOpen = {}; /* 3.2.4-beta.1: the safety valves start seated (AN_SV) */
   U.soxZ = NaN; /* the lime in the bed too (boiler.js anSoxStep) */
   if (AN_SRC.valve)
     for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
@@ -2142,7 +2151,7 @@ const AN_BI = { t0: 174.3, tCold: 100, kA: 0.0682, kL: 0.59, kB: 0.2, q: 0.8, fa
 function anBedStep(U, dt, rpm, pa, fa) {
   const K = AN_BI;
   if (!isFinite(U.bedI)) U.bedI = U.cold ? K.tCold : K.t0;
-  const sol = K.kA * (isFinite(U.cbn) ? U.cbn : (U.Fc || 0) * (U.burn || 0)) + K.kL * (U.lmQ || 0);
+  const sol = K.kA * (U.coalR || 1) * (isFinite(U.cbn) ? U.cbn : (U.Fc || 0) * (U.burn || 0)) + K.kL * (U.lmQ || 0);
   U.bedIn = K.kB * sol + (U.sdQ || 0);
   U.bedOut = K.q * rpm;
   U.bedI = Math.max(0, U.bedI + ((U.bedIn - U.bedOut) * dt) / 3600);
@@ -2162,6 +2171,45 @@ function anBedStep(U, dt, rpm, pa, fa) {
   }
   U.bedK = Math.max(0, Math.min(1, pa / 106)) * (U.bedI / K.t0);
   return U.bedK;
+}
+/* 3.2.4-beta.1 (Jennie, user 2026-11-17 "unahin mo nlng ang mga pinakamahalaga sa operation"): THE BOILER SAFETY VALVES. Before: none,
+   so an over-pressure had no relief. Source: K1AU3-D1-0-011 RA Engineering Data of Safety Valve for Section I (FHI master documents
+   D1, Consolidated / Dresser 1700 series, Fluids Control approval Rev. E): set pressure kg/cm2 G and rated capacity kg/h of Unit 1:
+     drum      ZV-BR1001 153.5 / 174,207 (3" 1749WB), ZV-BR1002 158.0 / 180,344
+     SH outlet ZV-MS1001 137.0 / 115,836 (3" 1749WE, 541 C; set below the low drum valve, P4S1 p4-1-3: it opens first so the
+               superheater keeps a flow)
+     reheater  ZV-HR1001 42.0 / 120,785, ZV-HR1002 43.0 / 122,174 (6" 1785WE), ZV-HR1003 44.5 / 197,548 (6" 1705RRWE)
+   Pop action: full lift at the set pressure; the rated capacity is at 3 % accumulation (ASME Section I PG-67.2 / PG-69.2) and the
+   steam flow of an open valve goes with the absolute pressure (critical flow, CALC). Reseat at the set less 4 % blowdown (ASME Section
+   I PG-72.1: 2 to 4 %, the upper value; the data sheet has no blowdown). The drum and SH valves take the steam between the drum and
+   FT-MS1031 as the sootblowers (U.msb): the drum loses it and the cycle needs it back as make-up. The reheater valves take it from the
+   reheater mass balance. U.msv (drum + SH, T/H), U.msvR (reheater, T/H), U.svOpen = { tag: 1 } of the valves open */
+const AN_SV = {
+  bd: 0.04,
+  acc: 0.03,
+  d: [
+    { t: 'ZV-BR1001', p: 153.5, q: 174.207 },
+    { t: 'ZV-BR1002', p: 158.0, q: 180.344 }
+  ],
+  s: [{ t: 'ZV-MS1001', p: 137.0, q: 115.836 }],
+  r: [
+    { t: 'ZV-HR1001', p: 42.0, q: 120.785 },
+    { t: 'ZV-HR1002', p: 43.0, q: 122.174 },
+    { t: 'ZV-HR1003', p: 44.5, q: 197.548 }
+  ]
+};
+function anSvFlow(U, list, P) {
+  if (!U.svOpen || typeof U.svOpen !== 'object') U.svOpen = {};
+  let q = 0;
+  if (!isFinite(P)) return 0;
+  for (const v of list) {
+    const o = U.svOpen[v.t] ? P > v.p * (1 - AN_SV.bd) : P >= v.p;
+    if (o) {
+      U.svOpen[v.t] = 1;
+      q += (v.q * (P + 1.033)) / (v.p * (1 + AN_SV.acc) + 1.033);
+    } else delete U.svOpen[v.t];
+  }
+  return q;
 }
 function anVacMW(U) {
   if (!isFinite(U.cdT) || !(U.ms > 0)) return 0;
@@ -2243,6 +2291,16 @@ const AN_FW = {
   q0: 549,
   dp0: 0.29
 };
+/* the BFWP discharge (kg/cm2 g) at a total feedwater flow w (T/H), with the pumps that run now: the same law as anFwStep */
+function anFwPdAt(U, w) {
+  const K = AN_FW,
+    n = (U.fwRun || []).reduce((a, r) => a + (r ? 1 : 0), 0),
+    ps = typeof window !== 'undefined' && window.WORLD && WORLD.sucP ? WORLD.sucP() : NaN,
+    Ps = isFinite(ps) ? ps : 0;
+  if (!n) return Ps;
+  const q = Math.max(K.qMin, Math.max(0, w) / K.sg / n);
+  return Math.max(0, Math.min(250, Ps - 0.4 * (q / K.q0) * (q / K.q0) + (K.sg / 10) * swInterp(K.qQ, K.qH, q) - K.kz));
+}
 function anFwStep(U, dt) {
   const K = AN_FW,
     dr = d => (typeof anDitlRun === 'function' ? anDitlRun(d) : null),
@@ -3675,6 +3733,111 @@ function anSuFw(x, pd, p1) {
     dp = Math.max(0, P1 - Math.max(0, +pd || 0));
   return ((AN_SUFW.w76 * anSuFwCv(x)) / AN_SUFW.cv76) * Math.sqrt(dp / AN_SUFW.dp76);
 }
+/* 3.2.4-beta.6 (live test of beta.4, 2026-11-17: after a feeder jam with no operator action the MS blow-off opened 130 T/H at 135
+   kg/cm2, steam out 612 T/H, and the feedwater stopped at 550 T/H with both BFWPs running: drum level LOW-LOW, MFT). The feedwater was
+   the valve opening x the span of the FICFW1007 PV (0 ~ 550 T/H), so it could never pass the top of the transmitter range. Now the
+   main feedwater valve FCV-FW1130-1 passes what its trim and its dP let through. Source: K1AU3-E2-0-123 R1 Drawing of Control valve
+   p142, Copes-Vulcan control valve metric specification sheet, FHIC item 27 / CV item 32, 8" CL1500 SD-16 Raven trim: COND 1 480,000
+   kg/h, P1 163.6, P2 147.2 kg/cm2 g, Cv 154 at 80 % travel; COND 2 450,900 kg/h, 168.1 / 147.2, Cv 129 at 71 %; COND 3 46,000 kg/h,
+   214.7 / 64.6, Cv 4.49 at 6 %; max Cv 208.8 at full travel. The Cv is taken straight between the points of the sheet (71 -> 80 ->
+   100 % give 2.8 and 2.7 Cv per %, one straight line; the Raven is a staged trim, the sheet gives no curve), below 6 % straight to 0.
+   Flow of a liquid: W = 480 T/H x Cv / 154 x sqrt(dP / 16.4) (COND 2 by this law: 454 T/H, sheet 450.9). The dP of the valve is the
+   BFWP discharge (U.fwPd, PT-FW1011) less the drum (U.Pd) less the line on each side, both with the square of the flow: pump to valve
+   1.5 kg/cm2 at 480 T/H (KSB data sheet discharge 165.1 at 491 T/H against the valve P1 163.6, COND 1), valve to drum 2.2 kg/cm2 at
+   480 T/H (P2 147.2 against the drum at MCR 145.0 = SH outlet 129 + SH pressure drop 16, FHI P2S7 design data). Check at 150 MW
+   (Start at 150 MW: drum 133.3, BFWP 165.6): 475 T/H at about 64 % travel; HMI snapshot 03.png 499 T/H at 56 % (check only) */
+const AN_MFW = {
+  pts: [
+    [6, 4.49],
+    [71, 129],
+    [80, 154],
+    [100, 208.8]
+  ],
+  w0: 480,
+  cv0: 154,
+  dp0: 16.4,
+  kUp: 1.5 /* kg/cm2 at w0, pump discharge to the valve */,
+  kDn: 2.2 /* kg/cm2 at w0, valve to the drum */
+};
+/* 3.2.4-beta.7 (JENNIE, priority list item: tube leak): a trainer fault 'tl.ww' (furnace water wall tube leak) or 'tl.eco' (economizer
+   tube leak), world.js WORLD.ftrip. FHI manual (plant-study 03, T9 p29): a tube leak is heard or shows as rising make-up; it erodes the
+   tubes next to it and its water plugs the hoppers and the air heater. The DCS has no leak detector (no tag in the IO list); the
+   operator sees it as feedwater (FT-FW1007) above main steam (FT-MS1031) plus blowdown, the drum level and make-up, the furnace draft.
+   The hole: one opening of 10 mm (NO-SOURCE, a trainer setting: a small leak, about 11 T/H at 150 MW, that the plant can run with).
+   Flow: the drum water through a sharp hole to the furnace, liquid to its saturation pressure, then the choked flashing flow (plant.js
+   anFlashG, the IF97 HEM table of the blowdowns). Water wall: the drum pressure and water. Economizer: the feedwater at the economizer
+   inlet (HP heater outlet U.hpT2) at the drum pressure plus the economizer drop 3.5 kg/cm2 at MCR (FHI T3) with the square of the flow.
+   Where it goes: the drum loses the water (plant.js drum balance; an economizer leak is lost before the drum, after FT-FW1007); the
+   water wall leak boils in the bed (the bed balance takes it from saturated water to steam at the bed temperature, IF97) and the steam
+   joins the flue gas (U.mG, the ID fan sees it as gas volume, 28.9 / 18 per kg against air). The economizer leak's heat to the
+   backpass gas is not modelled (its gas mass is). U.tlW / U.tlE T/H */
+const AN_TL = { d: 0.01 /* m, NO-SOURCE */, dpE: 3.5 /* kg/cm2 at MCR, FHI T3 */, mcr: 460, t2: 600 /* s, NO-SOURCE */, tw: 0.006 /* m, NO-SOURCE */, odW: 0.0635, odE: 0.0572 };
+/* 3.2.4-beta.16 (JENNIE, tube leak grows): FHI T9 p29 (plant-study 03): the leak erodes the tubes next to it. The jet of steam and water
+   cuts the next tube, which leaks too, so the open area grows with itself: the area of the hole doubles each t2 = 10 min of plant time
+   (NO-SOURCE, a trainer setting: headless 150 MW, the leak 11 T/H, 22 after 10 min, 44 after 20 min, 78 at 28 min when the feedwater, 627 T/H against a transmitter span of 550, overfills the drum to +270 mm and the logic trips the boiler).
+   It stops at a rupture: one tube cut through, both ends open. Tubes: water wall 63.5 mm OD (FHI P2S5 p2-5-2, plant-study 03 C-4 / C-9 /
+   C-12), economizer 57.2 mm OD (Eco 2, E-7 / E-10); wall thickness 6 mm (NO-SOURCE): water wall bore 51.5 mm, 2 ends = 53 x the 10 mm
+   hole. At a rupture the feedwater cannot keep up, the drum level falls and the logic trips the boiler. Clearing the fault (the tube
+   repaired) puts the hole back to 10 mm. U.tlAw / U.tlAe = the open area / the 10 mm hole */
+/* 3.2.4-beta.13 (JENNIE, priority list item: coal quality): the trainer fault 'cf.wet' (world.js): wet coal. Performance coal, FHI P2S7
+   Tab 2 / Tab 3: H 2.75 %, water 33.96 %, HHV 4,008 / LHV 3,662 kcal/kg. The two heating values differ by the heat of the water that leaves
+   as vapour, 9 H + water = 0.5871 kg per kg of coal: 346 / 0.5871 = 589.3 kcal per kg of water (CALC from Tab 2, the textbook latent
+   heat 2,442 kJ/kg = 583 is the check). With the moisture m the dry share of each kg is r = (1 - m) / (1 - 0.3396): HHV r x 4,008, water
+   9 H r + m, LHV = HHV - 589.3 x water. At 40 % (NO-SOURCE, a trainer setting: at 42 % the 150 MW coal is 100 T/H, the feeder MV high limit 83.3 % of ABC-004A, and the logic puts the masters to MANUAL): r 0.909, LHV 3,274 kcal/kg (89 % of the design). The
+   combustibles, ash and sulphur of each kg go with r: the stoichiometric air (AN_GAS.afs), the ash of the fuel gas, the Ca / S ratio.
+   U.coalR = r, U.coalK = LHV / 3,662 */
+const AN_COAL = { m0: 0.3396, mW: 0.4, h: 0.0275, hhv: 4008, lhv: 3662, lat: 346 / (9 * 0.0275 + 0.3396) };
+function anCoalWet(U) {
+  const W = typeof window !== 'undefined' ? window.WORLD : null,
+    K = AN_COAL,
+    m = W && W.ft && W.ft.has('cf.wet') ? K.mW : K.m0,
+    r = (1 - m) / (1 - K.m0);
+  U.coalR = r;
+  U.coalK = (K.hhv * r - K.lat * (9 * K.h * r + m)) / K.lhv;
+}
+function anTubeLeak(U, dt) {
+  const W = typeof window !== 'undefined' ? window.WORLD : null,
+    on = k => !!(W && W.ft && W.ft.has(k)),
+    K = AN_TL,
+    cap = od => (2 * Math.pow(od - 2 * K.tw, 2)) / (K.d * K.d),
+    grow = (k, f, od) => (U[k] = f ? Math.min(cap(od), (U[k] > 1 ? U[k] : 1) * Math.pow(2, (dt > 0 ? dt : 0) / K.t2)) : 1);
+  grow('tlAw', on('tl.ww'), K.odW);
+  grow('tlAe', on('tl.eco'), K.odE);
+  const A = (Math.PI * K.d * K.d) / 4,
+    G = (P, T) => (typeof anFlashG === 'function' ? anFlashG(P, T, 0) : 0);
+  U.tlW = on('tl.ww') && U.Pd > 0 ? (G(U.Pd, U.Tw) * A * U.tlAw * 3600) / 1000 : 0;
+  const fw = typeof AN_CYC !== 'undefined' && isFinite(AN_CYC.ffw) ? AN_CYC.ffw : 0,
+    Te = isFinite(U.hpT2) ? U.hpT2 : U.Tw;
+  U.tlE = on('tl.eco') && U.Pd > 0 && fw > 0 ? (G(U.Pd + AN_TL.dpE * Math.pow(fw / AN_TL.mcr, 2), Te) * A * U.tlAe * 3600) / 1000 : 0;
+  U.tlE = Math.min(U.tlE, fw);
+}
+/* the output (MV) net of a controller of an ABC sheet, as ctlOut of anUnitStart */
+function anCtlOutOf(k, t) {
+  const x = AN.sheets.find(y => y.name === k),
+    c = x && x.S && AN.hmiCtrls ? (AN.hmiCtrls(x.S) || []).find(q => q.tag === t) : null;
+  return c && c.out != null ? { S: x.S, n: c.out, c, t } : null;
+}
+function anMainFwCv(x) {
+  const P = AN_MFW.pts;
+  if (!(x > 0)) return 0;
+  if (x <= P[0][0]) return (P[0][1] * x) / P[0][0];
+  for (let i = 1; i < P.length; i++)
+    if (x <= P[i][0]) {
+      const [x0, c0] = P[i - 1],
+        [x1, c1] = P[i];
+      return c0 + ((c1 - c0) * (x - x0)) / (x1 - x0);
+    }
+  return P[P.length - 1][1];
+}
+/* T/H through the main valve at travel x (%), drum pressure pd and BFWP discharge p1 (kg/cm2 g). W^2 = a (p1 - pd - k W^2 / w0^2)
+   with a = w0^2 (Cv / cv0)^2 / dp0 and k = kUp + kDn, so W = sqrt(a D / (1 + k a / w0^2)) */
+function anMainFw(x, pd, p1) {
+  const K = AN_MFW,
+    D = Math.max(0, (+p1 || 0) - Math.max(0, +pd || 0)),
+    r = anMainFwCv(x) / K.cv0,
+    a = (K.w0 * K.w0 * r * r) / K.dp0;
+  return a > 0 && D > 0 ? Math.sqrt((a * D) / (1 + ((K.kUp + K.kDn) * a) / (K.w0 * K.w0))) : 0;
+}
 const AN_AV = {
   lock: 3.5,
   reg: 3.5,
@@ -4196,7 +4359,7 @@ const AN_SB = {
      boiler start-up), operating condition 10.5 kg/cm2, supply 16 kg/cm2 / 305 C, quantity per lance 3900 kg/hour, blowing time per lance
      19 minutes 40 seconds (total sootblowing time 40 minutes); the local panel moves the lance (3.2.16). Flow diagram K1AU3-PD-015: both
      on the sootblower header (SB-1-034 / SB-1-036). The DCS starts them: DITL-80F row 25 AIR PREHEATER SOOTBLOWER OPERATING (the start
-     command of the DITL-80 program); a rise of it runs one cycle: hot end, then cold end. The medium: DITL-80K row 19 PLANT AIR / STEAM
+     command of the DITL-80 program, count 29); a rise of it runs the cold end; DITL-80 output 19 (count 30) the hot end (3.2.4-beta.8). The medium: DITL-80K row 19 PLANT AIR / STEAM
      SELECT (M.4212, 1 = plant air: no steam taken). While a lance blows: its RESET POSITION is 0 (plantsw.js) and its pressure PT-SB1040 /
      PT-SB1042 (I/O list STN102 AI0549 / AI0550, 0 ~ 16) is the header pressure (at most 16). NO-SOURCE: the steps of the lance (one
      rotor turn each), the plant air pressure at the blower */
@@ -4268,16 +4431,27 @@ function anSbStep(U, dt) {
 function anSbAph(U, dt, P) {
   const K = AN_SB.aph,
     A = U.sbA || (U.sbA = { op: 0, ph: 0, t: 0, p40: 0, p42: 0 }),
-    op = typeof anDitlRun === 'function' ? anDitlRun('DITL-80F@25') : null;
+    op = typeof anDitlRun === 'function' ? anDitlRun('DITL-80F@25') : null,
+    /* 3.2.4-beta.8 (the program stood at count 30): the DITL-80 (S3) program starts the two air heater blowers in two steps of its
+       counter: count 29 = DITL-80F row 25 AIR PREHEATER SOOTBLOWER START COMMAND / OPERATING (80K), count 30 = DITL-80 output row 19 AIR
+       PREHEATER HOT END SOOTBLOWER START COMMAND (to the local panel). The L20 OMM gives hot & cold end SEQUENTIAL, 19 min 40 s each: the
+       first step runs the cold end N-1042, the second the hot end N-1040 (the order of the counter). Before: one rise ran both, so the
+       second step had no blower to wait for and the program never reached PROGRAM END */
+    hot = typeof anDitlRun === 'function' ? anDitlRun('(S3)DITL-80@19') : null;
   if (op === 1 && !A.op && !A.ph) {
+    A.ph = 2;
+    A.t = 0;
+  }
+  if (hot === 1 && !A.hot && !A.ph) {
     A.ph = 1;
     A.t = 0;
   }
   A.op = op === 1 ? 1 : 0;
+  A.hot = hot === 1 ? 1 : 0;
   if (A.ph && dt > 0) {
     A.t += dt;
     if (A.t >= K.tB) {
-      A.ph = A.ph === 1 ? 2 : 0;
+      A.ph = 0;
       A.t = 0;
     }
   }
@@ -4427,9 +4601,18 @@ function anUnitStep0(dt) {
   /* coal of the three feeders (T/H) -> steam made in the drum (T/H), first order */
   /* 2.2.0-beta.14: + the oil of the start-up burners (ao x coal); the offset of the firing line fades out below 30 % of the anchor coal */
   /* 3.2.0 P1 #6: the coal of a feeder through its outlet discharge valve (DITL-20) */
+  /* 3.2.4: a trainer fault 'cf.jamA / B / C' (world.js WORLD.ftrip): the discharge chute of the feeder is plugged. The feed rate of the
+     feeder is the belt load times the belt speed (Yamato GM-BSC22-36, CFC-201, Final Drawing P4 / P8): the coal stays on the running belt,
+     so the load cells and the feed rate signal AI0480 / 0512 / 0544 read as before while no coal reaches the furnace */
+  const jam = i => {
+    const W = typeof window !== 'undefined' ? window.WORLD : null;
+    return !!(W && W.ft && W.ft.has('cf.jam' + 'ABC'[i]));
+  };
+  anTubeLeak(U, dt);
+  anCoalWet(U);
   const F = U.fuel.reduce((a, l, i) => {
       const o = U.cfo ? anDitlPos(U.cfo[i], 0) : null;
-      return a + (anUnitVal(l) || 0) * (o == null ? 1 : o / 100);
+      return jam(i) ? a : a + (anUnitVal(l) || 0) * (o == null ? 1 : o / 100);
     }, 0),
     oil = (U.oilN || []).reduce((a, x) => a + Math.max(0, +x.S.rt.v[x.n] || 0), 0),
     bf = Math.max(0, Math.min(1, (U.Tb - U.Tburn0) / (U.Tburn1 - U.Tburn0))),
@@ -4651,23 +4834,35 @@ function anUnitStep0(dt) {
          house load, then the integral goes on from there (TCE p.136), trimmed by the TCS load loop toward the house load (NO-SOURCE:
          the input of I005 after the runback is not printed on the sheets read) */
       tb.hlT = (tb.hlT || 0) + dt;
-      if (tb.hlT <= U.rbT || !isFinite(tb.gs)) tb.gs = U.rbIP;
-      else tb.gs = Math.max(0, Math.min(1.4, tb.gs + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
+      /* 3.2.4-beta.12 (live beta.11: the speed stayed at 3585 rpm, 59.75 Hz, and no operator action moved it): the speed / load changer.
+         TG manual STIE-14752 (plant study 05): after a load rejection the machine "stays at no-load speed until changed by the speed /
+         load changer". The changer is the TCS load target of the panel (LOAD UP, tb.aim, ramped as tb.tgt at the load rate): during the
+         runback pulse the target follows GOV.SET (the runback position as MW), after it GOV.SET moves toward the target (as a share of
+         the rating) at the flow demand rate (TCE207 A007 RI / RD, U.fdRate). With 6 % droop a higher target is a higher speed. Before,
+         GOV.SET was trimmed by the house load minus the generator MW, which is 0 on house load (the generator gives what the load takes) */
+      if (tb.hlT <= U.rbT || !isFinite(tb.gs)) {
+        tb.gs = U.rbIP;
+        tb.aim = tb.tgt = U.rbIP * U.MW0;
+      } else {
+        const r = (U.fdRate || 0.01) * dt,
+          g = Math.max(0, Math.min(1.4, (isFinite(tb.tgt) ? tb.tgt : U.rbIP * U.MW0) / U.MW0));
+        tb.gs = Math.max(0, Math.min(1.4, tb.gs + Math.max(-r, Math.min(r, g - tb.gs))));
+      }
       const dem = Math.max(
-          0.02,
+          0,
           Math.min(1.4, tb.gs - (U.flowSpan * anDb((tb.rpm || 3600) - 3600, U.dbRpm || 0)) / ((U.droop || 0.06) * 3600))
         ),
-        r = dt / U.tauTrip;
-      U.gv += Math.max(-r, Math.min(r, dem - U.gv));
-      /* the ICV takes the same flow demand (TCE p.141 TCE207: the CV and ICV demands come from the one flow demand; the ICV curve itself
-         is NO-SOURCE, here ICV = flow demand): with the HP bypass open the reheater feeds the IP turbine (about 75 % of the shaft, AN_TBW) */
-      tb.icv = Math.max(
-        0,
-        Math.min(
-          1,
-          (tb.icv == null ? 1 : tb.icv) + Math.max(-r, Math.min(r, Math.min(1, dem) - (tb.icv == null ? 1 : tb.icv)))
-        )
-      );
+        r = dt / U.tauTrip,
+        B = U.cvBias || 0.2,
+        cvD = Math.max(0, Math.min(1.4, (dem - B) / (1 - B))),
+        icvD = Math.max(0, Math.min(1, dem / B)),
+        i0 = tb.icv == null ? 1 : tb.icv;
+      /* 3.2.4-beta.11: the CV and ICV demands from the one flow demand as on the grid (TCE p.141 TCE207, anTbFlow): ICV = demand / CV
+         OPENING BIAS, CV = (demand - bias) / (1 - bias). Before, both took the demand itself: at the house load demand (under the 20 % bias)
+         the CVs stayed open and the ICVs nearly shut. Now the CVs stay shut and the ICVs pass the no-load flow from the reheater, which the
+         HP bypass feeds (TG manual STIE-14752: "at about 102 % speed the ICVs open to pass no-load flow") */
+      U.gv += Math.max(-r, Math.min(r, cvD - U.gv));
+      tb.icv = Math.max(0, Math.min(1, i0 + Math.max(-r, Math.min(r, icvD - i0))));
     } else {
       tb.gs = NaN;
       tb.hlT = 0;
@@ -4692,6 +4887,8 @@ function anUnitStep0(dt) {
     U.mb += q;
     if (x.rh) U.mhp += q;
   }
+  /* 3.2.4-beta.1: the safety valves of the drum (drum pressure) and of the SH outlet (main steam pressure P1), AN_SV */
+  U.msv = anSvFlow(U, AN_SV.d, U.Pd) + anSvFlow(U, AN_SV.s, P1);
   /* drum: stored energy. 2.2.0-beta.14 (cold start): the firing heats the water first (U.Tw), then the pressure rises against the
      storage of the steam AND of the saturated water (C + Cw x dTsat/dP) */
   const tsatOf = steamTsat; /* 3.2.0-beta.15: IF97 steam table (steam.js), was the fit 100 + 47.1 x ln(P + 1) */
@@ -4709,7 +4906,7 @@ function anUnitStep0(dt) {
       tPa = isFinite(U.aphPa) ? U.aphPa : U.Tamb,
       tSa = isFinite(U.aphSa) ? U.aphSa : U.Tamb,
       dW = U.Tb - U.Tw /* bed over the wall water, both signs */,
-      fg = (Fb * (1 - AN_FG.ash) + oil) / 3.6 /* fuel gas, kg/s */,
+      fg = (Fb * (1 - AN_FG.ash * (U.coalR || 1)) + oil) / 3.6 /* fuel gas, kg/s (beta.13: the ash share with the wet coal) */,
       /* beta.261: cp(T). Air: Incropera Table A.4 (300 K 1.007, 700 K 1.075, 1100 K 1.159 kJ/kg K) as cp = 1.0 + 0.000155 T(C), CALC;
          flue gas: anHxCp (hx.js, FHI Tab 2 fuel at 20 % excess air). The heat to bring the air in and the fuel to the bed is the enthalpy
          of the flue gas at the bed less that of the air as it comes in (preheated by the air heater), both from the room */
@@ -4730,18 +4927,35 @@ function anUnitStep0(dt) {
       qSol = (B.ua0w - B.uag) * phi * dW + qRW /* kW, to the furnace walls: the circulating solids + through the refractory */,
       qPan = isFinite(U.hxQp) ? U.hxQp : 0 /* kW, to the in-furnace SH panels (hx.js, last scan) */,
       qGas = gcp > 0.01 ? gcp * dW * (1 - Math.exp(-B.uag / gcp)) : 0 /* kW, from the gas over the upper walls */,
-      qFuel = Fb * B.lhvC * (1 - B.fUC) + oil * B.lhvO,
+      qFuel = Fb * B.lhvC * (U.coalK || 1) * (1 - B.fUC) + oil * B.lhvO,
       qAirG =
         (mAir + fg) * (hFg(U.Tb) - hFg(U.Tamb)) -
         (av[0] / 3.6) * (hAir(tPa) - hAir(U.Tamb)) -
         (av[1] / 3.6) * (hAir(tSa) - hAir(U.Tamb)),
       Cb = Math.max(0, isFinite(U.bedI) ? U.bedI : AN_BI.tCold) * 1000 * B.cpS;
-    U.Tb = Math.max(U.Tamb, U.Tb + ((qFuel - qAirG - ((B.ua0w - B.uag) * phi * dW + qBR) - qPan) * dt) / Cb);
+    /* 3.2.4 (JENNIE): the limestone in the bed (U.lmQ T/H, boiler.js). Thermochemistry from the standard heats of formation (NIST:
+       CaCO3 -1207.6, CaO -634.9, CO2 -393.5, SO2 -296.8, CaSO4 -1434.5 kJ/mol):
+       - calcination CaCO3 -> CaO + CO2 takes 179.2 kJ/mol = 1790 kJ/kg CaCO3 (93.66 % CaCO3, FHI P2S7 Tab 3 page 2);
+       - sulphation CaO + SO2 + 1/2 O2 -> CaSO4 gives 502.8 kJ/mol = 15,680 kJ/kg of S captured; the S of the coal that burns
+         (1.49 %, Tab 2) times the capture 1 - U.soxF (anSoxStep). The coal heating value counts S to SO2 only;
+       - the stone heated from the room to the bed: cp 1.0 kJ/kg K, NO-SOURCE (mean of calcite 25 - 850 C, NIST-JANAF ~ 0.9 - 1.1).
+       At MCR (12 T/H, 89 T/H coal, 200 ppm) that is 5.6 MW + 2.8 MW taken, 5.1 MW given: ~ 3.3 MW net out of the bed, 0.9 % of the fuel
+       heat. Before: no limestone term. */
+    const qLm = (() => {
+      const m = Math.max(0, U.lmQ || 0) / 3.6,
+        cap = isFinite(U.soxF) ? Math.max(0, 1 - U.soxF) : 0;
+      return m * 0.9366 * 1790 + m * 1.0 * Math.max(0, U.Tb - U.Tamb) - ((Fb * 0.0149) / 3.6) * cap * 15680;
+    })();
+    U.qLm = qLm;
+    /* the water wall leak boils in the bed: saturated water at the drum (anHxHw) to steam at the bed (IF97, near the furnace pressure) */
+    const qTl = U.tlW > 0 ? (U.tlW / 3.6) * Math.max(0, steamH(0, U.Tb) - anHxHw(ts)) : 0;
+    U.qTl = qTl;
+    U.Tb = Math.max(U.Tamb, U.Tb + ((qFuel - qLm - qTl - qAirG - ((B.ua0w - B.uag) * phi * dW + qBR) - qPan) * dt) / Cb);
     U.Trf = Trf + ((qBR - qRW) * dt) / B.mRef;
     /* the furnace exit gas: the bed less the upper walls, held at the bed by the circulating solids in the share phi */
     U.tgF = gcp > 0.01 ? U.Tb - (1 - Math.min(1, phi)) * (qGas / gcp) : U.Tb;
     U.gcp = gcp;
-    U.mG = (av[0] + av[1] + av[2]) / 3.6 + fg /* flue gas kg/s, to the backpass (hx.js) */;
+    U.mG = (av[0] + av[1] + av[2]) / 3.6 + fg + ((U.tlW || 0) + (U.tlE || 0)) / 3.6 /* flue gas kg/s, to the backpass (hx.js), with a tube leak */;
     U.phi = phi;
     /* water walls, T/H of steam-equivalent (the unit of Cw / C): both ways, a bed under the water cools it. The air cooling of the
        unfired boiler (kcool) is inside this balance now; the loss to the room (kamb) stays */
@@ -4756,7 +4970,7 @@ function anUnitStep0(dt) {
       he = isFinite(U.hxHe) ? Math.min(U.hxHe, hg - 1) : anHxHw(Math.min(ts, isFinite(U.hpT2) ? U.hpT2 : ts)),
       kWe = Math.max(100, (hg - he) / 3.6),
       r = B.kW / kWe,
-      mDr = Math.max(0, U.ms + U.mb + (U.msb || 0) - (U.w1s || 0) - (U.w2s || 0));
+      mDr = Math.max(0, U.ms + U.mb + (U.msb || 0) + (U.msv || 0) - (U.w1s || 0) - (U.w2s || 0)) + ((U.tlW || 0) * Math.max(0, anHxHw(ts) - he)) / Math.max(1, hg - he) /* a water wall leak: its water, replaced by feedwater, is heated to saturation */;
     U.kWe = kWe;
     if (U.Tw < ts - 0.01) {
       U.Qs = 0;
@@ -4772,8 +4986,13 @@ function anUnitStep0(dt) {
      TIFG1009 furnace) follow the bed: ambient + (snapshot - ambient) x bed rise / anchor bed rise. Before, they kept the 150 MW
      snapshot (933 C) in Cold: ABC-027 SI0122 > 700 C = M.2504 "ADEQUATE FOR COAL FIRING (PURGE BY-PASS)" was 1 on a cold boiler,
      DITL-02 completed the purge by itself and reset the MFT before the operator could press FURNACE PURGE START */
+  /* 3.2.3-beta.273 (live run beta.272: the 150 MW start showed bed 881 C on the overview and TIFG1090 / 1091 HIGH-HIGH 980 C on every
+     thermocouple): the anchor of the thermocouples is the bed the snapshot thermocouples read (the average of the eighteen lower layer
+     TT-FG1090 / 1091 A ~ I, 937 C), not the model anchor Tb0 850 C. Their average is now the bed temperature U.Tb, each with its own
+     snapshot spread; one bed for the overview, the logic (ABC-026 alarms 950 / 980 / 820) and the pages */
+  const tbA = (() => { const a0 = anGasA0(); return isFinite(a0.u) && isFinite(a0.l) ? (a0.u + a0.l) / 2 : U.Tb0; })();
   if (U.tbed && U.tbed.length) {
-    const k = Math.max(0, (U.Tb - U.Tamb) / Math.max(1, U.Tb0 - U.Tamb));
+    const k = Math.max(0, (U.Tb - U.Tamb) / Math.max(1, tbA - U.Tamb));
     for (const L of U.tbed) anUnitWrite(L, i => U.Tamb + (L.a0[i] - U.Tamb) * k);
   }
   /* 3.2.3-beta.212 (live Cold sweep F16: AIR AND FLUE GAS page '-----' for the furnace, cyclone outlet and seal pot temperatures with
@@ -4783,7 +5002,7 @@ function anUnitStep0(dt) {
      thermocouples, each on its own snapshot value (hmi-op.js AN_HMI_AI). U.gFu / U.gFl = the average of the nine lower layer above /
      under thermocouples TT-FG1091-A ~ I / TT-FG1090-A ~ I the page shows as one value. Numbers only on U (SAVE keeps U as JSON) */
   {
-    const k = Math.max(0, (U.Tb - U.Tamb) / Math.max(1, U.Tb0 - U.Tamb)),
+    const k = Math.max(0, (U.Tb - U.Tamb) / Math.max(1, tbA - U.Tamb)),
       a0 = anGasA0(),
       t = x => (isFinite(x) ? U.Tamb + (x - U.Tamb) * k : NaN);
     U.gFu = t(a0.u);
@@ -4817,10 +5036,24 @@ function anUnitStep0(dt) {
      (anRp32) sees the negative power */
   const qip = U.m0 * U.rr * tb.icv,
     MWss = onGrid ? anTbGen(U.ms, qip) - anVacMW(U) + (U.dMWx || 0) : 0;
-  U.MW += ((MWss - U.MW) * dt) / U.tauMW;
-  U.Pm = MWss;
+  /* 3.2.4-beta.11: the shaft power on the swing equation (U.Pm): the HP and IP / LP parts of anTbGen, each behind its steam volume (tSc,
+     tXo above; exact first order for the step dt), so the steam left behind the closed valves still drives the shaft. Before, Pm fell
+     with the valves at once and a load rejection from 150 MW peaked at 102.2 % (TG manual STIE-14752: about 106 % within about 1 s) */
+  {
+    const hp = onGrid ? (Math.max(0, U.ms) * anTbW('wh', U.ms)) / 1000 : 0,
+      ip = onGrid ? (Math.max(0, qip) * anTbW('wi', qip)) / 1000 : 0,
+      f = T => 1 - Math.exp(-dt / Math.max(0.01, T));
+    tb.pH = isFinite(tb.pH) ? tb.pH + (hp - tb.pH) * f(U.tSc || 0.3) : hp;
+    tb.pI = isFinite(tb.pI) ? tb.pI + (ip - tb.pI) * f(U.tXo || 0.5) : ip;
+    const sh = tb.pH + tb.pI;
+    U.Pm = onGrid ? sh - AN_TBW.lo - AN_TBW.kq * sh * sh - anVacMW(U) + (U.dMWx || 0) : 0;
+  }
+  /* 3.2.4-beta.11: on house load (52L1 open) the generator gives what the house load takes (elec.js): its MW is that load, at once.
+     Before, the MW fell from 150 to the house load with the 10 s steam lag (tauMW) while the breaker was open */
+  if (onGrid && U.el && U.el.l52 === false && tb.xfer && !trip && isFinite(D)) U.MW = D;
+  else U.MW += ((MWss - U.MW) * dt) / U.tauMW;
   anRp32(U, onGrid && !trip, dt);
-  anTbSpeed(U, tb, dt, onGrid && !trip && tb.xfer, MWss, D);
+  anTbSpeed(U, tb, dt, onGrid && !trip && tb.xfer, U.Pm, D);
   /* 52G open: no load on the machine */
   if (U.tc && (tb.st === 'off' || tb.st === 'roll')) U.MW = 0;
   U.rpm = tb.rpm;
@@ -4880,7 +5113,7 @@ function anUnitStep0(dt) {
        pressure (as the outlets of the main steam line). 2.2.0-beta.17: + the ICV flow (roll steam, initial load) until the transfer */
     const Prh0 = U.rhp.length && U.rhp[0].a0.length && U.rhp[0].a0[0] > 0 ? U.rhp[0].a0[0] : 34,
       orb = U.rhbv ? Math.max(0, Math.min(100, +U.rhbv.S.rt.v[U.rhbv.n] || 0)) : 0,
-      qout = (U.m0 * U.rr * (U.lpb * olp + U.rhb * orb)) / 100 + qip;
+      qout = (U.m0 * U.rr * (U.lpb * olp + U.rhb * orb)) / 100 + qip + (U.msvR = anSvFlow(U, AN_SV.r, U.rr * Prh0)); /* 3.2.4-beta.1 RH safety valves */
     U.rr = Math.max(0, U.rr + ((U.mhp + U.ms - qout) * dt) / (U.Crh * Prh0));
   }
   /* live Cold start F12 (user 2026-11-13 "may steam naba sa reheat line?"): an empty reheater reads 0 kg/cm2 on PT-HR1003-1 / -2, a live
@@ -4936,7 +5169,7 @@ function anUnitStep0(dt) {
         Tm0: U.hxT0,
         Pd: U.Pd,
         Pms: U.Pms,
-        mOut: U.ms + U.mb + (U.msb || 0),
+        mOut: U.ms + U.mb + (U.msb || 0) + (U.msv || 0),
         w1: U.w1s,
         w2: U.w2s,
         wrh: U.wrhs,
@@ -4982,7 +5215,7 @@ function anUnitStep0(dt) {
      the 6.4 / 2.2 % of one snapshot has no source, it stood the B side on LOW-LOW at 150 MW */
   if (U.afs > 0) {
     const taf = U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0),
-      o2s = Math.max(0, Math.min(21, 21 * (1 - (Fe * U.afs) / Math.max(1, taf))));
+      o2s = Math.max(0, Math.min(21, 21 * (1 - ((Fe - Fb * (1 - (U.coalR || 1))) * U.afs) / Math.max(1, taf))));
     U.o2v += ((o2s - U.o2v) * dt) / U.tauO2;
     for (const L of U.o2) anUnitWrite(L, U.o2v);
   }
@@ -5013,6 +5246,26 @@ function anUnitStep0(dt) {
   if (U.suv && U.fwp && U.fwp.pr) {
     const o = Math.max(0, Math.min(100, anAv('LICBR1001B', +U.suv.S.rt.v[U.suv.n] || 0)));
     U.fwp.pr.op = anSuFw(o, U.Pd, U.fwPd);
+  }
+  /* 3.2.4-beta.6: the main feedwater valve FCV-FW1130-1 by its Cv and dP (anMainFw); the PV of FICFW1007 shows it up to the top of
+     its range, the drum gets all of it (plant.js, the drum balance). pr.mul: the pumps that give water (0 = none) */
+  /* a save point (and the st150 of the build) from before beta.6 has no U.fwv: the state load deletes the keys it does not carry
+     (state.js anStateInto), so the valve is found again here */
+  if (!U.fwv) U.fwv = anCtlOutOf('ABC-010', 'FICFW1007');
+  if (U.fwv && U.fwp && U.fwp.pr && isFinite(U.fwPd)) {
+    const pr = U.fwp.pr,
+      o = Math.max(0, Math.min(100, anAv('FICFW1007', +U.fwv.S.rt.v[U.fwv.n] || 0))),
+      m = pr.mul == null ? 1 : pr.mul;
+    /* the pump and the valve on one flow: the BFWP discharge falls along the KSB curve as the flow rises, so the flow is where the
+       valve law and the pump curve meet (anFwPdAt, bisection) and not the valve at the head of the last step */
+    const su = pr.op || 0,
+      g = w => anMainFw(o, U.Pd, anFwPdAt(U, w + su)) - w;
+    let lo = 0,
+      hi = 1500;
+    if (g(0) <= 0) hi = 0;
+    else for (let i = 0; i < 40; i++) g((lo + hi) / 2) > 0 ? (lo = (lo + hi) / 2) : (hi = (lo + hi) / 2);
+    U.fwMain = (lo + hi) / 2;
+    pr.hx = m * (U.fwMain + (pr.op || 0));
   }
   /* ---- 2.2.0-beta.12 (M3): machines stopped, furnace pressure ---- */
   for (const m of U.mul || []) {
@@ -5048,7 +5301,7 @@ function anUnitStep0(dt) {
       }
     const idf = !U.idf || +U.idf.S.rt.v[U.idf.n] > 0.5,
       taf = U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0),
-      ld = U.taf0 > 0 ? (U.kfpA > 0 ? U.kfpA : U.kfp) * (taf / U.taf0 - 1) : 0;
+      ld = U.taf0 > 0 ? (U.kfpA > 0 ? U.kfpA : U.kfp) * ((taf + (((U.tlW || 0) + (U.tlE || 0)) * 28.9) / 18) / U.taf0 - 1) : 0;
     /* 3.2.0-beta.19 (VIEW / TRACE audit, Cold): no ID fan and no air = the furnace open to the stack, 0 mmH2O. Before, a cold plant
        read about +200 mmH2O (the loop model with the ID fan taking nothing out and the air term). With air and no ID fan the
        pressure still rises (as before); with the ID fan running the model is unchanged. */

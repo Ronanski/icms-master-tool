@@ -1,0 +1,161 @@
+<title>Tag Lookup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* layout: search on top; results list on the left, one signal card on the right (phone: list, then card) */
+:root{--bg:#f6f7f9;--paper:#ffffff;--fg:#1b2129;--muted:#5b6673;--edge:#d6dce3;--fill:#eef1f4;--accent:#1f5fae;--on-accent:#ffffff;
+--ok:#1e6b34;--okbg:#e6f4ea;--warn:#8a5a00;--warnbg:#fdf3d8;--bad:#b3261e;--badbg:#fdecea;--sans:"IBM Plex Sans",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;
+--ok:#7fd29a;--okbg:#17301f;--warn:#e7bf5c;--warnbg:#33290f;--bad:#f2948c;--badbg:#3a1c1a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;
+--ok:#7fd29a;--okbg:#17301f;--warn:#e7bf5c;--warnbg:#33290f;--bad:#f2948c;--badbg:#3a1c1a;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.45;font-variant-numeric:tabular-nums;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:20px;font-weight:600;margin:0}h2{font-size:16px;font-weight:600;margin:0}h3{font-size:13px;font-weight:600;margin:0 0 8px;color:var(--muted)}
+.sub{color:var(--muted);font-size:13px;margin:2px 0 0}
+.card{background:var(--paper);border:1px solid var(--edge);border-radius:10px;padding:16px 16px;min-width:0}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--paper);border:1px solid var(--edge);border-radius:6px;padding:8px 8px;min-height:40px}
+textarea{width:100%;min-height:64px;resize:vertical}
+button{font:inherit;font-weight:500;border-radius:6px;border:1px solid var(--edge);background:var(--paper);color:var(--fg);padding:8px 12px;min-height:40px;cursor:pointer}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+button:disabled{opacity:.5;cursor:default}
+a{color:var(--accent)}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible,.hit:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.bar{display:flex;gap:8px;flex-wrap:wrap}
+.bar input{flex:1 1 240px;min-width:0}.bar select{flex:0 1 190px;min-width:0}
+.cols{display:grid;grid-template-columns:360px minmax(0,1fr);gap:16px;align-items:start}
+.hits{display:flex;flex-direction:column;gap:8px;min-width:0}
+.count{font-size:13px;color:var(--muted)}
+.hit{display:block;width:100%;text-align:left;background:var(--paper);border:1px solid var(--edge);border-radius:6px;padding:8px 12px;min-height:44px}
+.hit.on{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.hit b{font-weight:600;overflow-wrap:anywhere}.hit span{display:block;color:var(--muted);font-size:13px;font-weight:400;overflow-wrap:anywhere}
+.hit i{font-style:normal;float:right;font-size:12px;color:var(--muted);margin-left:8px;font-weight:400}
+.empty{border:1px dashed var(--edge);border-radius:10px;padding:24px;text-align:center;color:var(--muted)}
+.idc{display:flex;flex-direction:column;gap:16px;min-width:0}
+.head .tag{font-size:20px;font-weight:600;overflow-wrap:anywhere}
+.head .desc{font-size:16px;margin-top:2px;overflow-wrap:anywhere}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.pill{border-radius:999px;padding:2px 12px;font-size:12px;font-weight:600;background:var(--fill);color:var(--muted)}
+.sec{border-top:1px solid var(--edge);padding-top:12px}
+dl{display:grid;grid-template-columns:170px minmax(0,1fr);gap:4px 12px;margin:0}
+dt{color:var(--muted);font-size:13px}dd{margin:0;overflow-wrap:anywhere}
+.tp{background:var(--warnbg);color:var(--warn);border-radius:6px;padding:8px 12px;font-size:13px;margin-top:8px}
+.tp b{font-weight:600}
+ul.sheets{margin:0;padding-left:16px}ul.sheets li{margin:2px 0;overflow-wrap:anywhere}
+.none{color:var(--muted)}
+.src{color:var(--muted);font-size:12px;margin-top:8px}
+.quick{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.quick button{min-height:36px;font-size:13px}
+.ans{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--fill);border-radius:6px;padding:12px 12px;margin-top:12px}
+.ans.bad{background:var(--badbg);color:var(--bad)}
+.back{display:none}
+@media (max-width:820px){.bar input{flex:1 1 100%}.bar select{flex:1 1 0;padding-inline:8px}
+ .cols{grid-template-columns:minmax(0,1fr)}
+ .cols.show .left{display:none}.cols:not(.show) .right{display:none}.back{display:inline-block;align-self:flex-start}
+ dl{grid-template-columns:minmax(0,1fr);gap:0}dd{margin-bottom:8px}button,input,select,.hit{min-height:44px}.quick button{min-height:44px}}
+
+/* ---- plant tools standard v1 ---- */
+b,strong{font-weight:600}
+.appbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-height:32px;margin:0}
+.appbar a{color:var(--accent);text-decoration:none;font-weight:500;display:inline-flex;align-items:center;min-height:32px;background:none;border:0;padding:0}
+.appbar a:hover{text-decoration:underline}
+.appbar i{font-style:normal;color:var(--muted)}
+summary{padding-block:8px}
+@media (max-width:640px){button,select,input:not([type=checkbox]):not([type=radio]),summary,nav a,.appbar a{min-height:44px}button.sm{min-height:44px}}
+</style>
+<div class="wrap"><div class="appbar"><a href="https://claude.ai/artifact/CLWF6fLkvX8VNvtbjfYLwS" target="_blank" rel="noopener">Plant Tools</a><i>/</i><span>Tag Lookup</span></div>
+ <div><h1>Tag Lookup</h1>
+ <p class="sub">One card for each of the <span id="tot"></span> hardwired signals of Unit 1: what it is, where it lands in the control system, where to measure it, and which logic sheets use it.</p></div>
+ <div class="bar">
+  <input id="q" type="search" placeholder="Tag, address or words, like drum level" aria-label="Search signals" autocomplete="off">
+  <select id="ft" aria-label="Signal type"><option value="">All types</option><option value="AI">Analog input</option><option value="AO">Analog output</option><option value="DI">Digital input</option><option value="DO">Digital output</option></select>
+  <select id="fs" aria-label="Control station"><option value="">All stations</option></select>
+  <select id="fl" aria-label="Logic use"><option value="">Any logic</option><option value="y">Used on a logic sheet</option><option value="n">Not on any logic sheet</option></select>
+ </div>
+ <div class="cols" id="cols">
+  <div class="left hits"><div class="count" id="count"></div><div class="hits" id="hits"></div><button id="more" hidden>Show 50 more</button></div>
+  <div class="right idc"><button class="back" id="back">Back to results</button><div id="cardbox"><div class="empty">Pick a signal from the list to see its card.</div></div></div>
+ </div>
+</div>
+<script>
+const D=@@DATA@@;
+const F=D.F,IX={};F.forEach((k,i)=>IX[k]=i);
+const R=D.R.map((x,i)=>{const o={i};F.forEach((k,j)=>{o[k]=x[j]===undefined?'':x[j]});o.k=(o.g+' '+o.a+' '+o.d+' stn'+o.st).toLowerCase();return o});
+const FINDER='https://claude.ai/artifact/2A5FFvEhkDPnggoM4i95wk';
+const TYPE={AI:'Analog input',AO:'Analog output',DI:'Digital input',DO:'Digital output'};
+const SIG={'AI-Wet':'2-wire transmitter, powered by the control system (AI-Wet)','AI-Dry':'4-wire, powered at the source (AI-Dry)'};
+/* module per terminal board: IPU-III manual chapter 4 (same table as the Signal Path Finder) */
+const MODOF=(b,t)=>/^DN-37/.test(b)?({DI:'CDII-01',DO:'CDOO-01',AI:'CAII-01',AO:'CAOI-01/03'}[t]||''):/^DN-PI/.test(b)?'CPII-01':/^DN-PO/.test(b)?'CPOO-01':/^DN-AII/.test(b)?(b==='DN-AII-03'?'CAII-02':'CAII-01'):/^DN-AIH/.test(b)?'CAII-03':/^DN-AOI/.test(b)?'CAOI-01/03':/^DN-AIV/.test(b)?'CAIV-01/02':/^DN-AOV/.test(b)?'CAOV-01/02':/^DN-DI/.test(b)?'CDII-01':/^DN-DO/.test(b)?'CDOO-01':/^DN-RTD/.test(b)?'CRTD-01':/^DN-TC/.test(b)?'CTCC-01':'';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pair=(a,b)=>[a,b].filter(Boolean).join(' / ');
+let shown=50,cur=null,list=[];
+$('tot').textContent=R.length.toLocaleString('en-US');
+[...new Set(R.map(r=>r.st))].sort().forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent='Station '+s;$('fs').append(o)});
+
+function filter(){const q=$('q').value.trim().toLowerCase().split(/\s+/).filter(Boolean),t=$('ft').value,s=$('fs').value,l=$('fl').value;
+ list=R.filter(r=>(!t||r.t===t)&&(!s||r.st===s)&&(!l||(l==='y')===!!r.logic)&&q.every(w=>r.k.includes(w)));
+ if(q.length){const w=q[0];const rank=r=>r.g.toLowerCase()===w||r.a.toLowerCase()===w?0:r.g.toLowerCase().startsWith(w)||r.a.toLowerCase().startsWith(w)?1:2;list.sort((a,b)=>rank(a)-rank(b)||a.i-b.i)}
+ shown=50;drawList()}
+function drawList(){$('count').textContent=list.length?`${list.length.toLocaleString('en-US')} signal${list.length>1?'s':''} found`+(list.length>shown?`, showing the first ${shown}`:''):'';
+ $('hits').innerHTML=list.length?list.slice(0,shown).map(r=>`<button class="hit${cur===r.i?' on':''}" data-i="${r.i}"><i>${esc(r.a)} · station ${esc(r.st)}</i><b>${esc(r.g)}</b><span>${esc(r.d||'No description in the wiring list')}</span></button>`).join(''):'<div class="empty">No signal matches. Try fewer words, or clear the filters.</div>';
+ $('more').hidden=list.length<=shown}
+function row(k,v){return v?`<dt>${k}</dt><dd>${v}</dd>`:''}
+function sheetList(r){if(!r.logic)return '<p class="none">Not printed on any analog or digital logic sheet. It may be used only for display, alarm or record.</p>';
+ return '<ul class="sheets">'+r.logic.split(/,\s*/).map(s=>`<li><b>${esc(s)}</b>${D.S[s]?' · '+esc(D.S[s]):''}</li>`).join('')+'</ul>'}
+function facts(r){const lp=r.lp||null,mod=MODOF(r.card,r.t);
+ const o={tag:r.g,address:r.a,description:r.d,type:TYPE[r.t],signal_type:r.sig,range:r.rng,station:'STN'+r.st,cabinet:r.cab,node:r.nd,slot:r.sl,channel:r.ch,terminal_board:r.card,io_module:mod,
+  card_side_terminals:`${r.cs} ${pair(r.cp,r.cn)}`,marshalling_panel:r.mpl,marshalling_field_strip:`${r.fs} ${pair(r.f1,r.f2)}`,marshalling_system_side:pair(r.m1,r.m2),cable_to_card:r.cb,cable_type:r.cty,
+  junction_box_or_source:lp?lp[0]:r.jbw,junction_terminals:lp?`${lp[1]} ${lp[2]}`:`${r.jbs} ${pair(r.j1,r.j2)}`.trim(),field_cable:lp?lp[3]:'',multi_pair_cable:lp?lp[4]:'',
+  logic_sheets:r.logic?r.logic.split(/,\s*/).map(s=>s+(D.S[s]?' = '+D.S[s]:'')):'not on any logic sheet',control_loop:r.loop,memory_address:r.mem,remark:r.rem};
+ Object.keys(o).forEach(k=>{if(o[k]===''||o[k]==null)delete o[k]});return o}
+function drawCard(){const r=R[cur];if(!r){$('cardbox').innerHTML='<div class="empty">Pick a signal from the list to see its card.</div>';return}
+ const lp=r.lp||null,mod=MODOF(r.card,r.t),src=/-->|->|^TO /.test(r.jbw||'');
+ const meas=r.t==='AI'||r.t==='AO'?'4 to 20 mA signal':r.t==='DI'?'contact state, open or closed':'output state';
+ $('cardbox').innerHTML=`<div class="card idc">
+ <div class="head"><div class="tag">${esc(r.g)}</div><div class="desc">${esc(r.d||'No description in the wiring list')}</div>
+  <div class="pills"><span class="pill">${TYPE[r.t]}</span><span class="pill">Address ${esc(r.a)}</span><span class="pill">Station ${esc(r.st)}</span>${r.rng?`<span class="pill">${esc(r.rng)}</span>`:''}</div></div>
+ <div class="sec"><h3>What it is</h3><dl>${row('Signal type',esc(SIG[r.sig]||(r.sig===r.t?'':r.sig)||''))}${row('Range',esc(r.rng))}${row('Control loop',esc(r.loop))}${row('Memory address',esc(r.mem))}${row('Remark',esc(r.rem))}</dl></div>
+ <div class="sec"><h3>Where it lands in the control system</h3><dl>${row('Cabinet',esc(r.cab))}${row('Position','Station '+esc(r.st)+' · node '+esc(r.nd)+' · slot '+esc(r.sl)+(r.ch?' · channel '+esc(r.ch):''))}${row('Terminal board',esc(r.card))}${row('Input / output module',esc(mod))}${row('Terminals at the board',esc(r.cs+' '+pair(r.cp,r.cn)))}${row('Cable to the board',esc(r.cb)+(r.cty?' · type '+esc(r.cty):''))}</dl></div>
+ <div class="sec"><h3>Marshalling panel</h3><dl>${row('Panel',esc(r.mpl))}${row('Field side strip',esc(r.fs+' '+pair(r.f1,r.f2)))}${row('System side',esc(pair(r.m1,r.m2)))}</dl>
+  <div class="tp"><b>Main test point.</b> Measure at ${esc(r.fs)} terminals ${esc(pair(r.f1,r.f2))} in panel ${esc(r.mpl)}: ${meas}. This splits a field problem from a control system problem.</div></div>
+ <div class="sec"><h3>Field side</h3><dl>${lp?row('Junction box',esc(lp[0]))+row('Terminals',esc((lp[1]+' '+lp[2]).trim()))+row('Field cable',esc(lp[3]))+row('Multi-pair cable',esc(lp[4]))+row('Loop diagram','K1AU3-E2-0-104, page '+esc(lp[5])):row(src?'Comes from / goes to':'Junction box',esc(r.jbw.replace(/-+>/,' → ')))+row('Terminals',esc((r.jbs+' '+pair(r.j1,r.j2)).trim()))}</dl>
+  ${!lp&&!r.jbw?'<p class="none">Field side: not in the wiring list.</p>':''}${r.hops?'<p class="sub">This signal has extra stops before the control system. The Signal Path Finder shows each one.</p>':''}</div>
+ <div class="sec"><h3>Used on these logic sheets</h3>${sheetList(r)}</div>
+ <div class="sec"><a href="${FINDER}" target="_blank" rel="noopener">Open the Signal Path Finder</a> and type <b>${esc(r.g)}</b> to see the full path as a drawing.
+  <div class="src">Sources: wiring list LMYP-1(#1) WIRING, input / output list, loop diagrams K1AU3-E2-0-104, analog and digital logic sheets. The card shows no live plant values.</div></div>
+ <div class="sec" id="askbox" hidden><h3>Ask about this signal</h3>
+  <p class="sub" style="margin:0 0 8px">The assistant reads only this card. It has no live plant values and cannot see trends or alarms.</p>
+  <div class="quick"><button data-q="Explain this signal in simple words: what it measures or drives, and why the plant needs it.">Explain this signal</button><button data-q="I need to check this signal. Where do I measure first, and what should I expect to read?">Where to measure first</button><button data-q="The reading or state of this signal looks wrong. List the possible causes in order, from the field to the control system, using the stops on this card.">Why it may read wrong</button></div>
+  <textarea id="ask" placeholder="Type your own question" aria-label="Your question"></textarea>
+  <div class="quick"><button class="pri" id="askgo">Ask</button><button id="askstop" hidden>Stop</button></div>
+  <div class="ans" id="ans" hidden></div></div>
+ </div>`;
+ if(sample)$('askbox').hidden=false}
+function pick(i,push){cur=i;$('cols').classList.add('show');drawList();drawCard();
+ if(push){try{history.replaceState(null,'','#'+R[i].a.replace('.','')+'-'+R[i].st)}catch(e){}}
+ if(innerWidth<=820)scrollTo(0,0)}
+$('hits').addEventListener('click',e=>{const b=e.target.closest('.hit');if(b)pick(+b.dataset.i,true)});
+$('more').addEventListener('click',()=>{shown+=50;drawList()});
+$('back').addEventListener('click',()=>{$('cols').classList.remove('show')});
+let tmr;$('q').addEventListener('input',()=>{clearTimeout(tmr);tmr=setTimeout(()=>{$('cols').classList.remove('show');filter()},120)});
+['ft','fs','fl'].forEach(id=>$(id).addEventListener('change',()=>{$('cols').classList.remove('show');filter()}));
+
+/* assistant: answers from the card only */
+let sample=null,ctl=null;
+async function ask(qn){const r=R[cur];if(!sample||!r||!qn.trim())return;const out=$('ans');out.hidden=false;out.className='ans';out.textContent='Thinking...';
+ $('askgo').disabled=true;$('askstop').hidden=false;ctl=new AbortController();
+ const prompt=`You are a tutor for a control system engineer at a 150 MW circulating fluidized bed boiler power plant. The engineer asks about ONE hardwired signal.\n\nRules:\n- Plant facts come ONLY from the card below. Never invent a tag, set point, terminal number, cable, value or logic behaviour. If the card does not have it, write "not on the card".\n- You may add general instrumentation knowledge, but put it after a line that reads "General knowledge (not from the plant documents):".\n- There are no live values, trends or alarms.\n- The main test point is the marshalling panel field side strip.\n- Answer in the language of the question (Tagalog-English mix is fine). Short, plain text, no tables, no markdown symbols.\n\nCard:\n${JSON.stringify(facts(r),null,1)}\n\nQuestion: ${qn.trim()}`;
+ try{const res=await sample(prompt,{signal:ctl.signal,cache:false,onText:({text})=>{if(text)out.textContent=text}});out.textContent=res.text+(res.truncated?'\n\n(The answer was cut short.)':'')}
+ catch(e){if(e&&e.code==='not_granted'){$('askbox').hidden=true;sample=null}
+  else if(ctl.signal.aborted){out.textContent=(e&&e.text?e.text+'\n\n':'')+'Stopped.'}
+  else{out.className='ans bad';out.textContent=e&&e.code==='rate_limited'?'Too many questions for now. Wait a minute, then ask again.':'The assistant could not answer. Try again.'}}
+ $('askgo').disabled=false;$('askstop').hidden=true}
+document.addEventListener('click',e=>{const b=e.target.closest('#askbox button');if(!b)return;
+ if(b.dataset.q){$('ask').value=b.dataset.q;ask(b.dataset.q)}else if(b.id==='askgo')ask($('ask').value);else if(b.id==='askstop'&&ctl)ctl.abort()});
+
+filter();
+addEventListener('hashchange',fromHash);fromHash();function fromHash(){const h=location.hash.slice(1);if(!h)return;const m=h.match(/^(.+)-(\d+)$/);if(!m)return;const r=R.find(r=>r.a.replace('.','')===m[1]&&r.st===m[2]);if(r&&r.i!==cur)pick(r.i,false)}
+(async()=>{try{sample=await (window.claude&&claude.use?claude.use('sample'):null)}catch(e){sample=null}if(sample&&cur!=null)$('askbox').hidden=false})();
+</script>

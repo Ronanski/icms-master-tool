@@ -34,6 +34,8 @@ jobs:
           sv=$(echo "$S" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?'); bv=$(echo "$B" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?')
           echo "{\"stable\":\"$sv\",\"beta\":\"$bv\"}" > site/version.json
           for f in sw.js manifest.webmanifest icon-192.png icon-512.png; do for d in delivery/pwa .; do [ -f "stable/$d/$f" ] && { cp "stable/$d/$f" site/; break; }; done; for d in delivery/pwa .; do [ -f "beta/$d/$f" ] && { cp "beta/$d/$f" site/beta/; break; }; done; [ -f "site/beta/$f" ] || cp "site/$f" site/beta/; done
+          # 2026-11-16: the Plant Tools web app (docs/plant-tools/app, built by docs/plant-tools/build-app.js) is served from main at /tools/. It does not touch the simulator pages.
+          [ -d beta/docs/plant-tools/app ] && cp -r beta/docs/plant-tools/app site/tools || echo "no Plant Tools app in this commit"
           touch site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

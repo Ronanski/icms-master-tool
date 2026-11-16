@@ -325,7 +325,11 @@
     S.runB.title = on ? 'The simulation runs. Click: pause' : 'The simulation is paused. Click: run';
     const sel = speedSel();
     /* the speed sits on the Run pill (one control, shellc-bars.css): the number only, "Simulation speed" in its tooltip */
-    const sp = '×' + (sel ? sel.value : '1');
+    /* 3.2.4-beta.9 (live test 2026-11-17): a LOAD of a save point brings the engine speed with the state (AN.spd, state.js flags:
+       saved while at x60), the select stayed at 1: the chip read ×1 while the plant ran x60. The chip and the select show AN.spd */
+    const cur = String((window.AN && AN.spd) || (sel ? sel.value : 1));
+    if (sel && sel.value !== cur && [...sel.options].some(o => o.value === cur)) sel.value = cur;
+    const sp = '×' + cur;
     if (S.spdB.textContent !== sp) S.spdB.textContent = sp;
     const tab = document.body.dataset.tab;
     S.bOp.classList.toggle('on', tab === 'operate');

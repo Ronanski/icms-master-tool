@@ -613,6 +613,19 @@
           }
           for (const f of rf) {
             const o = outRow(f.code, f.nn, sb);
+            /* 3.2.4-beta.8 (sootblower sequence stopped after N-1014): the COUNTER of the sootblower DITL-80 (S3) is drawn with its outputs
+               N=0, 1 ~ 4 and 28 ~ 31 only; 5 ~ 27 are left out of the drawing (the same 0.5 SEC ON DELAY to the start command of each
+               sootblower, as 1 ~ 4: TR950 ~ TR953, M.4011 / 4019 / 4021 / 4029). Their readers name them 80-63 ~ 80-85 (DITL-80B row 13
+               N-1015 80-63 ... DITL-80E row 21 N-1038 80-86 = count 28): count = nn - 58. The count of the counter, held 0.5 s */
+            if (!o && f.code === '80' && f.nn >= 63 && f.nn <= 85) {
+              const d3 = dSheet('80', sb),
+                g = d3 && isSB(d3) && d3.nl && (d3.nl.gates || []).find(x => x.t === 'CNT');
+              if (g) {
+                addIn(s, i, { k: 'c', cs: d3, n: f.nn - 58, on: 0, ref: '80-' + f.nn + ' (counter ' + (f.nn - 58) + ')' });
+                dd++;
+              }
+              continue;
+            }
             if (!o) continue;
             /* 2.2.0-beta.6: machine k of this row on a drawing made for one machine: the output whose TO column names this row
                in brackets is the one of the other machine (DITL-03B out 70 FAB A STOPPED TO 28A-29, out 71 FAB B STOPPED TO
@@ -1212,11 +1225,114 @@
     'mt.swpb': { t: 'Seawater pump B trips in the field (MIT-P1501B)', sh: 'DITL-29A #B' }
   };
   W.ft = W.ft || new Set();
+  /* 3.2.4 (JENNIE, user "unahin mo nlng ang mga pinakamahalaga sa operation"): the unit black-out, a trainer fault. Single Line Diagram
+     K1AU3-E1-0-102 RD: 6.6 kV BUS 1AM is fed by TR-1A1 (K1AU3E1-0003) and transfers to unit 2 through the bus tie (HBT12); the fault is
+     the loss of 1AM with no transfer. Every 6.6 kV motor (K1AU3E1-0008) and the 460 V buses behind TR-1B1 / TR-1B2 lose their voltage:
+     the undervoltage relays (27) open the motor breakers, so every motor of the DITL drawings stops (s._ftrip, as a field trip, but no
+     ELECTRIC TROUBLE flag: the relay is not the cause) and stays stopped while the bus is dead. The DCS runs on the UPS (UPS-11,
+     K1AU3E1-0040 / 0047) and keeps scanning: the logic of the drawings decides what trips (MFT on the fans, turbine, generator).
+     Live during the black-out: the 460 V emergency panel EMP-11 through ATS-11 from the diesel generator DG1 750 kW (K1AU3E1-0040):
+     MCC-EMP11 (K1AU3E1-0032: main oil pumps M-1922A / B, vapour extractor M-1937, turning gear M-1906, diesel oil pump A M-0702A), the
+     DC charger DC-11, UPS-11, EPDP-11. The turbine oil side is in tcs.js (tcsOil, AN_EL_BO). No DITL drawing has a motor of EMP-11, so
+     every DITL motor stops. Clear = the bus is back (unit 2 or the grid): the operator starts the motors again */
+  /* 3.2.4 (JENNIE): a coal feeder with its discharge chute plugged, a trainer fault (the coal of that feeder does not reach the furnace:
+     unit.js anUnitStep0 'cf.jam'). Yamato Final Drawing for LMYP-1 (L12 Coal Feeder): the feeder has a chute plugging detector, P7, and
+     sends DISCHARGE PLUGGING to the DCS as a no-voltage contact, P8 signal 18. DITL-19 (the same for B and C) takes it from the local
+     panel as MIA-CL1061-A4 straight to output 65 COAL FEEDER A DISCHARGE PLUGED (CRT, ANN): an alarm only, no gate of the start / stop
+     latch reads it, so the feeder keeps running and its feed rate reads as before (belt load x belt speed). The plug stands until the
+     fault is cleared (the coal poking hole, Instruction Manual 11-3) */
+  const JAM = { 'cf.jamA': 'DITL-19', 'cf.jamB': 'DITL-19 #B', 'cf.jamC': 'DITL-19 #C' },
+    JAM_T = k => 'Coal feeder ' + k.slice(-1) + ' discharge chute plugged (no coal to the furnace)';
+  const jamSet = (id, on) => {
+    on = !!on;
+    const s = ftSheet(JAM[id]);
+    if (!s) return '';
+    if (!s.nl && typeof netlist === 'function') s.nl = netlist(s);
+    s.usw = s.usw || {};
+    for (const u of (s.nl && s.nl.usr) || []) if (u.key === 'FIMIA-CL1061-A4') s.usw[u.key] = on;
+    if (on) W.ft.add(id);
+    else W.ft.delete(id);
+    W.busy = true;
+    return on ? JAM_T(id) : 'cleared: ' + JAM_T(id);
+  };
+  /* 3.2.4-beta.7 (JENNIE): a boiler tube leak, a trainer fault (unit.js anTubeLeak: a 10 mm hole that grows to a rupture, beta.16). No DITL contact: the DCS has no
+     leak detector; the operator finds it from the feedwater against the steam, the make-up and the furnace draft */
+  const TL = { 'tl.ww': 'Boiler tube leak: furnace water wall (grows to a rupture)', 'tl.eco': 'Boiler tube leak: economizer (grows to a rupture)' };
+  const tlSet = (id, on) => {
+    if (on) W.ft.add(id);
+    else W.ft.delete(id);
+    W.busy = true;
+    return on ? TL[id] : 'cleared: ' + TL[id] + ' (tube repaired)';
+  };
+  /* 3.2.4-beta.13 (JENNIE, priority list item: coal quality): wet coal, a trainer fault (unit.js anCoalWet: the coal moisture 33.96 % of the
+     performance coal, FHI P2S7 Tab 2, rises to 40 %, NO-SOURCE trainer setting: rain on the coal yard). No DITL contact: the DCS has no
+     coal analyser; the operator sees more coal per MW (FIC-CM), the O2 and the bed temperature */
+  const WET = 'cf.wet',
+    WET_T = 'Wet coal: moisture 34 % to 40 % (less heat per tonne)';
+  const wetSet = on => {
+    if (on) W.ft.add(WET);
+    else W.ft.delete(WET);
+    W.busy = true;
+    return on ? WET_T : 'cleared: ' + WET_T + ' (dry coal again)';
+  };
+  const BO = 'el.1am',
+    BO_T = 'Unit black-out: 6.6 kV bus 1AM lost (no bus transfer)';
+  /* the undervoltage relay of one motor drawing: open = the motor stopped (s._ftrip) and the trip contact into the logic (the ELECTRIC
+     TROUBLE flags of the drawing, as a field trip), so the logic resets its RUNNING latch and the motor does not run again by itself when
+     the voltage comes back */
+  const boRelay = (s, on) => {
+    s.usw = s.usw || {};
+    for (const u of (s.nl && s.nl.usr) || []) if (/^ET/.test(u.key)) s.usw[u.key] = !!on;
+    s._ftrip = !!on;
+  };
+  /* the DITL motors on MCC-EMP11 (K1AU3E1-0032): diesel oil pump A M-0702A = DITL-31 machine A. Live again when EMP-11 is on DG1
+     (elec.js anElecBoStep calls WORLD.boEmp once); the operator starts it again */
+  const BO_EMP = ['DITL-31'];
+  W.boEmp = () => {
+    if (!W.ft.has(BO)) return;
+    for (const c of BO_EMP) {
+      const s = S.sheets.find(x => x.name.endsWith(')' + c));
+      if (s) boRelay(s, false);
+    }
+    W.busy = true;
+    if (window.lsEventAdd) lsEventAdd('ELEC', 'FIELD', 'Diesel generator DG1 on: ATS-11 puts the emergency panel EMP-11 on DG1');
+  };
+  const boSet = on => {
+    on = !!on;
+    if (on === W.ft.has(BO)) return on ? BO_T + ' is already on' : '';
+    const own = new Set([...W.ft].filter(k => FT[k]).map(k => ftSheet(FT[k].sh)));
+    for (const s of S.sheets.concat(W.inst || [])) {
+      if (!s.nl && typeof netlist === 'function') s.nl = netlist(s);
+      /* a motor drawing: RUN / TRIP output rows (DUI.motOuts, the lamps of the dock and the HMI) or a motor model */
+      let o = null;
+      try {
+        o = window.DUI && DUI.motOuts ? DUI.motOuts(s) : null;
+      } catch (e) {}
+      if (!((o && (o.trip || o.run)) || (s.nl && s.nl.mot && s.nl.mot.length))) continue;
+      if (!on && own.has(s)) continue;
+      boRelay(s, on);
+    }
+    if (on) W.ft.add(BO);
+    else W.ft.delete(BO);
+    if (window.AN && AN.elecBo) AN.elecBo(on);
+    W.busy = true;
+    return on ? BO_T : 'cleared: ' + BO_T + ' (bus 1AM back: START the motors again)';
+  };
   /* a drawing by its name, or a machine copy "DITL-29A #B" (W.inst) */
   const ftSheet = c => S.sheets.concat(W.inst || []).find(x => x.name.endsWith(')' + c));
   /* WORLD.ftrip(): the list with the state; WORLD.ftrip(id, on): the fault on / cleared (an ENG call: page and Worker); returns the text */
   W.ftrip = (id, on) => {
-    if (id == null) return Object.keys(FT).map(k => ({ id: k, g: 'mt', t: FT[k].t, on: W.ft.has(k) }));
+    if (id == null)
+      return Object.keys(FT)
+        .map(k => ({ id: k, g: 'mt', t: FT[k].t, on: W.ft.has(k) }))
+        .concat([{ id: BO, g: 'el', t: BO_T, on: W.ft.has(BO) }])
+        .concat(Object.keys(JAM).map(k => ({ id: k, g: 'cf', t: JAM_T(k), on: W.ft.has(k) })))
+        .concat(Object.keys(TL).map(k => ({ id: k, g: 'tl', t: TL[k], on: W.ft.has(k) })))
+        .concat([{ id: WET, g: 'cq', t: WET_T, on: W.ft.has(WET) }]);
+    if (id === BO) return boSet(on);
+    if (JAM[id]) return jamSet(id, on);
+    if (TL[id]) return tlSet(id, !!on);
+    if (id === WET) return wetSet(!!on);
     const f = FT[id],
       s = f && ftSheet(f.sh);
     if (!s) return '';
@@ -1229,10 +1345,15 @@
     W.busy = true;
     return on ? f.t : 'cleared: ' + f.t + ' (relay reset in the field: START it again)';
   };
-  W.ftClear = () => W.ft.clear();
+  W.ftClear = () => {
+    if (W.ft.has(BO) && window.AN && AN.elecBo) AN.elecBo(false);
+    for (const k of Object.keys(JAM)) if (W.ft.has(k)) jamSet(k, false);
+    W.ft.clear();
+  };
   /* the trainer fault that stands on a drawing (its name), or null: the RESET of the protection relay on the motor faceplate clears it
      (Mina beta.175 PA fan practice step 4: RESET there took off the ELECTRIC TROUBLE but s._ftrip held the fan stopped, START did nothing) */
   W.ftOf = nm => [...W.ft].find(k => {
+    if (!FT[k]) return false;
     const s = ftSheet(FT[k].sh);
     return !!s && s.name === nm;
   }) || null;
@@ -1274,6 +1395,16 @@
           if (q.k === 'v') {
             const x = q.sh.S && q.sh.S.rt ? +q.sh.S.rt.v[q.n] : NaN;
             if (isFinite(x)) (s.avw = s.avw || {})[q.key] = x;
+            continue;
+          }
+          /* 3.2.4-beta.8: a step of the sootblower counter left out of the drawing (0.5 SEC ON DELAY of the count) */
+          if (q.k === 'c') {
+            const g = q.cs.nl && (q.cs.nl.gates || []).find(x => x.t === 'CNT');
+            q.on = g && g.N === q.n ? q.on + (dt || 0) : 0;
+            if (q.on >= 0.5) {
+              on.add(row);
+              break;
+            }
             continue;
           }
           const v =

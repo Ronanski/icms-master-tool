@@ -277,6 +277,12 @@
     };
   L.push(['SOOTBLOWER', m => (m && m.s._lance ? (m.s._lance.x <= 0 ? 1 : 0) : 1), 0.5, 'hi', 0, 0, /SOOTBLOWER RETRACT POSITION/, /\)DITL-80G( #N-\d+)?$/]);
   L.push(['M.4232', () => (sbL().some(x => x._lance.x >= x._lance.len) ? 1 : 0), 0.5, 'hi', 0, 0, /ANY ON EXTEND/, /\)DITL-80G( #N-\d+)?$/]);
+  /* 3.2.4-beta.8 (sootblower sequence stopped at N-1023): DITL-80O rows 3 / 10 / 24 read the ANY ON EXTEND POSITION of each group from
+     DITL-80L (M.4247 N-1011 ~ 22, 25, 26; M.4241 N-1023, 24, 27 ~ 34; M.4243 N-1035 ~ 38). Without them the extend flip-flop of the group
+     was never reset at the front end: EXTEND OVER TIME -> ANY OPERATING OVER TIME (80Q) -> ANY TROUBLE PRESENT (80G row 13) at the start of
+     the next blower, which held it on its retract command */
+  for (const [k, f] of [['M.4247', sbGrp['M.4246']], ['M.4241', sbGrp['M.4240']], ['M.4243', sbGrp['M.4242']]])
+    L.push([k, () => (sbL().some(x => f(x._lance) && x._lance.x >= x._lance.len) ? 1 : 0), 0.5, 'hi', 0, 0, /ANY ON EXTEND/, /\)DITL-80O$/]);
   /* 3.2.3 SOHEE: the air heater blowers leave their reset position while they blow (unit.js AN_SB.aph: hot end N-1040, then cold end N-1042) */
   const aphPh = () => (window.AN && AN.unit && AN.unit.sbA ? AN.unit.sbA.ph : 0);
   L.push(['AIR', () => (aphPh() === 1 ? 0 : 1), 0.5, 'hi', 0, 0, /N-1040.*S\/B RESET POSITION/, /\)DITL-80K$/]);

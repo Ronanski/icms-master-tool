@@ -1,0 +1,4 @@
+const {chromium}=require('playwright');(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:1280,height:900}});const errs=[];p.on('pageerror',e=>errs.push(e.message));
+await p.goto('file:///mnt/project-files/tutor-2026-11-11/signal-path-finder.html');await p.waitForTimeout(900);
+console.log(await p.evaluate(()=>{const bad={nolink:[],q:[],dbl:[],err:[]};for(const r of R){try{const it=build(r);let prevStop=false;it.forEach((x,i)=>{if(x.link){if(!prevStop)bad.dbl.push(r.a);prevStop=false}else{if(prevStop)bad.nolink.push(r.a+':'+x.t);prevStop=true}});if(it.some(x=>/\?/.test(x.t||'')))bad.q.push(r.a)}catch(e){bad.err.push(r.a+' '+e.message)}}
+ return JSON.stringify({n:R.length,nolink:bad.nolink.length,ex:bad.nolink.slice(0,8),dbl:bad.dbl.length,dex:bad.dbl.slice(0,5),q:bad.q.length,qx:bad.q.slice(0,5),err:bad.err.slice(0,5)})}));console.log(errs);await b.close()})();

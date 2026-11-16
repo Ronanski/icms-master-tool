@@ -1,5 +1,13 @@
-# UPDATE REPORT — v3.2.3 (Beta)
+# UPDATE REPORT — v3.2.3
 
+## 3.2.3 Stable (2026-11-16, user "Go stable" 11:18 PM PHT)
+- **Laman:** 3.2.3-beta.273 (main 1519c6d5), walang ibang binago sa app; `src/version.txt` = 3.2.3, `dist/logic-sim-v3.2.3.html` (`--check` SAME).
+- **Mabigat na test (PC, sa build 3.2.3):** tests.js lahat PASS (T1-T5, S1-S6, 54 of 54 sheets); switches 438 case 0 mali; blocks_io 12021 check 0 mali, plant off at on; load_ramp 150 -> 90 -> 150 MW ALL PASS.
+- **Test na inayos:** blocks_io ABC-052 RATE#87 ay gumagamit pa ng lumang formula ng rate (span / (T x 0.036)). Mula beta.241 ang LN11 ng ABC-052 ay oras ng buong stroke sa segundo (b.tsec), kaya span / T na. Binasa na ng test ang b.tsec; walang ibang expected na binago.
+- **Live (Beta site):** beta.272 150 MW start at load 150 -> 90 -> 150 MW, walang trip; beta.273 150 MW start, walang maling bed thermocouple alarm.
+- **Hindi nasubok:** buong Cold start mula step 1 sa beta.270-273 (save points lang); apk at exe sa device.
+
+- **beta.273** (2026-11-16, JENNIE, live run beta.272): the bed thermocouples TIFG1090 / 1091 A ~ I follow the bed from the average of their own snapshot values (937 C), not from the model anchor Tb0 850 C. The 150 MW start showed bed 881 C on the overview but about 990 C and HIGH-HIGH (ABC-026 980 C) on every thermocouple. Now their average is the bed, 881 C, no bed alarm.
 - **beta.272** (2026-11-16, JENNIE, logic modes): the 150 MW start has the O2 trim AICFG112 in AUTO, SV 3.5, as the logic runs it at full load (ABC-002 M.0103 / M.0102 = 0); the snapshot line-up and the old st150 had it in MANUAL at 72.5 %, which gave O2 5.3 % and bed 821 C. New st150 from tools/steady150/make.cjs (60 plant minutes): O2 3.6 %, SA 171 T/H, coal 86 T/H, bed 882 C (FHI 850-900). load_ramp 150-90-150 ALL PASS, bed 873-894 C. A held trim (failed O2 analyzer) stays a fault scenario.
 - **beta.271** (2026-11-16, JENNIE, physics): boiler losses the model lacked (carbon left in the ash, ash heat, CO): 3.2 % of the coal LHV, CALC from FHI Tab 3 efficiency 90.9 % LHV against the model balance at 150 MW (stack 5.7 %, room 0.2 %). Coal at 150 MW 83.5 -> 86.0 T/H (plant snapshot 87.0). Bed 826 -> 821 C: the bed stays low because the logic gives O2 5.3 % (O2 trim AICFG112 held MAN). Checked headless: 150 MW start 60 min x300 steady; step-83 save 42 min steady, 0 page errors.
 - **beta.270** (2026-11-16, JENNIE): no Training in the app (user "OO TANGGALIN N").

@@ -139,6 +139,65 @@ function anHxEps(T, L) {
   for (const w of AN_HX_WS) e += (w[1] + w[2] * K + w[3] * K * K + w[4] * K * K * K) * (1 - Math.exp(-w[0] * AN_HX.pC * L));
   return Math.max(0, e);
 }
+/* outside tube area (m2) of a bank g */
+function anHxA(g) {
+  const [D, , , N, n, dep] = g;
+  return N * n * Math.PI * D * (dep - 0.2);
+}
+/* 3.2.4: ASH DEPOSITS ON THE BACKPASS BANKS AND THE SOOTBLOWERS THAT CLEAN THEM. Clean banks give the air heater gas in 298 C at 150 MW (headless, 3.2.4);
+   the design (FHI P2S7 Tab 3) has 322: the design is a fouled boiler. Each bank
+   carries a deposit resistance R (m2K/W, U.hxF, numbers only). It grows while coal burns, at the rate of the ash (coal burnt / 89 T/H
+   MCR, FHI Tab 2), toward rInf (Kern-Seaton asymptotic fouling, R = rInf (1 - exp(-t / tau))); it stays when the coal stops.
+   - rInf: CALC, the value that takes the air heater gas in from 298 to the design 322 C at 150 MW with every bank fully fouled
+     (headless 2026-11-17: 321.2 C at 0.0042, 20 min after the deposit).
+   - tau 8 h: NO-SOURCE. Taken from the blowing interval of the plant: PR P3S3 "economizer once per shift, then once a day", air
+     heater every 4 - 8 h (L20 APH OMM); a bank that needs blowing every shift fouls in about that time.
+   - Cleaning: the retractable lances of Diamond Power N11639 (L10-2 Sootblower, IK4M-EMD full / IK4M-EL half retract). Each pair
+     (LSW / RSW) blows half the width; a lance cleans the banks it sits between (elevations FL+20982 to +42300 in the manual):
+     N1011/12 above RH upper -> R-6; N1013/14 above SH upper -> F3; N1015/16 -> R-6, R-5; N1017/18 -> F3, F2; N1019/20 -> R-5, R-4;
+     N1021/22 -> F2, F1; N1023/24 -> R-4, R-3; N1025/26 -> F1, eco 3; N1027/28 and N1031/32 -> R-3, eco 2 R; N1029/30 -> eco 3;
+     N1033/34 -> eco 3, eco 2 S; N1035 - 38 above eco 1 -> eco 1. Each traverse of a lance (in or out, s._lance.x in world.js)
+     removes e = 0.8 (NO-SOURCE) of the deposit over its half: one full blow of a pair, in and out, leaves (1 - 0.4)^4 = 13 %.
+   Every start state starts clean. */
+const AN_FOUL = { rInf: 0.0042 /* m2K/W, CALC (see above) */, tau: 8 * 3600 /* s, NO-SOURCE */, e: 0.8 /* NO-SOURCE */, mcr: 89 },
+  AN_FOUL_MAP = (() => {
+    const m = {},
+      set = (a, b, k) => {
+        for (let n = a; n <= b; n++) m[n] = k;
+      };
+    set(1011, 1012, ['r3']);
+    set(1013, 1014, ['f2']);
+    set(1015, 1016, ['r3', 'r2']);
+    set(1017, 1018, ['f2', 'f1']);
+    set(1019, 1020, ['r2', 'r1']);
+    set(1021, 1022, ['f1', 'f0']);
+    set(1023, 1024, ['r1', 'r0']);
+    set(1025, 1026, ['f0', 'e3']);
+    set(1027, 1028, ['r0', 'e2r']);
+    set(1029, 1030, ['e3']);
+    set(1031, 1032, ['r0', 'e2r']);
+    set(1033, 1034, ['e3', 'e2s']);
+    set(1035, 1038, ['e1']);
+    return m;
+  })();
+function anHxFoul(U, dt) {
+  const F = U.hxF || (U.hxF = { R: { r0: 0, r1: 0, r2: 0, r3: 0, f0: 0, f1: 0, f2: 0, e1: 0, e2r: 0, e2s: 0, e3: 0 }, lx: {} }),
+    R = F.R,
+    a = Math.max(0, (isFinite(U.cbn) ? U.cbn : 0) / AN_FOUL.mcr);
+  if (a > 0) for (const k in R) R[k] += ((AN_FOUL.rInf - R[k]) * a * dt) / AN_FOUL.tau;
+  const W = typeof window !== 'undefined' ? window.WORLD : null,
+    L = W && W.sbLances ? W.sbLances() : [];
+  for (const s of L) {
+    const l = s._lance,
+      b = l && AN_FOUL_MAP[l.n];
+    if (!b) continue;
+    const x0 = isFinite(F.lx[l.n]) ? F.lx[l.n] : l.x,
+      f = Math.min(1, (Math.abs(l.x - x0) / Math.max(1, l.len)) * 0.5 * AN_FOUL.e);
+    F.lx[l.n] = l.x;
+    if (f > 0 && l.x > 0) for (const k of b) R[k] *= 1 - f;
+  }
+  return R;
+}
 /* UA (kW/K) of a bank g = [D, St, Sl, legs, elements, depth] at gas m kg/s, gas T, metal Tm */
 function anHxUA(g, m, T, Tm) {
   const [D, St, Sl, N, n, dep] = g,
@@ -238,15 +297,17 @@ function anHxSide(Tm, m, m0, P, hin, water) {
 }
 /* gas side of a bank g (geometry) or of the walls (g = null): gas m kg/s at Tg; the heat the gas gives (kW) and the gas out. The UA
    and the cp are taken at the mean gas temperature (one correction pass) */
-function anHxGas(Tm, g, m, Tg) {
+function anHxGas(Tm, g, m, Tg, rf) {
   if (!(m > 0.01) || !isFinite(Tg)) return { q: 0, Tg };
+  /* 3.2.4: the ash deposit (rf m2K/W on the bank's outside area) in series with the clean gas film: 1 / UA = 1 / UA0 + rf / A */
+  const rA = g && rf > 0 ? (1000 * rf) / anHxA(g) : 0;
   let Tgm = Tg,
     q = 0,
     Cg = 0;
   for (let i = 0; i < 2; i++) {
     Cg = m * anHxCp(Tgm);
     const UA = g
-      ? anHxUA(g, m, Tgm, Tm)
+      ? 1 / (1 / Math.max(1e-6, anHxUA(g, m, Tgm, Tm)) + rA)
       : (AN_HX.wA * (5.5 + (Math.abs(Tgm - Tm) > 1 ? (AN_HX.sig * anHxEps(Tgm, 0.21) * (Math.pow(Tgm + 273.15, 4) - Math.pow(Tm + 273.15, 4))) / (Tgm - Tm) : 0))) / 1e3;
     q = Cg * (1 - Math.exp(-Math.max(0, UA) / Cg)) * (Tg - Tm);
     Tgm = Tg - q / Cg / 2;
@@ -265,6 +326,7 @@ function anHxStep(U, I, dt) {
     for (const k of Object.keys(K.m0)) M[k] = d(K.m0[k]);
     /* settled on the design flows where a first scan has not got them yet */
     const J = Object.assign({}, I, {
+      settle: 1 /* no ash deposit in the settle */,
       w1: isFinite(I.w1) ? I.w1 : 7.1,
       w2: isFinite(I.w2) ? I.w2 : 5.3,
       mEco: isFinite(I.mEco) && I.mEco > 0 ? I.mEco : Math.max(0, (I.mOut || 0) - 12.4),
@@ -306,24 +368,25 @@ function anHxStep(U, I, dt) {
   const mGR = (lo + hi) / 2,
     mGS = mG - mGR;
   /* ---- gas side ---- */
+  const Rf = I.settle ? {} : anHxFoul(U, dt);
   const gWl = anHxGas(M.wl, null, mG, I.Tg);
   const gR4 = [];
   let tR = gWl.Tg;
   for (let i = 3; i >= 0; i--) {
-    gR4[i] = anHxGas(M.rh[i], K.gR[i], mGR, tR);
+    gR4[i] = anHxGas(M.rh[i], K.gR[i], mGR, tR, Rf['r' + i]);
     tR = gR4[i].Tg;
   }
-  const gE2r = anHxGas(M.e2r, K.gE2r, mGR, tR);
+  const gE2r = anHxGas(M.e2r, K.gE2r, mGR, tR, Rf.e2r);
   const gF = [];
   let tS = gWl.Tg;
   for (let i = 2; i >= 0; i--) {
-    gF[i] = anHxGas(M.fsh[i], K.gF[i], mGS, tS);
+    gF[i] = anHxGas(M.fsh[i], K.gF[i], mGS, tS, Rf['f' + i]);
     tS = gF[i].Tg;
   }
-  const gE3 = anHxGas(M.e3, K.gE3, mGS, tS),
-    gE2s = anHxGas(M.e2s, K.gE2s, mGS, gE3.Tg),
+  const gE3 = anHxGas(M.e3, K.gE3, mGS, tS, Rf.e3),
+    gE2s = anHxGas(M.e2s, K.gE2s, mGS, gE3.Tg, Rf.e2s),
     tMix = mG > 0.01 ? (mGR * anHxCp(gE2r.Tg) * gE2r.Tg + mGS * anHxCp(gE2s.Tg) * gE2s.Tg) / (mGR * anHxCp(gE2r.Tg) + mGS * anHxCp(gE2s.Tg)) : I.Tg,
-    gE1 = anHxGas(M.e1, K.gE1, mG, tMix);
+    gE1 = anHxGas(M.e1, K.gE1, mG, tMix, Rf.e1);
   /* each bank's mean gas temperature, for the next scan's pass split */
   {
     const mean = (a, b) => (a + b) / 2;

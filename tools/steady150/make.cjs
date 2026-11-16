@@ -13,7 +13,8 @@ const html = 'dist/' + fs.readdirSync('dist').find(x => /^logic-sim-v[\d.]+(?:-b
 const MAX = +process.argv[2] || 120, CHUNK = +process.argv[3] || 10;
 /* 3.2.3-beta.272: loops the snapshot line-up leaves in MANUAL that the logic runs in AUTO at full load: the O2 trim (ABC-002 M.0103 / M.0102 = 0 at 150 MW, SV 3.5 = LN16) */
 const AUTO = { AICFG112: 3.5 };
-const LIM = { MW: 0.3, Tb: 1, Pd: 0.3, msT: 1, rh: 1, F: 0.5 };
+/* 3.2.4-beta.8: the drum level too (the feedwater valve law of beta.6 swings the three-element loop ~10 min; a start taken mid-swing dipped to -34 mm) */
+const LIM = { MW: 0.3, Tb: 1, Pd: 0.3, msT: 1, rh: 1, F: 0.5, lvl: 1 };
 async function chunk(sv, min, log) {
   const { browser, page } = await open(html);
   try {
@@ -34,7 +35,7 @@ async function chunk(sv, min, log) {
         for (let k = 0; k < 120; k++) { WORLD.live = true; AN.stepSet(h.C, 0.5); WORLD.tick(0.5); }
         const pv = (sh, t) => { const x = AN.sheets.find(y => y.name === sh); const b = x.S.procs.find(z => (z.txt || [])[1] === t); return b ? +x.S.rt.v[b.proc.pv] : NaN; };
         const f = x => (isFinite(x) ? +(+x).toFixed(2) : null);
-        return { MW: f(U.MW), F: f(U.Fc), Tb: f(U.Tb), Pd: f(U.Pd), ms: f(U.ms), msT: f(pv('ABC-012', 'TICMS1004')), rh: f(pv('ABC-019', 'TICHR1002')) };
+        return { MW: f(U.MW), F: f(U.Fc), Tb: f(U.Tb), Pd: f(U.Pd), ms: f(U.ms), msT: f(pv('ABC-012', 'TICMS1004')), rh: f(pv('ABC-019', 'TICHR1002')), lvl: f(pv('ABC-010', 'LICBR1001B')) };
       });
       log.push(e);
       console.log(log.length, JSON.stringify(e));
@@ -50,7 +51,8 @@ async function chunk(sv, min, log) {
     if (log.length >= 6) {
       const a = log[log.length - 4], b = log[log.length - 1];
       if (b.MW < 140) { console.error('not at 150 MW (trip?): nothing written'); process.exit(1); }
-      if (Object.keys(LIM).every(k => Math.abs(b[k] - a[k]) <= LIM[k])) { console.log('steady after', log.length, 'min'); break; }
+      const c = log[Math.max(0, log.length - 7)]; /* 6 min too: a slow swing turns round within 3 min */
+      if (log.length >= 7 && Object.keys(LIM).every(k => Math.abs(b[k] - a[k]) <= LIM[k] && Math.abs(b[k] - c[k]) <= LIM[k])) { console.log('steady after', log.length, 'min'); break; }
     }
   }
   const o = JSON.parse(sv);

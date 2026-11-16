@@ -1,0 +1,104 @@
+<title>Connection Lessons</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* layout: lesson picker, one lesson at a time = signal chain you can break, then a reverse quiz */
+:root{--bg:#f6f7f9;--paper:#ffffff;--fg:#1b2129;--muted:#5b6673;--edge:#d6dce3;--fill:#eef1f4;--accent:#1f5fae;--on-accent:#ffffff;
+--ok:#1e6b34;--okbg:#e6f4ea;--warn:#8a5a00;--warnbg:#fdf3d8;--bad:#b3261e;--badbg:#fdecea;--wire:#1f5fae;--sans:"IBM Plex Sans",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;
+--ok:#7fd29a;--okbg:#17301f;--warn:#e7bf5c;--warnbg:#33290f;--bad:#f2948c;--badbg:#3a1c1a;--wire:#6aa5ee;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;
+--ok:#7fd29a;--okbg:#17301f;--warn:#e7bf5c;--warnbg:#33290f;--bad:#f2948c;--badbg:#3a1c1a;--wire:#6aa5ee;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.45;font-variant-numeric:tabular-nums;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:20px;font-weight:600;margin:0}h2{font-size:16px;font-weight:600;margin:0}
+.sub{color:var(--muted);font-size:13px;margin:2px 0 0}
+.pick{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+select,button{font:inherit;color:var(--fg);background:var(--paper);border:1px solid var(--edge);border-radius:6px;padding:8px 12px;min-height:36px}
+select{flex:1 1 260px;min-width:0}
+button{cursor:pointer;font-weight:500}button.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.card{background:var(--paper);border:1px solid var(--edge);border-radius:10px;padding:16px 16px;display:flex;flex-direction:column;gap:12px}
+.chain{display:grid;grid-template-columns:1fr 36px 1fr 36px 1fr;align-items:stretch}
+.box{border:1px solid var(--edge);border-radius:6px;padding:12px 12px;background:var(--fill);min-width:0}
+.box .k{font-size:12px;color:var(--muted)}.box .v{font-weight:600;overflow-wrap:anywhere}.box .s{font-size:13px;margin-top:4px}
+.box.on{border-color:var(--ok);background:var(--okbg)}.box.off{border-color:var(--bad);background:var(--badbg)}
+.arr{display:flex;align-items:center;justify-content:center}
+.arr i{display:block;height:3px;width:100%;background:var(--wire);position:relative}
+.arr i::after{content:"";position:absolute;right:-1px;top:-5px;border-left:9px solid var(--wire);border-top:6.5px solid transparent;border-bottom:6.5px solid transparent}
+.cut .arr i{background:repeating-linear-gradient(90deg,var(--bad) 0 6px,transparent 6px 11px)}.cut .arr i::after{border-left-color:var(--bad)}
+.sw{display:flex;gap:8px}.sw button.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0;font-size:13px}dt{color:var(--muted);font-size:12px;padding-top:1px}dd{margin:0}
+.opts{display:flex;flex-direction:column;gap:8px}.opts button{text-align:left;font-weight:400}
+.opts button.right{border-color:var(--ok);background:var(--okbg)}.opts button.wrong{border-color:var(--bad);background:var(--badbg)}
+.res{font-size:13px}.res.ok{color:var(--ok)}.res.bad{color:var(--bad)}
+.score{font-size:13px;color:var(--muted)}
+@media (max-width:640px){.chain{grid-template-columns:1fr}.arr{height:28px}.arr i{width:3px;height:100%}.arr i::after{right:-5px;top:auto;bottom:-1px;border-top:9px solid var(--wire);border-left:6.5px solid transparent;border-right:6.5px solid transparent;border-bottom:0}
+.cut .arr i{background:repeating-linear-gradient(180deg,var(--bad) 0 6px,transparent 6px 11px)}.cut .arr i::after{border-top-color:var(--bad);border-left-color:transparent}}
+
+/* ---- plant tools standard v1 ---- */
+b,strong{font-weight:600}
+.appbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-height:32px;margin:0}
+.appbar a{color:var(--accent);text-decoration:none;font-weight:500;display:inline-flex;align-items:center;min-height:32px;background:none;border:0;padding:0}
+.appbar a:hover{text-decoration:underline}
+.appbar i{font-style:normal;color:var(--muted)}
+summary{padding-block:8px}
+@media (max-width:640px){button,select,input:not([type=checkbox]):not([type=radio]),summary,nav a,.appbar a{min-height:44px}button.sm{min-height:44px}}
+</style>
+<div class="wrap"><div class="appbar"><a href="https://claude.ai/artifact/CLWF6fLkvX8VNvtbjfYLwS" target="_blank" rel="noopener">Plant Tools</a><i>/</i><span>Connection Lessons</span></div>
+  <div><h1>Connection Lessons</h1><p class="sub">One connection of the Unit 1 control logic per lesson. Switch the condition and see what the logic does to the station. Then answer the question that runs backwards: from what you see to the cause.</p></div>
+  <div class="pick"><select id="sel" aria-label="Lesson"></select><button id="prev" type="button">Previous</button><button id="next" type="button" class="pri">Next</button></div>
+  <div class="card" id="lesson"></div>
+  <div class="card" id="quiz"></div>
+  <p class="sub">Source of every lesson: the analog logic sheet and memory address shown in it, as recorded in the simulator's drawing trace (docs/OPERATOR_GUIDE.md and docs/versions/v2.2.0/DRAWING_TRACE.md).</p>
+</div>
+<script>
+/* c = condition signal, n/x = healthy / lost state of the condition, b = logic bit, e = station, en/ex = what the station does, see = what the operator sees, act = what to do, src = sheet */
+const L=[
+{t:'Main steam flow to the boiler master',c:'Main steam flow',n:'Above 230 T/H',x:'Below 220 T/H',b:'M.2013 (back-up command)',e:'Boiler master HIC-BM',en:'Can be put in AUTO',ex:'Forced to MANUAL, output held where it was',
+ see:'HIC-BM drops back to MANUAL by itself.',act:'Raise the load until steam flow is above 230 T/H, then press AUTO again. It does not go back to AUTO by itself.',src:'ABC-001C, M.2013. The same bit is also set by HP bypass open more than 5 % and by turbine trip.'},
+{t:'Main steam flow to the oxygen trim',c:'Main steam flow',n:'Above 220 T/H',x:'Below 220 T/H',b:'M.0102',e:'Oxygen trim controller AICFG112',en:'Can be put in AUTO',ex:'Forced to MANUAL',
+ see:'The oxygen trim stays in MANUAL and does not accept AUTO.',act:'Leave it at 50 % (neutral) until steam flow is above 220 T/H, then press AUTO.',src:'ABC-002, M.0102 (M.0103 when the cross limit is active).'},
+{t:'Feedwater flow to the feedwater flow controller',c:'Feedwater flow',n:'Above 100 T/H for 60 s',x:'Below 100 T/H',b:'M.0228 (from M.022C)',e:'Feedwater flow controller FICFW1007',en:'Accepts REMOTE and AUTO, three-element control possible',ex:'Forced to MANUAL and latched',
+ see:'FICFW1007 is in MANUAL / LOCAL even though the flow is already above 100 T/H again.',act:'Press REMOTE and AUTO again, then press the three-element pushbutton (M.054E) again. The latch does not reset by itself.',src:'ABC-010, M.022C to M.0228, pushbutton M.054E.'},
+{t:'Fan running to the air and furnace pressure loops',c:'Primary air, secondary air and induced draft fans',n:'Running',x:'Not running',b:'M.0180, M.0190 (air), M.0205 (furnace)',e:'Air flow controllers FICFA1071, FICFA1081 and furnace pressure controller PICFG108',en:'Can be put in AUTO',ex:'Forced to MANUAL',
+ see:'The air flow and furnace pressure stations do not accept AUTO.',act:'Start the fan first. The loop is released only while its fan is running.',src:'ABC-007 (M.0180, M.0190) and ABC-008 (M.0205).'},
+{t:'Hydraulic coupling output to the furnace pressure controller',c:'Output of PICFG108 (induced draft fan hydraulic coupling)',n:'16 % or more',x:'Below 14 %',b:'M.0205',e:'Furnace pressure controller PICFG108',en:'Accepts AUTO',ex:'Forced to MANUAL',
+ see:'PICFG108 does not accept AUTO at low coupling output.',act:'Raise the output by hand to 16 % or more, then press AUTO.',src:'ABC-008, M.0205.'},
+{t:'Coal feeder running to its feeder controller',c:'Coal feeder',n:'Running',x:'Stopped',b:'M.0141',e:'Feeder controller FICCL1061A',en:'Can be put in AUTO and follows the coal flow master',ex:'Forced to MANUAL',
+ see:'The feeder controller stays in MANUAL.',act:'Start the feeder. AUTO is accepted only while the feeder is running.',src:'ABC-004A, M.0141 = NOT running (M.0142, on-delay) OR signal fault (B.0718) OR M.025B.'},
+{t:'Fuel and air stations in REMOTE to the coal master',c:'Coal flow controller FIC-CF and air controllers FICFA1071, FICFA1081',n:'All in REMOTE',x:'One of them not in REMOTE',b:'M.0130',e:'Coal master FIC-CM',en:'Accepts AUTO and REMOTE',ex:'Forced to MANUAL',
+ see:'FIC-CM does not accept AUTO or REMOTE.',act:'Put FIC-CF, FICFA1071 and FICFA1081 in REMOTE first.',src:'ABC-004A, M.0130 = NOT FIC-CF.REM OR NOT FICFA1071.REM OR NOT FICFA1081.REM (also set by the oil valve and feeder conditions M.0138 and M.0137).'},
+{t:'Total air to the fuel demand (cross limit)',c:'Total air flow',n:'446 T/H or more',x:'Falling toward 414 T/H',b:'Cross limit, line LN40',e:'Fuel demand to the coal master',en:'Follows the boiler master (35 % at 446 T/H, the minimum air)',ex:'Cut back, down to 0 at 414 T/H',
+ see:'The coal demand falls to 0 although the boiler master output is high enough.',act:'Raise the air (air stations in REMOTE). Do not lower the boiler master.',src:'ABC-002, line LN40: 414 T/H gives 0 fuel, 446 T/H gives 35 %.'},
+{t:'Main feedwater stations to the start-up level controller',c:'FICFW1007 and LICBR1001A',n:'Both in MANUAL',x:'One of them not in MANUAL',b:'M.0226 = OR (NOT FICFW1007.MAN, NOT LICBR1001A.MAN)',e:'Start-up drum level controller LICBR1001B',en:'Can be put in AUTO',ex:'Forced to MANUAL',
+ see:'LICBR1001B does not accept AUTO.',act:'Put FICFW1007 and LICBR1001A in MANUAL first. The start-up controller works only when the main ones are by hand.',src:'ABC-010, M.0226.'},
+{t:'Drum level to the master fuel trip',c:'Drum level',n:'Inside −254 to +254 mm (alarm at ±150 mm)',x:'Above +254 mm or below −254 mm',b:'M.0173 / M.0175 (high high), M.0170 / M.0172 (low low)',e:'Master fuel trip',en:'Not tripped',ex:'Tripped',
+ see:'The boiler trips on drum level.',act:'Keep the level inside ±150 mm; the alarm comes first, the trip at ±254 mm.',src:'ABC-010, M.0170, M.0172, M.0173, M.0175.'},
+{t:'Furnace pressure to the master fuel trip',c:'Furnace pressure',n:'Between −50 and +30 mmH2O',x:'+300 mmH2O',b:'High high furnace pressure (high alarm M.3107 at +30)',e:'Master fuel trip, primary air fan and secondary air fan',en:'Running',ex:'Master fuel trip; both fans trip',
+ see:'The boiler trips and the primary and secondary air fans stop.',act:'Act at the +30 mmH2O alarm: check the induced draft fan and PICFG108.',src:'ABC-008: alarm +30 (M.3107) and −50 mmH2O, trip at +300 mmH2O.'},
+{t:'Turbine trip to the HP bypass valve',c:'Turbine',n:'Not tripped',x:'Tripped',b:'M.0705 (back-up command)',e:'HP bypass valve',en:'Controlled by its own controller',ex:'Driven open to 100 %',
+ see:'After a turbine trip the HP bypass opens fully, and the boiler master goes to MANUAL (lesson 1).',act:'Expected action of the logic: the steam needs a path when the turbine valves close.',src:'ABC-050: turbine trip input I.0400, HP bypass back-up command M.0705 (also set 15 s after both boiler feedwater pumps are lost, M.0702).'}
+];
+const $=id=>document.getElementById(id);const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let i=0,lost=false,ans=null,opts=[];let score={};try{score=JSON.parse(localStorage.getItem('cl-score')||'{}')}catch(e){}
+$('sel').innerHTML=L.map((x,k)=>`<option value="${k}">${k+1}. ${esc(x.t)}</option>`).join('');
+function mkOpts(){const o=[i];const pool=L.map((_,k)=>k).filter(k=>k!==i&&L[k].x!==L[i].x&&L[k].c!==L[i].c);while(o.length<4&&pool.length){o.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0])}opts=o.sort(()=>Math.random()-.5);ans=null}
+function draw(){const x=L[i];$('sel').value=i;
+  $('lesson').innerHTML=`<h2>${i+1}. ${esc(x.t)}</h2>
+  <div class="sw" role="group" aria-label="Condition"><button type="button" id="b-ok" class="${lost?'':'on'}">Condition healthy</button><button type="button" id="b-lost" class="${lost?'on':''}">Condition lost</button></div>
+  <div class="chain ${lost?'cut':''}"><div class="box ${lost?'off':'on'}"><div class="k">Condition</div><div class="v">${esc(x.c)}</div><div class="s">${esc(lost?x.x:x.n)}</div></div><div class="arr"><i></i></div>
+  <div class="box ${lost?'off':''}"><div class="k">Logic</div><div class="v">${esc(x.b)}</div><div class="s">${lost?'Active':'Not active'}</div></div><div class="arr"><i></i></div>
+  <div class="box ${lost?'off':'on'}"><div class="k">Effect on</div><div class="v">${esc(x.e)}</div><div class="s">${esc(lost?x.ex:x.en)}</div></div></div>
+  <dl><dt>You see</dt><dd>${esc(x.see)}</dd><dt>What to do</dt><dd>${esc(x.act)}</dd><dt>Source</dt><dd>${esc(x.src)}</dd></dl>`;
+  $('b-ok').onclick=()=>{lost=false;draw()};$('b-lost').onclick=()=>{lost=true;draw()};
+  const done=Object.keys(score).filter(k=>score[k]).length;
+  $('quiz').innerHTML=`<h2>Backwards question</h2><p style="margin:0">You see this: <b>${esc(x.see)}</b> Which condition caused it?</p>
+  <div class="opts">${opts.map(k=>`<button type="button" data-k="${k}" class="${ans==null?'':k===i?'right':k===ans?'wrong':''}" ${ans==null?'':'disabled'}>${esc(L[k].c)}: ${esc(L[k].x.charAt(0).toLowerCase()+L[k].x.slice(1))}</button>`).join('')}</div>
+  ${ans==null?'':`<div class="res ${ans===i?'ok':'bad'}">${ans===i?'Correct.':'Not this one. The marked answer is the cause.'} ${esc(x.src)}</div>`}
+  <div class="score">Answered correctly: ${done} of ${L.length} lessons</div>`;
+  $('quiz').querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{ans=+b.dataset.k;if(ans===i){score[i]=1;try{localStorage.setItem('cl-score',JSON.stringify(score))}catch(e){}}draw()})}
+function go(k){i=(k+L.length)%L.length;lost=false;mkOpts();draw()}
+$('sel').onchange=e=>go(+e.target.value);$('prev').onclick=()=>go(i-1);$('next').onclick=()=>go(i+1);go(0);
+</script>

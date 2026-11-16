@@ -777,6 +777,7 @@ function anProcStep(S, dt) {
               fwp: fw.proc,
               su,
               suK: 0.3 * fsp,
+              fsp,
               sh1: s1,
               k: 0.02,
               ks: 10,
@@ -868,7 +869,11 @@ function anProcStep(S, dt) {
          (unit.js U.ksu, pr.op of FICFW1007), so it was counted twice, and the drum kept filling for minutes after the start-up valve
          shut (the transmitter lags, T 75 s): -149 -> -119 mm with the valve at 0 %. Now the drum gets the start-up flow of now and the
          main valve part of the transmitter (its reading less the lagged start-up part) */
-      if (opE != null) {
+      /* 3.2.4-beta.6: the PV of FICFW1007 stops at the top of its range (FT-FW1007, 550 T/H); the water through the main valve
+         (unit.js anMainFw, fwp.hx) does not: with the unit model on the drum gets the flow of the valves (main + start-up) of now */
+      const hx = fwp && fwp.hx != null && isFinite(fwp.hx) && typeof AN_UNIT !== 'undefined' && AN_UNIT.on ? fwp.hx : null;
+      if (hx != null) ffw = hx; /* the main + start-up valve flow of now; the transmitter lag (T 75 s) is only in the PV */
+      else if (opE != null) {
         const T = fwp.T > 0 ? fwp.T : 75;
         pr.integ.opL = pr.integ.opL == null || AN.steady ? opE : pr.integ.opL + (opE - pr.integ.opL) * Math.min(1, dt / T);
         ffw = Math.max(0, ffw - pr.integ.opL) + opE;
@@ -928,6 +933,8 @@ function anProcStep(S, dt) {
       /* 3.2.3 SOHEE: the steam the sootblowers take between the drum and FT-MS1031 (unit.js AN_SB): it leaves the drum, unseen by the
          steam flow of the balance */
       if (typeof AN_UNIT !== 'undefined' && AN_UNIT.on && AN_UNIT.msb > 0) lhdQ += AN_UNIT.msb;
+      /* 3.2.4-beta.1: the drum and SH safety valves (unit.js AN_SV) too */
+      if (typeof AN_UNIT !== 'undefined' && AN_UNIT.on && AN_UNIT.msv > 0) lhdQ += AN_UNIT.msv;
       AN_CYC.mbd = mbdQ;
       /* 3.2.3 CONTINUOUS BLOWDOWN (PR-OPE-5002 5698 "MBD and CBD"; flow diagram K1AU3-PD-019: MV-BD1002, DITL-38 #MV-BD1002, line
          BD-1-003). The water that leaves the drum besides the main steam at 150 MW (pr.integLoss, 15 T/H, MB-019 item 22) is
@@ -947,7 +954,9 @@ function anProcStep(S, dt) {
       AN_CYC.cbd = loss;
       /* a feedwater heater with its tubes and its bypass shut stops the feedwater (unit.js anHtrPath) */
       if (typeof AN_UNIT !== 'undefined' && AN_UNIT.on && isFinite(AN_UNIT.fwPath)) ffw *= AN_UNIT.fwPath;
-      q.y = Math.max(lo, Math.min(lo + span, q.y + dt * AN_CYC.rate('dr') * (ffw - fst - loss - lhdQ)));
+      /* 3.2.4-beta.7: a tube leak (unit.js anTubeLeak): the water wall leak leaves the drum water, the economizer leak never reaches it */
+      const tlQ = typeof AN_UNIT !== 'undefined' && AN_UNIT.on ? (AN_UNIT.tlW || 0) + (AN_UNIT.tlE || 0) : 0;
+      q.y = Math.max(lo, Math.min(lo + span, q.y + dt * AN_CYC.rate('dr') * (ffw - fst - loss - lhdQ - tlQ)));
       /* 3.2.3 THERMAL EXPANSION of the boiler water (PR-OPE-5002 5697: "Observe steam drum level: swelling approximately > 100 C; use
          lowering header drain ... above 10 kg/cm2 the MBD and CBD"). The economizer, waterwall and downcomers stay full of water: when it
          heats its density falls (anWaterRho, steam table) and the water it no longer holds goes into the drum, kg = AN_THERM.vEvap x the
@@ -961,7 +970,7 @@ function anProcStep(S, dt) {
         q.rhoE = r;
       }
       AN_CYC.y.dr = q.y;
-      AN_CYC.dl = fst + loss + lhdQ; /* water and steam that leave the drum */
+      AN_CYC.dl = fst + loss + lhdQ + tlQ; /* water and steam that leave the drum (and the cycle, a tube leak) */
       AN_CYC.ffw = ffw; /* the deaerator gives this water (condensate cycle balance) */
       /* 2.2.0-beta.12 (M3): SHRINK / SWELL. A fast change of the drum pressure moves the level the other way for a while (the steam
          bubbles in the water collapse when the pressure rises after a turbine trip, grow when it falls after an MFT): the level

@@ -1,0 +1,23 @@
+{
+ "name": "Plant Tools",
+ "short_name": "Plant Tools",
+ "description": "Tools for the instrumentation and control section: find a signal, run the shift, learn the plant.",
+ "start_url": "./index.html",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#f6f7f9",
+ "theme_color": "#1f5fae",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any maskable"
+  }
+ ]
+}

@@ -1003,6 +1003,18 @@ function tcsOil(U, dt) {
     lag = (k, x) => (U[k] = isFinite(U[k]) ? U[k] + ((x - U[k]) * Math.min(dt, K.tau)) / K.tau : x),
     lube = () => Math.max(U.loPa || 0, U.loPb || 0),
     ctl = () => Math.max(U.loCa || 0, U.loCb || 0);
+  /* 3.2.4 unit black-out (elec.js anElecBoStep): the main oil pumps M-1922A / B and the vapour extractor M-1937 are on MCC-EMP11
+     (K1AU3E1-0032): their contactors drop with the voltage and EMP-11 is live again on DG1 after AN_EL_BO.emp; then the MOP in AUTO
+     starts on its low discharge (TB sheets), the one in MANUAL stays stopped. The control oil pumps P-1931A / B are not on MCC-EMP11:
+     they stay stopped while the bus is dead. The EOP P-1923 is DC (DDP-11 battery) and starts on the bearing oil <= 1.05 as before */
+  const bo = typeof anElecBoStep === 'function' ? anElecBoStep(U, dt) : { dead: false, emp: true };
+  if (bo.dead) {
+    c.cop[0] = c.cop[1] = false;
+    if (!bo.emp) {
+      c.mop[0] = c.mop[1] = false;
+      c.vex = false;
+    }
+  }
   /* the automatic starts are in the sheets TB-1, TB-2, TB-21, TB-22 (tcs-trip.js) */
   tcsOilSet(c);
   lag('loPa', c.mop[0] ? K.mop : 0);
