@@ -30,8 +30,123 @@
   const keyAt = (key, t) => {
     const k = key.slice(0, 3);
     if (k === 'pv:' || k === 'sv:' || k === 'mv:') return (lAt(key.slice(3), t) || {})[k.slice(0, 2)] ?? null;
+    if (key.slice(0, 2) === 'x:') {
+      const v = vv[key.slice(2)] || {};
+      return v.pct != null ? v.pct : v.open == null ? null : v.open ? 100 : 0;
+    }
     return vAt(key, t);
   };
+  /* ---- the two mini pop-ups: content from hx-cards.js (the rows the app reads from its logic), state kept here ---- */
+  const CARDS = window.HXCARDS || { valves: {}, loops: {} },
+    fieldNow = {},
+    amNow = {};
+  const modeWord = m =>
+    /MAN/i.test(m || '') ? 'Manual' : /REM/i.test(m || '') ? 'Remote' : /AUT/i.test(m || '') ? 'Auto' : null;
+  const vOpen = tag => {
+    const v = vv[tag] || {};
+    return v.open != null ? v.open : v.pct != null ? v.pct > 1 : null;
+  };
+  const permOf = tag => {
+    const c = CARDS.valves[tag];
+    if (!c) return vv[tag] ? true : null;
+    return (fieldNow[tag] || 'Remote') !== 'Local' && c.perms.every(p => (/REMOTE/.test(p.t) ? 1 : p.is) === p.need);
+  };
+  function card(kind, id) {
+    if (kind === 'loop') {
+      const c = CARDS.loops[id],
+        s = lAt(id, now()) || {},
+        reg = R.loops[id] || {};
+      if (!c && !lp[id]) return null;
+      const C = c || {},
+        modes = (C.modes || []).map(m => ({ R: 'Remote', A: 'Auto', M: 'Manual', MAN: 'Manual' })[m]),
+        pv = s.pv != null ? s.pv : C.pv != null ? C.pv * (1 + rip(id, now()) * 0.6) : null;
+      return {
+        name: reg.t || C.name || id,
+        tag: id + (C.name ? ' · ' + C.name.replace(/^#1 /, '') : ''),
+        pv,
+        sv: s.sv != null ? s.sv : null,
+        mv: s.mv != null ? s.mv : null,
+        unit: (C.unit || s.unit || '').replace('cm2', 'cm²'),
+        dp: C.hi != null && C.hi <= 15 ? 2 : 1,
+        lo: C.lo,
+        hi: C.hi,
+        modes,
+        mode: modeWord(s.mode) || (modes.length === 1 ? 'Manual' : null),
+        svFree: !/from the logic/i.test(C.note || '') && !/^REMOTE/i.test(C.note || ''),
+        note:
+          {
+            'REMOTE: AUTO, SV from the logic path': 'Remote: the set point comes from the logic.',
+            'LOCAL: operator SV (COS)': 'Local set point: the operator gives it.',
+            'SV: operator (COS)': 'The operator gives the set point.',
+            'SV: from the logic path': 'The set point comes from the logic.'
+          }[C.note] || '',
+        trend: [
+          ['Measured', 'pv:' + id, C.unit || '', 1],
+          ['Output', 'mv:' + id, '%', 1]
+        ]
+      };
+    }
+    const c = CARDS.valves[id],
+      v = vv[id],
+      m = R.machines[id] || {};
+    if (!c && !v && !st[id]) return null;
+    if (kind === 'mach' && st[id])
+      return {
+        name: m.t && m.t.length > 14 ? m.t : id,
+        tag: id,
+        sheet: (m.bind && (m.bind.ad || '')) || '',
+        state: st[id],
+        cmds: ['start', 'stop'],
+        perms: [],
+        reads: [],
+        mon: []
+      };
+    const C = c || { perms: [], reads: [], mon: [] },
+      o = vOpen(id);
+    return {
+      name: m.t && m.t.length > 14 ? m.t : (C.title || id).replace(/^.*SYSTEM /, ''),
+      tag: id,
+      sheet: C.sheet || (v && v.bind) || '',
+      state: o == null ? null : o ? 'open' : 'closed',
+      pct: v && v.pct != null ? v.pct : o == null ? null : o ? 100 : 0,
+      field: C.field ? ['Remote', 'Local'] : null,
+      fieldNow: fieldNow[id] || 'Remote',
+      am: C.am ? ['Auto', 'Manual'] : null,
+      amNow: amNow[id] || (v && /AUTO/i.test(v.mode || '') && !/MANUAL/i.test(v.mode || '') ? 'Auto' : 'Manual'),
+      cmds: C.stop ? ['open', 'stop', 'close'] : ['open', 'close'],
+      perms: C.perms.map(p =>
+        Object.assign({}, p, /REMOTE/.test(p.t) ? { is: (fieldNow[id] || 'Remote') === 'Local' ? 0 : 1 } : {})
+      ),
+      reads: C.reads,
+      mon: C.mon.map(p =>
+        /FULL(Y)? ?OPEN/.test(p.t)
+          ? Object.assign({}, p, { is: o ? 1 : 0 })
+          : /FULL(Y)? ?CLOSED|SOV CLOSED/.test(p.t)
+            ? Object.assign({}, p, { is: o ? 0 : 1 })
+            : p
+      ),
+      trend: [['Position', 'x:' + id, '%', 0]]
+    };
+  }
+  function act(kind, id, cmd, val) {
+    if (kind === 'loop') {
+      const s = lp[id] || (lp[id] = {});
+      if (cmd === 'mode') s.mode = String(val).toUpperCase();
+      if (cmd === 'mv') s.mv = Math.max(0, Math.min(100, (s.mv || 0) + +val));
+      if (cmd === 'sv') s.sv = (s.sv != null ? s.sv : s.pv || 0) + +val;
+      return;
+    }
+    if (cmd === 'field') fieldNow[id] = val;
+    if (cmd === 'am') amNow[id] = val;
+    if (cmd === 'open' || cmd === 'close')
+      vv[id] = Object.assign(
+        {},
+        vv[id],
+        { open: cmd === 'open' },
+        vv[id] && vv[id].pct != null ? { pct: cmd === 'open' ? 100 : 0 } : {}
+      );
+    if (cmd === 'start' || cmd === 'stop') st[id] = cmd === 'start' ? 'run' : 'stop';
+  }
   HX.data = {
     time: now,
     value: k => vAt(k, now()),
@@ -42,8 +157,10 @@
           ? { st: null, mode: null, perm: null }
           : null,
     loop: tag => lAt(tag, now()),
-    valve: tag => vv[tag] || null,
+    valve: tag => (vv[tag] ? Object.assign({}, vv[tag], { perm: permOf(tag) }) : null),
     flag: () => true,
+    card,
+    act,
     open: (kind, id, second) => face(kind, id, second)
   };
   /* the history that a real recorder would already hold: two hours, so the Trends view is not empty on the first look */

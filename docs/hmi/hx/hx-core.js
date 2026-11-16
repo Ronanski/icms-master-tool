@@ -99,6 +99,13 @@
       });
   };
 
+  /* a pipe as a tube: a darker edge, the body in the colour of its medium, a light line along its top, the moving dashes */
+  const tube = (d, med, w, dash) =>
+    `<path class="hx-lne" d="${d}" style="stroke:color-mix(in srgb, var(--hx-m-${med}) 55%, var(--hx-ink));stroke-width:${w + 1.8}${dash ? ';stroke-dasharray:6 5' : ''}"/>` +
+    `<path class="hx-ln" d="${d}" style="stroke:var(--hx-m-${med});stroke-width:${w}${dash ? ';stroke-dasharray:6 5' : ''}"/>` +
+    (w >= 3.5 ? `<path class="hx-lnh" d="${d}" style="stroke-width:${Math.max(1, w * 0.26)}"/>` : '') +
+    `<path class="hx-lnf" d="${d}"/>`;
+
   /* ---------- geometry ---------- */
   const rpath = (p, r) => {
     r = r == null ? 7 : r;
@@ -349,10 +356,13 @@
         }
       }
     }
-    const yn =
-      it.k === 'mach'
-        ? `<g class="hx-yn" data-yn="${esc(it.mach)}" transform="translate(${n1(box[2] + 2)} ${n1(box[1] - 2)})"><title>Permissive · trend · monitor</title><rect width="14" height="14" rx="3"/><text x="7" y="10.4" text-anchor="middle">-</text></g>`
-        : '';
+    /* the Y / N square (second faceplate) of a machine or an on / off valve: on the side away from its words */
+    const ynId = it.k === 'mach' ? 'mach:' + it.mach : it.k === 'valve' ? 'valve:' + it.valve : '',
+      ynX = it.yn ? it.yn[0] : lab === 'r' ? box[0] - 18 : box[2] + 4,
+      ynY = it.yn ? it.yn[1] : lab === 'b' ? box[1] - 2 : side ? box[1] - 4 : box[1] - 2;
+    const yn = ynId
+      ? `<g class="hx-yn" data-yn="${esc(ynId)}" transform="translate(${n1(ynX)} ${n1(ynY)})"><title>Permissive · trend · monitor</title><rect width="14" height="14" rx="3"/><text x="7" y="10.4" text-anchor="middle">-</text></g>`
+      : '';
     const attr = open
       ? ` data-open="${esc(open)}" tabindex="0" role="button" aria-label="${esc(it.name || tg)}"`
       : it.go
@@ -368,7 +378,8 @@
             ? ` data-lv2="${esc(it.loop)}"`
             : '';
     const lv = it.level ? ` data-level="${esc(it.level.join('|'))}"` : '';
-    return `<g class="hx-node hx-none"${attr}${on}${lv} transform="translate(${n1(x)} ${n1(y)})"><rect class="hx-hit" x="${n1(box[0] - 4)}" y="${n1(box[1] - 4)}" width="${n1(box[2] - box[0] + 8)}" height="${n1(box[3] - box[1] + 8)}"/>${rot ? `<g transform="rotate(${rot})">${sy.svg}</g>` : sy.svg}${words}${yn}</g>`;
+    const nm = it.cname || it.name ? ` data-name="${esc(it.cname || it.name)}"` : '';
+    return `<g class="hx-node hx-none"${attr}${nm}${on}${lv} transform="translate(${n1(x)} ${n1(y)})"><rect class="hx-hit" x="${n1(box[0] - 4)}" y="${n1(box[1] - 4)}" width="${n1(box[2] - box[0] + 8)}" height="${n1(box[3] - box[1] + 8)}"/>${rot ? `<g transform="rotate(${rot})">${sy.svg}</g>` : sy.svg}${words}${yn}</g>`;
   }
 
   /* ---------- lines of a lane ---------- */
@@ -437,7 +448,7 @@
     }
     let ls = '';
     for (const l of lines)
-      ls += `<g class="hx-idle"${l.flow ? ` data-flow="${esc(l.flow)}"` : ' data-flow=""'}><path class="hx-ln" d="${l.d}" style="stroke:var(--hx-m-${l.med});stroke-width:${l.w}${l.dash ? ';stroke-dasharray:6 5' : ''}"/><path class="hx-lnf" d="${l.d}"/></g>`;
+      ls += `<g class="hx-idle"${l.flow ? ` data-flow="${esc(l.flow)}"` : ' data-flow=""'}>${tube(l.d, l.med, l.w, l.dash)}</g>`;
     let lab = '';
     for (const L of lay.lanes)
       if (L.src.label) lab += `<text class="hx-lane" x="26" y="${n1(L.top + 16)}">${esc(L.src.label)}</text>`;
@@ -524,7 +535,7 @@
         ends += `<text class="hx-end" x="${n1(b[0] + dx * 13 + (pp.toSide === 'r' ? 8 : 0))}" y="${n1(b[1] + dy * 13 + (dy > 0 ? 8 : dy < 0 ? -2 : 3.5) - (pp.toSide === 'r' ? 9 : 0))}" text-anchor="${dx > 0 || pp.toSide === 'r' ? 'start' : dx < 0 ? 'end' : 'middle'}">${esc(pp.to)}</text>`;
       }
       const d = rpath(o, pp.r);
-      ls += `<g class="hx-idle" data-flow="${esc(pp.flow || '')}"><path class="hx-ln" d="${d}" style="stroke:var(--hx-m-${pp.med});stroke-width:${w}"/><path class="hx-lnf" d="${d}"/>${ar}</g>`;
+      ls += `<g class="hx-idle" data-flow="${esc(pp.flow || '')}">${tube(d, pp.med, w)}${ar}</g>`;
     }
     let sig = '';
     for (const sg of P.signals || []) sig += `<path class="hx-sig" d="${rpath(path(sg), 4)}"/>`;
@@ -604,7 +615,7 @@
     if (inv.machs.length) {
       h += `<h2 class="hx-sec">Machines · ${inv.machs.length}</h2><div class="hx-cards">`;
       for (const m of inv.machs)
-        h += `<div class="hx-card" data-card-mach="${esc(m.id)}"><span class="t"><b>${esc(m.name)}</b><span class="hx-pill" data-f="st">-----</span></span><span class="g">${esc(m.id)}</span><span class="hx-foot"><span data-f="mode">-----</span><span><button class="hx-pill" data-open="mach:${esc(m.id)}">Control</button> <button class="hx-ynb" data-yn="${esc(m.id)}" title="Permissive · trend · monitor">-</button></span></span></div>`;
+        h += `<div class="hx-card" data-card-mach="${esc(m.id)}"><span class="t"><b>${esc(m.name)}</b><span class="hx-pill" data-f="st">-----</span></span><span class="g">${esc(m.id)}</span><span class="hx-foot"><span data-f="mode">-----</span><span><button class="hx-pill" data-open="mach:${esc(m.id)}">Control</button> <button class="hx-ynb" data-yn="mach:${esc(m.id)}" title="Permissive · trend · monitor">-</button></span></span></div>`;
       h += '</div>';
     }
     if (inv.valves.length) {
@@ -622,6 +633,10 @@
     const D = HX.data,
       k = key.slice(0, 3);
     if (k === 'pv:' || k === 'sv:' || k === 'mv:') return (D.loop(key.slice(3)) || {})[k.slice(0, 2)] ?? null;
+    if (key.slice(0, 2) === 'x:') {
+      const v = D.valve(key.slice(2)) || {};
+      return v.pct != null ? v.pct : v.open == null ? null : v.open ? 100 : 0;
+    }
     return D.value(key);
   };
   REC.watch = key => REC.buf[key] || (REC.buf[key] = []);
@@ -695,11 +710,23 @@
     });
   }
 
+  /* the shading of equipment bodies (hx.css .hxo): one gradient for the whole document, its colours are theme tokens */
+  function shading() {
+    if (document.getElementById('hxg')) return;
+    const d = document.createElement('div');
+    d.setAttribute('aria-hidden', 'true');
+    d.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+    d.innerHTML =
+      '<svg width="0" height="0"><defs><linearGradient id="hxg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--hx-g1)"/><stop offset="0.5" style="stop-color:var(--hx-g2)"/><stop offset="1" style="stop-color:var(--hx-g3)"/></linearGradient></defs></svg>';
+    document.body.append(d);
+  }
+
   /* ---------- mount one page into an element; returns { tick, destroy } ---------- */
   HX.mount = function (host, id, opts) {
     const def = HX.byId[id];
     opts = opts || {};
     if (!def) throw new Error('HX: no page ' + id);
+    shading();
     const inv = inventory(def),
       pr = drawProcess(def);
     host.innerHTML = '';
@@ -728,12 +755,18 @@
       }
       if (t.dataset.go) return opts.go && opts.go(t.dataset.go);
       if (!t.dataset.open && !t.dataset.yn) return;
+      const anchor = t.closest('.hx-node') || t,
+        go = (kind, id, second) =>
+          HX.card
+            ? HX.card(kind, id, second, anchor, anchor.dataset && anchor.dataset.name)
+            : HX.data.open(kind, id, second);
       if (t.dataset.yn) {
         e.stopPropagation();
-        return HX.data.open('mach', t.dataset.yn, true);
+        const [yk, ...yr] = t.dataset.yn.split(':');
+        return go(yk, yr.join(':'), true);
       }
       const [k, ...r] = t.dataset.open.split(':');
-      HX.data.open(k, r.join(':'), false);
+      go(k, r.join(':'), false);
     });
     page.addEventListener('keydown', e => {
       if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.hx-node[data-open],.hx-link')) {
@@ -819,7 +852,8 @@
           if (e.textContent !== t) e.textContent = t;
         });
         Q('.hx-yn[data-yn]').forEach(e => {
-          const p = (D.machine(e.dataset.yn) || {}).perm;
+          const [yk, ...yr] = e.dataset.yn.split(':'),
+            p = ((yk === 'valve' ? D.valve(yr.join(':')) : D.machine(yr.join(':'))) || {}).perm;
           e.setAttribute('class', 'hx-yn ' + (p == null ? '' : p ? 'y' : 'n'));
           e.querySelector('text').textContent = p == null ? '-' : p ? 'Y' : 'N';
         });
@@ -877,7 +911,12 @@
     (def.trends || []).forEach(g => g.pens.forEach(p => REC.watch(p[1])));
     show(view);
     const timer = opts.noTimer ? 0 : setInterval(tick, opts.period || 1000);
-    return { tick, show, def, destroy: () => (clearInterval(timer), (host.innerHTML = '')) };
+    return {
+      tick,
+      show,
+      def,
+      destroy: () => (clearInterval(timer), HX.closeCards && HX.closeCards(), (host.innerHTML = ''))
+    };
   };
 
   /* ---------- the shell of the mockup: page rail + unit strip + one page. The app has its own shell: there use HX.mount only ---------- */

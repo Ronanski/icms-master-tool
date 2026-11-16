@@ -7,7 +7,7 @@ import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rd = f => fs.readFileSync(path.join(dir, f), 'utf8');
-const parts = ['hx-sym.js', 'hx-core.js', 'hx-registry.js', 'hx-sample.js', 'hx-page-reheat.js', 'hx-pages.js'];
+const parts = ['hx-sym.js', 'hx-core.js', 'hx-cards-ui.js', 'hx-registry.js', 'hx-cards.js', 'hx-sample.js', 'hx-page-reheat.js', 'hx-pages.js'];
 
 /* ---- check ---- */
 const win = { location: { hash: '' } };

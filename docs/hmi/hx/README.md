@@ -129,6 +129,18 @@ The user did not accept the first 23 pages as operator graphics (2026-11-17): on
 - The reheat sample was compared with both sheets by three checkers that did not draw it (2026-11-17). They confirmed the order along the cold reheat and hot reheat lines and every tag, and found 3 wrong and 9 missing items; all were fixed (main steam stop valve and its bypass, drain pots DP-MS01 and DP-MS02, MV-AS1394, the taps after the low pressure bypass, XV-HR1010-1, the pressure tap on the common main steam line, the reheater with its inlet header below and outlet header on top). What is still left out, and why, is listed in the head comment of `hx-page-reheat.js`.
 - Flow diagrams: private repo `Ronanski/icms-plant-documents`, `flow-diagram-K1AU3-A1-0-001.zip`: use the RB file (Rev D) when the sheet is in it. Drawing list on page 2 ~ 4 of each PDF. Reheat = `K1AU3-PD-012`, main steam = `K1AU3-PD-011`.
 
+## 6c. The two mini pop-ups (`hx-cards-ui.js`)
+
+User 2026-11-17: "meron yan mini popup for operator control and permissives? may originality dapat ha". Every operable equipment has two cards in the HX design:
+
+- **Control card** (a click on the equipment): state and position, where it is operated (Remote / Local), who decides (Auto / Manual), the commands with a confirm step; for a loop: measured value on its range with the set point mark, set point, output, mode.
+- **Permissive, trend, monitor card** (the Y / N square beside the equipment, or the link at the foot of the control card): the permissive rows (what must be true, what it is now, the DITL row and address), what the logic of the equipment reads, monitor rows, a 15 minute trend.
+- Both stay **tethered**: a thin line joins a card to its equipment, also after it is dragged, so several cards can be open at once.
+- Y = red = complete, N = green; a logic row that is 1 is red, 0 is green.
+- Contract: `HX.data.card(kind, id)` gives everything a card shows, `HX.data.act(kind, id, command, value)` takes every press (the head comment of `hx-cards-ui.js` lists the fields). Without `card()` a click falls back to `HX.data.open()` = the faceplates the app already has.
+- The rows in the mockup are not typed: `tools/dump-logic-rows.js` and `tools/dump-faceplates.js` read them from the app (`DUI.rowInfo` / `rowVal` of the DITL sheet of each valve, `LS_DOCK.interlock` for the permissive rows of a motor valve, the app's own controller faceplate for name, range and mode buttons); `tools/make-cards.py` writes `hx-cards.js`. In the app the adapter calls the same functions live.
+- Not in the data yet: the conditions that force a loop to manual (the card says so), the SOP line-up items of a machine, and the permissive list of the machines of the other pages (only the reheat page was dumped).
+
 ## 7. What is real and what is sample
 
 - Real (from the app): the tags, machine names, loop tags, DITL sheets, English names of the registry; the 150 MW values; the running / stopped states; the rows of the purge and trip lists (text of temporary page 10).

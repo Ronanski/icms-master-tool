@@ -91,24 +91,29 @@
   const bow = (w, h) => `M${P(-w / 2, -h / 2)}L0 0L${P(-w / 2, h / 2)}ZM${P(w / 2, -h / 2)}L0 0L${P(w / 2, h / 2)}Z`;
   S.valve = o => {
     const w = 24,
-      h = 15,
-      k = o.kind || 'manual';
+      h = 16,
+      k = o.kind || 'manual',
+      fl = `<rect class="hxo" x="${n(-w / 2 - 2.2)}" y="${n(-h / 2 - 1.5)}" width="2.6" height="${n(h + 3)}" rx="0.8"/><rect class="hxo" x="${n(w / 2 - 0.4)}" y="${n(-h / 2 - 1.5)}" width="2.6" height="${n(h + 3)}" rx="0.8"/>`;
     let top = '',
       ty = -h / 2;
     if (k === 'control') {
-      top = `<path class="hxn" d="M0 0V-13"/><path class="hxo" d="M-9 -13A9 8 0 0 1 9 -13Z"/>`;
-      ty = -21;
+      /* diaphragm actuator: yoke, plate, dome */
+      top = `<path class="hxn" d="M0 -1V-12M-4 -6L-6 -12M4 -6L6 -12"/><path class="hxo" d="M-10.5 -12H10.5V-14.5Q10.5 -23 0 -23Q-10.5 -23 -10.5 -14.5Z"/><path class="hxd" d="M-10.5 -14.5H10.5"/>`;
+      ty = -23;
     } else if (k === 'motor') {
-      top = `<path class="hxn" d="M0 0V-10"/><rect class="hxo" x="-7.5" y="-24" width="15" height="14" rx="2"/><circle class="hxd" cy="-17" r="3.6"/>`;
-      ty = -24;
+      /* electric actuator: gear box with its hand wheel */
+      top = `<path class="hxn" d="M0 -1V-10"/><rect class="hxo" x="-8.5" y="-23" width="14" height="13" rx="2"/><circle class="hxo" cx="8.6" cy="-16.5" r="4.2"/><path class="hxd" d="M8.6 -20.7V-12.3M4.4 -16.5H12.8"/>`;
+      ty = -23;
     } else if (k === 'shutoff') {
-      top = `<path class="hxn" d="M0 0V-10"/><rect class="hxo" x="-7" y="-22" width="14" height="12" rx="1"/><path class="hxd" d="M-7 -10L7 -22"/>`;
-      ty = -22;
+      /* piston actuator of an on / off valve */
+      top = `<path class="hxn" d="M0 -1V-9"/><rect class="hxo" x="-6.5" y="-23" width="13" height="14" rx="1.6"/><path class="hxd" d="M-6.5 -17H6.5M0 -17V-9"/>`;
+      ty = -23;
     } else if (k === 'manual') {
-      top = `<path class="hxn" d="M0 0V-10M-7 -10H7"/>`;
-      ty = -11;
+      top = `<path class="hxn" d="M0 -1V-11"/><rect class="hxk" x="-8" y="-13.2" width="16" height="2.8" rx="1.4"/>`;
+      ty = -13;
     } else if (k === 'safety') {
-      top = `<path class="hxn" d="M0 0L0 -5L4 -7L-4 -11L4 -15L-4 -19L0 -21"/>`;
+      /* spring loaded: bonnet with its spring */
+      top = `<path class="hxo" d="M-4.5 -2H4.5V-22H-4.5Z"/><path class="hxd" d="M-4.5 -5L4.5 -8L-4.5 -11L4.5 -14L-4.5 -17L4.5 -20"/>`;
       ty = -22;
     }
     const body =
@@ -116,9 +121,9 @@
         ? `<path class="hxo" d="${bow(w, h)}"/><path class="hxk" d="M${P(w / 2, -h / 2)}L0 0L${P(w / 2, h / 2)}Z"/>`
         : `<path class="hxo hxs" d="${bow(w, h)}"/>`;
     return {
-      box: [-w / 2 - 1, ty - 1, w / 2 + 1, h / 2 + 1],
-      ports: { l: [-w / 2, 0], r: [w / 2, 0], t: [0, ty], b: [0, h / 2] },
-      svg: top + body
+      box: [-w / 2 - 3, ty - 1, w / 2 + 3, h / 2 + 2.5],
+      ports: { l: [-w / 2 - 2, 0], r: [w / 2 + 2, 0], t: [0, ty], b: [0, h / 2] },
+      svg: top + fl + body + (k === 'check' || k === 'plain' ? '' : '<circle class="hxk" r="1.6"/>')
     };
   };
   /* damper: a piece of duct with blades; the page turns g[data-bl] by the position (0 % = shut = blades across the flow) */
@@ -302,7 +307,7 @@
         in: [o.flip ? w / 2 - 12 : -w / 2 + 12, (-h / 2) * (o.flip ? b : a) - 0],
         out: [o.flip ? -w / 2 + 14 : w / 2 - 14, (h / 2) * (o.flip ? a : b) * 0.98]
       },
-      svg: `<path class="hxo" d="M${P(-w / 2, (-h / 2) * a)}L${P(w / 2, (-h / 2) * b)}V${n((h / 2) * b)}L${P(-w / 2, (h / 2) * a)}Z"/><path class="hxd" d="M${P(-w / 6, (-h / 2) * (a + (b - a) / 3))}V${n((h / 2) * (a + (b - a) / 3))}M${P(w / 6, (-h / 2) * (a + ((b - a) * 2) / 3))}V${n((h / 2) * (a + ((b - a) * 2) / 3))}"/>`
+      svg: `<path class="hxo" d="M${P(-w / 2, (-h / 2) * a)}L${P(w / 2, (-h / 2) * b)}V${n((h / 2) * b)}L${P(-w / 2, (h / 2) * a)}Z"/><path class="hxd" d="${[0.14, 0.3, 0.46, 0.62, 0.78, 0.92].map(f => `M${P(-w / 2 + w * f, (-h / 2) * (a + (b - a) * f) + 3)}V${n((h / 2) * (a + (b - a) * f) - 3)}`).join('')}"/>`
     };
   };
   S.generator = o => {

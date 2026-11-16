@@ -21,7 +21,7 @@
   const drain = (id, x, y, valve, o) => ({
     items: [
       at(E('pot', '', '', []), x, y + 21, { id: id + 'p' }),
-      at(valve, x, y + ((o && o.dy) || 78), { id: id + 'v', rot: -90, lab: (o && o.lab) || 'r' })
+      at(valve, x, y + ((o && o.dy) || 78), { id: id + 'v', rot: -90, lab: (o && o.lab) || 'r', yn: o && o.yn })
     ],
     pipes: [
       { med: 'drain', w: 2.4, arrow: false, pts: [[x, y], id + 'p.t'] },
@@ -54,14 +54,15 @@
     'd3',
     640,
     690,
-    X('XV-HR1021', '', { tag: 'XV-HR1021 · DP-HR01', cname: 'Hot reheat drain pot DP-HR01 valve' })
+    X('XV-HR1021', '', { tag: 'XV-HR1021 · DP-HR01', cname: 'Hot reheat drain pot DP-HR01 valve' }),
+    { yn: [13, -36] }
   );
   const d4 = drain(
     'd4',
     494,
     690,
     X('XV-HR1022', '', { tag: 'XV-HR1022 · DP-HR02', cname: 'Hot reheat drain pot DP-HR02 valve' }),
-    { toSide: 'r' }
+    { toSide: 'r', yn: [13, -36] }
   );
   const d5 = drain('d5', 600, 186, E('valve', '', 'XV-MS1023 · DP-MS02', [], { kind: 'shutoff' }), {
     lab: 'l',
@@ -83,8 +84,13 @@
       items: [
         /* ---- main steam to the turbine: stop valve with its bypass, drain pot, stop and control valves ---- */
         at(L('drum-steam', 'Main steam', { back: true }), 170, 44, { id: 'ms' }),
-        at(X('MV-MS1391', 'Main steam stop valve', { wrap: 12 }), 170, 250, { id: 'msv', rot: -90, lab: 'l' }),
-        at(X('MV-MS1392', 'Stop valve bypass'), 214, 250, { id: 'msb', rot: -90, lab: 'r' }),
+        at(X('MV-MS1391', 'Main steam stop valve', { wrap: 12 }), 170, 250, {
+          id: 'msv',
+          rot: -90,
+          lab: 'l',
+          yn: [-34, -34]
+        }),
+        at(X('MV-MS1392', 'Stop valve bypass'), 214, 250, { id: 'msb', rot: -90, lab: 'r', yn: [14, 22] }),
         at(E('pot', '', '', []), 224, 333, { id: 'dms1p' }),
         at(X('XV-MS1011', '', { tag: 'XV-MS1011 · DP-MS01', cname: 'Main steam drain pot DP-MS01 valve' }), 224, 368, {
           id: 'dms1v',
@@ -413,7 +419,7 @@
         { x: 150, y: 606, s: 'Intermediate and', cls: 'hx-name', anchor: 'end' },
         { x: 150, y: 622, s: 'low pressure', cls: 'hx-name', anchor: 'end' },
         { x: 150, y: 638, s: 'turbine', cls: 'hx-name', anchor: 'end' },
-        { x: 364, y: 652, s: 'Intercept valves', key: 'ZI-ICV', unit: '%' },
+        { x: 364, y: 658, s: 'Intercept valves', key: 'ZI-ICV', unit: '%' },
         { x: 585, y: 440, s: 'Cold reheat', cls: 'hx-zone', anchor: 'middle' },
         { x: 690, y: 678, s: 'Hot reheat', cls: 'hx-zone', anchor: 'middle' },
         { x: 868, y: 806, s: 'Reheat temperature: flue gas dampers of the back pass', cls: 'hx-zone' }
