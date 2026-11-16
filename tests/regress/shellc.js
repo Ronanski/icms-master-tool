@@ -13,7 +13,7 @@ let fail=0;const ck=(ok,w)=>{console.log((ok?'PASS ':'FAIL ')+w);if(!ok)fail++};
 const errs=[];const wait=ms=>new Promise(r=>setTimeout(r,ms));
 /* one real click (Playwright moves the mouse to the element); a covered or missing element is a FAIL line, not a crash */
 const click=async(page,sel,txt)=>{try{const l=txt?page.locator(sel,{hasText:typeof txt==='string'?new RegExp('^\\s*'+txt.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')):txt}).first():page.locator(sel).first();await l.click({timeout:8000});return true}catch(e){console.log('     click '+sel+(txt?' "'+txt+'"':'')+': '+String(e.message).split('\n')[0]);return false}};
-const step=(page,sec)=>page.evaluate(sec=>{const C=AN.sheets.find(s=>s.name==='ABC-001C');for(let k=0;k<sec*2;k++){AN.stepSet(C,.5);WORLD.tick(.5)}},sec);
+const step=(page,sec)=>page.evaluate(sec=>{const C=AN.sheets.find(s=>s.name==='ABC-001C');for(let k=0;k<sec*2;k++){WORLD.live=true;AN.stepSet(C,.5);WORLD.tick(.5)}},sec);
 try{
  const ctx=await browser.newContext({viewport:{width:1366,height:768}});
  await ctx.addInitScript(()=>{try{localStorage.setItem('ls-shell','c')}catch(e){}});

@@ -43,7 +43,10 @@
     [/\bMWP\s*[AC]\b/, 1, 0, 'MWP-A 20.5 A, MWP-C 20.8 A'],
     [/\bMWP\s*B\b/, 0, 0, 'MWP-B stopped, R M'],
     [/NOT\s+EMERGENCY\s+STOP/, 1, 0, 'local emergency stop released (N.C. contact), DITL-21A row 18'],
-    [/BOTTOM ASH SCREW COOLER|ASH COOLER/, 0, 0, 'L-1060A ~ D ASH COOLER stopped'],
+    /* 3.2.3-beta.265 (SOHEE, Jennie): the coolers stand in their AUTO SEQUENCE (DITL-21B row 2 AUTO SELECTED, DITL-21C row 8 AUTO SEQUENCE MODE):
+       the logic starts and stops them on the overall furnace DP (DITL-21D > 1500 cycle, > 1900 speed control, < 1600 / < 1400 stop). Stopped at
+       the load as on 16.PNG (L-1060A ~ D stopped at 1426 mmH2O); the snapshot shows MANUAL, the design (FHI, DITL-21) runs them in AUTO */
+    [/BOTTOM ASH SCREW COOLER|ASH COOLER/, 0, 1, 'L-1060A ~ D ASH COOLER stopped, AUTO SEQUENCE'],
     /* the STOP contact of a running conveyor is 0: it matched the rule below and held the ash coolers off (DITL-21A, Mina item 2) */
     [/CHAIN CONVEYOR.*STOP/, 0, 0, 'L-1090 CHAIN CONVEYOR STOP contact'],
     [/CHAIN CONVEYOR/, 1, 0, 'L-1090 CHAIN CONVEYOR running'],
