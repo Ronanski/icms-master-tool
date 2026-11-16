@@ -1,0 +1,532 @@
+<title>Signal Path Finder</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{--sans:"IBM Plex Sans",system-ui,sans-serif;--mono:var(--sans);--bg:#f7f8fa;--paper:#ffffff;--fg:#1b2129;--muted:#5b6673;--faint:#a3acb6;--edge:#d9dee4;--fill:#f0f2f5;--tp:#c0392b;--tpbg:#fdecea;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.45;font-variant-numeric:tabular-nums;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1240px;margin:0 auto}
+h1{font-size:20px;font-weight:600;margin:0 0 10px}h2{font-size:16px;font-weight:600;margin:0 0 6px}b{font-weight:600}
+.search{position:relative;max-width:760px}
+#q{width:100%;font:inherit;font-size:16px;padding:12px 14px;border:1.5px solid var(--edge);border-radius:10px;background:var(--paper);color:var(--fg)}
+#q:focus{outline:2px solid #1f6fd1;outline-offset:1px}
+#sug{list-style:none;margin:4px 0 0;padding:0;background:var(--paper);border:1px solid var(--edge);border-radius:8px;overflow:hidden}
+#sug:empty{display:none}
+#sug li{padding:8px 12px;cursor:pointer;font-size:14px;border-top:1px solid var(--edge)}
+#sug li:first-child{border-top:0}
+#sug li b{font-weight:600;margin-right:8px}
+#sug li:hover{background:var(--fill)}
+.top{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin-top:14px;align-items:start}
+@media (max-width:820px){.top{grid-template-columns:1fr}}
+.head{background:var(--paper);border:1px solid var(--edge);border-radius:10px;padding:14px 16px}
+.head .tag{font-size:16px;font-weight:600}
+.head .desc{font-size:14px;margin:2px 0 6px}
+.facts{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+.facts b{color:var(--fg);font-weight:600}
+.split{background:var(--paper);border:1.5px solid var(--tp);border-radius:10px;padding:12px 16px}
+.ffi{margin:0 0 8px;font-size:13px;color:var(--muted)}
+.ffl{display:flex;flex-direction:column;gap:6px}
+.ffr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ffn{min-width:190px;flex:0 1 260px;font-weight:600;font-size:14px}.ffn small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.ffr input,.ffm input{width:96px;font:inherit;padding:5px 8px;border:1px solid var(--edge);border-radius:6px;background:var(--paper);color:var(--fg)}
+.ffr select{font:inherit;padding:5px 8px;border:1px solid var(--edge);border-radius:6px;background:var(--paper);color:var(--fg)}
+.ffr .u{color:var(--muted);font-size:12px;min-width:40px}
+.ffs{font:600 12px var(--sans);padding:3px 8px;border-radius:4px}.ffs.ok{background:#e6f4ea;color:#1e6b34}.ffs.bad{background:var(--tpbg);color:var(--tp)}
+.ffv{margin-top:10px;border-top:1px solid var(--edge);padding-top:8px;font-size:14px}
+.ffh{margin:6px 0}.ffh.bad{color:var(--tp)}.ffh.ok{color:#1e6b34}
+.ffp{margin:4px 0 6px;padding-left:22px}.fft{margin:4px 0;padding-left:20px}.fft li{margin:4px 0}
+.ffm{display:inline-flex;align-items:center;gap:6px;margin-left:8px;flex-wrap:wrap}.ffm em{font-style:normal;font-weight:600}.ffm em.ok{color:#1e6b34}.ffm em.bad{color:var(--tp)}
+.cell.sus svg.dev{outline:3px solid var(--tp);outline-offset:4px;border-radius:4px}
+.split h2{font-size:16px;color:var(--fg);margin:0 0 6px}
+.split ol{margin:0;padding-left:20px}
+.split li{margin:2px 0}
+.scrs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}
+.scrs span{background:#e7f0fb;color:#123a66;border:1px solid #b9d0ec;font-size:12px;border-radius:4px;padding:1px 8px}
+.scrs i{color:var(--faint);font-style:normal}
+.calc{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;font-size:14px}
+.calc input{width:110px;font:inherit;padding:4px 8px;border:1px solid var(--edge);border-radius:6px;background:var(--paper);color:var(--fg)}
+.key{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--muted);margin:14px 0 4px}
+.key span{display:inline-flex;align-items:center;gap:6px}
+.canvas{position:relative;display:grid;justify-content:center;row-gap:92px;padding-top:40px!important;padding:22px 28px 30px;margin-top:6px;border-radius:12px;
+  background-color:#fff;background-image:radial-gradient(#dfe3e8 1px,transparent 1px);background-size:18px 18px;border:1px solid var(--edge)}
+.wires{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.wls{position:absolute;inset:0;pointer-events:none}
+.pnls{position:absolute;inset:0;pointer-events:none}
+.pnl{position:absolute}
+.pnl.cab{border:7px solid #9aa2ab;border-radius:3px;background:linear-gradient(#eef1f4,#e4e8ec);box-shadow:inset 0 0 0 1.5px #6f7882,inset 0 0 0 5px #d3d8dd,inset 0 0 18px rgba(0,0,0,.10),0 0 0 1.5px #5f6871,0 3px 6px rgba(0,0,0,.18)}
+.pnl.cab .roof{position:absolute;left:-13px;right:-13px;top:-27px;height:20px;border-radius:3px 3px 0 0;background:linear-gradient(#b8bfc6,#8c949d);border:1.5px solid #5f6871;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.pnl.cab .vent{position:absolute;right:14px;top:4px;display:flex;gap:4px}
+.pnl.cab .vent i{display:block;width:16px;height:9px;border-radius:2px;background:repeating-linear-gradient(#4b535c 0 1.5px,#a7afb7 1.5px 3px)}
+.pnl.cab .hg{position:absolute;left:-10px;width:6px;height:26px;border-radius:2px;background:linear-gradient(90deg,#4b535c,#8c949d);border:1px solid #3d444b}
+.pnl.cab .h1{top:24px}.pnl.cab .h2{bottom:24px}
+.pnl.cab .hd{position:absolute;right:-11px;top:calc(50% - 26px);width:8px;height:52px;border-radius:4px;background:linear-gradient(90deg,#3d444b,#9aa2ab,#3d444b);border:1px solid #2e343a}
+.pnl.cab .base{position:absolute;left:4px;right:4px;bottom:-22px;height:13px;background:#2e343a;border-radius:0 0 2px 2px;box-shadow:inset 0 2px 0 #4b535c}
+.pnl.room{border:2px dashed #7d8791;border-radius:12px;background:rgba(232,238,243,.6)}
+.plate{position:absolute;left:14px;top:-24px;z-index:2;color:#f5f7f9;background:#24292f;border:1.5px solid #c9ced3;border-left:7px solid var(--bc);font:600 12px/1 var(--sans);letter-spacing:.04em;text-transform:uppercase;padding:4px 8px;font-size:12px;border-radius:2px;box-shadow:0 1px 2px rgba(0,0,0,.35);white-space:nowrap;max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis}
+.pnl.room .plate{top:-12px;max-width:calc(100% - 28px)}
+@media (max-width:620px){.plate{font-size:12px;letter-spacing:0;padding:4px 7px;left:6px;max-width:calc(100% - 12px)}}
+.wl{position:absolute;font-size:12px;line-height:1.3;color:var(--muted);text-align:center;overflow-wrap:anywhere}
+.wl .mono{color:var(--fg)}
+.cell{position:relative;width:230px;z-index:1}
+.cell svg.dev{display:block;width:230px;height:150px;overflow:visible}
+.area{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px}
+.nm{font-size:14px;font-weight:600;margin-top:12px;line-height:1.3}
+.tpb{display:inline-block;margin-left:6px;vertical-align:2px;font:600 12px var(--sans);color:var(--tp);background:var(--tpbg);border-radius:4px;padding:1px 6px}
+.fx{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;margin:6px 0 0;font-size:13px;line-height:1.35}
+.fx dt{color:var(--muted);font-size:12px;padding-top:1px;white-space:nowrap}
+.fx dd{margin:0;color:var(--fg);overflow-wrap:anywhere}.fx dd.mono{}
+.fx dt.tpk{color:var(--tp);font-weight:600}.fx dd.tpv{background:var(--tpbg);border-radius:4px;padding:1px 6px}
+.fx dt.sck{color:#123a66;font-weight:600}
+
+.sub{font-size:12px;color:var(--muted);line-height:1.35}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.chips span{font-size:12px;background:#fff;border:1px solid var(--edge);border-radius:4px;padding:0 6px}
+.chips.sw span{background:#e8f5ee;border-color:#a8d8bf}
+.tp{margin-top:5px;font-size:12px;background:var(--tpbg);border-radius:6px;padding:3px 8px}
+.tp em{font-style:normal;font-weight:600;color:var(--tp)}
+.brh{padding-left:14px}.brn{margin-top:66px;border:1.5px dashed #6b8fbf;border-radius:8px;background:#f4f8fd;padding:6px 8px 8px}
+.brh{font-size:12px;font-weight:600;color:#1f4f8a;margin-bottom:4px}
+.brs{display:block;width:100%;height:auto;overflow:visible}
+.brt{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted);margin-top:4px}.brt b{color:var(--fg)}
+.scrn{margin-top:5px;font-size:12px;background:#e7f0fb;border-radius:6px;padding:3px 8px}
+.scrn em{font-style:normal;font-weight:600;color:#123a66}
+.src{margin-top:18px;font-size:12px;color:var(--muted)}
+</style>
+<div class="wrap">
+  <h1>Signal path finder · Unit 1</h1>
+  <div class="search"><input id="q" type="search" placeholder="Type a tag, address or description, e.g. GCP-AO1005, AI0128, drum pressure" autocomplete="off" aria-label="Search signal"><ul id="sug"></ul></div>
+  <div id="out"></div>
+  <p class="src">Sources: LMYP-1(#1) WIRING xls, DCS I/O list and loop lists, loop diagram K1AU3-E2-0-104 (field cable and JB), network K1AU3-E2-0-106 sh2 and E2-0-109 (I/O LAN, FL-NET), GCP GSE-2013-0083, TCS 331DM07733 / 331DM10710, SCADA LM2-S1-O-001 and K1AU3-E1-0-112. 2,703 hardwired DCS signals.</p>
+</div>
+<script>
+const DATA=@@DATA@@;
+const R=DATA.R,N=DATA.N,BY={};R.forEach(r=>{BY[r.a]=r});
+const SPEC={A:'1.0 mm² × 18 pair',B:'1.0 mm² × 12 pair',C:'1.0 mm² × 8 pair',D:'1.0 mm² × 5 pair',E:'1.0 mm² × 3 pair',F:'1.0 mm² × 1 pair',G:'1.3 mm² × 1 pair',H:'1.0 mm² × 1 triad',I:'1.0 mm² × 3 triad',J:'1.0 mm² × 5 triad',K:'1.0 mm² × 8 triad',L:'fiber, 6 core'};
+const IC={
+ tx:'<svg viewBox="0 0 56 44"><circle cx="28" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="2"/><rect x="22" y="27" width="12" height="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 39h24" stroke="currentColor" stroke-width="2"/><path d="M28 16l6-5" stroke="currentColor" stroke-width="1.6"/></svg>',
+ sw:'<svg viewBox="0 0 56 44"><path d="M8 26h12l16-10M36 26h12" stroke="currentColor" stroke-width="2.2" fill="none"/><circle cx="20" cy="26" r="2.4" fill="currentColor"/><circle cx="36" cy="26" r="2.4" fill="currentColor"/></svg>',
+ mo:'<svg viewBox="0 0 56 44"><circle cx="28" cy="22" r="14" fill="none" stroke="currentColor" stroke-width="2"/><text x="28" y="27" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor" font-family="IBM Plex Sans,sans-serif">M</text></svg>',
+ va:'<svg viewBox="0 0 56 44"><path d="M10 14l36 18V14L10 32z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M28 23V8M20 8h16" stroke="currentColor" stroke-width="2"/></svg>',
+ vt:'<svg viewBox="0 0 56 44"><circle cx="22" cy="22" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="34" cy="22" r="10" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+ tb:'<svg viewBox="0 0 56 44"><rect x="8" y="10" width="40" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><g fill="currentColor"><circle cx="17" cy="22" r="3"/><circle cx="28" cy="22" r="3"/><circle cx="39" cy="22" r="3"/></g></svg>',
+ fu:'<svg viewBox="0 0 56 44"><rect x="14" y="16" width="28" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 22h10M42 22h10M18 22q5-6 10 0t10 0" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+ xd:'<svg viewBox="0 0 56 44"><rect x="10" y="4" width="36" height="36" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 16q4-6 8 0t8 0" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="35" y="34" text-anchor="middle" font-size="10" font-weight="600" fill="currentColor" font-family="IBM Plex Sans,sans-serif">mA</text></svg>',
+ jb:'<svg viewBox="0 0 56 44"><rect x="8" y="4" width="40" height="36" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 12v20M28 12v20M40 12v20" stroke="currentColor" stroke-width="4"/></svg>',
+ mpl:'<svg viewBox="0 0 56 44"><rect x="8" y="2" width="40" height="40" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M18 8v28M38 8v28" stroke="currentColor" stroke-width="5"/><path d="M18 14h20M18 22h20M18 30h20" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2"/></svg>',
+ card:'<svg viewBox="0 0 56 44"><rect x="18" y="2" width="20" height="40" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><g fill="currentColor"><rect x="22" y="9" width="6" height="2"/><rect x="22" y="15" width="6" height="2"/><rect x="22" y="21" width="6" height="2"/><rect x="22" y="27" width="6" height="2"/></g><circle cx="33" cy="9" r="1.8" fill="#2fb35a"/></svg>',
+ mcu:'<svg viewBox="0 0 56 44"><rect x="6" y="8" width="20" height="28" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="30" y="8" width="20" height="28" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><text x="16" y="27" text-anchor="middle" font-size="10" font-weight="600" fill="currentColor" font-family="IBM Plex Sans,sans-serif">A</text><text x="40" y="27" text-anchor="middle" font-size="10" font-weight="600" fill="currentColor" font-family="IBM Plex Sans,sans-serif">B</text></svg>',
+ hub:'<svg viewBox="0 0 56 44"><rect x="4" y="15" width="48" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><g fill="currentColor"><rect x="8" y="19" width="5" height="5"/><rect x="15" y="19" width="5" height="5"/><rect x="22" y="19" width="5" height="5"/><rect x="29" y="19" width="5" height="5"/><rect x="36" y="19" width="5" height="5"/></g><circle cx="46" cy="22" r="1.8" fill="#2fb35a"/></svg>',
+ cpu:'<svg viewBox="0 0 56 44"><rect x="6" y="4" width="20" height="36" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="30" y="4" width="20" height="36" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="16" cy="11" r="2" fill="#2fb35a"/><circle cx="40" cy="11" r="2" fill="#2fb35a"/><text x="16" y="30" text-anchor="middle" font-size="10" font-weight="600" fill="currentColor" font-family="IBM Plex Sans,sans-serif">A</text><text x="40" y="30" text-anchor="middle" font-size="10" font-weight="600" fill="currentColor" font-family="IBM Plex Sans,sans-serif">B</text></svg>',
+ scr:'<svg viewBox="0 0 56 44"><rect x="6" y="4" width="44" height="28" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="10" y="8" width="36" height="20" fill="var(--scr)"/><path d="M20 40h16M28 32v8" stroke="currentColor" stroke-width="2"/></svg>',
+ rtu:'<svg viewBox="0 0 56 44"><rect x="10" y="2" width="36" height="40" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 10h24M16 17h24M16 24h24" stroke="currentColor" stroke-width="3"/><circle cx="28" cy="34" r="2" fill="#2fb35a"/></svg>',
+ sv:'<svg viewBox="0 0 56 44"><rect x="18" y="2" width="20" height="40" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M22 10h12M22 16h12M22 22h12" stroke="currentColor" stroke-width="1.6"/><circle cx="28" cy="34" r="2" fill="#2fb35a"/></svg>',
+ code:'<svg viewBox="0 0 56 44"><path d="M20 12l-10 10 10 10M36 12l10 10-10 10" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>'};
+const LS={ac:[['var(--ac)']],ma:[['var(--ma)'],['var(--ma)']],dc:[['var(--dc)'],['var(--dc)']],bus:[['var(--faint)',6]],io:[['var(--io)'],['var(--io)','d']],fl:[['var(--na)'],['var(--nb)']],eth:[['var(--eth)',4]],sw:[['var(--sw)','d']]};
+function ln(k){return (LS[k]||LS.dc).map(([c,w])=>`<i style="${w==='d'?`background:repeating-linear-gradient(var(--paper) 0 0,${c} 0 6px,transparent 6px 10px)`:`background:${c}`};${typeof w==='number'?`width:${w}px`:''}"></i>`).join('')}
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function iconFor(t){t=t.toLowerCase();if(/\bvt|voltage transformer/.test(t))return'vt';if(/fuse/.test(t))return'fu';if(/transducer|meter/.test(t))return'xd';if(/tcs (in|out)|card/.test(t))return'card';if(/terminal|strip/.test(t))return'tb';if(/tcs/.test(t))return'cpu';return'tb'}
+function rng(r){if(r.t==='AO'&&r.src){const s=BY[r.src.split(' ')[0]];if(s&&s.rng&&s!==r)return rng(s)}const m=(r.rng||'').match(/(-?[\d.]+)\s*~\s*(-?[\d.]+)\s*(.*)/);return m?{lo:+m[1],hi:+m[2],u:m[3].trim()}:null}
+let VAL='';
+function mA(r){const g=rng(r);if(!g)return'';if(VAL!==''&&!isNaN(+VAL)){const v=4+16*(+VAL-g.lo)/(g.hi-g.lo);return `${v.toFixed(2)} mA at ${VAL} ${g.u}`}return `4 mA = ${g.lo} ${g.u}, 20 mA = ${g.hi} ${g.u}`}
+const isIn=r=>r.t==='AI'||r.t==='DI';
+const kindOf=r=>r.t==='AI'||r.t==='AO'?'ma':'dc';
+
+function fieldPart(r,dir){ // returns array of items from field to MPL (signal order for inputs)
+  const it=[];const k=kindOf(r);
+  const hops=(r.hops||[]).filter(h=>!/^DCS /.test(h[0]));
+  if(hops.length){
+    hops.forEach((h,i)=>{const pins=[h[2],h[3]].filter(Boolean).join(' / ');
+      it.push({band:/tcs/i.test(h[0])?'TCS (turbine control)':/gcp|transducer|fj1|x04|x11|fuse/i.test(h[0])?'GCP (generator control panel)':'Field',ic:iconFor(h[0]),t:h[0],s:h[1],pins:pins?[pins]:[],scr:/tcs input/i.test(h[0])?'TCS screen':''});
+      it.push({link:/AC|VT/.test(h[4])?'ac':/inside/.test(h[4])?'sw':'ma',lab:h[4]})});
+    it.pop();it.push({link:k,lab:'cable to marshalling panel'});
+    return it}
+  const fd=/AI|AO/.test(r.t)?(r.t==='AO'?'va':'tx'):(r.t==='DO'?'mo':'sw');
+  const ext=/->|FROM|TO /i.test(r.jbw||'')||/^(FROM|TO)/.test(r.rem||'');
+  if(ext&&!r.lp){it.push({band:'Other system',ic:'rtu',t:(r.jbw||r.rem||'').replace(/-+>/,' → '),s:'Signal comes from / goes to this panel (wiring list)',pins:[]});it.push({link:k,lab:'hardwired pair'});return it}
+  const wet=/wet|2W/i.test((r.sig||'')+(r.grp||''));
+  const pw=r.t==='AI'?(wet?' · 2-wire, loop powered by the DCS card':' · 4-wire, powered at the device'):r.t==='DO'?(wet?' · DCS card supplies the voltage':' · dry contact from the DCS card'):r.t==='DI'?(wet?' · DCS card supplies the contact voltage':' · dry contact'):'';
+  const tpf={AI:'Local reading, or loop current at the device',AO:'Loop current at the device and its position',DI:'Contact state at the device (open / closed)',DO:'Voltage at the device terminals when the DCS commands ON'}[r.t];
+  it.push({band:'Field',ic:r.t==='DO'&&/^XV|^SV|^FV|^ZV/.test(r.g)?'va':fd,t:`${r.g}`,s:`${r.d} · ${r.sig||''}${pw}`,pins:[],tp:tpf});
+  if(r.lp){it.push({link:k,lab:`Field cable <span class="mono">${esc(r.lp.fc||'')}</span> · ${SPEC[r.lp.fs]||''}`});
+    it.push({band:'Field',ic:'jb',t:`Junction box ${r.lp.jb}`,s:`Terminal block ${r.lp.tb||''} (loop diagram K1AU3-E2-0-104 p${r.lp.pg})`,pins:[(r.lp.jt||[]).join(' / ')],tp:'Measure here to split field cable vs. multi-pair cable'});
+    it.push({link:k,lab:`Multi-pair cable <span class="mono">${esc(r.lp.c||'')}</span>`})}
+  else if(r.jbw){it.push({link:k,lab:'Field cable'});it.push({band:'Field',ic:'jb',t:`Junction box ${r.jbw.replace(/-AIO|-DIO|-DI|-DO|-AI|-AO$/,'')}`,s:`Strip ${r.jbs||''} (wiring list)`,pins:[[r.j1,r.j2].filter(Boolean).join(' / ')]});it.push({link:k,lab:'Multi-pair cable to the rack room'})}
+  else it.push({link:k,lab:'Field cable'});
+  return it}
+/* IPU-III manual ch.4: DN-37 serves every module type (pick by signal type); DN-PI = CPII-01 (4.11); pulse output = CPOO-01 (4.12) */
+const MODOF=(b,t)=>/^DN-37/.test(b)?({DI:'CDII-01',DO:'CDOO-01',AI:'CAII-01',AO:'CAOI-01/03'}[t]||''):/^DN-PI/.test(b)?'CPII-01':/^DN-PO/.test(b)?'CPOO-01':/^DN-AII/.test(b)?(b==='DN-AII-03'?'CAII-02':'CAII-01'):/^DN-AIH/.test(b)?'CAII-03':/^DN-AOI/.test(b)?'CAOI-01/03':/^DN-AIV/.test(b)?'CAIV-01/02':/^DN-AOV/.test(b)?'CAOV-01/02':/^DN-DI/.test(b)?'CDII-01':/^DN-DO/.test(b)?'CDOO-01':/^DN-RTD/.test(b)?'CRTD-01':/^DN-TC/.test(b)?'CTCC-01':'';
+function mplPart(r){return [{band:'DCS rack room',ic:'mpl',t:`Marshalling panel ${r.mpl}`,s:'Field side strip → system side',pins:[`${r.fs||''} ${r.f1||''} / ${r.f2||''}`,`system ${r.m1||''} / ${r.m2||''}`],tp:`<em>MAIN TEST POINT.</em> ${r.fs} ${r.f1} / ${r.f2}${/A/.test(r.t)?' · '+mA(r)+(r.t==='AO'&&r.src&&r.rng&&!/kV/.test(r.rng)?` (I/O list writes this output as ${esc(r.rng)}: check the output scaling in the controller if this point is wrong)`:''):r.t==='DI'?' · contact state (open / closed)':' · output state'}`,main:1},
+  {link:kindOf(r),lab:`Cable <span class="mono">${esc(r.cb||'')}</span> ${r.cty?'· type '+r.cty:''}`},
+  {band:'DCS rack room',ic:'card',cab:r.cab,tbd:r.card,t:`I/O module ${MODOF(r.card,r.t)||'?'}`,s:`Station STN${r.st} · node ${r.nd} · slot ${r.sl} · CH${r.ch}`,pins:[`${r.cs} ${r.cp} / ${r.cn}`,r.a]}]}
+function netDown(st,nd){ // card -> MCU -> MBA0 -> controller
+  const n=N.node[st+'|'+nd]||[];const it=[];
+  it.push({link:'bus',lab:'Base unit bus (backplane)'});
+  it.push({band:'DCS rack room',ic:'mcu',t:`Node ${nd} controller MCU A / B`,s:n[0]?n[0][3]:'',pins:[]});
+  it.push({link:'io',lab:`I/O LAN A / B <span class="mono">${esc(n[0]?n[0][1]:'')}</span>${n[0]&&n[0][2]?' · '+n[0][2]+' m':''}`});
+  it.push({band:'DCS rack room',ic:'hub',t:'I/O LAN switches MBA0-A/B',s:'MOXA EDS-316 · '+(n[1]?n[1][3]+' · '+n[1][0].replace(/^I\/O LAN switches MBA0-A \/ MBA0-B /,''):''),pins:[]});
+  it.push({link:'io',lab:`<span class="mono">${esc(n[1]?n[1][1]:'')}</span>${n[1]&&n[1][2]?' · '+n[1][2]+' m':''}`});
+  return it}
+function ctl(r,extra){const n=N.node[r.st+'|'+r.nd]||[];return {band:'DCS rack room',ic:'cpu',t:`Controller FCS${r.st}-A / B`,s:(n[2]?n[2][3]:'')+' · station STN'+r.st,pins:[],sw:[`${r.a} → ${r.g}`,r.loop||'',r.mem||'',`Logic: ${r.logic||'—'}`,extra||''].filter(Boolean)}}
+function flUp(st){const f=N.fl[st]||[];const hubName=st==='105'?'hub-3A / 3B':'hub-2A / 2B';const il=st==='105'?N.hub['hub-3A/3B to hub-1A/1B']:N.hub['hub-2A/2B to hub-1A/1B'];
+  return [{link:'fl',lab:`FL-NET A / B <span class="mono">${esc(f[0]?f[0][1]:'')}</span>${f[0]&&f[0][2]?' · '+f[0][2]+' m':''}`},
+   {band:'DCS network',ic:'hub',t:`FL-NET switches ${hubName}`,s:(f[1]?f[1][3]:'')+' · MOXA EDS-316',pins:[]},
+   {link:'fl',lab:`<span class="mono">${esc(il[0])}</span> · ${il[1]} m`},
+   {band:'Control room',ic:'hub',t:'FL-NET switches hub-1A / 1B',s:'COS1 / COS2 desks',pins:[]},
+   {link:'fl',lab:'FL-NET A / B to each station'},
+   {band:'Control room',ic:'scr',t:'COS1~5 operator stations · CDS-A / B data servers · OPC server',s:'Operator screen, trend and history, data to other systems',pins:[],scr:'DCS screen'}]}
+function scadaEnd(){return [{link:'ma',lab:'4-20 mA pair'},
+  {band:'SCADA',ic:'rtu',t:'SCADA RTU Panel 1',s:'Rack room panel no. 30 (K1AU3-E2-0-107 sh2). Isolator M-System W5DY → RTU560 analog board 23AI60 (LM2-S1-O-001 p41)',pins:[],tp:'W5DY input and output'},
+  {link:'eth',lab:'IEC-104 Ethernet'},{band:'SCADA',ic:'sv',t:'SCADA front-end #1',s:'In SCADA Panel 1 = rack room panel no. 29, next to the RTU panel (K1AU3-E2-0-107 sh2). Collects the RTU data and passes it on (K1AU3-E1-0-112 sh007)',pins:[]},
+  {link:'eth',lab:'SCADA LAN'},{band:'SCADA',ic:'hub',t:'SCADA switches SW-HUB1/2',s:'Network switch only: passes data, does not change the value (sh007)',pins:[]},
+  {link:'eth',lab:'SCADA LAN'},{band:'SCADA',ic:'sv',t:'SCADA hosts SYS600 #1/2',s:'Holds the point database: the 4-20 mA scaling of each point is set here (and in the RTU560 configuration)',pins:[],sw:['Check here: point scaling of this signal in the SYS600 database and the RTU560 configuration (ABB / SCADA engineer, not on a terminal)']},
+  {link:'eth',lab:'SCADA LAN'},{band:'SCADA',ic:'scr',t:'SCADA workstation',s:'SCADA screen',pins:[],scr:'SCADA screen'}]}
+
+function build(r){
+  let it=[];
+  if(r.t==='AO'&&r.src){const s=BY[r.src.split(' ')[0]];
+    if(s){it=[].concat(fieldPart(s),mplPart(s),netDown(s.st,s.nd),[ctl(s)]);
+      const f=N.fl[s.st]||[],g=N.fl[r.st]||[];
+      it.push({link:'fl',lab:`FL-NET A / B <span class="mono">${esc(f[0]?f[0][1]:'')}</span>`});
+      it.push({band:'DCS network',ic:'hub',t:`FL-NET switches ${s.st==='105'?'hub-3A / 3B':'hub-2A / 2B'}`,s:(f[1]?f[1][3]:'')+' · MOXA EDS-316 · also to hub-1 → COS / CDS / OPC',pins:[],scr:'DCS screen'});
+      it.push({link:'fl',lab:`FL-NET A / B <span class="mono">${esc(g[0]?g[0][1]:'')}</span>`});
+      it.push(ctl(r,`Value = ${s.g} (same signal name in the I/O list)`));
+      it=it.concat(netDown(r.st,r.nd).reverse());
+      it=it.concat(mplPart(r).reverse());
+      if(/SCADA/i.test((r.jbw||'')+(r.rem||'')))it=it.concat(scadaEnd());
+      return it}}
+  if(isIn(r)){it=it.concat(fieldPart(r),mplPart(r),netDown(r.st,r.nd),[ctl(r)],flUp(r.st));
+    if(/TO SCADA|SCADA/i.test(r.rem||''))it=it.concat(scadaEnd());return it}
+  // outputs: control room -> controller -> card -> MPL -> field
+  it=it.concat(flUp(r.st).reverse(),[ctl(r)],netDown(r.st,r.nd).reverse(),mplPart(r).reverse());
+  if(/SCADA/i.test((r.jbw||'')+(r.rem||'')))return it.concat(scadaEnd());
+  return it.concat(fieldPart(r).reverse())}
+
+/* ---------- realistic device drawings (viewBox 0 0 230 150), light theme ---------- */
+const K={ol:'#2f3742',mt:'#cfd5dd',mt2:'#aab3bf',pn:'#e2e5e1',pnd:'#c9cdc8',in:'#f7f8f6',led:'#22b14c',cu:'#b87333',rail:'#9aa3ad',hi:'#ffd9c2',hit:'#d9480f'};
+const CC={ac:'#7b4fd6',ma:'#1f6fd1',dc:'#38414b',bus:'#8d969f',io:'#0e8a8c',fl:'#d23b3b',eth:'#6b7682',sw:'#0b7a5c'};
+const T=(x,y,s,o={})=>{let f=o.fs||9;if(f<6.5&&String(s).length>3)return'';f=f<=7?7:f<=8?8:9;return`<text x="${x}" y="${y}" font-size="${f}" font-family="IBM Plex Sans,sans-serif" font-weight="${o.fw||500}" fill="${o.c||K.ol}" text-anchor="${o.a||'middle'}">${esc(s)}</text>`};
+const RC=(x,y,w,h,f,o={})=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${o.rx||0}" fill="${f}" stroke="${o.s||K.ol}" stroke-width="${o.sw||1.2}"/>`;
+function toks(p){return String(p||'').split(/[\s,\/]+/).filter(Boolean)}
+function parsePins(p){let t=toks(p);let name='';if(t.length&&(/^system$/i.test(t[0])||(/[A-Z]{2,}/i.test(t[0])&&t[0].length>3&&!/^F\d+$/.test(t[0])))){name=t[0];t=t.slice(1)}if(/^system$/i.test(name))name='system side';return{name,hi:t}}
+/* terminal strip: list of terminals, highlighted ones carry the cable colour */
+function strip(x,y,hi,col,o={}){
+  let list=hi.slice();const ints=hi.every(v=>/^\d+$/.test(v));
+  if(ints&&hi.length&&Math.max(...hi.map(Number))-Math.min(...hi.map(Number))+1>(o.max||11)){list=[];hi.forEach((v,i)=>{list.push(v);if(i<hi.length-1&&+hi[i+1]!==+v+1)list.push('')})}
+  else if(ints&&hi.length){const a=Math.min(...hi.map(Number)),b=Math.max(...hi.map(Number));const n=o.max||11;let lo=Math.max(1,a-2),up=b+2;while(up-lo+1>n&&up>b)up--;while(up-lo+1>n&&lo<a)lo++;list=[];for(let i=lo;i<=up;i++)list.push(String(i))}
+  else if(hi.length&&hi.length<(o.max||11)-1)list=['',...hi,''];
+  const w=o.w||15,h=o.h||30;const W=list.length*w;let s=`<rect x="${x-4}" y="${y+h*0.45}" width="${W+8}" height="7" fill="${K.rail}" stroke="${K.ol}" stroke-width=".8"/>`;
+  list.forEach((v,i)=>{const on=hi.includes(v)&&v!=='';const X=x+i*w;
+    s+=`<rect x="${X}" y="${y}" width="${w-1.5}" height="${h}" rx="1.5" fill="${on?K.hi:'#d6dbe1'}" stroke="${on?K.hit:K.ol}" stroke-width="${on?1.4:.8}"/>`+
+      `<circle cx="${X+(w-1.5)/2}" cy="${y+6}" r="3" fill="#f2f3f5" stroke="${K.ol}" stroke-width=".7"/><path d="M${X+(w-1.5)/2-2} ${y+6}h4" stroke="${K.ol}" stroke-width=".8"/>`+
+      `<circle cx="${X+(w-1.5)/2}" cy="${y+h-6}" r="3" fill="#f2f3f5" stroke="${K.ol}" stroke-width=".7"/>`+
+      (on?`<path d="M${X+(w-1.5)/2} ${y+6}V${y-3}" stroke="${col}" stroke-width="2.4"/>`:'')+
+      (v!==''?T(X+(w-1.5)/2,y+h+10,v,{fs:o.fs||8.5,mono:1,c:on?K.hit:'#5b6673',fw:on?600:400}):'')});
+  return{s,W}}
+function centred(hi,col,cx,y,o={}){const t=strip(0,0,hi,col,o);const x=cx-t.W/2;return strip(x,y,hi,col,o).s}
+function pipe(y){return `<rect x="8" y="${y}" width="214" height="13" fill="${K.mt}" stroke="${K.ol}"/><rect x="8" y="${y+2}" width="214" height="3" fill="#fff" opacity=".6"/><rect x="40" y="${y-3}" width="5" height="19" fill="${K.mt2}" stroke="${K.ol}" stroke-width=".8"/><rect x="185" y="${y-3}" width="5" height="19" fill="${K.mt2}" stroke="${K.ol}" stroke-width=".8"/>`}
+const DEV={
+ tx(x,col){return{s:pipe(128)+`<path d="M115 128V106" stroke="${K.ol}" stroke-width="5"/><path d="M115 128V106" stroke="${K.mt}" stroke-width="3"/>`+RC(96,92,38,15,K.mt2,{rx:2})+`<circle cx="90" cy="99" r="5" fill="#c44" stroke="${K.ol}"/><circle cx="140" cy="99" r="5" fill="#c44" stroke="${K.ol}"/>`+RC(103,64,24,29,'#8fa0b3',{rx:2})+`<circle cx="115" cy="40" r="30" fill="#dfe5ec" stroke="${K.ol}" stroke-width="1.8"/><circle cx="115" cy="40" r="20" fill="#fff" stroke="${K.ol}"/>`+RC(102,33,26,13,'#c9ead2',{rx:1,sw:.8})+T(115,43,'PV',{fs:8,mono:1})+RC(145,58,16,12,K.mt,{rx:2})+`<path d="M161 64H190V100" fill="none" stroke="${col}" stroke-width="3"/>`,a:[190,100]}},
+ sw(x,col){return{s:pipe(128)+RC(108,96,14,32,K.mt2)+RC(75,40,70,52,'#e8c547',{rx:3,sw:1.6})+`<circle cx="110" cy="66" r="6" fill="#fff" stroke="${K.ol}"/><path d="M110 66L150 30" stroke="${K.ol}" stroke-width="3"/><circle cx="152" cy="28" r="7" fill="#444" stroke="${K.ol}"/>`+RC(145,74,14,10,K.mt,{rx:2})+T(110,55,'LIMIT SW',{fs:7.5,fw:600})+`<path d="M159 79H190V100" fill="none" stroke="${col}" stroke-width="3"/>`,a:[190,100]}},
+ va(x,col){return{s:pipe(128)+`<path d="M85 120L115 134L85 148ZM145 120L115 134L145 148Z" fill="#7f8ea0" stroke="${K.ol}"/><circle cx="115" cy="134" r="9" fill="#7f8ea0" stroke="${K.ol}"/><path d="M108 125V80M122 125V80" stroke="${K.ol}" stroke-width="2.5"/><path d="M80 80Q115 30 150 80Z" fill="#3d6fb6" stroke="${K.ol}" stroke-width="1.5"/>`+RC(78,78,74,6,'#2c4f86')+RC(158,62,30,26,'#e3e6ea',{rx:2})+T(173,79,'SOL',{fs:8,fw:600})+`<path d="M152 75H158" stroke="${K.ol}" stroke-width="2"/><path d="M188 75H200V100" fill="none" stroke="${col}" stroke-width="3"/>`,a:[200,100]}},
+ mo(x,col){let f='';for(let i=0;i<8;i++)f+=`<path d="M${70+i*10} 62V118" stroke="${K.ol}" stroke-width=".7"/>`;return{s:RC(55,124,120,10,K.mt2)+RC(60,58,100,64,'#4f7a5c',{rx:10,sw:1.6})+f+RC(160,80,24,20,K.mt2,{rx:2})+`<rect x="184" y="86" width="22" height="8" fill="#999" stroke="${K.ol}"/>`+RC(92,40,36,20,'#5f8c6b',{rx:2})+T(110,53,'TB',{fs:8,c:'#fff'})+`<path d="M128 48H200V100" fill="none" stroke="${col}" stroke-width="3"/>`,a:[200,100]}},
+ vt(x,col){return{s:RC(55,124,120,9,K.mt2)+RC(68,40,94,84,'#b49b6c',{rx:6,sw:1.6})+[90,140].map(c=>`<rect x="${c-7}" y="10" width="14" height="32" fill="#a8905f" stroke="${K.ol}"/>${[14,22,30].map(y=>`<rect x="${c-11}" y="${y}" width="22" height="4" rx="2" fill="#a8905f" stroke="${K.ol}" stroke-width=".8"/>`).join('')}<circle cx="${c}" cy="8" r="4" fill="${K.cu}" stroke="${K.ol}"/>`).join('')+RC(88,84,54,30,'#eceae4',{rx:2})+[0,1,2,3].map(i=>`<circle cx="${96+i*13}" cy="99" r="4" fill="${K.cu}" stroke="${K.ol}"/>`).join('')+T(115,68,'VT',{fs:11,fw:600,c:'#3d2f12'})+`<path d="M142 99H200V100" fill="none" stroke="${col}" stroke-width="3"/>`,a:[200,100]}},
+ tb(x,col){const p=parsePins(x.pins&&x.pins[0]);return{s:RC(4,20,222,110,K.in,{rx:3,s:'#b9bfc6'})+T(14,36,'Panel terminal block',{fs:8.5,a:'start',c:'#5b6673'})+centred(p.hi,col,115,58,{max:13})+`<path d="M4 100H226" stroke="#cfd4da" stroke-dasharray="3 3"/>`,a:[115,100]}},
+ fu(x,col){const p=parsePins(x.pins&&x.pins[0]);const hi=p.hi.length?p.hi:['F1','F2','F3'];let s=RC(4,20,222,118,K.in,{rx:3,s:'#b9bfc6'})+`<rect x="10" y="88" width="210" height="7" fill="${K.rail}" stroke="${K.ol}" stroke-width=".8"/>`;const w=40,x0=115-hi.length*w/2;
+   hi.forEach((v,i)=>{const X=x0+i*w;if(/^F/i.test(v)){s+=RC(X+4,40,w-8,64,'#e9e9e2',{rx:3})+RC(X+11,52,w-22,30,'#fff',{rx:2,sw:.8})+`<rect x="${X+14}" y="56" width="${w-28}" height="22" rx="3" fill="#d8c27a" stroke="${K.ol}" stroke-width=".8"/><path d="M${X+w/2} 40V28" stroke="${col}" stroke-width="2.4"/>`+T(X+w/2,118,v,{fs:9,mono:1,c:K.hit,fw:600})+(/EFB-5/.test(x.s||'')?T(X+w/2,49,'EFB-5',{fs:5.5}):'')}else{s+=RC(X+12,52,w-24,40,'#d6dbe1',{rx:2})+T(X+w/2,118,v,{fs:9,mono:1})}});return{s,a:[115,100]}},
+ xd(x,col){const p=parsePins(x.pins&&x.pins[0]);const m=(x.s||'').match(/\b([A-Z]{2}\d-\d+[A-Z]?)\b/);return{s:`<rect x="20" y="70" width="190" height="7" fill="${K.rail}" stroke="${K.ol}" stroke-width=".8"/>`+RC(55,18,120,110,'#f3f4f6',{rx:4,sw:1.6})+RC(70,40,90,34,'#fff',{rx:2})+T(115,55,m?m[1]:'TRANSDUCER',{fs:10,fw:600})+T(115,67,'AC in  →  4-20 mA out',{fs:7.5,c:'#5b6673'})+[0,1,2,3,4,5,6,7].map(i=>`<circle cx="${66+i*14}" cy="28" r="4" fill="#ddd" stroke="${K.ol}" stroke-width=".8"/>`).join('')+centred(p.hi,col,115,90,{max:6})+`<circle cx="160" cy="82" r="2.5" fill="${K.led}"/>`,a:[115,100]}},
+ jb(x,col){const p=parsePins(x.pins&&x.pins[0]);return{s:`<path d="M40 14L8 24V128L40 138Z" fill="#cfd3ce" stroke="${K.ol}" stroke-width="1.2"/>`+RC(40,14,180,124,'#d9dcd7',{rx:4,sw:1.8})+RC(50,24,160,104,K.in,{rx:2,sw:.8})+centred(p.hi,col,130,52,{max:10})+[70,100,130,160,190].map(c=>`<rect x="${c-6}" y="138" width="12" height="8" fill="#555" stroke="${K.ol}" stroke-width=".7"/>`).join('')+T(130,40,'JUNCTION BOX',{fs:8,fw:600,c:'#5b6673'}),a:[130,100]}},
+ mpl(x,col){const a=parsePins(x.pins&&x.pins[0]),b=parsePins(x.pins&&x.pins[1]);let rows='';for(let i=0;i<7;i++){const on=i===2;rows+=`<rect x="22" y="${22+i*16}" width="56" height="9" fill="${on?K.hi:'#d6dbe1'}" stroke="${on?K.hit:K.ol}" stroke-width="${on?1.3:.6}"/>`;for(let j=0;j<9;j++)rows+=`<path d="M${24+j*6} ${23+i*16}v7" stroke="${K.ol}" stroke-width=".4"/>`}
+   return{s:`<path d="M14 6L2 12V142L14 146Z" fill="#cfd3ce" stroke="${K.ol}"/>`+RC(14,6,72,140,'#d9dcd7',{rx:2,sw:1.6})+RC(18,12,64,128,K.in,{sw:.6})+rows+`<path d="M78 58L96 40M78 58L96 98" stroke="${K.hit}" stroke-dasharray="3 2"/>`+T(100,24,a.name||'field side',{fs:8,a:'start',mono:1,fw:600})+strip(100,32,a.hi,col,{max:7,w:17,h:26}).s+T(100,92,b.name||'system side',{fs:8,a:'start',mono:1,fw:600})+strip(100,99,b.hi,col,{max:7,w:17,h:26}).s,a:[50,100]}},
+ card(x,col){const sl=+((x.s||'').match(/slot (\d+)/)||[0,-1])[1];const p=parsePins(x.pins&&x.pins[0]);let s=RC(4,18,222,78,'#e6e9ed',{rx:3,sw:1.4})+T(10,14,/TCS/i.test(x.t)?'TCS rack':'I/O base unit',{fs:8,a:'start',c:'#5b6673'});
+   for(let i=0;i<8;i++){const on=i===sl||(sl<0&&i===3);const X=12+i*26.5;s+=`<rect x="${X}" y="24" width="23" height="66" rx="2" fill="${on?'#ffe3d1':'#58616d'}" stroke="${on?K.hit:K.ol}" stroke-width="${on?2:1}"/><circle cx="${X+6}" cy="31" r="2" fill="${K.led}"/><circle cx="${X+12}" cy="31" r="2" fill="${on?K.led:'#3a4049'}"/>`+(on?T(X+11.5,52,'CARD',{fs:6.5,fw:600,c:K.hit})+`<rect x="${X+4}" y="74" width="15" height="12" fill="#333" stroke="${K.ol}"/><path d="M${X+11.5} 86V104" stroke="${col}" stroke-width="3"/>`:'')+T(X+11.5,104,sl>=0?String(i):'',{fs:7.5,c:on?K.hit:'#8a939d',mono:1})}
+   return{s:s+(p.hi.length?T(8,134,p.name||'',{fs:8,mono:1,fw:600,a:'start'})+centred(p.hi,col,135,120,{max:8,h:20,fs:7.5,w:20}):''),a:[115,60]}},
+ mcu(x,col){return{s:RC(30,14,170,122,'#e6e9ed',{rx:3,sw:1.4})+['A','B'].map((l,i)=>{const X=55+i*65;return RC(X,24,50,104,'#58616d',{rx:2})+`<circle cx="${X+12}" cy="36" r="3" fill="${K.led}"/><circle cx="${X+24}" cy="36" r="3" fill="${K.led}"/>`+RC(X+10,60,30,14,'#222')+RC(X+10,82,30,14,'#222')+T(X+25,118,l,{fs:11,fw:600,c:'#fff'})}).join('')+T(115,11,'MCU (CMCU-01)',{fs:8,c:'#5b6673'}),a:[115,75]}},
+ hub(x,col){const fl=/FL-NET/.test(x.t);const c1=fl?CC.fl:CC.io,c2=fl?'#d4a000':CC.io;let s='';[[30,'A',c1],[84,'B',c2]].forEach(([y,l,c])=>{s+=RC(6,y,218,32,'#3c434d',{rx:2,sw:1.2})+T(16,y+20,l,{fs:10,fw:600,c:'#fff'});for(let i=0;i<16;i++){const X=28+i*11.5;const on=i===3;s+=`<rect x="${X}" y="${y+10}" width="9" height="9" fill="${on?c:'#1c1f24'}" stroke="#8a939d" stroke-width=".5"/><circle cx="${X+4.5}" cy="${y+25}" r="1.4" fill="${i<8||on?K.led:'#555'}"/>`}s+=`<rect x="${6+218-30}" y="${y+8}" width="22" height="14" fill="#2b3037" stroke="#8a939d" stroke-width=".5"/>`});return{s:s+T(115,22,fl?'FL-NET switch A / B':/SCADA/.test(x.t)?'SCADA main switch 1 / 2':'I/O LAN switch A / B',{fs:8,c:'#5b6673'}),a:[115,62]}},
+ cpu(x,col){return{s:RC(30,6,170,140,'#d9dcd7',{rx:3,sw:1.6})+RC(38,14,154,124,K.in,{sw:.6})+RC(46,22,34,108,'#6b5e4a',{rx:2})+T(63,40,'PS',{fs:8,c:'#fff'})+['A','B'].map((l,i)=>{const X=88+i*50;return RC(X,22,42,108,'#58616d',{rx:2})+`<circle cx="${X+10}" cy="34" r="3" fill="${K.led}"/><circle cx="${X+21}" cy="34" r="3" fill="${K.led}"/><circle cx="${X+32}" cy="34" r="3" fill="${i?'#e0a800':K.led}"/>`+RC(X+8,56,26,12,'#222')+RC(X+8,76,26,12,'#222')+T(X+21,118,'CPU '+l,{fs:9,fw:600,c:'#fff'})}).join(''),a:[115,75]}},
+ scr(x,col){return{s:RC(38,8,154,96,'#2b3037',{rx:5,sw:1.5})+RC(46,15,138,80,'#eef1f4',{sw:.5})+`<path d="M60 70H90V45H130V70H170" fill="none" stroke="#1f6fd1" stroke-width="1.6"/><rect x="88" y="32" width="44" height="12" fill="#fff" stroke="#8a939d" stroke-width=".6"/>`+T(110,41,'PV  13.8',{fs:7.5,mono:1})+`<circle cx="60" cy="70" r="5" fill="#2fb35a"/><circle cx="170" cy="70" r="5" fill="#d23b3b"/><path d="M108 104L102 118H128L122 104Z" fill="#9aa3ad" stroke="${K.ol}"/>`+RC(60,122,110,12,'#d6dbe1',{rx:2})+`<path d="M66 128h98" stroke="#8a939d" stroke-dasharray="3 2"/>`,a:[115,60]}},
+ rtu(x,col){let s=RC(30,6,170,140,'#d9dcd7',{rx:3,sw:1.6})+RC(38,14,154,124,K.in,{sw:.6})+RC(46,30,138,60,'#e6e9ed',{rx:2});for(let i=0;i<9;i++){const on=i===5;s+=`<rect x="${50+i*14.7}" y="34" width="12" height="52" fill="${on?'#ffe3d1':'#58616d'}" stroke="${on?K.hit:K.ol}" stroke-width="${on?1.8:.8}"/><circle cx="${56+i*14.7}" cy="40" r="1.8" fill="${K.led}"/>`}return{s:s+T(115,26,'RTU560 rack',{fs:8,c:'#5b6673'})+RC(60,100,110,26,'#f3f4f6',{rx:2})+T(115,117,'isolators W5DY',{fs:8}),a:[115,75]}},
+ sv(x,col){let s=RC(50,6,130,140,'#3c434d',{rx:3,sw:1.6});for(let i=0;i<5;i++)s+=RC(58,16+i*25,114,19,'#58616d',{rx:1,sw:.8})+`<circle cx="${66}" cy="${25.5+i*25}" r="2" fill="${K.led}"/><path d="M80 ${25.5+i*25}h80" stroke="#8a939d" stroke-width="2" stroke-dasharray="2 2"/>`;return{s,a:[115,75]}},
+ code(x,col){return{s:RC(60,30,110,90,'#f3f4f6',{rx:4})+T(115,80,'{ logic }',{fs:14,mono:1}),a:[115,75]}}};
+DEV.tb2=DEV.tb;
+
+/* K1AU3-E2-0-109 (Formosa FCS-2000, FCS1011 p3 / p4 / p5): rear locker = CS terminal boards (S station, M MBA, N node+slot);
+   I/O unit CNOD-01 = PWM, PWM, MCU, MCU, then I/O slots 0 ~ 7; controller shelf FCS10x-A / B; MBA0-A / B = MOXA EDS-316 */
+DEV.fcsio=(x,col)=>{const sl=+((x.s||'').match(/slot (\d+)/)||[0,0])[1];const p=parsePins(x.pins&&x.pins[0]);
+  let s=RC(6,6,56,138,'#e9ebee',{rx:2,sw:1.3})+T(34,18,p.name||'CS',{fs:7.5,mono:1,fw:600})+T(34,27,'terminal board',{fs:5.5,c:'#5b6673'});
+  const hi=p.hi.map(v=>v.replace(/[+-]$/,''));const n0=Math.max(1,Math.min(...hi.map(Number).filter(n=>!isNaN(n)).concat([99]))-3);
+  for(let i=0;i<10;i++){const n=n0+i,on=hi.includes(String(n));const Y=32+i*11;s+=`<rect x="14" y="${Y}" width="26" height="9" rx="1" fill="${on?K.hi:'#d6dbe1'}" stroke="${on?K.hit:K.ol}" stroke-width="${on?1.2:.6}"/><circle cx="20" cy="${Y+4.5}" r="2.2" fill="#f2f3f5" stroke="${K.ol}" stroke-width=".5"/>`+T(52,Y+7,String(n),{fs:7,mono:1,c:on?K.hit:'#5b6673',fw:on?600:400})+(on?`<path d="M14 ${Y+4.5}H2" stroke="${col}" stroke-width="2"/>`:'')}
+  s+=T(34,140,'locker rear',{fs:5.5,c:'#5b6673'})+RC(70,40,156,64,'#e6e9ed',{rx:2,sw:1.3})+T(148,34,'I/O unit CNOD-01 (front)',{fs:7,c:'#5b6673'});
+  const lab=['PW','PW','MCU','MCU',0,1,2,3,4,5,6,7];lab.forEach((l,i)=>{const X=74+i*12.6;const on=typeof l==='number'&&l===sl;const mcu=l==='MCU',pw=l==='PW';
+    s+=`<rect x="${X}" y="46" width="11" height="52" rx="1" fill="${on?'#ffe3d1':pw?'#6b5e4a':mcu?'#3c434d':'#58616d'}" stroke="${on?K.hit:K.ol}" stroke-width="${on?1.8:.7}"/><circle cx="${X+5.5}" cy="51" r="1.5" fill="${K.led}"/>`+`<rect x="${X+.5}" y="46" width="10" height="12" fill="#1c1f24"/><circle cx="${X+3}" cy="55" r="1.1" fill="${K.led}"/>`+(typeof l==='number'?`<rect x="${X+3}" y="64" width="5" height="26" rx="1.5" fill="#9aa3ad" stroke="#222" stroke-width=".5"/>`:'')+T(typeof l==='number'?X+5.5:X+12.3,112,typeof l==='number'?String(l):(i%2?'':l),{fs:5.5,mono:1,c:on?K.hit:'#5b6673',fw:on?600:400})});
+  const X=74+(4+sl)*12.6+5.5;s+=`<path d="M40 ${32+hi.map(Number).map(n=>n-n0).filter(n=>n>=0&&n<10).concat([4])[0]*11+4}H62V119H${X}V98" fill="none" stroke="#8a939d" stroke-width="1.6" stroke-dasharray="4 2"/>`+T(150,132,(MODOF(x.tbd||'')||'module')+' in slot '+sl,{fs:7,fw:600,c:K.hit})+'';
+  return{s,a:[34,100]}};
+DEV.cnodmcu=(x,col)=>{let s=RC(8,40,214,64,'#e6e9ed',{rx:2,sw:1.3})+T(115,32,'I/O unit CNOD-01 · MCU A / B',{fs:7.5,c:'#5b6673'});const lab=['PW','PW','A','B',0,1,2,3,4,5,6,7];
+  lab.forEach((l,i)=>{const X=14+i*17.2;const on=l==='A'||l==='B';s+=`<rect x="${X}" y="46" width="15" height="52" rx="1" fill="${on?'#ffe3d1':l==='PW'?'#6b5e4a':'#58616d'}" stroke="${on?K.hit:K.ol}" stroke-width="${on?1.8:.7}"/><circle cx="${X+7.5}" cy="52" r="1.8" fill="${K.led}"/>`+(on?`<rect x="${X+3}" y="72" width="9" height="8" fill="#222"/><path d="M${X+7.5} 80V100" stroke="${CC.io}" stroke-width="2"/>`:'')+T(X+7.5,114,String(l),{fs:6,mono:1,c:on?K.hit:'#5b6673',fw:on?600:400})});
+  return{s:s+'',a:[115,75]}};
+DEV.fcs2000=(x,col)=>{let s=RC(4,10,222,130,'#d9dcd7',{rx:3,sw:1.4})+T(10,21,'FCS-2000 controller shelf',{fs:7,c:'#5b6673',a:'start'});
+  ['A','B'].forEach((l,i)=>{const X=10+i*108;s+=RC(X,28,102,102,'#eef0f2',{rx:2});for(let k=0;k<7;k++)s+=`<rect x="${X+4+k*5}" y="34" width="3" height="40" fill="#9aa3ad"/>`;
+    s+=`<circle cx="${X+48}" cy="44" r="6" fill="#d23b3b" stroke="${K.ol}"/>`+RC(X+60,34,36,70,'#fff',{rx:1,sw:.8})+RC(X+66,42,10,20,'#58616d')+RC(X+80,42,10,20,'#58616d')+`<rect x="${X+6}" y="82" width="9" height="8" fill="#222"/><rect x="${X+18}" y="82" width="9" height="8" fill="#222"/>`+T(X+16,99,'MBA0/1',{fs:5,c:'#5b6673'})+`<rect x="${X+32}" y="82" width="14" height="7" rx="2" fill="#555"/><rect x="${X+32}" y="94" width="14" height="7" rx="2" fill="#555"/>`+T(X+39,110,'COM',{fs:5,c:'#5b6673'})+T(X+51,124,'FCS'+(x.t.match(/FCS(\d+)/)||[0,''])[1]+'-'+l,{fs:8,mono:1,fw:600})+`<circle cx="${X+66}" cy="70" r="2" fill="${K.led}"/><circle cx="${X+74}" cy="70" r="2" fill="${i?'#e0a800':K.led}"/>`});
+  return{s,a:[115,85]}};
+
+/* ---------- device drawings matched to the real models (sources in each comment) ---------- */
+function pick(x){const t=x.t||'',s=x.s||'';
+  if(/\bVT\d?\b|voltage transformer/i.test(t))return'evr';
+  if(/MT-41|FJ1/i.test(t+s))return'mt41';
+  if(/QT2-93A/.test(t+s)&&/transducer/i.test(t))return'qt2';
+  if(/^TCS (input|output)/i.test(t))return'tcsmod';
+  if(x.ic==='hub'&&(/EDS-316/.test(s)||/MBA0/.test(t)))return'eds';
+  if(x.ic==='card'&&/^I\/O module/.test(t))return'fcsio';
+  if(x.ic==='mcu')return'cnodmcu';
+  if(x.ic==='cpu'&&/^Controller FCS/.test(t))return'fcs2000';
+  if(x.ic==='rtu')return'rtu560';
+  return x.ic}
+/* GSE-2013-0085 p17: VT2-U/V/W = CGS type EVR24D, 13800/sqrt3 : 115/sqrt3 V, MV fuse SIBA 2 A; FVT21 = ABB E933/50 3P fuse holder */
+DEV.evr=(x,col)=>{let s=RC(4,4,222,142,'#d9dcd7',{rx:3,sw:1.6})+RC(10,10,210,130,K.in,{sw:.6})+T(16,22,'VT & SA cubicle',{fs:8,a:'start',c:'#5b6673'})+`<path d="M30 30H178" stroke="#8a6d3b" stroke-width="3"/>`+T(185,33,'13.8 kV',{fs:7.5,a:'start',c:'#5b6673'});
+  [['U',45],['V',95],['W',145]].forEach(([l,c])=>{s+=`<rect x="${c-5}" y="30" width="10" height="20" rx="2" fill="#fafafa" stroke="${K.ol}"/>`+T(c,44,'2A',{fs:5.5})+`<rect x="${c-6}" y="50" width="12" height="16" fill="#a9906a" stroke="${K.ol}"/>${[53,58,63].map(y=>`<rect x="${c-9}" y="${y}" width="18" height="3" rx="1.5" fill="#a9906a" stroke="${K.ol}" stroke-width=".6"/>`).join('')}`+RC(c-18,66,36,52,'#b49b6c',{rx:5,sw:1.4})+RC(c-11,96,22,14,'#eceae4',{rx:1})+`<circle cx="${c-5}" cy="103" r="2.5" fill="${K.cu}"/><circle cx="${c+5}" cy="103" r="2.5" fill="${K.cu}"/>`+RC(c-22,118,44,6,K.mt2)+T(c,84,'EVR24D',{fs:6.5,fw:600,c:'#3d2f12'})+T(c,134,'VT2-'+l,{fs:7.5,mono:1})+`<path d="M${c+5} 103V${112+(c-45)/25}H188" fill="none" stroke="${col}" stroke-width="1.6"/>`});
+  s+=RC(188,92,26,30,'#e4e6ea',{rx:2})+T(201,104,'FVT21',{fs:6,fw:600})+T(201,114,'E933',{fs:5.5,c:'#5b6673'})+`<path d="M214 100H226" stroke="${col}" stroke-width="2.4"/>`;return{s,a:[214,100]}};
+/* 7X7SKB1103 p6 F view: test terminals TT-81..89 (MT-41A x9) in rows FJ / FK / FL; TT-81 = FJ1, plugs 11 / 22 / 33 / 44 */
+DEV.mt41=(x,col)=>{let s=RC(4,8,222,136,K.in,{rx:3,s:'#b9bfc6'})+T(12,22,'GCP front · MT-41A test terminals',{fs:7.5,a:'start',c:'#5b6673'});
+  [[83,82,81],[86,85,84],[89,88,87]].forEach((row,ri)=>row.forEach((n,ci)=>{const on=n===81;const X=12+ci*38,Y=32+ri*36;s+=RC(X,Y,32,28,on?K.hi:'#e9ebee',{rx:2,s:on?K.hit:K.ol,sw:on?1.6:1})+[0,1,2,3].map(k=>`<circle cx="${X+6+k*6.5}" cy="${Y+10}" r="2.2" fill="#333"/>`).join('')+T(X+16,Y+23,'TT-'+n,{fs:6.5,mono:1,c:on?K.hit:K.ol,fw:on?600:400})}));
+  s+=`<path d="M108 46L130 40M108 46L130 112" stroke="${K.hit}" stroke-dasharray="3 2"/>`+RC(130,34,90,86,'#fff',{rx:3,s:K.hit,sw:1.4})+T(175,48,'TT-81 = FJ1',{fs:8,fw:600,c:K.hit});
+  ['11','22','33','44'].forEach((v,i)=>{const X=142+i*19;s+=`<circle cx="${X+4}" cy="72" r="6" fill="#333" stroke="${K.ol}"/><circle cx="${X+4}" cy="72" r="2.4" fill="#ccc"/><path d="M${X+4} 66V56" stroke="${col}" stroke-width="2"/>`+T(X+4,92,v,{fs:8,mono:1,fw:600,c:K.hit})});
+  return{s:s+T(175,110,'plug in to measure',{fs:6.5,c:'#5b6673'}),a:[175,100]}};
+/* 7X7SKB1103 p6 F view row FD: WTT2-92A x2 and QT2-93A on one plate; QT2-93A out 9 / 10 (sheet GA128) */
+DEV.qt2=(x,col)=>{let s=RC(4,14,222,126,'#eceee9',{rx:3,s:'#b9bfc6'})+T(12,26,'GCP mounting plate FD',{fs:7.5,a:'start',c:'#5b6673'});
+  [['WTT2-92A',12,0],['WTT2-92A',80,0],['QT2-93A',148,1]].forEach(([m,X,on])=>{s+=RC(X,34,64,88,on?'#fff':'#f6f6f4',{rx:3,s:on?K.hit:K.ol,sw:on?1.8:1.1})+[0,1,2,3,4,5].map(k=>`<circle cx="${X+8+k*9.6}" cy="42" r="2.6" fill="#ddd" stroke="${K.ol}" stroke-width=".6"/>`).join('')+RC(X+8,54,48,26,'#fff',{rx:1,sw:.7})+T(X+32,66,m,{fs:7,fw:600})+T(X+32,75,'transducer',{fs:5.8,c:'#5b6673'});
+    for(let k=0;k<6;k++){const n=7+k;const hi=on&&(n===9||n===10);s+=`<rect x="${X+4+k*9.6}" y="96" width="8.6" height="14" rx="1" fill="${hi?K.hi:'#d6dbe1'}" stroke="${hi?K.hit:K.ol}" stroke-width="${hi?1.2:.6}"/>`+(on?T(X+8.3+k*9.6,118,String(n),{fs:6,mono:1,c:hi?K.hit:'#5b6673'}):'')+(hi?`<path d="M${X+8.3+k*9.6} 110V128" stroke="${col}" stroke-width="2"/>`:'')}});
+  return{s,a:[180,128]}};
+/* 331DM10710: TCS-7 rack, GXF2 = SD-AI-L (input), GXF12 = SD-AO (output) */
+DEV.tcsmod=(x,col)=>{const n=+((x.t.match(/GXF(\d+)/)||[0,1])[1]);const typ=/output/i.test(x.t)?'SD-AO':'SD-AI-L';const p=parsePins(x.pins&&x.pins[0]);const lo=Math.max(1,Math.min(n-3,9));
+  let s=RC(4,12,222,92,'#e6e9ed',{rx:3,sw:1.4})+T(10,9,'TCS-7 cabinet · module row',{fs:7.5,a:'start',c:'#5b6673'});
+  for(let i=0;i<8;i++){const k=lo+i,on=k===n,X=10+i*26.8;s+=`<rect x="${X}" y="18" width="23" height="80" rx="2" fill="${on?'#ffe3d1':'#5d6774'}" stroke="${on?K.hit:K.ol}" stroke-width="${on?2:1}"/><circle cx="${X+6}" cy="25" r="2" fill="${K.led}"/><rect x="${X+4}" y="74" width="15" height="18" fill="${on?'#444':'#3a4049'}"/>`+`<text x="${X+11.5}" y="62" font-size="7" font-family="IBM Plex Sans,sans-serif" fill="${on?K.hit:'#fff'}" text-anchor="middle" transform="rotate(-90 ${X+11.5} 52)">GXF${k}</text>`+(on?`<path d="M${X+11.5} 92V112" stroke="${col}" stroke-width="2.6"/>`:'')}
+  const mx=10+(n-lo)*26.8+11.5,ta=mx<115?{x:mx+10,a:'start'}:{x:mx-10,a:'end'};return{s:s+T(ta.x,122,`GXF${n} = ${typ}`,{fs:8.5,fw:600,c:K.hit,a:ta.a})+(p.hi.length?T(ta.x,138,'terminals '+p.hi.join(' / '),{fs:8,mono:1,a:ta.a}):''),a:[115,100]}};
+/* MOXA EDS-316: DIN-rail switch, 16 x RJ45 (network list K1AU3-E2-0-109) */
+DEV.eds=(x,col)=>{let s=`<rect x="10" y="72" width="210" height="7" fill="${K.rail}" stroke="${K.ol}" stroke-width=".8"/>`;[['A',60,CC.fl],['B',150,'#e0b000']].forEach(([l,cx,c])=>{s+=RC(cx-32,12,64,128,'#c7ccd3',{rx:4,sw:1.5})+RC(cx-28,16,56,14,'#2b4c7e',{rx:2,sw:.6})+T(cx,26,'MOXA',{fs:8,fw:600,c:'#fff'});for(let i=0;i<16;i++){const col2=i%2,row=Math.floor(i/2);const X=cx-22+col2*24,Y=38+row*12;const on=i===3;s+=`<rect x="${X}" y="${Y}" width="20" height="9" fill="${on?c:'#2a2e33'}" stroke="#666" stroke-width=".5"/><circle cx="${X+2.5}" cy="${Y+2}" r="1" fill="${K.led}"/>`}s+=T(cx,140+6,/MBA0/.test(x.t)?'MBA0-'+l:(((x.t||'').match(/hub-(\d)/)||[0,''])[1]?'hub-'+x.t.match(/hub-(\d)/)[1]:'')+l,{fs:8,mono:1,fw:600})});return{s:s+T(115,10,'MOXA EDS-316 A / B',{fs:7.5,c:'#5b6673'}),a:[115,100]}};
+/* LM2-S1-O-001 p41: RTU Panel 1 = M-System W5DY isolators -> ABB RTU560 analog board 23AI60 */
+DEV.rtu560=(x,col)=>{let s=RC(14,4,202,142,'#d9dcd7',{rx:3,sw:1.6})+RC(20,10,190,130,K.in,{sw:.6})+T(26,22,'ABB RTU560 rack',{fs:7.5,a:'start',c:'#5b6673'})+RC(26,26,178,52,'#e6e9ed',{rx:2});
+  for(let i=0;i<9;i++){const on=i===5,X=30+i*19.4;s+=`<rect x="${X}" y="30" width="16" height="44" fill="${on?'#ffe3d1':'#58616d'}" stroke="${on?K.hit:K.ol}" stroke-width="${on?1.8:.8}"/><circle cx="${X+5}" cy="36" r="1.8" fill="${K.led}"/>`}
+  s+=T(30+5*19.4+8,92,'23AI60',{fs:7.5,mono:1,fw:600,c:K.hit})+T(26,106,'M-System W5DY isolators',{fs:7.5,a:'start',c:'#5b6673'})+`<rect x="26" y="126" width="178" height="5" fill="${K.rail}"/>`;
+  for(let i=0;i<10;i++){const on=i===2,X=30+i*17;s+=`<rect x="${X}" y="110" width="13" height="22" rx="1.5" fill="${on?K.hi:'#f2f2ee'}" stroke="${on?K.hit:K.ol}" stroke-width="${on?1.4:.7}"/>`}
+  return{s:s+`<path d="M${30+2*17+6.5} 110V86H${30+5*19.4+8}V78" fill="none" stroke="${col}" stroke-width="1.8"/>`,a:[40,121]}};
+
+
+/* ===== v6: every cable lands on a real terminal / port / gland of the device (user 11-15: "cable di mismo nakasaksak") =====
+   each device gives P = {up, dn}: up = side toward the field, dn = side toward the DCS / screens.
+   a port: x, y = where the cable ends; vl / vr = the height the cable runs at when it comes in from the left / right edge */
+function strip(x,y,hi,col,o={}){
+  let list=hi.slice();const ints=hi.every(v=>/^\d+$/.test(v));const n=o.max||11;
+  if(ints&&hi.length&&Math.max(...hi.map(Number))-Math.min(...hi.map(Number))+1>n){list=[];hi.forEach((v,i)=>{list.push(v);if(i<hi.length-1&&+hi[i+1]!==+v+1)list.push('')})}
+  else if(ints&&hi.length){const a=Math.min(...hi.map(Number)),b=Math.max(...hi.map(Number));let lo=Math.max(1,a-2),up=b+2;while(up-lo+1>n&&up>b)up--;while(up-lo+1>n&&lo<a)lo++;list=[];for(let i=lo;i<=up;i++)list.push(String(i))}
+  else if(hi.length&&hi.length<n-1)list=['',...hi,''];
+  const w=o.w||15,h=o.h||30;const W=list.length*w;const xs=[];
+  let s=`<rect x="${x-4}" y="${y+h*0.45}" width="${W+8}" height="6" fill="${K.rail}" stroke="${K.ol}" stroke-width=".8"/>`;
+  list.forEach((v,i)=>{const on=hi.includes(v)&&v!=='';const X=x+i*w,cx=X+(w-1.5)/2;if(on)xs.push(cx);
+    s+=`<rect x="${X}" y="${y}" width="${w-1.5}" height="${h}" rx="1.5" fill="${on?K.hi:'#d6dbe1'}" stroke="${on?K.hit:K.ol}" stroke-width="${on?1.4:.8}"/>`+
+      `<circle cx="${cx}" cy="${y+5}" r="2.8" fill="#f2f3f5" stroke="${K.ol}" stroke-width=".7"/><path d="M${cx-2} ${y+5}h4" stroke="${K.ol}" stroke-width=".8"/>`+
+      `<circle cx="${cx}" cy="${y+h-5}" r="2.8" fill="#f2f3f5" stroke="${K.ol}" stroke-width=".7"/><path d="M${cx-2} ${y+h-5}h4" stroke="${K.ol}" stroke-width=".8"/>`+
+      (v!==''?T(cx,y+h/2+3,v,{fs:o.fs||7,mono:1,c:on?K.hit:'#5b6673',fw:on?600:400}):'')});
+  return{s,W,xs,top:y+5,bot:y+h-5}}
+function centred(hi,col,cx,y,o={}){const t=strip(0,0,hi,col,o);return strip(cx-t.W/2,y,hi,col,o).s}
+function centredP(hi,col,cx,y,o={}){const t=strip(0,0,hi,col,o);return strip(cx-t.W/2,y,hi,col,o)}
+/* conductors from each terminal screw to one point where the cable jacket ends (a gland / cable end) */
+function fan(xs,y0,fx,fy,col){if(!xs.length)return'';return xs.map(x=>`<path d="M${x} ${y0}V${(y0+fy)/2}L${fx} ${fy}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${x}" cy="${y0}" r="1.6" fill="${col}"/>`).join('')+`<rect x="${fx-4}" y="${fy-3}" width="8" height="6" rx="1.5" fill="#444"/>`}
+const PT=(x,y,vl,vr)=>({x,y,vl:vl==null?y:vl,vr:vr==null?y:vr});
+const both=p=>({up:p,dn:p});
+/* field devices: cable gland */
+DEV.tx=(x,col)=>({s:pipe(128)+`<path d="M115 128V106" stroke="${K.ol}" stroke-width="5"/><path d="M115 128V106" stroke="${K.mt}" stroke-width="3"/>`+RC(96,92,38,15,K.mt2,{rx:2})+`<circle cx="90" cy="99" r="5" fill="#c44" stroke="${K.ol}"/><circle cx="140" cy="99" r="5" fill="#c44" stroke="${K.ol}"/>`+RC(103,64,24,29,'#8fa0b3',{rx:2})+`<circle cx="115" cy="40" r="30" fill="#dfe5ec" stroke="${K.ol}" stroke-width="1.8"/><circle cx="115" cy="40" r="20" fill="#fff" stroke="${K.ol}"/>`+RC(102,33,26,13,'#c9ead2',{rx:1,sw:.8})+T(115,43,'PV',{fs:8,mono:1})+RC(145,58,14,12,K.mt,{rx:2})+T(152,82,'gland',{fs:6,c:'#5b6673'}),P:both(PT(159,64,4,64))});
+DEV.sw=(x,col)=>({s:pipe(128)+RC(108,96,14,32,K.mt2)+RC(75,40,70,52,'#e8c547',{rx:3,sw:1.6})+`<circle cx="110" cy="66" r="6" fill="#fff" stroke="${K.ol}"/><path d="M110 66L150 30" stroke="${K.ol}" stroke-width="3"/><circle cx="152" cy="28" r="7" fill="#444" stroke="${K.ol}"/>`+RC(145,74,14,10,K.mt,{rx:2})+T(110,55,'LIMIT SW',{fs:7.5,fw:600}),P:both(PT(159,79,4,79))});
+DEV.va=(x,col)=>({s:pipe(128)+`<path d="M85 120L115 134L85 148ZM145 120L115 134L145 148Z" fill="#7f8ea0" stroke="${K.ol}"/><circle cx="115" cy="134" r="9" fill="#7f8ea0" stroke="${K.ol}"/><path d="M108 125V80M122 125V80" stroke="${K.ol}" stroke-width="2.5"/><path d="M80 80Q115 30 150 80Z" fill="#3d6fb6" stroke="${K.ol}" stroke-width="1.5"/>`+RC(78,78,74,6,'#2c4f86')+RC(158,62,30,26,'#e3e6ea',{rx:2})+T(173,79,'SOL',{fs:8,fw:600})+`<path d="M152 75H158" stroke="${K.ol}" stroke-width="2"/>`+RC(188,70,7,10,K.mt,{rx:1}),P:both(PT(195,75,30,75))});
+DEV.mo=(x,col)=>{let f='';for(let i=0;i<8;i++)f+=`<path d="M${70+i*10} 62V118" stroke="${K.ol}" stroke-width=".7"/>`;return{s:RC(55,124,120,10,K.mt2)+RC(60,58,100,64,'#4f7a5c',{rx:10,sw:1.6})+f+RC(160,80,24,20,K.mt2,{rx:2})+`<rect x="184" y="86" width="22" height="8" fill="#999" stroke="${K.ol}"/>`+RC(92,40,36,20,'#5f8c6b',{rx:2})+T(110,53,'TB',{fs:8,c:'#fff'})+RC(128,46,6,8,K.mt,{rx:1}),P:both(PT(134,50,20,50))}};
+/* panel terminal block: field cable on the top screws, onward cable on the bottom screws */
+function tbDev(x,col,cy,label,box){const p=parsePins(x.pins&&x.pins[0]);const st=centredP(p.hi,col,115,cy,{max:13});const cx=st.xs.length?(st.xs[0]+st.xs[st.xs.length-1])/2:115;
+  return{s:box+(label?T(14,box?36:30,label,{fs:8,a:'start',c:'#5b6673'}):'')+st.s+fan(st.xs,st.top,cx,cy-14,col)+fan(st.xs,st.bot,cx,cy+44,col),P:{up:PT(cx,cy-14,cy-24,cy-24),dn:PT(cx,cy+44,cy+52,cy+52)}}}
+DEV.tb=(x,col)=>tbDev(x,col,62,'Panel terminal block',RC(4,20,222,118,K.in,{rx:3,s:'#b9bfc6'}));
+DEV.jb=(x,col)=>{const r=tbDev(x,col,58,'',`<path d="M40 14L8 24V128L40 138Z" fill="#cfd3ce" stroke="${K.ol}" stroke-width="1.2"/>`+RC(40,14,180,124,'#d9dcd7',{rx:4,sw:1.8})+RC(50,24,160,104,K.in,{rx:2,sw:.8})+T(204,36,'JUNCTION BOX',{fs:8,fw:600,c:'#5b6673',a:'end'})+[70,100,160,190].map(c=>`<rect x="${c-6}" y="138" width="12" height="8" fill="#555" stroke="${K.ol}" stroke-width=".7"/>`).join(''));
+  r.P={up:PT(r.P.up.x,r.P.up.y,4,4),dn:PT(r.P.dn.x,r.P.dn.y,148,148)};return r};
+DEV.fu=(x,col)=>{const p=parsePins(x.pins&&x.pins[0]);const hi=p.hi.length?p.hi:['F1','F2','F3'];let s=RC(4,14,222,128,K.in,{rx:3,s:'#b9bfc6'})+`<rect x="10" y="82" width="210" height="7" fill="${K.rail}" stroke="${K.ol}" stroke-width=".8"/>`;const w=40,x0=115-hi.length*w/2;const tx=[],bx=[];
+  hi.forEach((v,i)=>{const X=x0+i*w;if(/^F/i.test(v)){s+=RC(X+4,38,w-8,64,'#e9e9e2',{rx:3})+RC(X+11,50,w-22,30,'#fff',{rx:2,sw:.8})+`<rect x="${X+14}" y="54" width="${w-28}" height="22" rx="3" fill="#d8c27a" stroke="${K.ol}" stroke-width=".8"/><circle cx="${X+w/2}" cy="42" r="2.4" fill="#f2f3f5" stroke="${K.ol}"/><circle cx="${X+w/2}" cy="98" r="2.4" fill="#f2f3f5" stroke="${K.ol}"/>`+T(X+w/2,118,v,{fs:9,mono:1,c:K.hit,fw:600})+(/EFB-5/.test(x.s||'')?T(X+w/2,47,'EFB-5',{fs:5}):'');tx.push(X+w/2);bx.push(X+w/2)}else{s+=RC(X+12,50,w-24,40,'#d6dbe1',{rx:2})+`<circle cx="${X+w/2}" cy="56" r="2.4" fill="#f2f3f5" stroke="${K.ol}"/><circle cx="${X+w/2}" cy="84" r="2.4" fill="#f2f3f5" stroke="${K.ol}"/>`+T(X+w/2,118,v,{fs:9,mono:1});tx.push(X+w/2);bx.push(X+w/2)}});
+  const cx=115;return{s:s+fan(tx,42,cx,26,col)+fan(bx,98,cx,130,col),P:{up:PT(cx,26,20,20),dn:PT(cx,130,138,138)}}};
+DEV.evr=((f)=>(x,col)=>{const r=f(x,col);r.s+=RC(214,97,8,6,K.mt,{rx:1});r.P=both(PT(222,100,148,100));return r})(DEV.evr);
+DEV.mt41=((f)=>(x,col)=>{const r=f(x,col);r.s=r.s.replace(/<text[^>]*>plug in to measure<\/text>/,'');const xs=[0,1,2,3].map(i=>146+i*19);
+  r.s+=xs.map(X=>`<path d="M${X} 78V100L175 114" fill="none" stroke="${col}" stroke-width="1.6"/>`).join('')+`<rect x="171" y="111" width="8" height="6" rx="1.5" fill="#444"/>`;
+  r.P={up:PT(175,52,26,26),dn:PT(175,117,148,148)};r.s=r.s.replace(/<path d="M(\d+(?:\.\d+)?) 66V56"/g,'<path d="M$1 66V56L175 50"');return r})(DEV.mt41);
+DEV.qt2=((f)=>(x,col)=>{const r=f(x,col);const xs=[156,165.6,175.2];r.s+=fan(xs,42,165,24,col);r.s+=`<path d="M180 128V136" stroke="#444" stroke-width="6"/>`;r.P={up:PT(165,24,18,18),dn:PT(180,136,148,148)};return r})(DEV.qt2);
+DEV.tcsmod=((f)=>(x,col)=>{const r=f(x,col);const m=r.s.match(/<path d="M([\d.]+) 92V112"/);const X=m?+m[1]:115;r.s+=`<rect x="${X-4}" y="110" width="8" height="6" rx="1.5" fill="#444"/>`;r.P=both(PT(X,116,148,148));return r})(DEV.tcsmod);
+/* marshalling panel: field cable on the field-side strip (top), DCS cable on the system-side strip (bottom) */
+DEV.mpl=(x,col)=>{const a=parsePins(x.pins&&x.pins[0]),b=parsePins(x.pins&&x.pins[1]);let rows='';for(let i=0;i<7;i++){const on=i===2||i===4;rows+=`<rect x="22" y="${22+i*16}" width="56" height="9" fill="${on?K.hi:'#d6dbe1'}" stroke="${on?K.hit:K.ol}" stroke-width="${on?1.3:.6}"/>`;for(let j=0;j<9;j++)rows+=`<path d="M${24+j*6} ${23+i*16}v7" stroke="${K.ol}" stroke-width=".4"/>`}
+  const A=strip(104,30,a.hi,col,{max:7,w:16,h:26}),B=strip(104,98,b.hi,col,{max:7,w:16,h:26});const ca=A.xs.length?(A.xs[0]+A.xs[A.xs.length-1])/2:150,cb=B.xs.length?(B.xs[0]+B.xs[B.xs.length-1])/2:150;
+  return{s:`<path d="M14 6L2 12V142L14 146Z" fill="#cfd3ce" stroke="${K.ol}"/>`+RC(14,6,72,140,'#d9dcd7',{rx:2,sw:1.6})+RC(18,12,64,128,K.in,{sw:.6})+rows+`<path d="M78 58L100 44M78 90L100 110" stroke="${K.hit}" stroke-dasharray="3 2"/>`+T(104,66,(a.name||'')+' field side',{fs:7,a:'start',mono:1,fw:600})+A.s+T(104,94,'system side',{fs:7,a:'start',mono:1,fw:600})+B.s+fan(A.xs,A.top,ca,14,col)+fan(B.xs,B.bot,cb,138,col)+`<path d="M${(A.xs[A.xs.length-1]||ca)} ${A.bot}V${(B.xs[0]||cb)<0?0:A.bot+6}" stroke="none"/>`,P:{up:PT(ca,14,2,2),dn:PT(cb,138,148,148)}}};
+/* DCS rack */
+DEV.fcsio=((f)=>(x,col)=>{const r=f(x,col);const ys=[...r.s.matchAll(/<path d="M14 ([\d.]+)H2"/g)].map(m=>+m[1]);r.s=r.s.replace(/<path d="M14 ([\d.]+)H2" stroke="[^"]+" stroke-width="2"\/>/g,'');
+  const fy=ys.length?(ys[0]+ys[ys.length-1])/2:80;r.s+=ys.map(y=>`<path d="M14 ${y}H8L4 ${fy}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="14" cy="${y}" r="1.6" fill="${col}"/>`).join('')+`<rect x="0" y="${fy-3}" width="6" height="6" rx="1.5" fill="#444"/>`;
+  r.s+=`<rect x="226" y="66" width="4" height="12" fill="#444"/>`+T(214,62,'bus',{fs:6,c:'#5b6673'});r.P={up:PT(2,fy,fy,148),dn:PT(228,72,4,72)};return r})(DEV.fcsio);
+DEV.cnodmcu=((f)=>(x,col)=>{const r=f(x,col);r.s=r.s.replace(/<path d="M([\d.]+) 80V100" stroke="[^"]+" stroke-width="2"\/>/g,'');const xa=14+2*17.2+7.5,xb=14+3*17.2+7.5;
+  r.s+=`<path d="M${xa} 80V118L${(xa+xb)/2} 126M${xb} 80V118L${(xa+xb)/2} 126" fill="none" stroke="${CC.io}" stroke-width="1.6"/><rect x="${(xa+xb)/2-4}" y="124" width="8" height="6" rx="1.5" fill="#444"/>`+`<rect x="2" y="66" width="6" height="12" fill="#444"/>`;
+  r.P={up:PT(4,72,72,148),dn:PT((xa+xb)/2,130,148,148)};return r})(DEV.cnodmcu);
+function edsDev(x,col,labA,labB){const fl=/FL-NET/.test(x.t);const cs=fl?[CC.fl,'#e0b000']:[CC.io,CC.io];let s=`<rect x="10" y="72" width="210" height="7" fill="${K.rail}" stroke="${K.ol}" stroke-width=".8"/>`;const pu=[],pd=[];
+  [[labA,60,cs[0]],[labB,170,cs[1]]].forEach(([l,cx,c],k)=>{s+=RC(cx-32,16,64,124,'#c7ccd3',{rx:4,sw:1.5})+RC(cx-28,20,56,13,'#2b4c7e',{rx:2,sw:.6})+T(cx,30,'MOXA',{fs:8,fw:600,c:'#fff'});
+    for(let i=0;i<16;i++){const c2=i%2,row=Math.floor(i/2);const X=cx-22+c2*24,Y=40+row*12;const on=k?(i===0||i===14):(i===1||i===15);s+=`<rect x="${X}" y="${Y}" width="20" height="9" fill="${on?c:'#2a2e33'}" stroke="#666" stroke-width=".5"/><circle cx="${X+2.5}" cy="${Y+2}" r="1" fill="${K.led}"/>`;if(on&&row===0)pu.push([X+10,Y+4.5,k]);if(on&&row===7)pd.push([X+10,Y+4.5,k])}
+    s+=T(cx,10,l,{fs:8,mono:1,fw:600})});
+  const lines=(pts,fx,fy)=>pts.map(([px,py,k])=>`<path d="M${px} ${py}H${fx+(k?4:-4)}V${fy}" fill="none" stroke="#2a2e33" stroke-width="2"/><rect x="${px-3}" y="${py-3}" width="6" height="6" fill="#111"/>`).join('')+`<rect x="${fx-4}" y="${fy-3}" width="8" height="6" rx="1.5" fill="#444"/>`;
+  s+=lines(pu,115,8)+lines(pd,115,146);return{s,P:{up:PT(115,8,4,4),dn:PT(115,146,148,148)}}}
+DEV.eds=(x,col)=>{const m=(x.t||'').match(/hub-(\d)/);return /MBA0/.test(x.t)?edsDev(x,col,'MBA0-A','MBA0-B'):edsDev(x,col,m?'hub-'+m[1]+'A':'A',m?'hub-'+m[1]+'B':'B')};
+DEV.hub=((f)=>(x,col)=>{const r=f(x,col);const fl=/FL-NET/.test(x.t);const c=fl?CC.fl:CC.io;const pA=[28+1*11.5+4.5,30+14.5],pB=[28+1*11.5+4.5,84+14.5],qA=[28+12*11.5+4.5,30+14.5],qB=[28+12*11.5+4.5,84+14.5];
+  r.s+=`<path d="M${pA[0]} ${pA[1]}V74M${pB[0]} ${pB[1]}V74" stroke="#2a2e33" stroke-width="2"/><path d="M${qA[0]} ${qA[1]}V74M${qB[0]} ${qB[1]}V74" stroke="#2a2e33" stroke-width="2"/>`+[pA,pB,qA,qB].map(([px,py])=>`<rect x="${px-4.5}" y="${py-4.5}" width="9" height="9" fill="${c}"/>`).join('');r.P={up:PT(pA[0],74,74,74),dn:PT(qA[0],74,74,74)};return r})(DEV.hub);
+DEV.fcs2000=((f)=>(x,col)=>{const r=f(x,col);const ja=[20.5,128.5],fa=[81,189];
+  r.s+=ja.map(X=>`<path d="M${X} 90V134L60 140" fill="none" stroke="#2a2e33" stroke-width="1.8"/>`).join('')+`<rect x="56" y="137" width="8" height="6" rx="1.5" fill="#444"/>`;
+  r.s+=[[102,168],[210,176]].map(([X,J])=>`<rect x="${X-3}" y="35" width="6" height="6" fill="#111"/><path d="M${X} 38V16H${J}V11" fill="none" stroke="${CC.fl}" stroke-width="1.8"/>`).join('')+`<rect x="166" y="6" width="12" height="6" rx="1.5" fill="#444"/>`+'';
+  r.P={up:PT(60,143,148,148),dn:PT(172,6,4,4)};return r})(DEV.fcs2000);
+DEV.scr=((f)=>(x,col)=>{const r=f(x,col);r.s+=RC(196,84,26,56,'#3c434d',{rx:2})+`<circle cx="209" cy="92" r="2" fill="${K.led}"/><path d="M200 104h18M200 110h18" stroke="#8a939d"/>`+T(209,132,'PC',{fs:7,c:'#fff'})+`<rect x="218" y="116" width="6" height="6" fill="#111"/>`;r.P=both(PT(224,119,119,119));return r})(DEV.scr);
+DEV.sv=((f)=>(x,col)=>{const r=f(x,col);r.s+=`<rect x="172" y="70" width="8" height="8" fill="#111"/><rect x="50" y="70" width="8" height="8" fill="#111"/>`;r.P={up:PT(180,74,148,74),dn:PT(50,74,74,148)};return r})(DEV.sv);
+DEV.rtu560=((f)=>(x,col)=>{const r=f(x,col);r.s+=`<path d="M70.5 132V140" stroke="${col}" stroke-width="2"/><rect x="66.5" y="138" width="8" height="6" rx="1.5" fill="#444"/><rect x="204" y="48" width="8" height="8" fill="#111"/>`;r.P={dn:PT(70.5,144,148,148),up:PT(212,52,4,52)};return r})(DEV.rtu560);
+/* level of a stop: 0 field / other system, 1 marshalling, 2 I/O, 3 MCU, 4 I/O LAN switch, 5 controller, 6 FL-NET, 7 control room */
+function lvOf(x){const k=pick(x);if(x.band==='Control room')return 7;if(k==='mpl')return 1;if(k==='fcsio'||(x.ic==='card'&&!/TCS/i.test(x.t)))return 2;if(k==='cnodmcu')return 3;if((k==='eds'||k==='hub')&&/MBA0/.test(x.t))return 4;if(k==='fcs2000'||(x.ic==='cpu'&&/Controller/.test(x.t)))return 5;if(x.band==='DCS network')return 6;return 0}
+
+/* branch to the screen: the value also travels to an operator screen from this point */
+function brHtml(x){const nest=(it,X,Y,w)=>{const col=it.c||CC.fl;const d=(DEV[pick(it)]||DEV.tb)(it,col);return{s:`<svg x="${X}" y="${Y}" width="${w}" height="${w*150/230}" viewBox="0 0 230 150" overflow="visible">${d.s}</svg>`,P:d.P,k:w/230}};
+  if(x.scr==='DCS screen'){const il=N.hub['hub-2A/2B to hub-1A/1B']||['',''];const k=.487,Y=24;
+    const h=nest({band:'Control room',ic:'hub',t:'FL-NET switches hub-1A / 1B',s:''},0,Y,112),c=nest({band:'Control room',ic:'scr',t:'COS',s:''},118,Y,112);
+    const hu=h.P.up,hd=h.P.dn,cp=c.P.up;const A=[hu.x*k,Y+hu.y*k],B=[hd.x*k,Y+hd.y*k],C=[118+cp.x*k,Y+cp.y*k];
+    const w=wire(`M4 -64V${A[1]}H${A[0]}`,'fl',.5)+wire(`M${B[0]} ${B[1]}H115V${Y+80}H232V${C[1]}H${C[0]}`,'fl',.5);
+    return `<div class="brn"><div class="brh">To the DCS screen</div><svg class="brs" viewBox="0 0 236 112" overflow="visible">${h.s}${c.s}${w}<circle cx="${A[0]}" cy="${A[1]}" r="2" fill="#fff" stroke="#222"/><circle cx="${C[0]}" cy="${C[1]}" r="2" fill="#fff" stroke="#222"/></svg>
+      <dl class="fx"><dt>Panel</dt><dd>Control room, COS1~5</dd><dt>Signal</dt><dd>Ethernet (FL-NET A / B)</dd></dl></div>`}
+  if(x.scr==='TCS screen'){const c=nest({band:'TCS (turbine control)',ic:'scr',t:'TCS',s:''},48,14,140),k=140/230,cp=c.P.up,C=[48+cp.x*k,14+cp.y*k];
+    const w=`<rect x="0" y="0" width="40" height="22" rx="2" fill="#5d6774" stroke="${K.ol}"/>`+T(20,14,'TCS ctrl',{fs:7,c:'#fff'})+wire(`M6 -64V0`,'eth',.55)+wire(`M40 11H44V112H200V${C[1]}H${C[0]}`,'eth',.55);
+    return `<div class="brn"><div class="brh">To the TCS screen</div><svg class="brs" viewBox="0 0 236 120" overflow="visible">${c.s}${w}<circle cx="${C[0]}" cy="${C[1]}" r="2" fill="#fff" stroke="#222"/></svg>
+      <dl class="fx"><dt>Panel</dt><dd>Control room, TCS station</dd><dt>Signal</dt><dd>Ethernet (TCS network)</dd></dl></div>`}
+  return''}
+/* one clean format per stop: label / value rows (built from the same data, nothing new) */
+function cabOf(x){const m=((x.cab||'')+' '+(x.t||'')+' '+(x.s||'')).match(/(FCS\d{4})/i);return m?m[1].toUpperCase():''}
+function cabTxt(c){return c?c+(RKNO[c]?' (rack room no. '+RKNO[c]+')':''):''}
+const SIGT={ac:'115 V AC from the VT',ma:'4-20 mA',dc:'On / off (contact or 24 V DC)',bus:'Card bus (backplane)',io:'I/O LAN, Ethernet A / B',fl:'FL-NET, Ethernet A / B',eth:'Ethernet',sw:'Inside the controller'};
+const SIGF={'AI-Wet':'4-20 mA, 2-wire (DCS powers the loop)','AI-Dry':'4-20 mA, 4-wire (self-powered)','DI-Dry':'On / off, dry contact','DI-Wet':'On / off, 24 V DC','DO-Wet':'On / off, DCS supplies the voltage','DO-Dry':'On / off, dry contact (relay)'};
+/* minimal card: panel, TB, terminal, signal type (user 11-15 7:08 PM) */
+function fieldsOf(x,r,i){const k=pick(x),t=x.t||'',s=x.s||'',pins=(x.pins||[]).filter(p=>p&&String(p).trim()&&String(p).trim()!=='/');const F=[];const add=(a,b)=>{if(b&&String(b).trim())F.push([a,String(b).trim()])};
+  const lk=(SEQ[i]&&SEQ[i].ln&&SEQ[i].ln.link)||(SEQ[i+1]&&SEQ[i+1].ln&&SEQ[i+1].ln.link)||'';
+  let panel=PK[i]?PK[i].replace(/ · no\. (\d+)/,', no. $1'):'',tb='',term='',sig=SIGT[lk]||'';
+  if(x.band==='Field'&&k!=='jb'&&k!=='evr'){panel='Field';sig=SIGF[r.sig]||r.sig||sig}
+  else if(k==='jb'){panel='Field';tb=(s.match(/^(?:Terminal block|Strip)\s*([^(]*)/)||[])[1];term=pins.join(', ')}
+  else if(k==='mpl'){tb=(pins[0]||'').split(' ')[0];{const f=(pins[0]||'').split(' ').slice(1).join(' '),y=(pins[1]||'').replace(/^system\s*/,'');term=(!y||y===f)?f:'field '+f+', system '+y}}
+  else if(k==='fcsio'){tb=(pins[0]||'').split(' ')[0]+(x.tbd?' ('+x.tbd+')':'');term=(pins[0]||'').split(' ').slice(1).join(' ')}
+  else if(k==='tcsmod'){tb=(t.match(/GXF\d+/)||[''])[0]+' module';term=pins.join(' / ')}
+  else if(k==='evr'){panel='VT & SA cubicle';term=pins.join(', ')}
+  else if(['fu','tb','mt41','qt2'].includes(k)||/terminal block|fuses|test terminal|transducer/i.test(t)){tb=(t.match(/\b(X\d+|FJ1|F0\d[^ ]*)/)||[''])[0];term=pins.join(', ')}
+  if(k==='rtu'&&x.band==='SCADA')sig='4-20 mA in, then Ethernet (IEC-104) out';
+  add('Panel',panel);add('TB',tb);add('Terminal',String(term||'').replace(/\s*,\s*/g,', ').replace(/\s*\/\s*/g,' / '));add('Signal',sig);
+  return F}
+function screens(it){return it.filter(x=>x.scr).map(x=>x.scr)}
+function wire(d,k,sc){sc=sc||1;const w=v=>v*sc;const P=(c,wd,ex='')=>`<path d="${d}" fill="none" stroke="${c}" stroke-width="${w(wd)}" stroke-linejoin="round" ${ex}/>`;
+  switch(k){case'ac':return P(CC.ac,3.5);case'ma':return P(CC.ma,7)+P('#fff',2.2);case'dc':return P(CC.dc,7)+P('#fff',2.2);case'bus':return P(CC.bus,8);
+  case'io':return P(CC.io,7)+P('#fff',2.2,`stroke-dasharray="${w(6)} ${w(4)}"`);case'fl':return P(CC.fl,7)+P('#f2c200',3);case'eth':return P(CC.eth,4.5);case'sw':return P(CC.sw,2.6,`stroke-dasharray="${w(5)} ${w(4)}"`);default:return P(CC.dc,3)}}
+const BANDC={'Field':'#2f7d32','GCP (generator control panel)':'#8a5a00','TCS (turbine control)':'#7b4fd6','DCS rack room':'#1f6fd1','DCS network':'#d23b3b','Control room':'#0e7490','SCADA':'#6b7682','Other system':'#6b7682'};
+let SEQ=[],DP=[],LV=[],PK=[];
+/* which panel / cabinet a stop sits in (from the stop's own text; CNOD node shares the cabinet of its I/O module) */
+/* rack room panel numbers: K1AU3-E2-0-107 sh2 equipment list (Unit 1) */
+const RKNO={FCS1011:14,FCS1012:15,FCS1013:16,FCS1021:17,FCS1022:18,FCS1023:19,FCS1031:20,FCS1032:21,FCS1033:22,FCS1041:23,FCS1042:24,FCS1051:26};
+function plateTxt(k){return k.replace(/^Cabinet /,'').replace(/^GCP panel/,'GCP').replace(/^TCS-7 cabinet/,'TCS-7').replace(/ · generator control panel/,'').replace(/ turbine control cabinet/,'').replace(/ marshalling/,'')}
+function pkOf(x){const t=(x.cab?'cabinet '+x.cab+' ':'')+(x.t||'')+' '+(x.s||'');let m=t.match(/cabinet (FCS\d{4})/i)||t.match(/(FCS\d{4}) CABINET/i);if(m){const c=m[1].toUpperCase();return'Cabinet '+c+(RKNO[c]?' · no. '+RKNO[c]:'')}
+  if(/^Marshalling panel (\S+)/.test(x.t)){const q=x.t.split(' ')[2],k=(q.match(/MPL10(\d)/)||[])[1];return q+' marshalling'+(k?' · no. '+k:'')}
+  if(/^GCP/.test(x.band||''))return'GCP panel · no. 34';if(/^TCS/.test(x.band||''))return'TCS-7 cabinet · no. 34';
+  if(x.band==='SCADA'&&/RTU Panel/.test(x.t))return'RTU panel · no. 30';if(x.band==='SCADA'&&/front-end/i.test(x.t))return'SCADA panel · no. 29';if(x.band==='Control room')return'Control room';return''}
+function render(r){
+  const it=build(r);SEQ=[];let pend=null;
+  it.forEach(x=>{if(x.link){pend=x;return}SEQ.push({st:x,ln:SEQ.length?pend:null});pend=null});
+  const sc=screens(it);const g=rng(r);const mplName=`${r.mpl} ${r.fs} ${r.f1} / ${r.f2}`;
+  SEQ.forEach((o,i)=>{PK[i]=pkOf(o.st)});SEQ.forEach((o,i)=>{if(o.st.ic==="mcu"&&!PK[i]){const j=[i-1,i+1].find(j=>j>=0&&j<SEQ.length&&/^I\/O module/.test(SEQ[j].st.t));if(j!=null)PK[i]=PK[j]}});
+  const cells=SEQ.map((o,i)=>{const x=o.st;const kin=o.ln&&o.ln.link,kout=SEQ[i+1]&&SEQ[i+1].ln&&SEQ[i+1].ln.link;const col=CC[(kin&&kin!=='bus'&&kin!=='sw')?kin:(kout||'ma')]||CC.ma;
+    const d=(DEV[pick(x)]||DEV.tb)(x,col);DP[i]=d.P||both(PT((d.a||[115])[0],(d.a||[0,100])[1]));LV[i]=lvOf(x);const pins=(x.pins||[]).filter(p=>p&&String(p).trim()&&String(p).trim()!=='/');
+    return `<div class="cell${x.sw?' ctl':''}${x.main?' main':''}"  data-kin="${kin||''}" data-kout="${kout||''}">${PK[i]?'':`<div class="area" style="color:${BANDC[x.band]||'#5b6673'}">${esc(x.band||'')}</div>`}<svg class="dev" viewBox="0 0 230 150">${d.s}<g class="stubs"></g></svg><div class="nm">${esc(x.t)}${x.tp?`<span class="tpb">${x.main?'Main test point':'Test point'}</span>`:''}</div><dl class="fx">${fieldsOf(x,r,i).map(([a,b])=>`<dt>${esc(a)}</dt><dd${/^(TB|Terminal|DCS address)$/.test(a)?' class="mono"':''}>${esc(b)}</dd>`).join('')}</dl>${x.scr&&x.ic!=='scr'?brHtml(x):''}</div>`}).join('');
+  const key=[['ac','AC from VT'],['ma','4-20 mA pair'],['dc','On / off pair'],['bus','Card bus'],['io','I/O LAN A / B'],['fl','FL-NET A / B'],['eth','SCADA Ethernet'],['sw','Inside a controller']].map(([k,l])=>`<span><svg viewBox="0 0 34 12" width="34" height="12">${wire('M1 6H33',k,.8)}</svg>${l}</span>`).join('');
+  document.getElementById('out').innerHTML=`<div class="top"><div class="head"><div class="tag">${esc(r.g)} · ${esc(r.a)}</div><div class="desc">${esc(r.d)}</div><div class="facts"><span>Type <b>${r.t}</b></span><span>Signal <b>${esc(r.sig||'')}</b></span>${r.rng?`<span>Range <b>${esc(r.rng)}</b></span>`:''}${r.rem?`<span>Remark <b>${esc(r.rem)}</b></span>`:''}<span>Station <b>STN${r.st}</b></span></div></div>
+  <div class="split" id="ff"></div></div>
+  <div class="key">${key}</div>
+  <div class="canvas" id="cv"><div class="pnls" id="pnls"></div><svg class="wires" id="wires"></svg><div class="wls" id="wls"></div>${cells}</div>`;
+  FF={r,v:{},m:{}};ffDraw();
+  layout()}
+/* fault finder: what each screen shows -> where the fault is -> what to measure there */
+let FF=null;
+function ffPts(){const r=FF.r,out=SEQ[0].st.band==='Control room',P=[];const src={k:'real',nm:out?'Real state at '+SEQ[SEQ.length-1].st.t:'Real value at '+SEQ[0].st.t,i:out?SEQ.length-1:0,hint:out?'what the device really does':'local gauge, a meter you trust, or the real plant state'};
+  if(!out)P.push(src);SEQ.forEach((o,i)=>{if(o.st.scr)P.push({k:'s'+i,nm:o.st.scr,i})});if(out)P.push(src);return P}
+function ffVal(k){const v=FF.v[k];return v===undefined||v===''?null:v}
+function ffDraw(){const el=document.getElementById('ff');if(!el)return;const r=FF.r,g=rng(r),ana=!!g&&(r.t==='AI'||r.t==='AO'),u=g?g.u:'';const P=ffPts();
+  const tol=g?Math.abs(g.hi-g.lo)*.02:0;const same=(a,b)=>ana?Math.abs(+a-+b)<=tol:String(a)===String(b);
+  const inp=p=>ana?`<input data-k="${p.k}" inputmode="decimal" value="${esc(FF.v[p.k]||'')}" placeholder="${p.k==='real'?'optional':'reading'}"><span class="u">${esc(u)}</span>`
+    :`<select data-k="${p.k}">${['','ON','OFF'].map(o=>`<option${(FF.v[p.k]||'')===o?' selected':''} value="${o}">${o||'not read'}</option>`).join('')}</select>`;
+  let rows=P.map(p=>`<div class="ffr" id="ffr-${p.k}"><span class="ffn">${esc(p.nm)}${p.k==='real'?`<small>${esc(p.hint)}</small>`:''}</span>${inp(p)}<b class="ffs" id="ffs-${p.k}"></b></div>`).join('');
+  el.innerHTML=`<h2>Find the fault</h2><p class="ffi">Type what each screen shows right now, in the order the signal travels. Leave a box empty if you cannot read it.</p><div class="ffl">${rows}</div><div class="ffv" id="ffv"></div>`;
+  el.querySelectorAll('[data-k]').forEach(e=>e.addEventListener(e.tagName==='SELECT'?'change':'input',()=>{FF.v[e.dataset.k]=e.value;ffEval()}));ffEval()}
+function ffEval(){const r=FF.r,g=rng(r),ana=!!g&&(r.t==='AI'||r.t==='AO'),u=g?g.u:'';const P=ffPts();const tol=g?Math.abs(g.hi-g.lo)*.02:0;const same=(a,b)=>ana?Math.abs(+a-+b)<=tol:String(a)===String(b);
+  const E=P.filter(p=>ffVal(p.k)!==null&&(!ana||!isNaN(+ffVal(p.k))));P.forEach(p=>{const s=document.getElementById('ffs-'+p.k);if(s){s.textContent='';s.className='ffs'}});
+  document.querySelectorAll('.cell.sus,.cell.okc').forEach(c=>c.classList.remove('sus','okc'));
+  const V=document.getElementById('ffv');if(E.length<2){V.innerHTML=`<p class="ffh">Enter at least two readings (for example the real value and one screen, or two screens).</p>`;return}
+  const base=E[0];let bad=null,good=base;const mark=(p,ok)=>{const s=document.getElementById('ffs-'+p.k);s.textContent=ok?'RIGHT':'WRONG';s.className='ffs '+(ok?'ok':'bad')};mark(base,true);
+  for(const p of E.slice(1)){if(!bad&&same(ffVal(p.k),ffVal(base.k))){mark(p,true);good=p}else if(!bad){bad=p;mark(p,false)}else mark(p,same(ffVal(p.k),ffVal(base.k)))}
+  if(!bad){V.innerHTML=`<p class="ffh ok">All readings agree${base.k==='real'?' with the real value':''}: no fault between <b>${esc(base.nm)}</b> and <b>${esc(E[E.length-1].nm)}</b>.${base.k!=='real'?' If they are all wrong together, the fault is before the first screen: enter the real value to check that part.':''}</p>`;return}
+  const i0=Math.min(good.i,bad.i),i1=Math.max(good.i,bad.i),cells=[...document.querySelectorAll('#cv .cell')];
+  cells.forEach((c,i)=>{if(i>i0&&i<=i1||(i===i1&&i0===i1))c.classList.add('sus');else if(i<=i0&&!(!isIn(r)&&i>=i1))c.classList.add('okc')});
+  const parts=SEQ.slice(i0+(good.i===i0?1:0),i1+(bad.i===i1?1:0)).map(o=>o.st);
+  const rv=ffVal(base.k),wv=ffVal(bad.k);let note='';
+  if(ana&&g){const w=+wv;if(Math.abs(w-g.hi)<=tol)note=`<p class="ffh">${esc(bad.nm)} shows the top of the scale (${g.hi} ${esc(u)} = 20 mA). Something drives this part of the loop to 100 % or more: wrong scaling, an output held at 100 %, or a span that does not match.</p>`;
+    else if(Math.abs(w-g.lo)<=tol)note=`<p class="ffh">${esc(bad.nm)} shows the bottom of the scale (${g.lo} ${esc(u)} = 4 mA or less): look for an open loop, a blown fuse, a loose terminal or no loop power.</p>`;
+    else{const k=(w-g.lo)/(+rv-g.lo);if(isFinite(k)&&+rv!==g.lo)note=`<p class="ffh">The wrong reading is ${k.toFixed(2)} × the right one. A steady ratio like this points to a span (scaling) that does not match between two parts; a reading that jumps around points to a loose or noisy connection.</p>`}}
+  const tps=parts.filter(x=>x.tp);const exp=ana&&g?(4+16*(+rv-g.lo)/(g.hi-g.lo)):null;
+  const tpl=tps.map((x,j)=>{const m=x.tp.replace(/<[^>]+>/g,'').split('·')[0].replace('MAIN TEST POINT.','').trim();const isM=!!x.main;
+    const ex=ana?(isM?`expected <b>${exp.toFixed(2)} mA</b>`:`expected the same mA as the main test point if it is on the same current loop`):(`expected ${FF.v[base.k]==='ON'?'voltage present (ON)':'no voltage (OFF)'}`);
+    return `<li><b>${esc(x.t)}</b> · ${esc(m)} · ${ex}${ana&&isM?`<span class="ffm">measured <input data-m="${j}" inputmode="decimal" value="${esc(FF.m[j]||'')}"> mA <em id="ffm-${j}"></em></span>`:''}</li>`}).join('');
+  V.innerHTML=`<p class="ffh bad">The fault is between <b>${esc(good.nm)}</b> (right) and <b>${esc(bad.nm)}</b> (wrong). It is in one of these ${parts.length} parts, outlined in red below:</p><ol class="ffp">${parts.map(x=>`<li>${esc(x.t)}</li>`).join('')}</ol>${note}`+
+   (tps.length?`<p class="ffh">Measure here first${tps.length>2?' (start in the middle to cut the search in half)':''}:</p><ul class="fft">${tpl}</ul>`:`<p class="ffh">No test point between these two: the fault is inside the controller, the network or the screen settings of these parts.</p>`);
+  V.querySelectorAll('[data-m]').forEach(e=>{const j=+e.dataset.m;const x=tps[j];const upd=()=>{FF.m[j]=e.value;const o=document.getElementById('ffm-'+j);if(e.value===''||isNaN(+e.value)){o.textContent='';return}
+    const ok=Math.abs(+e.value-exp)<=0.32;o.className=ok?'ok':'bad';o.textContent=ok?`right: the fault is after ${x.t}, on the ${bad.nm} side`:`wrong: the fault is before ${x.t}, on the ${good.nm} side`};e.addEventListener('input',upd);upd()})}
+function labTxt(h){const o=labTxt0(h).replace(/\bSFTP\s*/g,'').trim();return o.split(/\s*\/\s*|\s+/).filter(Boolean).map(x=>'<span style="white-space:nowrap">'+x+'</span>').join(o.includes('/')?' / ':' ')}
+function labTxt0(h){const m=[...String(h||'').matchAll(/<span class="mono">([^<]*)<\/span>/g)].map(x=>x[1].replace(/\s*\((A|B) ctrl\)/g,'').trim()).filter(Boolean);if(m.length)return m.join(' ');const t=String(h||'').replace(/<[^>]+>/g,'');const c=t.match(/\b(?:cable|wires)\s+([A-Z0-9]*\d[\w\/-]*)/i);return c?c[1]:''}
+function layout(){const cv=document.getElementById('cv');if(!cv)return;const W=cv.clientWidth;const CW=230,GX=W<620?0:118;
+  const cols=Math.max(1,Math.floor((W-56+GX)/(CW+GX)));cv.style.gridTemplateColumns=`repeat(${cols},${CW}px)`;cv.style.columnGap=GX+'px';
+  const cells=[...cv.querySelectorAll('.cell')];
+  cells.forEach((c,i)=>{const row=Math.floor(i/cols),k=i%cols;c.style.gridRow=row+1;c.style.gridColumn=(row%2?cols-1-k:k)+1});
+  for(let i=0;i<cells.length;i++)if(SEQ[i].st.ic==="mcu"&&!PK[i]){const j=[i-1,i+1].find(j=>j>=0&&j<cells.length&&/^I\/O module/.test(SEQ[j].st.t));if(j!=null)PK[i]=PK[j]}
+  const cr=cv.getBoundingClientRect();const ws=document.getElementById('wires');
+  {let H='';const FB={};let i=0;while(i<cells.length){const k=PK[i];let j=i;const row=Math.floor(i/cols);
+     while(j+1<cells.length&&k&&PK[j+1]===k&&!cells[j].querySelector('.brn')&&(cols===1||Math.floor((j+1)/cols)===row))j++;
+     if(k){let L=1e9,T=1e9,Rr=-1e9,B=-1e9;for(let q=i;q<=j;q++){const b=cells[q].getBoundingClientRect();const br=cells[q].querySelector('.brn');L=Math.min(L,b.left);T=Math.min(T,b.top);Rr=Math.max(Rr,b.right);B=Math.max(B,...[...cells[q].children].filter(e=>!e.classList.contains('brn')).map(e=>e.getBoundingClientRect().bottom))}
+       const pd=GX?16:13;const c=BANDC[SEQ[i].st.band]||'#5b6673';const cont=(i>0&&PK[i-1]===k)?' (cont.)':'';
+       const room=k==='Control room';const vent=(Rr-L)<300?'':'<i></i>'.repeat(Math.min(14,Math.floor((Rr-L-260)/40)));
+       H+=room?`<div class="pnl room" style="left:${L-cr.left-pd}px;top:${T-cr.top-pd-6}px;width:${Rr-L+2*pd}px;height:${B-T+2*pd+6}px"><span class="plate" style="--bc:${c}">${esc(plateTxt(k)+cont)}</span></div>`
+        :`<div class="pnl cab" style="left:${L-cr.left-pd}px;top:${T-cr.top-pd-6}px;width:${Rr-L+2*pd}px;height:${B-T+2*pd+6}px"><div class="roof"><div class="vent">${vent}</div></div><b class="hg h1"></b><b class="hg h2"></b><b class="hd"></b><div class="base"></div><span class="plate" style="--bc:${c}">${esc(plateTxt(k)+cont)}</span></div>`;
+       if(cols===1)FB[j]=B-cr.top+pd+14;else for(let q=i;q<=j;q++)FB[q]=B-cr.top+pd+14}
+     i=j+1}
+   document.getElementById('pnls').innerHTML=H;window.__FB=FB;}ws.setAttribute('width',cr.width);ws.setAttribute('height',cr.height);
+  let P='',L='';const side=[];cells.forEach(()=>side.push({}));
+  cells.forEach((c,i)=>{if(!i)return;const ln=SEQ[i].ln;if(!ln)return;const ra=cells[i-1].getBoundingClientRect(),rb=c.getBoundingClientRect();
+    const same=Math.floor((i-1)/cols)===Math.floor(i/cols);let sa,sb;
+    if(same){const right=rb.left>ra.left;sa=right?'r':'l';sb=right?'l':'r'}else{sa=sb=Math.floor((i-1)/cols)%2===0?'r':'l'}
+    side[i-1][sa]={kind:ln.link,nb:i};side[i][sb]={kind:ln.link,nb:i-1}});
+  const roleOf=(i,k)=>{const nb=side[i][k].nb;if(LV[nb]!==LV[i])return LV[nb]<LV[i]?'up':'dn';return(SEQ[i].st.band==='SCADA')?(nb<i?'dn':'up'):(nb<i?'up':'dn')};
+  const port=(i,k)=>{let role=roleOf(i,k);const o=k==='l'?'r':'l';if(side[i][o]&&side[i][k].nb>side[i][o].nb&&roleOf(i,o)===role)role=role==='up'?'dn':'up';
+    const p=(DP[i]&&DP[i][role])||{x:115,y:100,vl:100,vr:100};let vy=k==='r'?p.vr:p.vl;if(vy<=8)vy=-6;else if(vy>=142)vy=157;return{x:p.x,y:p.y,vy}};
+  const PO=cells.map((c,i)=>{const o={};for(const k of['l','r'])if(side[i][k])o[k]=port(i,k);
+    if(o.l&&o.r&&Math.abs(o.l.vy-o.r.vy)<8&&o.l.x>=o.r.x-6){o.r.vy+=o.r.vy<75?5:-5}return o});
+  const pt=(i,s)=>{const sv=cells[i].querySelector('svg.dev').getBoundingClientRect();const k=sv.width/230;return{x:(s==='r'?sv.right+2*k:sv.left-2*k)-cr.left,y:sv.top-cr.top+PO[i][s].vy*k}};
+  cells.forEach((c,i)=>{if(!i)return;const a=cells[i-1],ln=SEQ[i].ln;if(!ln)return;const ra=a.getBoundingClientRect(),rb=c.getBoundingClientRect();
+    const same=Math.floor((i-1)/cols)===Math.floor(i/cols);let d;
+    if(same){const right=rb.left>ra.left;const A=pt(i-1,right?'r':'l'),B=pt(i,right?'l':'r');const mx=(A.x+B.x)/2;
+      d=`M${A.x} ${A.y}H${mx}V${B.y}H${B.x}`;L+=`<div class="wl" style="left:${Math.min(A.x,B.x)+15}px;top:${Math.max(A.y,B.y)+12}px;width:${Math.abs(B.x-A.x)-30}px">${labTxt(ln.lab)}</div>`}
+    else{const right=Math.floor((i-1)/cols)%2===0;const s=right?'r':'l';const A=pt(i-1,s),B=pt(i,s);
+      const ex=right?Math.max(A.x,B.x)+22:Math.min(A.x,B.x)-22;d=`M${A.x} ${A.y}H${ex}V${B.y}H${B.x}`;
+      L+=`<div class="wl turn" style="left:${ra.left-cr.left}px;top:${(window.__FB[i-1]||ra.bottom-cr.top)+6}px;width:${CW}px;text-align:${(right||cells[i-1].querySelector('.brn'))?'right':'left'}">${labTxt(ln.lab)}</div>`}
+    P+=wire(d,ln.link)});
+  ws.innerHTML=P;document.getElementById('wls').innerHTML=L;
+  cells.forEach((c,i)=>{let s='';for(const k of['l','r']){const sd=side[i][k];if(!sd)continue;const p=PO[i][k];const E=k==='r'?232:-2;
+    s+=wire(`M${E} ${p.vy}H${p.x}V${p.y}`,sd.kind,.62)+`<circle cx="${p.x}" cy="${p.y}" r="2.6" fill="#fff" stroke="#222" stroke-width="1"/>`}
+    c.querySelector('.stubs').innerHTML=s})}
+addEventListener('resize',()=>{clearTimeout(window.__rt);window.__rt=setTimeout(layout,80)});
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>layout());
+try{let lastH=0;new ResizeObserver(()=>{const cv=document.getElementById('cv');if(!cv)return;const h=cv.scrollHeight;if(Math.abs(h-lastH)>2){lastH=h;clearTimeout(window.__ro);window.__ro=setTimeout(layout,60)}}).observe(document.getElementById('out'))}catch(e){}
+
+const q=document.getElementById('q'),sug=document.getElementById('sug');
+function find(s){s=s.trim().toUpperCase();if(!s)return[];const ex=R.filter(r=>r.a===s||(r.g||'').toUpperCase()===s);if(ex.length)return ex;
+  const w=s.split(/\s+/);return R.filter(r=>w.every(x=>((r.g||'')+' '+r.a+' '+(r.d||'')).toUpperCase().includes(x))).slice(0,8)}
+q.addEventListener('input',()=>{const f=find(q.value);sug.innerHTML=f.length===1&&(f[0].a===q.value.trim().toUpperCase()||(f[0].g||'').toUpperCase()===q.value.trim().toUpperCase())?'':f.map(r=>`<li data-a="${r.a}"><b>${esc(r.g)}</b>${esc(r.a)} · ${esc(r.d)}</li>`).join('');if(f.length&&f[0]&&(f[0].a===q.value.trim().toUpperCase()||(f[0].g||'').toUpperCase()===q.value.trim().toUpperCase())){VAL='';render(f[0])}});
+q.addEventListener('keydown',e=>{if(e.key==='Enter'){const f=find(q.value);if(f[0]){VAL='';render(f[0]);sug.innerHTML=''}}});
+sug.addEventListener('click',e=>{const li=e.target.closest('li');if(!li)return;q.value=BY[li.dataset.a].g;sug.innerHTML='';VAL='';render(BY[li.dataset.a])});
+q.value='GCP-AO1005';render(BY['AO0582']);
+</script>

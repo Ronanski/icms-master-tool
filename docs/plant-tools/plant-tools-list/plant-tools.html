@@ -1,0 +1,131 @@
+<title>Plant Tools List</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: search + group filter, then the plain-words explainer of tool 1 (the plant data core), then the tool list grouped by work area with a status chip and priority. Same dark look as the tutor labs. */
+:root{--bg:#1d2124;--panel:#262b2f;--line:#3a4146;--fg:#e6eaec;--dim:#9aa4aa;--accent:#f2c94c;--done:#3fb26b;--half:#5aa9e6;--none:#6b747a;--plan:#c792ea;
+--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d2124}}
+:root[data-theme="dark"]{--bg:#1d2124}
+html,body{background:var(--bg);color:var(--fg);margin:0}
+body{font-family:var(--sans);font-size:16px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 40px}
+.wrap{max-width:900px;margin:0 auto;display:grid;gap:14px}
+h1{font-size:22px;font-weight:600;margin:0}
+h2{font-size:17px;font-weight:600;margin:0}
+h3{font-size:15px;font-weight:600;margin:0}
+.sub{margin:4px 0 0;color:var(--dim);max-width:70ch}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;min-width:0}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input[type=search]{flex:1 1 220px;min-width:0;font:15px var(--sans);color:var(--fg);background:#20262a;border:1px solid var(--line);border-radius:6px;padding:9px 10px}
+input[type=search]:focus-visible,.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.f{font:500 14px var(--sans);color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}
+.f.on{border-color:var(--accent);background:#3a3520}
+.grp{display:grid;gap:8px}
+.gh{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:6px 0 0}
+.tool{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:start;border-top:1px solid var(--line);padding-top:10px}
+.tool:first-of-type{border-top:0;padding-top:0}
+.n{font:500 18px var(--mono);color:var(--accent);font-variant-numeric:tabular-nums}
+.tool p{margin:2px 0 0;font-size:14px;color:var(--dim)}
+.chip{font-size:12px;font-weight:600;border-radius:999px;padding:3px 9px;white-space:nowrap;border:1px solid}
+.c-done{color:var(--done);border-color:var(--done)}.c-half{color:var(--half);border-color:var(--half)}.c-none{color:var(--dim);border-color:var(--none)}.c-plan{color:var(--plan);border-color:var(--plan)}
+.pri{font-size:12px;color:var(--accent);margin-top:4px}.pri a{color:var(--half);font-size:13px;font-weight:600}
+.ex{display:grid;gap:10px}
+.ex ol{margin:0;padding-left:20px}.ex li{margin:3px 0}
+.card{font:13px var(--mono);background:#20262a;border:1px solid var(--line);border-radius:6px;padding:10px;overflow-x:auto;white-space:pre;line-height:1.6}
+.note{font-size:13px;color:var(--dim)}
+.empty{color:var(--dim);font-size:14px}
+</style>
+
+<div class="wrap">
+<div>
+  <h1>Plant Tools List</h1>
+  <p class="sub">Lahat ng tool na makakatulong sa trabaho mo sa planta, naka-grupo ayon sa trabaho. Ang bilog sa kanan ang estado ngayon. Ang may "Uunahin" ang mungkahing pagkakasunod.</p>
+</div>
+
+<div class="box bar">
+  <input id="q" type="search" placeholder="Hanapin (hal. tag, trip, inventory)" aria-label="Hanapin ang tool">
+  <div class="bar" id="fl"></div>
+</div>
+
+<div class="box ex" id="one">
+  <h2>Ano ang #1, ang "Plant data core"?</h2>
+  <p style="margin:0">Isipin mo ang <b>masterlist ng empleyado</b> ng planta, pero para sa bawat signal. Bawat tag ay may iisang "ID card". Doon nakasulat kung ano ito, saan galing, saan dumadaan, saan pumupunta, at ano ang ginagawa nito. Lahat ng ibang tool ay sa ID card na ito kukuha, kaya iisa lang ang totoo at hindi na nagkakasalungat.</p>
+  <div class="card" aria-label="Halimbawang ID card ng isang tag">TAG        TCSAI1005
+PANGALAN   Max turbine load up rate set
+RANGE      0.0 ~ 5.0 %/min
+GALING     TCS (Hitachi)  →  DCS AI0421
+DAANAN     hard-wired, TCS panel → MPL → FCS card
+PUPUNTA    trend, HMI ...  (logic: hahanapin sa ABC/DITL)
+GAMIT      monitor / control / interlock / trip
+DOKUMENTO  DCS loop list STN101, TCS HMI list</div>
+  <p class="note" style="margin:0">Halimbawa lang ang ilang linya (ang "DAANAN" at "PUPUNTA" ay pupunuin mula sa wiring list at logic). Ang tunay na laman ay galing sa mga dokumento ng planta.</p>
+  <h3>Saan kukunin ang laman: bawat hakbang ng hardware loop</h3>
+  <p class="note" style="margin:0">Final, mula sa hardware inventory ng librarian (PC, company OneDrive, D drive; docs/HARDWARE_DOC_INVENTORY.md). Lahat ng signal na may kuryente: instrument, electrical at network.</p>
+  <ol>
+    <li><b>Field device:</b> instrument list K1AU3-E2-0-201, spec E2-0-001 ~ 020, drawing E2-0-122 ~ 143, MHPS turbine instrument list 310SC90-779.</li>
+    <li><b>Lokasyon at conduit:</b> E2-0-102, E2-0-103, Instrument Conduit Layout, MHPS 7M2DA30-533 ~ 535.</li>
+    <li><b>JB / LCP / stanchion:</b> E1-0-108 (turbine JB list ay Phase 2 lang: 7M2WA04-372).</li>
+    <li><b>Cable:</b> K1AU3-E2-0-202 #1 / #2 Instrument Wiring Diagram as built (field cable no., JB TB / terminal, multipair, MPL TB bawat tag), loop diagram E2-0-104, connection wiring K1AU3E1-6003A / B / C (HV, LV / MCC, TG) at K1AU3E0-6003 (RCP): panel / TB / terminal &rarr; cable no. at cable code &rarr; panel / TB / terminal + DCS tag (D drive, LMYP-1 PLC / MH1 Drawings and Layouts / Electrical Connection Wiring Diagram), TCS cable from / to list ML-TEQ-14-197, JB at marshalling termination schedule U2-JBAI / JBDI / JBDO at U2-MDF-001 (Metrologyx Training / 4. LOOP CHECKING; Unit 2, magkapareho ang unit), LMYP-1 WIRING xls.</li>
+    <li><b>Marshalling / IRP / ARP / SER:</b> E2-0-114, -116, -117 at mga WIRING.xls.</li>
+    <li><b>Cabinet / card / channel:</b> E2-0-109 FCS, E2-0-117 FCS wiring, IO card lists.</li>
+    <li><b>Address / tag:</b> E2-0-118 IO list, DCS I/O list, memory lists, loop at user tag lists, TCS IO list 310SC90-793.</li>
+    <li><b>Tumatanggap na sistema:</b> DCS E2-0-106; TCS / TSI TC-13-100, TEQ-14-193 / 195; GCP / GPP GSE-2013-0068 / 0083; AVR GSE-2013-0080; SCADA E1-0-112 at Modbus list; package PLC Modbus lists; switchgear at MCC E1-0-106 / 107 / 120.</li>
+    <li><b>Logic:</b> ABC, DITL, TCS soft logic TCA / TCE, ATS, IBD, PLC logic.</li>
+    <li><b>Power ng control system:</b> UPS E1-0-110, DC E1-0-111, PDP E2-0-111. Nakita pa: DCS power distribution panel PDP_20150626.pdf (K1AU3-E2-0-106~117 Hardware / 07.PDP), Asset Policy DCS "11. Power Distribution Panel (RED).xlsx", load schedule E1-0-302.</li>
+    <li><b>Network:</b> E2-0-106, E2-0-115, E2-0-204, TCS 331DM07737. Nakita pa: System_Ethernet_Layout_20150626.pdf (K1AU3-E2-0-106~117 Hardware / 02.UTILITY), Communication System Layout E1-0-129, SCADA E1-0-112. Sa LAPTOP_BACKUP_02062026: "LIMAY1 DCS - Updated Network Diagram.pdf" at "LIMAY2 DCS - Updated Network Diagram.pdf" (DOCUMENTS / Technical Documentations and Procedures), "Fiber Optic Network Limay-1-2 asbuild.xlsx" (E-LIBRARY / DCS PLC).</li>
+    <li><b>Grounding:</b> E2-0-108 (DCS), E1-0-119 (plant).</li>
+    <li><b>Electrical system:</b> SLD E1-0-102 hanggang E1-0-131 (230 kV, 6.9 kV, LV MCC, UPS, DC, elementary). Nakita pa: K3AU2-E0-7010A / B (U3 / U4 460 V relay setting), K3AU2-E0-7011 / 7012 (MV calculation), generator protection setting list DBE-16-0138 (Phase 2). <i>Unit 1 hanggang 4 ay magkakapareho (iba lang ang tag number), kaya ang U3 / U4 table ang batayan ng Unit 1.</i></li>
+  </ol>
+  <p class="note" style="margin:0">Pangalawang hanap (2026-11-14, buong file list ng OneDrive at D drive, iba-ibang pangalan at numero): marami pang nakita, nakalista sa itaas. Phase 2 DCS hardware: drawing list (xls) ng E2-0-104 / 107 / 118 / 202 / 204, ang PDF ng K3AU2-E2-0-107, at ang DCS configuration backup ng Unit 2 (LMP2-101 ~ 104, MMI). Sa LAPTOP_BACKUP_02062026 / TURN OVER FILES / DCS TCS: K3AU2-E2-0-114_20190128 (Phase 2 DCS hardware); sa DCS Files / Wiring Diagrams: LMYP-1 (#1) at (#2) WIRING_v0 at IRP_ARP_SER (xls); sa DCS Files / IO List: Loop Test Report ng #1. Mula sa librarian: INVENTORY / DCS &amp; HMI (FCS, PDP, SER, ARPIRP, GCS, DCS ROOM xlsx, SCADA IO), DCS Files (IO Card.xlsx, IO List Rev.1, DIGITAL INTERLOCK LIST-20160111, GCS Modbus memory), TURN OVER FILES / DIAGRAMS (K1AU3U02-D-I05 instrument connection list ng coal handling, MPW34021 SCADA, conduit layout), at XSML#2 Network Diagram. Ang K1AU3U02 / K3AU2U02 cable schedule (I03, E09, E07) ay para sa coal handling (MH) area. Pangalan lang ang hinanap; hindi pa binubuksan ang laman. Sa tool, ipapakita pa rin ang hakbang na iyon na may tatak na "not in docs".</p>
+  <h3>Paano bubuuin</h3>
+  <ol>
+    <li>Pagsamahin ang lahat ng listahan sa iisang file, isang linya bawat tag.</li>
+    <li>Hanapin ang kulang at ang nagkakasalungat (hal. magkaibang range sa dalawang listahan) at ilista kung aling dokumento ang tama.</li>
+    <li>Ikabit ang bawat tag sa logic sheet na gumagamit nito.</li>
+    <li>Gawing basa ng lahat ng tool: Tag Lookup muna, tapos simulator, tracer at 3D.</li>
+  </ol>
+</div>
+
+<div class="box grp" id="list"></div>
+
+<p class="note">Ginawa 2026-11-14, in-update 2026-11-16 (Plant Workbench, Connection Lessons at Tag Lookup). Mungkahi ang pagkakasunod; ang user ang magpapasya.</p>
+</div>
+
+<script>
+const T=[
+ {n:1,g:'Pundasyon',t:'Plant data core',d:'Nasa Tag Lookup na ang 2,703 hardwired signal: tag, address, range, cabinet, marshalling, junction box, cable at logic sheet. Wala pa: mga drawing at ang mga memory tag na walang wire.',s:'half',p:1,u:'https://claude.ai/artifact/DxJaK1sZU45T1VNfuJbQTW'},
+ {n:2,g:'Control systems',t:'Tag Lookup / Troubleshoot',d:'Itype ang tag, address o salita: lalabas ang ID card ng signal, ang main test point, at ang mga logic sheet na gumagamit nito. Ang buong daan bilang drawing ay nasa Signal Path Finder. Ang epekto kapag nawala ay nasa Connection Lessons (12 koneksyon pa lang).',s:'done',p:1,u:'https://claude.ai/artifact/DxJaK1sZU45T1VNfuJbQTW'},
+ {n:3,g:'Control systems',t:'Logic Viewer "Bakit?"',d:'Bakit ayaw mag-AUTO, anong permissive ang humaharang.',s:'done'},
+ {n:4,g:'Control systems',t:'Trip / alarm analyzer',d:'I-paste ang SER o alarm list: aayusin ayon sa oras at lalabas ang first event at ang pagitan ng bawat event. Hindi ito nanghuhula ng sanhi.',s:'done',u:'https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#trip-analyzer'},
+ {n:5,g:'Control systems',t:'Loop check / function test helper',d:'Checklist at inaasahang value bawat loop.',s:'half'},
+ {n:6,g:'Operation at training',t:'DCS plant simulator',d:'Cold start hanggang 150 MW; what-if bago galawin ang totoong DCS.',s:'half'},
+ {n:7,g:'Operation at training',t:'Tutor labs',d:'Drum Swell, 52G at 52L, Sync, CV Demand, Transfer Lab, AI sa planta.',s:'done'},
+ {n:8,g:'Operation at training',t:'Connection lessons',d:'"Kapag naputol ang koneksyon": isang koneksyon bawat aral, may pagsusulit na pabaligtad.',s:'done',u:'https://claude.ai/artifact/NrXakPC4qHBDZagBt3Ztt1'},
+ {n:9,g:'Field at maintenance',t:'3D plant',d:'Kung nasaan ang equipment at instrument, at ang loob ng mga ito.',s:'half',p:4},
+ {n:10,g:'Field at maintenance',t:'Work order at PM tracker',d:'PM schedule at history ng bawat instrument at equipment.',s:'done',u:'https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#work-orders'},
+ {n:11,g:'Field at maintenance',t:'Calibration record',d:'Range, as-found / as-left, due date ng bawat instrument.',s:'done',u:'https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#calibration'},
+ {n:12,g:'Admin at management',t:'Shift log at turnover',d:'Ano ang nangyari sa shift, mga bukas na problema, ipapasa sa susunod.',s:'done',u:'https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#shift-log'},
+ {n:13,g:'Admin at management',t:'Spare parts / inventory',d:'Stock, gamit, reorder point.',s:'done',u:'https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#spare-parts'},
+ {n:14,g:'Admin at management',t:'Reports',d:'Daily / monthly, outage at trip report mula sa template.',s:'done',u:'https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#reports'},
+ {n:15,g:'Admin at management',t:'Performance dashboard',d:'MW, heat rate, availability, trips. Kailangan ng data mula sa planta. Sa ngayon ay mano-manong ilalagay ang araw-araw na numero.',s:'half',u:'https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#performance'},
+ {n:16,g:'Kinabukasan',t:'AI assistant na may live data',d:'Gawa na ang assistant sa loob ng Tag Lookup: sumasagot mula sa ID card ng signal, walang live na value. Ang live data mula sa OPC server ay kailangan pa ng approval ng planta at IT.',s:'half',p:4,u:'https://claude.ai/artifact/DxJaK1sZU45T1VNfuJbQTW'}
+];
+const SL={done:'Meron na',half:'Kalahati na',none:'Wala pa',plan:'Plano / ideya'};
+const PL={1:'Uunahin: hakbang 1',2:'Uunahin: hakbang 2',3:'Uunahin: hakbang 3',4:'Huli'};
+const G=[...new Set(T.map(x=>x.g))];
+let grp='Lahat';
+const fl=document.getElementById('fl');
+['Lahat',...G].forEach(g=>{const b=document.createElement('button');b.type='button';b.className='f'+(g===grp?' on':'');b.textContent=g;b.onclick=()=>{grp=g;[...fl.children].forEach(c=>c.classList.toggle('on',c===b));draw();};fl.appendChild(b);});
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function draw(){
+  const q=document.getElementById('q').value.trim().toLowerCase();
+  const rows=T.filter(x=>(grp==='Lahat'||x.g===grp)&&(!q||(x.t+' '+x.d+' '+x.g).toLowerCase().includes(q)));
+  let h='',last='';
+  rows.forEach(x=>{if(x.g!==last){h+='<p class="gh">'+esc(x.g)+'</p>';last=x.g;}
+    h+='<div class="tool"><span class="n">'+x.n+'</span><div><h3>'+esc(x.t)+'</h3><p>'+esc(x.d)+'</p>'+(x.p?'<div class="pri">'+PL[x.p]+'</div>':'')+(x.u?'<div class="pri"><a href="'+x.u+'" target="_blank" rel="noopener">Buksan ang tool</a></div>':'')+'</div><span class="chip c-'+x.s+'">'+SL[x.s]+'</span></div>';});
+  document.getElementById('list').innerHTML=h||'<p class="empty">Walang tumugma. Subukan ang ibang salita.</p>';
+  document.getElementById('one').hidden=!(grp==='Lahat'||grp==='Pundasyon')||(q&&!'plant data core tag pundasyon'.includes(q)&&!T[0].d.toLowerCase().includes(q));
+}
+document.getElementById('q').oninput=draw;
+draw();
+</script>

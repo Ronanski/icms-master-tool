@@ -1,0 +1,260 @@
+<title>Plant Workbench</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* layout: one header with section tabs; each section = summary chips, one entry form, one list */
+:root{--bg:#f6f7f9;--paper:#ffffff;--fg:#1b2129;--muted:#5b6673;--edge:#d6dce3;--fill:#eef1f4;--accent:#1f5fae;--on-accent:#ffffff;
+--ok:#1e6b34;--okbg:#e6f4ea;--warn:#8a5a00;--warnbg:#fdf3d8;--bad:#b3261e;--badbg:#fdecea;--sans:"IBM Plex Sans",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;
+--ok:#7fd29a;--okbg:#17301f;--warn:#e7bf5c;--warnbg:#33290f;--bad:#f2948c;--badbg:#3a1c1a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;
+--ok:#7fd29a;--okbg:#17301f;--warn:#e7bf5c;--warnbg:#33290f;--bad:#f2948c;--badbg:#3a1c1a;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.45;font-variant-numeric:tabular-nums;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-size:20px;font-weight:600;margin:0}h2{font-size:16px;font-weight:600;margin:0}
+.stack{display:flex;flex-direction:column;gap:14px;min-width:0}summary{cursor:pointer;font-size:16px;font-weight:600}details>.sub{margin-top:6px}
+.sub{color:var(--muted);font-size:13px;margin:2px 0 0}
+nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+nav a{flex:none;text-decoration:none;color:var(--fg);background:var(--paper);border:1px solid var(--edge);border-radius:8px;padding:8px 12px;font-weight:500;font-size:14px}
+nav a.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+nav a b{font-weight:600;margin-left:6px;font-size:12px;opacity:.85}
+.card{background:var(--paper);border:1px solid var(--edge);border-radius:10px;padding:14px 16px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--paper);border:1px solid var(--edge);border-radius:8px;padding:6px 12px;font-size:13px;color:var(--muted)}
+.chip b{color:var(--fg);font-size:16px;font-weight:600;margin-right:6px}
+.chip.bad b{color:var(--bad)}.chip.warn b{color:var(--warn)}
+form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 12px;margin-top:10px}
+form .f{display:flex;flex-direction:column;gap:3px;min-width:0}
+form .f.w2{grid-column:span 2}form .f.w4{grid-column:1/-1}
+label{font-size:12px;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--paper);border:1px solid var(--edge);border-radius:6px;padding:7px 9px;width:100%;min-height:36px}
+textarea{min-height:72px;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,nav a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.acts{grid-column:1/-1;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button{font:inherit;font-weight:500;border-radius:6px;border:1px solid var(--edge);background:var(--paper);color:var(--fg);padding:7px 12px;min-height:36px;cursor:pointer}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+button.sm{min-height:30px;padding:3px 9px;font-size:13px}
+button.dng{color:var(--bad)}
+button:disabled{opacity:.5;cursor:default}
+.msg{font-size:13px;color:var(--muted)}.msg.bad{color:var(--bad)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tools input,.tools select{width:auto;flex:1 1 160px;max-width:260px}
+.list{display:flex;flex-direction:column;gap:8px}
+.row{background:var(--paper);border:1px solid var(--edge);border-radius:10px;padding:10px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px}
+.row .ttl{font-weight:600;overflow-wrap:anywhere}
+.row .meta{color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:2px 14px}
+.row .meta b{color:var(--fg);font-weight:500}
+.row .txt{grid-column:1/-1;white-space:pre-wrap;overflow-wrap:anywhere}
+.row .btns{display:flex;gap:6px;align-items:start;flex-wrap:wrap;justify-content:flex-end}
+.pill{display:inline-block;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:600;background:var(--fill);color:var(--muted);margin-left:6px;vertical-align:1px}
+.pill.ok{background:var(--okbg);color:var(--ok)}.pill.warn{background:var(--warnbg);color:var(--warn)}.pill.bad{background:var(--badbg);color:var(--bad)}
+.empty{border:1px dashed var(--edge);border-radius:10px;padding:22px;text-align:center;color:var(--muted)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border-bottom:1px solid var(--edge);padding:5px 8px;text-align:right}th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:500;font-size:12px}
+td input{min-height:30px;padding:3px 6px;text-align:right;max-width:110px;margin-left:auto}
+.tw{overflow-x:auto;grid-column:1/-1}
+pre.rep{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--fill);border-radius:8px;padding:12px 14px;font:13px/1.5 var(--sans);margin:10px 0 0}
+.note{font-size:12px;color:var(--muted)}
+@media (max-width:720px){form{grid-template-columns:repeat(2,minmax(0,1fr))}form .f.w2{grid-column:1/-1}.row{grid-template-columns:minmax(0,1fr)}.row .btns{justify-content:flex-start}.tools input,.tools select{flex:1 1 100%;max-width:none}}
+</style>
+<div class="wrap">
+  <div><h1>Plant Workbench</h1><p class="sub" id="who">Shared records for the team. Everything saved here is kept for everyone who can open this page.</p></div>
+  <nav id="nav"></nav>
+  <div id="state" class="msg">Loading records…</div>
+  <div id="view" class="stack"></div>
+</div>
+<datalist id="taglist"></datalist>
+<script>
+const TAGS=@@TAGS@@;
+const TAGBY={};TAGS.forEach(t=>{TAGBY[t[0]]=t});
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const today=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const nowLocal=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)};
+const addDays=(s,n)=>{const d=new Date(s+'T00:00:00');d.setDate(d.getDate()+n);return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const num=v=>{const n=parseFloat(v);return isFinite(n)?n:null};
+$('taglist').innerHTML=TAGS.map(t=>`<option value="${esc(t[0])}">${esc(t[2])}</option>`).join('');
+
+/* ---------- sections ---------- */
+const SEC={
+ 'shift-log':{name:'Shift log',col:'shiftlog',one:'entry',
+  intro:'What happened this shift, and what the next shift must know.',
+  fields:[{k:'date',l:'Date',t:'date',d:today},{k:'shift',l:'Shift',t:'select',o:['Day','Night']},{k:'unit',l:'Unit',t:'select',o:['Unit 1','Unit 2','Unit 3','Unit 4','Common']},
+   {k:'cat',l:'Type',t:'select',o:['Operation','Alarm or trip','Maintenance','Handover to next shift']},
+   {k:'text',l:'What happened',t:'area',w:4,req:1},{k:'by',l:'Written by',t:'text',w:2,req:1},{k:'status',l:'Follow-up',t:'select',o:['None needed','Open','Closed'],w:2}],
+  sort:(a,b)=>(b.date+b.shift+(b.at||'')).localeCompare(a.date+a.shift+(a.at||'')),
+  chips:R=>[['Entries today',R.filter(r=>r.date===today()).length],['Open follow-ups',R.filter(r=>r.status==='Open').length,'warn']],
+  filters:['Open','Alarm or trip','Handover to next shift'],match:(r,f)=>r.status===f||r.cat===f,
+  title:r=>`${r.date} · ${r.shift} · ${r.unit}`,pill:r=>r.status==='Open'?['Open','warn']:r.status==='Closed'?['Closed','ok']:null,
+  meta:r=>[['Type',r.cat],['By',r.by]],text:r=>r.text,
+  quick:r=>r.status==='Open'?[['Close follow-up',{status:'Closed'}]]:[]},
+ 'work-orders':{name:'Work orders',col:'workorders',one:'work order',
+  intro:'Corrective jobs and preventive maintenance. A preventive job with a repeat interval makes its next job when you mark it done.',
+  fields:[{k:'title',l:'Job',t:'text',w:2,req:1},{k:'tag',l:'Equipment or tag',t:'tag',w:2},
+   {k:'kind',l:'Type',t:'select',o:['Corrective','Preventive']},{k:'prio',l:'Priority',t:'select',o:['Normal','High','Low']},{k:'due',l:'Due date',t:'date'},{k:'repeat',l:'Repeat every (days)',t:'number'},
+   {k:'who',l:'Assigned to',t:'text',w:2},{k:'status',l:'Status',t:'select',o:['Open','In progress','Done'],w:2},{k:'notes',l:'Details and findings',t:'area',w:4}],
+  sort:(a,b)=>((a.status==='Done')-(b.status==='Done'))||(a.due||'9999').localeCompare(b.due||'9999'),
+  chips:R=>[['Open',R.filter(r=>r.status!=='Done').length],['Overdue',R.filter(overdue).length,'bad'],['Due in 7 days',R.filter(r=>r.status!=='Done'&&r.due&&r.due>=today()&&r.due<=addDays(today(),7)).length,'warn'],['Done',R.filter(r=>r.status==='Done').length]],
+  filters:['Open','Overdue','Preventive','Corrective','Done'],match:(r,f)=>f==='Open'?r.status!=='Done':f==='Overdue'?overdue(r):f==='Done'?r.status==='Done':r.kind===f,
+  title:r=>r.title,pill:r=>overdue(r)?['Overdue','bad']:r.status==='Done'?['Done','ok']:r.status==='In progress'?['In progress','warn']:['Open',''],
+  meta:r=>[['Tag',r.tag],['Type',r.kind],['Priority',r.prio],['Due',r.due],['Repeat',r.repeat?r.repeat+' days':''],['Assigned',r.who],['Done on',r.doneOn]],text:r=>r.notes,
+  quick:r=>r.status==='Done'?[]:[...(r.status==='Open'?[['Start',{status:'In progress'}]]:[]),['Mark done','done']]},
+ 'calibration':{name:'Calibration',col:'calibrations',one:'calibration',
+  intro:'As-found and as-left readings at five points. Pick a Unit 1 tag to fill the range from the DCS I/O list; the tolerance is yours to enter.',
+  fields:[{k:'tag',l:'Tag',t:'tag',w:2,req:1},{k:'desc',l:'Description',t:'text',w:2},{k:'lo',l:'Range low',t:'number'},{k:'hi',l:'Range high',t:'number'},{k:'unit',l:'Unit',t:'text'},{k:'tol',l:'Tolerance (% of span)',t:'number',req:1},
+   {k:'date',l:'Date done',t:'date',d:today},{k:'next',l:'Next due',t:'date'},{k:'by',l:'Done by',t:'text'},{k:'std',l:'Test instrument used',t:'text'},{k:'pts',t:'points'},{k:'notes',l:'Notes',t:'area',w:4}],
+  sort:(a,b)=>(b.date||'').localeCompare(a.date||''),
+  chips:R=>[['Records',R.length],['Failed as found',R.filter(r=>calRes(r).af==='FAIL').length,'warn'],['Failed as left',R.filter(r=>calRes(r).al==='FAIL').length,'bad'],['Due in 30 days',R.filter(r=>r.next&&r.next<=addDays(today(),30)).length,'warn']],
+  filters:['Failed as found','Failed as left','Due in 30 days'],match:(r,f)=>f==='Failed as found'?calRes(r).af==='FAIL':f==='Failed as left'?calRes(r).al==='FAIL':!!(r.next&&r.next<=addDays(today(),30)),
+  title:r=>`${r.tag}${r.desc?' · '+r.desc:''}`,pill:r=>{const c=calRes(r);return c.al==='FAIL'?['As left: fail','bad']:c.al==='PASS'?['As left: pass','ok']:c.af?['As found: '+c.af.toLowerCase(),c.af==='PASS'?'ok':'warn']:null},
+  meta:r=>[['Range',(r.lo??'')+' ~ '+(r.hi??'')+' '+(r.unit||'')],['Tolerance','±'+r.tol+' %'],['Date',r.date],['Next due',r.next],['By',r.by],['Test instrument',r.std]],text:r=>r.notes,extra:calTable,quick:()=>[]},
+ 'spare-parts':{name:'Spare parts',col:'parts',one:'part',
+  intro:'Stock on hand. A part at or below its minimum is flagged for reorder.',
+  fields:[{k:'name',l:'Part',t:'text',w:2,req:1},{k:'pn',l:'Part or model number',t:'text',w:2},{k:'qty',l:'Quantity on hand',t:'number',req:1},{k:'min',l:'Minimum (reorder point)',t:'number'},{k:'uom',l:'Unit of count',t:'text'},{k:'loc',l:'Storage location',t:'text'},
+   {k:'used',l:'Used on (equipment or tag)',t:'tag',w:2},{k:'notes',l:'Notes',t:'text',w:2}],
+  sort:(a,b)=>(low(b)-low(a))||String(a.name).localeCompare(String(b.name)),
+  chips:R=>[['Parts',R.length],['To reorder',R.filter(low).length,'bad']],
+  filters:['To reorder'],match:(r,f)=>low(r),
+  title:r=>r.name,pill:r=>low(r)?['Reorder','bad']:null,
+  meta:r=>[['On hand',r.qty+' '+(r.uom||'')],['Minimum',r.min],['Number',r.pn],['Location',r.loc],['Used on',r.used]],text:r=>r.notes,
+  quick:r=>[['− 1','dec'],['+ 1','inc']]},
+ 'performance':{name:'Performance',col:'perf',one:'daily figure',
+  intro:'One line per unit per day, typed from the plant daily report. The page works out the load factor against 150 MW, the running hours and the heat rate from the coal burned.',
+  fields:[{k:'date',l:'Date',t:'date',d:today},{k:'unit',l:'Unit',t:'select',o:['Unit 1','Unit 2','Unit 3','Unit 4']},{k:'mwh',l:'Gross energy (MWh)',t:'number',req:1},{k:'hrs',l:'Running hours (0 to 24)',t:'number',req:1},
+   {k:'coal',l:'Coal burned (tonnes)',t:'number'},{k:'hv',l:'Coal heating value (kcal/kg)',t:'number'},{k:'trips',l:'Trips',t:'number'},{k:'notes',l:'Notes',t:'text'}],
+  sort:(a,b)=>(b.date+b.unit).localeCompare(a.date+a.unit),
+  chips:R=>{const m=today().slice(0,7),M=R.filter(r=>(r.date||'').startsWith(m));const sum=k=>M.reduce((t,r)=>t+(num(r[k])||0),0);const mwh=sum('mwh'),hrs=sum('hrs');const H=M.filter(r=>num(r.coal)!=null&&num(r.hv)!=null&&num(r.mwh)>0);const hk=H.reduce((t,r)=>t+num(r.coal)*num(r.hv),0),hm=H.reduce((t,r)=>t+num(r.mwh),0);
+   return [['MWh this month',Math.round(mwh)],['Running hours of entered days',M.length?(hrs/(M.length*24)*100).toFixed(1)+' %':'no entry'],['Load factor against 150 MW',M.length?(mwh/(M.length*24*150)*100).toFixed(1)+' %':'no entry'],['Heat rate (kcal/kWh)',hm?Math.round(hk/hm):'no entry'],['Trips this month',sum('trips'),'bad']]},
+  filters:['Unit 1','Unit 2','Unit 3','Unit 4','With trips'],match:(r,f)=>f==='With trips'?num(r.trips)>0:r.unit===f,
+  title:r=>`${r.date} · ${r.unit}`,pill:r=>num(r.trips)>0?[r.trips+(num(r.trips)===1?' trip':' trips'),'bad']:null,
+  meta:r=>{const mwh=num(r.mwh),hrs=num(r.hrs),c=num(r.coal),hv=num(r.hv);return [['Energy',r.mwh+' MWh'],['Running',r.hrs+' h'],['Average load',mwh!=null&&hrs>0?(mwh/hrs).toFixed(1)+' MW':''],['Load factor',mwh!=null?(mwh/(24*150)*100).toFixed(1)+' %':''],['Coal',c!=null?r.coal+' t':''],['Heat rate',c!=null&&hv!=null&&mwh>0?Math.round(c*hv/mwh)+' kcal/kWh':'']]},text:r=>r.notes,quick:()=>[]},
+ 'trip-analyzer':{name:'Trip analyzer',col:'trips',one:'trip record',custom:tripView},
+ 'reports':{name:'Reports',custom:reportView}
+};
+function overdue(r){return r.status!=='Done'&&!!r.due&&r.due<today()}
+function low(r){const q=num(r.qty),m=num(r.min);return q!=null&&m!=null&&q<=m?1:0}
+const PCT=[0,25,50,75,100];
+function calRes(r){const lo=num(r.lo),hi=num(r.hi),tol=num(r.tol),P=r.pts||{};const out={af:'',al:'',rows:[]};if(lo==null||hi==null||hi===lo)return out;
+  const span=hi-lo;const one=k=>{let any=false,fail=false;PCT.forEach((p,i)=>{const v=num((P[k]||[])[i]);if(v==null)return;any=true;const e=(v-(lo+span*p/100))/span*100;if(tol!=null&&Math.abs(e)>tol+1e-9)fail=true});return any?(tol==null?'':fail?'FAIL':'PASS'):''};
+  out.af=one('af');out.al=one('al');
+  out.rows=PCT.map((p,i)=>{const ex=lo+span*p/100;const e=k=>{const v=num((P[k]||[])[i]);return v==null?null:(v-ex)/span*100};return{p,ex,ma:4+16*p/100,af:(P.af||[])[i],al:(P.al||[])[i],eaf:e('af'),eal:e('al')}});return out}
+function calTable(r){const c=calRes(r);if(!c.rows.length)return'';const tol=num(r.tol);const cell=e=>e==null?'':`<span style="color:${tol!=null&&Math.abs(e)>tol?'var(--bad)':'inherit'}">${e>=0?'+':''}${e.toFixed(2)}</span>`;
+  return `<div class="tw"><table><tr><th>Point</th><th>Expected (${esc(r.unit||'')})</th><th>Signal (mA)</th><th>As found</th><th>Error %</th><th>As left</th><th>Error %</th></tr>${c.rows.map(x=>`<tr><td>${x.p} %</td><td>${+x.ex.toFixed(3)}</td><td>${x.ma.toFixed(2)}</td><td>${esc(x.af??'')}</td><td>${cell(x.eaf)}</td><td>${esc(x.al??'')}</td><td>${cell(x.eal)}</td></tr>`).join('')}</table></div>`}
+
+/* ---------- data ---------- */
+let db=null,ready=false;const DATA={};const UI={sec:'shift-log',edit:null,q:'',f:'',confirm:null,msg:''};
+Object.values(SEC).forEach(s=>{if(s.col)DATA[s.col]=[]});
+async function boot(){
+  let timer=setTimeout(()=>{if(!ready)setState('The records did not load. Check your connection, then reopen this page.',1)},10000);
+  try{db=await claude.use('db')}catch(e){db=null}
+  if(!db){clearTimeout(timer);ready=true;setState('Records are not available in this view. Sign in to claude.ai and open the page again to read and save.',1);draw();return}
+  let got=0;const cols=Object.keys(DATA);
+  cols.forEach(c=>{db.collection(c).limit(1000).onSnapshot(s=>{DATA[c]=s.docs.map(d=>({id:d.id,...d.data()}));if(++got>=cols.length&&!ready){ready=true;clearTimeout(timer);setState('')}softDraw()},e=>{clearTimeout(timer);setState('Could not read '+c+': '+(e&&e.message||'error'),1)})});
+}
+function setState(t,bad){const el=$('state');el.textContent=t;el.className='msg'+(bad?' bad':'');el.hidden=!t}
+async function save(col,id,data){if(!db)throw new Error('Saving is not available in this view.');const ref=id?db.collection(col).doc(id):db.collection(col).doc();const clean={};Object.keys(data).forEach(k=>{if(data[k]!==undefined&&k!=='id')clean[k]=data[k]});
+  if(id)await ref.update(clean);else await ref.set({...clean,at:new Date().toISOString()});return ref.id}
+async function del(col,id){await db.collection(col).doc(id).delete()}
+
+/* ---------- drawing ---------- */
+function route(){const h=location.hash.replace('#','');UI.sec=SEC[h]?h:'shift-log';UI.edit=null;UI.q='';UI.f='';UI.confirm=null;UI.msg='';draw()}
+function navDraw(){$('nav').innerHTML=Object.entries(SEC).map(([k,s])=>{let n='';if(k==='work-orders'){const c=DATA.workorders.filter(overdue).length;if(c)n=`<b>${c} overdue</b>`}if(k==='spare-parts'){const c=DATA.parts.filter(low).length;if(c)n=`<b>${c} to reorder</b>`}if(k==='shift-log'){const c=DATA.shiftlog.filter(r=>r.status==='Open').length;if(c)n=`<b>${c} open</b>`}
+  return `<a href="#${k}" class="${k===UI.sec?'on':''}">${s.name}${n}</a>`}).join('')}
+/* do not rebuild a form the person is typing in */
+function refreshList(){const s=SEC[UI.sec];if(s.custom)draw();else $('listbox').innerHTML=listHtml(s)}
+function softDraw(){if($('t-text')){TRIP.text=$('t-text').value;TRIP.title=$('t-title').value}const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)&&$('view').contains(a)){navDraw();const l=$('listbox');if(l)l.innerHTML=listHtml(SEC[UI.sec]);const c=$('chipbox');if(c)c.innerHTML=chipHtml(SEC[UI.sec]);return}draw()}
+function chipHtml(s){return s.chips?s.chips(DATA[s.col]).map(([l,v,c])=>`<span class="chip ${v&&c?c:''}"><b>${v}</b>${esc(l)}</span>`).join(''):''}
+function fieldHtml(f,v){const id='f-'+f.k,w=f.w===4?' w4':f.w===2?' w2':'';if(f.t==='points')return pointsHtml(v);
+  let c;if(f.t==='select')c=`<select id="${id}">${f.o.map(o=>`<option${o===v?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  else if(f.t==='area')c=`<textarea id="${id}">${esc(v??'')}</textarea>`;
+  else c=`<input id="${id}" type="${f.t==='tag'?'text':f.t}" ${f.t==='tag'?'list="taglist" autocomplete="off"':''} ${f.t==='number'?'step="any" inputmode="decimal"':''} value="${esc(v??'')}">`;
+  return `<div class="f${w}"><label for="${id}">${esc(f.l)}${f.req?' *':''}</label>${c}</div>`}
+function pointsHtml(v){v=v||{};return `<div class="f w4"><label>Readings, in the unit of the range</label><div class="tw"><table><tr><th>Point</th><th>Expected</th><th>Signal (mA)</th><th>As found</th><th>As left</th></tr>${PCT.map((p,i)=>`<tr><td>${p} %</td><td id="ex-${i}"></td><td>${(4+16*p/100).toFixed(2)}</td><td><input id="af-${i}" type="number" step="any" inputmode="decimal" aria-label="As found at ${p} percent" value="${esc((v.af||[])[i]??'')}"></td><td><input id="al-${i}" type="number" step="any" inputmode="decimal" aria-label="As left at ${p} percent" value="${esc((v.al||[])[i]??'')}"></td></tr>`).join('')}</table></div></div>`}
+function listHtml(s){let R=DATA[s.col].slice().sort(s.sort);const q=UI.q.trim().toLowerCase();if(UI.f)R=R.filter(r=>s.match(r,UI.f));if(q)R=R.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
+  if(!DATA[s.col].length)return `<div class="empty">No ${esc(s.one)} yet. Fill the form above and press Save to add the first one.</div>`;
+  if(!R.length)return `<div class="empty">Nothing matches this search or filter.</div>`;
+  return R.map(r=>{const p=s.pill(r);const meta=s.meta(r).filter(m=>m[1]!==undefined&&m[1]!==''&&m[1]!==null&&String(m[1]).trim()!=='~').map(m=>`<span>${esc(m[0])} <b>${esc(m[1])}</b></span>`).join('');
+   const conf=UI.confirm===r.id;return `<div class="row"><div><div class="ttl">${esc(s.title(r))}${p?`<span class="pill ${p[1]}">${esc(p[0])}</span>`:''}</div><div class="meta">${meta}</div></div>
+   <div class="btns">${conf?`<span class="msg bad">Delete this ${esc(s.one)}?</span><button class="sm dng" data-act="delyes" data-id="${r.id}">Delete</button><button class="sm" data-act="delno">Keep</button>`:
+   s.quick(r).map(([l,a],i)=>`<button class="sm" data-act="quick" data-i="${i}" data-id="${r.id}">${esc(l)}</button>`).join('')+`<button class="sm" data-act="edit" data-id="${r.id}">Edit</button><button class="sm dng" data-act="del" data-id="${r.id}">Delete</button>`}</div>
+   ${s.text(r)?`<div class="txt">${esc(s.text(r))}</div>`:''}${s.extra?s.extra(r):''}</div>`}).join('')}
+function draw(){navDraw();const s=SEC[UI.sec],V=$('view');if(s.custom){s.custom(V);return}
+  const cur=UI.edit?DATA[s.col].find(r=>r.id===UI.edit)||{}:{};
+  V.innerHTML=`<div class="chips" id="chipbox">${chipHtml(s)}</div>
+  <details class="card" id="fbox" ${UI.edit||UI.msgBad||innerWidth>720?'open':''}><summary>${UI.edit?'Edit '+esc(s.one):'New '+esc(s.one)}</summary><p class="sub">${esc(s.intro)}</p>
+   <form id="frm" novalidate>${s.fields.map(f=>fieldHtml(f,UI.edit?cur[f.k]:(f.d?f.d():undefined))).join('')}
+   <div class="acts"><button class="pri" type="submit" id="savebtn">${UI.edit?'Save changes':'Save'}</button>${UI.edit?'<button type="button" data-act="cancel">Cancel</button>':''}<span class="msg${UI.msgBad?' bad':''}" id="fmsg">${esc(UI.msg)}</span></div></form></details>${UI.msg&&!UI.msgBad&&innerWidth<=720?`<div class="msg">${esc(UI.msg)}</div>`:''}
+  <div class="tools"><input id="q" type="search" placeholder="Search" aria-label="Search" value="${esc(UI.q)}"><select id="flt" aria-label="Filter"><option value="">All</option>${s.filters.map(f=>`<option${f===UI.f?' selected':''}>${esc(f)}</option>`).join('')}</select></div>
+  <div class="list" id="listbox">${listHtml(s)}</div>`;
+  if(UI.sec==='calibration'){calExpected();['f-lo','f-hi'].forEach(i=>$(i).addEventListener('input',calExpected));$('f-tag').addEventListener('change',()=>{const t=TAGBY[$('f-tag').value.trim()];if(!t)return;if(!$('f-desc').value)$('f-desc').value=t[2];const m=String(t[3]||'').match(/^\s*(-?[\d.]+)\s*~\s*(-?[\d.]+)\s*(.*)$/);if(m){$('f-lo').value=m[1];$('f-hi').value=m[2];$('f-unit').value=m[3].trim();calExpected()}})}
+  $('frm').addEventListener('submit',onSave);$('q').addEventListener('input',e=>{UI.q=e.target.value;$('listbox').innerHTML=listHtml(s)});$('flt').addEventListener('change',e=>{UI.f=e.target.value;$('listbox').innerHTML=listHtml(s)})}
+function calExpected(){const lo=num($('f-lo').value),hi=num($('f-hi').value);PCT.forEach((p,i)=>{$('ex-'+i).textContent=lo!=null&&hi!=null?+(lo+(hi-lo)*p/100).toFixed(3):''})}
+async function onSave(e){e.preventDefault();const s=SEC[UI.sec],d={};let miss=[];
+  s.fields.forEach(f=>{if(f.t==='points'){d.pts={af:PCT.map((p,i)=>$('af-'+i).value),al:PCT.map((p,i)=>$('al-'+i).value)};return}const v=$('f-'+f.k).value.trim();if(f.req&&!v)miss.push(f.l);d[f.k]=v});
+  if(miss.length){UI.msg='Fill in: '+miss.join(', ');UI.msgBad=1;$('fmsg').textContent=UI.msg;$('fmsg').className='msg bad';return}
+  $('savebtn').disabled=true;try{await save(s.col,UI.edit,d);UI.msg=UI.edit?'Changes saved.':'Saved.';UI.msgBad=0;UI.edit=null}catch(err){UI.msg='Not saved: '+(err&&err.message||'error');UI.msgBad=1}draw()}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-act]');if(!b)return;const s=SEC[UI.sec],id=b.dataset.id,a=b.dataset.act;const r=s.col?DATA[s.col].find(x=>x.id===id):null;
+  try{
+   if(a==='edit'){UI.edit=id;UI.msg='';draw();window.scrollTo({top:0,behavior:'smooth'})}
+   else if(a==='cancel'){UI.edit=null;UI.msg='';draw()}
+   else if(a==='del'){UI.confirm=id;refreshList()}
+   else if(a==='delno'){UI.confirm=null;refreshList()}
+   else if(a==='delyes'){UI.confirm=null;await del(s.col,id)}
+   else if(a==='quick'&&r){const q=s.quick(r)[+b.dataset.i][1];b.disabled=true;
+     if(q==='done'){await save(s.col,id,{status:'Done',doneOn:today()});const n=parseInt(r.repeat);if(r.kind==='Preventive'&&n>0){const {id:_,at,doneOn,...rest}=r;await save(s.col,null,{...rest,status:'Open',due:addDays(today(),n),notes:''})}}
+     else if(q==='inc'||q==='dec'){const v=(num(r.qty)||0)+(q==='inc'?1:-1);if(v>=0)await save(s.col,id,{qty:String(v)})}
+     else await save(s.col,id,q)}
+   else if(a==='copy'){const t=$(b.dataset.src).textContent;try{await navigator.clipboard.writeText(t);b.textContent='Copied'}catch(_){const rg=document.createRange();rg.selectNodeContents($(b.dataset.src));const sl=getSelection();sl.removeAllRanges();sl.addRange(rg);b.textContent='Selected: press copy'}}
+   else if(a==='tripsave')tripSave();else if(a==='tripload'){TRIP.text=r.raw||'';TRIP.title=r.title||'';tripView($('view'))}
+  }catch(err){setState('That did not save: '+(err&&err.message||'error'),1)}});
+
+/* ---------- trip analyzer ---------- */
+const TRIP={text:'',title:''};
+function parseEvents(txt){const out=[],bad=[];txt.split(/\r?\n/).forEach((ln,i)=>{const s=ln.trim();if(!s)return;
+  const m=s.match(/(?:(\d{4}[-\/]\d{1,2}[-\/]\d{1,2}|\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})[ T,]+)?(\d{1,2}):(\d{2}):(\d{2})(?:[.,:](\d{1,3}))?/);
+  if(!m){bad.push(i+1);return}const ms=(+m[2]*3600+ +m[3]*60+ +m[4])*1000+(m[5]?+(m[5]+'00').slice(0,3):0);
+  out.push({n:i+1,date:m[1]||'',t:ms,time:`${m[2].padStart(2,'0')}:${m[3]}:${m[4]}.${m[5]?(m[5]+'00').slice(0,3):'000'}`,text:(s.slice(0,m.index)+' '+s.slice(m.index+m[0].length)).replace(/^[\s,;|\t]+|[\s,;|\t]+$/g,'').replace(/\s+/g,' ')})});
+  out.sort((a,b)=>(a.date||'').localeCompare(b.date||'')||a.t-b.t||a.n-b.n);return{ev:out,bad}}
+function tripView(V){const {ev,bad}=parseEvents(TRIP.text);const f=ev[0];
+  V.innerHTML=`<div class="card"><h2>Trip analyzer</h2><p class="sub">Paste the sequence-of-events or alarm list, one event per line, each with its time (hh:mm:ss, milliseconds if you have them). The page puts the events in time order and shows which came first. It reads only what you paste; it does not guess a cause.</p>
+   <form id="tfrm" novalidate><div class="f w4"><label for="t-title">Name of this trip</label><input id="t-title" type="text" value="${esc(TRIP.title)}"></div>
+   <div class="f w4"><label for="t-text">Events</label><textarea id="t-text" style="min-height:140px" placeholder="2026-11-16 10:15:02.345  Tag  Description">${esc(TRIP.text)}</textarea></div>
+   <div class="acts"><button class="pri" type="submit">Put in time order</button><button type="button" data-act="tripsave" ${ev.length?'':'disabled'}>Save this trip</button><span class="msg" id="tmsg"></span></div></form></div>
+   ${ev.length?`<div class="chips"><span class="chip"><b>${ev.length}</b>Events read</span><span class="chip"><b>${((ev[ev.length-1].t-f.t)/1000).toFixed(3)} s</b>First to last</span>${bad.length?`<span class="chip warn"><b>${bad.length}</b>Lines with no time (lines ${esc(bad.slice(0,8).join(', '))}${bad.length>8?'…':''})</span>`:''}</div>
+   <div class="card"><h2>First event</h2><p style="margin:6px 0 0"><b>${esc(f.time)}</b> · ${esc(f.text||'(no text)')}</p><p class="note" style="margin:4px 0 0">Events within the same scan can be recorded in any order. Check the events in the first second against the logic drawing before naming the cause.</p>
+   <div class="tw" style="margin-top:10px"><table><tr><th>Time</th><th>After first (s)</th><th>Gap (s)</th><th style="text-align:left">Event</th></tr>${ev.map((x,i)=>`<tr><td>${esc((x.date?x.date+' ':'')+x.time)}</td><td>${((x.t-f.t)/1000).toFixed(3)}</td><td>${i?((x.t-ev[i-1].t)/1000).toFixed(3):''}</td><td style="text-align:left">${esc(x.text)}</td></tr>`).join('')}</table></div></div>`:
+   (TRIP.text.trim()?`<div class="empty">No line has a time the page can read. Each line needs a time such as 10:15:02 or 10:15:02.345.</div>`:'')}
+   <h2>Saved trips</h2><div class="list">${DATA.trips.length?DATA.trips.slice().sort((a,b)=>(b.at||'').localeCompare(a.at||'')).map(r=>`<div class="row"><div><div class="ttl">${esc(r.title||'Trip')}</div><div class="meta"><span>Saved <b>${esc((r.at||'').slice(0,10))}</b></span><span>First event <b>${esc(r.first||'')}</b></span><span>Events <b>${esc(r.count||'')}</b></span></div></div>
+   <div class="btns">${UI.confirm===r.id?`<span class="msg bad">Delete this trip record?</span><button class="sm dng" data-act="delyes" data-id="${r.id}">Delete</button><button class="sm" data-act="delno">Keep</button>`:`<button class="sm" data-act="tripload" data-id="${r.id}">Open</button><button class="sm dng" data-act="del" data-id="${r.id}">Delete</button>`}</div></div>`).join(''):'<div class="empty">No trip saved yet. Paste an event list above, then press Save this trip.</div>'}</div><div id="listbox" hidden></div>`;
+  $('tfrm').addEventListener('submit',e=>{e.preventDefault();TRIP.text=$('t-text').value;TRIP.title=$('t-title').value;tripView(V)})}
+async function tripSave(){TRIP.text=$('t-text').value;TRIP.title=$('t-title').value.trim();const {ev}=parseEvents(TRIP.text);if(!TRIP.title){$('tmsg').textContent='Give this trip a name first.';$('tmsg').className='msg bad';return}
+  await save('trips',null,{title:TRIP.title,raw:TRIP.text,first:ev[0]?ev[0].time+' '+ev[0].text:'',count:String(ev.length)});tripView($('view'))}
+
+/* ---------- reports ---------- */
+const REP={kind:'Daily report',date:today()};
+function reportText(){const d=REP.date,L=[];const line=(t='')=>L.push(t);
+  if(REP.kind==='Daily report'){line('DAILY REPORT · '+d);line();
+    const S=DATA.shiftlog.filter(r=>r.date===d).sort((a,b)=>(a.shift+(a.at||'')).localeCompare(b.shift+(b.at||'')));line('Shift log ('+S.length+')');S.forEach(r=>line(`- [${r.shift}, ${r.unit}, ${r.cat}] ${r.text} (${r.by})${r.status==='Open'?' · follow-up open':''}`));if(!S.length)line('- no entry');line();
+    const W=DATA.workorders;const done=W.filter(r=>r.doneOn===d),od=W.filter(r=>r.status!=='Done'&&r.due&&r.due<d),op=W.filter(r=>r.status!=='Done');
+    line('Work orders: '+done.length+' done on this date, '+op.length+' open, '+od.length+' overdue');done.forEach(r=>line(`- done: ${r.title}${r.tag?' ('+r.tag+')':''}`));od.forEach(r=>line(`- overdue since ${r.due}: ${r.title}${r.tag?' ('+r.tag+')':''}`));line();
+    const C=DATA.calibrations.filter(r=>r.date===d);line('Calibrations ('+C.length+')');C.forEach(r=>{const c=calRes(r);line(`- ${r.tag}: as found ${c.af||'not recorded'}, as left ${c.al||'not recorded'}`)});if(!C.length)line('- none');line();
+    const P=DATA.parts.filter(low);line('Parts to reorder ('+P.length+')');P.forEach(r=>line(`- ${r.name}: ${r.qty} on hand, minimum ${r.min}`));if(!P.length)line('- none')}
+  else if(REP.kind==='Shift handover'){line('SHIFT HANDOVER · '+d);line();const H=DATA.shiftlog.filter(r=>r.date===d&&r.cat==='Handover to next shift');line('Handover notes ('+H.length+')');H.forEach(r=>line(`- [${r.shift}, ${r.unit}] ${r.text} (${r.by})`));if(!H.length)line('- none');line();
+    const O=DATA.shiftlog.filter(r=>r.status==='Open');line('Open follow-ups, all dates ('+O.length+')');O.forEach(r=>line(`- ${r.date} [${r.unit}] ${r.text}`));if(!O.length)line('- none');line();
+    const W=DATA.workorders.filter(r=>r.status==='In progress');line('Jobs in progress ('+W.length+')');W.forEach(r=>line(`- ${r.title}${r.tag?' ('+r.tag+')':''}${r.who?', '+r.who:''}`));if(!W.length)line('- none')}
+  else if(REP.kind==='Maintenance backlog'){line('MAINTENANCE BACKLOG · as of '+d);line();const W=DATA.workorders.filter(r=>r.status!=='Done').sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'));
+    W.forEach(r=>line(`- ${r.due||'no due date'}${r.due&&r.due<d?' OVERDUE':''} · ${r.kind} · ${r.prio} · ${r.title}${r.tag?' ('+r.tag+')':''}${r.who?' · '+r.who:''} · ${r.status}`));if(!W.length)line('- no open job');line();
+    const C=DATA.calibrations.filter(r=>r.next&&r.next<=addDays(d,30)).sort((a,b)=>a.next.localeCompare(b.next));line('Calibrations due within 30 days ('+C.length+')');C.forEach(r=>line(`- ${r.next}: ${r.tag}${r.desc?' · '+r.desc:''}`));if(!C.length)line('- none')}
+  else{line('TRIP RECORDS');line();const T=DATA.trips.slice().sort((a,b)=>(b.at||'').localeCompare(a.at||''));T.forEach(r=>{line(`${r.title} (saved ${(r.at||'').slice(0,10)}, ${r.count} events)`);line('  first event: '+(r.first||''));line()});if(!T.length)line('- no trip saved')}
+  return L.join('\n')}
+function reportView(V){V.innerHTML=`<div class="card"><h2>Reports</h2><p class="sub">Built from the records in the other sections. Copy the text into an email or a document.</p>
+  <form id="rfrm" novalidate><div class="f w2"><label for="r-kind">Report</label><select id="r-kind">${['Daily report','Shift handover','Maintenance backlog','Trip records'].map(k=>`<option${k===REP.kind?' selected':''}>${k}</option>`).join('')}</select></div>
+  <div class="f w2"><label for="r-date">Date</label><input id="r-date" type="date" value="${esc(REP.date)}"></div><div class="acts"><button type="button" class="pri" data-act="copy" data-src="reptext">Copy report</button></div></form>
+  <pre class="rep" id="reptext">${esc(reportText())}</pre></div><div id="listbox" hidden></div>`;
+  $('r-kind').addEventListener('change',e=>{REP.kind=e.target.value;reportView(V)});$('r-date').addEventListener('change',e=>{REP.date=e.target.value||today();reportView(V)})}
+/* custom sections have no generic list */
+const _lh=listHtml;listHtml=function(s){return s.custom?'':_lh(s)};
+window.addEventListener('hashchange',route);route();boot();
+</script>

@@ -25,7 +25,12 @@ Each line: name, link, file in `/mnt/project-files/tutor-2026-11-11/`, state.
 - **Sync Lab**: https://claude.ai/artifact/JYehhTtobFpiBNDmJxMRri, `sync-lab.html`.
 - **52G and 52L Lab**: https://claude.ai/artifact/9sa5hstmeApg1YSkArA1sM, `breaker-lab.html`.
 - **Drum Swell Lab**: https://claude.ai/artifact/DGPMzcCw3VC6dhpyyTrXdx, `drum-swell-lab.html`.
+- **Tag Lookup** (2026-11-16): https://claude.ai/artifact/DxJaK1sZU45T1VNfuJbQTW, source in `docs/plant-tools/tag-lookup/`.
+- **Plant Workbench** (2026-11-16): https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ, source in `docs/plant-tools/plant-workbench/`.
+- **Connection Lessons** (2026-11-16): https://claude.ai/artifact/NrXakPC4qHBDZagBt3Ztt1, `docs/plant-tools/connection-lessons/`.
 - **Generator metering hardware**: `gen-metering-hardware.html` (link not confirmed in this note).
+
+Update 2026-11-16, 8:10 PM PHT (user: "save mo lahat sa github repo", "isang repo lng sna tpos mraming tools laman"): the tool sources are now in this repo under `docs/plant-tools/` (read its README first). The two data files with private plant data stay in the project folder.
 
 ## 3. How to continue the Signal Path Finder
 
