@@ -3771,7 +3771,14 @@ const AN_MFW = {
    water wall leak boils in the bed (the bed balance takes it from saturated water to steam at the bed temperature, IF97) and the steam
    joins the flue gas (U.mG, the ID fan sees it as gas volume, 28.9 / 18 per kg against air). The economizer leak's heat to the
    backpass gas is not modelled (its gas mass is). U.tlW / U.tlE T/H */
-const AN_TL = { d: 0.01 /* m, NO-SOURCE */, dpE: 3.5 /* kg/cm2 at MCR, FHI T3 */, mcr: 460 };
+const AN_TL = { d: 0.01 /* m, NO-SOURCE */, dpE: 3.5 /* kg/cm2 at MCR, FHI T3 */, mcr: 460, t2: 600 /* s, NO-SOURCE */, tw: 0.006 /* m, NO-SOURCE */, odW: 0.0635, odE: 0.0572 };
+/* 3.2.4-beta.16 (JENNIE, tube leak grows): FHI T9 p29 (plant-study 03): the leak erodes the tubes next to it. The jet of steam and water
+   cuts the next tube, which leaks too, so the open area grows with itself: the area of the hole doubles each t2 = 10 min of plant time
+   (NO-SOURCE, a trainer setting: headless 150 MW, the leak 11 T/H, 22 after 10 min, 44 after 20 min, 78 at 28 min when the feedwater, 627 T/H against a transmitter span of 550, overfills the drum to +270 mm and the logic trips the boiler).
+   It stops at a rupture: one tube cut through, both ends open. Tubes: water wall 63.5 mm OD (FHI P2S5 p2-5-2, plant-study 03 C-4 / C-9 /
+   C-12), economizer 57.2 mm OD (Eco 2, E-7 / E-10); wall thickness 6 mm (NO-SOURCE): water wall bore 51.5 mm, 2 ends = 53 x the 10 mm
+   hole. At a rupture the feedwater cannot keep up, the drum level falls and the logic trips the boiler. Clearing the fault (the tube
+   repaired) puts the hole back to 10 mm. U.tlAw / U.tlAe = the open area / the 10 mm hole */
 /* 3.2.4-beta.13 (JENNIE, priority list item: coal quality): the trainer fault 'cf.wet' (world.js): wet coal. Performance coal, FHI P2S7
    Tab 2 / Tab 3: H 2.75 %, water 33.96 %, HHV 4,008 / LHV 3,662 kcal/kg. The two heating values differ by the heat of the water that leaves
    as vapour, 9 H + water = 0.5871 kg per kg of coal: 346 / 0.5871 = 589.3 kcal per kg of water (CALC from Tab 2, the textbook latent
@@ -3788,15 +3795,20 @@ function anCoalWet(U) {
   U.coalR = r;
   U.coalK = (K.hhv * r - K.lat * (9 * K.h * r + m)) / K.lhv;
 }
-function anTubeLeak(U) {
+function anTubeLeak(U, dt) {
   const W = typeof window !== 'undefined' ? window.WORLD : null,
     on = k => !!(W && W.ft && W.ft.has(k)),
-    A = (Math.PI * AN_TL.d * AN_TL.d) / 4,
+    K = AN_TL,
+    cap = od => (2 * Math.pow(od - 2 * K.tw, 2)) / (K.d * K.d),
+    grow = (k, f, od) => (U[k] = f ? Math.min(cap(od), (U[k] > 1 ? U[k] : 1) * Math.pow(2, (dt > 0 ? dt : 0) / K.t2)) : 1);
+  grow('tlAw', on('tl.ww'), K.odW);
+  grow('tlAe', on('tl.eco'), K.odE);
+  const A = (Math.PI * K.d * K.d) / 4,
     G = (P, T) => (typeof anFlashG === 'function' ? anFlashG(P, T, 0) : 0);
-  U.tlW = on('tl.ww') && U.Pd > 0 ? (G(U.Pd, U.Tw) * A * 3600) / 1000 : 0;
+  U.tlW = on('tl.ww') && U.Pd > 0 ? (G(U.Pd, U.Tw) * A * U.tlAw * 3600) / 1000 : 0;
   const fw = typeof AN_CYC !== 'undefined' && isFinite(AN_CYC.ffw) ? AN_CYC.ffw : 0,
     Te = isFinite(U.hpT2) ? U.hpT2 : U.Tw;
-  U.tlE = on('tl.eco') && U.Pd > 0 && fw > 0 ? (G(U.Pd + AN_TL.dpE * Math.pow(fw / AN_TL.mcr, 2), Te) * A * 3600) / 1000 : 0;
+  U.tlE = on('tl.eco') && U.Pd > 0 && fw > 0 ? (G(U.Pd + AN_TL.dpE * Math.pow(fw / AN_TL.mcr, 2), Te) * A * U.tlAe * 3600) / 1000 : 0;
   U.tlE = Math.min(U.tlE, fw);
 }
 /* the output (MV) net of a controller of an ABC sheet, as ctlOut of anUnitStart */
@@ -4596,7 +4608,7 @@ function anUnitStep0(dt) {
     const W = typeof window !== 'undefined' ? window.WORLD : null;
     return !!(W && W.ft && W.ft.has('cf.jam' + 'ABC'[i]));
   };
-  anTubeLeak(U);
+  anTubeLeak(U, dt);
   anCoalWet(U);
   const F = U.fuel.reduce((a, l, i) => {
       const o = U.cfo ? anDitlPos(U.cfo[i], 0) : null;
