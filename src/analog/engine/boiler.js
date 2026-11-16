@@ -927,7 +927,7 @@ function anSoxStep(U, dt) {
   if (!isFinite(U.soxZ)) U.soxZ = K.z0;
   const c = U.Fc || 0;
   if (c > 1)
-    U.soxZ += ((((U.lmQ || 0) * 0.9366) / 100.09 / ((c * 0.0149) / 32.06) - U.soxZ) * Math.min(dt, K.tau)) / K.tau;
+    U.soxZ += ((((U.lmQ || 0) * 0.9366) / 100.09 / ((c * 0.0149 * (U.coalR || 1)) / 32.06) - U.soxZ) * Math.min(dt, K.tau)) / K.tau;
   U.soxF = Math.exp(-K.k * Math.max(0, U.soxZ));
   const cb = isFinite(U.cbn) ? U.cbn : (isFinite(U.burn) ? U.burn : 1) * c,
     fe = cb + (U.ao || 0) * (U.oilF || 0),
