@@ -4805,8 +4805,20 @@ function anUnitStep0(dt) {
          house load, then the integral goes on from there (TCE p.136), trimmed by the TCS load loop toward the house load (NO-SOURCE:
          the input of I005 after the runback is not printed on the sheets read) */
       tb.hlT = (tb.hlT || 0) + dt;
-      if (tb.hlT <= U.rbT || !isFinite(tb.gs)) tb.gs = U.rbIP;
-      else tb.gs = Math.max(0, Math.min(1.4, tb.gs + (dt * (D - U.MW)) / (U.tcs * U.MW0)));
+      /* 3.2.4-beta.12 (live beta.11: the speed stayed at 3585 rpm, 59.75 Hz, and no operator action moved it): the speed / load changer.
+         TG manual STIE-14752 (plant study 05): after a load rejection the machine "stays at no-load speed until changed by the speed /
+         load changer". The changer is the TCS load target of the panel (LOAD UP, tb.aim, ramped as tb.tgt at the load rate): during the
+         runback pulse the target follows GOV.SET (the runback position as MW), after it GOV.SET moves toward the target (as a share of
+         the rating) at the flow demand rate (TCE207 A007 RI / RD, U.fdRate). With 6 % droop a higher target is a higher speed. Before,
+         GOV.SET was trimmed by the house load minus the generator MW, which is 0 on house load (the generator gives what the load takes) */
+      if (tb.hlT <= U.rbT || !isFinite(tb.gs)) {
+        tb.gs = U.rbIP;
+        tb.aim = tb.tgt = U.rbIP * U.MW0;
+      } else {
+        const r = (U.fdRate || 0.01) * dt,
+          g = Math.max(0, Math.min(1.4, (isFinite(tb.tgt) ? tb.tgt : U.rbIP * U.MW0) / U.MW0));
+        tb.gs = Math.max(0, Math.min(1.4, tb.gs + Math.max(-r, Math.min(r, g - tb.gs))));
+      }
       const dem = Math.max(
           0,
           Math.min(1.4, tb.gs - (U.flowSpan * anDb((tb.rpm || 3600) - 3600, U.dbRpm || 0)) / ((U.droop || 0.06) * 3600))
