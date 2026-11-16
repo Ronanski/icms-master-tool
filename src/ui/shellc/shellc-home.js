@@ -710,7 +710,7 @@
         if (window.lsSetTab) lsSetTab('logic');
       });
     };
-    card('Operator', 'Run the plant from the overview and its pages, with the training guide', () => go(false));
+    card('Operator', 'Run the plant from the overview, its pages and the faceplates', () => go(false));
     card('Engineer', 'Read and trace the control logic, signals and I/O of the same running plant', () => go(true));
     const lab = E('div', 'sclab', 'Start state');
     const cont = E('button', 'sccont');

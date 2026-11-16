@@ -10,6 +10,8 @@
    - there is no coach (user 2026-10-29, #108: the real plant has none): the trainee makes every trim of the procedure (furnace pressure,
      firing rate <= 60 C/h (PR-OPE-5002 gradient 1 C/min), O2, drum level, HP bypass SV, coal) on the faceplates of the step, and a step goes on only on the real signals;
    Nothing here changes the logic: it writes only what an operator writes (inputs, faceplate modes, SV, MV, TCS commands). ===== */
+/* 3.2.3-beta.270: the Training (step guide, Do it for me) is off (user 2026-11-16 "OO TANGGALIN N") */
+window.LS_TRAINING_OFF = true;
 window.LS_GUIDE = (function () {
   const L = () => window.LS_LIVE;
   const PROC = () => window.LS_PROC5002 || [];
@@ -2120,7 +2122,9 @@ window.LS_GUIDE = (function () {
      auto(true) runs doIt() and scan() inside the engine steps, once every dt seconds of the PLANT (default 10 s), whatever the speed
      of the page; pre() runs before each doIt (the tools use it for the field operator). auto(false) stops it */
   let AUTO = null;
-  const auto = (on, pre, dt) => (AUTO = on ? { t: -1e9, pre: pre || null, dt: +dt > 0 ? +dt : 10 } : null);
+  /* 3.2.3-beta.270 (user 2026-11-16 "OO TANGGALIN N"): no Training in the app; the plant runs on its model, logic and the
+     operator's faceplates only: no step guide, no Do it for me (LS_TRAINING_OFF) */
+  const auto = (on, pre, dt) => (AUTO = on && !window.LS_TRAINING_OFF ? { t: -1e9, pre: pre || null, dt: +dt > 0 ? +dt : 10 } : null);
   /* inside every step of the engine when it runs on this page (ENG.mode 'local'); with the engine in the worker (3.2.0 Web Worker) the
      steps run there: the coach runs here after each patch, with the plant time that passed (it reads the dock and the page; its writes go
      to the engine through the radio, src/world/eng.js) */
@@ -2227,6 +2231,7 @@ window.LS_GUIDE = (function () {
   }
   /* start: the plant cold, RUN, step 1 */
   function start(done) {
+    if (window.LS_TRAINING_OFF) return;
     /* 3.2.0 retest #54 (user 2026-10-28: the page froze over 1 min, no loading sign): the cold plant loads in slices with a progress
        bar (hmi-op.js anLoadStart), then the training starts */
     const go = () => {
@@ -2347,6 +2352,7 @@ window.LS_GUIDE = (function () {
   }
   /* continue after a reload: the plant is not saved, so the training goes on only with a plant in the simulation */
   function resume() {
+    if (window.LS_TRAINING_OFF) return;
     /* Mina step 14 (beta.87): the short list of before had no ABC-053, so TICLO1002 stayed MAN until its page was opened; the same list
        as the start now, the sheets already in it kept */
     AN.checkSheets = trainSheets().concat(AN.checkSheets || []).filter((x, i, a) => a.indexOf(x) === i);
@@ -2537,6 +2543,7 @@ window.LS_GUIDE = (function () {
     /* plan e4 (Mina beta.114: "Practise: Normal shutdown" loaded 150 MW but the dock stayed on step 104): the guided dock on at the first
        step of a stage, without a new plant load */
     openStage(st) {
+      if (window.LS_TRAINING_OFF) return;
       const i = steps().findIndex(x => x.st === st);
       if (i < 0) return;
       if (window.LS_DOCK && LS_DOCK.resume) LS_DOCK.resume();

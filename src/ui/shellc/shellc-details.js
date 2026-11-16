@@ -39,11 +39,11 @@
     why: ['Why', 'Why is it …? The live cause of the selected wire, back to the root signal'],
     insp: ['Inspector', 'The inputs, forces and values of the sheet (analog: the Inspector; digital: the panel of the sheet)'],
     fp: ['Faceplate', 'The controller faceplates of the open analog sheet'],
-    train: ['Training', 'The step of the training procedure you are on'],
     alm: ['Alarms', 'The standing alarms and the last event']
   };
-  const ENG = ['why', 'insp', 'fp', 'train', 'alm'],
-    OP = ['train', 'alm'];
+  /* 3.2.3-beta.270: no Training section (the Training is off, guide.js LS_TRAINING_OFF) */
+  const ENG = ['why', 'insp', 'fp', 'alm'],
+    OP = ['alm'];
   const wide = () => innerWidth >= 1280;
   let col = null,
     tl = null,

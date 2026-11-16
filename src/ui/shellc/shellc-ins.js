@@ -91,27 +91,7 @@
       r.append(b);
     }
     body.append(r);
-    /* practice sections: the Practise buttons of the Training page (home.js), the same handlers */
-    body.append(head('Practice sections'));
-    r = row();
-    const P = [...document.querySelectorAll('#trainws .trbtn, .trbtn')].filter((b, i, a) => /^Practise: /.test(b.textContent) && a.indexOf(b) === i);
-    if (!P.length) r.append(E('p', 'scnone', 'Open the Training page once to load the practice list.'));
-    for (const o of P) {
-      const t = o.textContent.replace(/^Practise: /, '');
-      const b = btn(t, o.title);
-      arm(b, t, () => {
-        o.click();
-        con.hidden = true; /* Mina, live test of 269: the console stayed over the plant after the start */
-        /* a Practise button that asks "Press again" itself gets its second press here (the trainer already pressed twice) */
-        /* Mina, live test of 276: started from the Engineer Logic, the Training panel stayed away until the Operator tab was pressed */
-        setTimeout(() => {
-          if (/^Press again/.test(o.textContent)) o.click();
-          if (document.body.dataset.tab === 'logic' && window.lsSetTab) lsSetTab('operate');
-        }, 60);
-      }, { q: 'Start the practice: ' + t + '?', t: (o.title ? o.title.replace(/\.?\s*$/, '. ') : '') + 'The running plant is replaced.', ok: 'Start practice' });
-      r.append(b);
-    }
-    body.append(r);
+    /* 3.2.3-beta.270: no practice sections (they were steps of the Training, which is off: guide.js LS_TRAINING_OFF) */
     /* save points */
     body.append(head('Save point'));
     /* Mina beta.210: SAVE asked the name with prompt(), which the built-in browser blocks: the name is asked here, and the save points
