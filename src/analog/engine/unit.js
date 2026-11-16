@@ -4779,7 +4779,21 @@ function anUnitStep0(dt) {
         (av[0] / 3.6) * (hAir(tPa) - hAir(U.Tamb)) -
         (av[1] / 3.6) * (hAir(tSa) - hAir(U.Tamb)),
       Cb = Math.max(0, isFinite(U.bedI) ? U.bedI : AN_BI.tCold) * 1000 * B.cpS;
-    U.Tb = Math.max(U.Tamb, U.Tb + ((qFuel - qAirG - ((B.ua0w - B.uag) * phi * dW + qBR) - qPan) * dt) / Cb);
+    /* 3.2.4 (JENNIE): the limestone in the bed (U.lmQ T/H, boiler.js). Thermochemistry from the standard heats of formation (NIST:
+       CaCO3 -1207.6, CaO -634.9, CO2 -393.5, SO2 -296.8, CaSO4 -1434.5 kJ/mol):
+       - calcination CaCO3 -> CaO + CO2 takes 179.2 kJ/mol = 1790 kJ/kg CaCO3 (93.66 % CaCO3, FHI P2S7 Tab 3 page 2);
+       - sulphation CaO + SO2 + 1/2 O2 -> CaSO4 gives 502.8 kJ/mol = 15,680 kJ/kg of S captured; the S of the coal that burns
+         (1.49 %, Tab 2) times the capture 1 - U.soxF (anSoxStep). The coal heating value counts S to SO2 only;
+       - the stone heated from the room to the bed: cp 1.0 kJ/kg K, NO-SOURCE (mean of calcite 25 - 850 C, NIST-JANAF ~ 0.9 - 1.1).
+       At MCR (12 T/H, 89 T/H coal, 200 ppm) that is 5.6 MW + 2.8 MW taken, 5.1 MW given: ~ 3.3 MW net out of the bed, 0.9 % of the fuel
+       heat. Before: no limestone term. */
+    const qLm = (() => {
+      const m = Math.max(0, U.lmQ || 0) / 3.6,
+        cap = isFinite(U.soxF) ? Math.max(0, 1 - U.soxF) : 0;
+      return m * 0.9366 * 1790 + m * 1.0 * Math.max(0, U.Tb - U.Tamb) - ((Fb * 0.0149) / 3.6) * cap * 15680;
+    })();
+    U.qLm = qLm;
+    U.Tb = Math.max(U.Tamb, U.Tb + ((qFuel - qLm - qAirG - ((B.ua0w - B.uag) * phi * dW + qBR) - qPan) * dt) / Cb);
     U.Trf = Trf + ((qBR - qRW) * dt) / B.mRef;
     /* the furnace exit gas: the bed less the upper walls, held at the bed by the circulating solids in the share phi */
     U.tgF = gcp > 0.01 ? U.Tb - (1 - Math.min(1, phi)) * (qGas / gcp) : U.Tb;
