@@ -3071,19 +3071,32 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
    condenser under the exhaust). Main steam and hot reheat each reach their casing by two lines, A into the top and B into the
    bottom, as screen 005 and PD-012 (CRV(A) / CRV(B)) show them. Between boiler and turbine the steam lines as pipes, every
    valve as a body with its actuator, every transmitter on its line with a small display.
-   THE CONNECTIONS (unchanged, checked against the flow diagrams by a second thread on 2026-11-17):
-     K1AU3-PD-011 Rev D  main steam: stop valve MV-MS1391 and its bypass, drain pot DP-MS01, HP turbine bypass PCV-MS1020,
-                         HP turbine exhaust, ventilator, warming steam, non-return valve, drain pots DP-CR01 / DP-CR02 / DP-MS02
-     K1AU3-PD-012 Rev D  cold reheat and hot reheat: desuperheater, reheater headers, safety valves, start-up vent,
-                         drain pots DP-HR01 / DP-HR02, the two reheat valves, LP turbine bypass PCV-HR1010
+   THE CONNECTIONS, checked against the flow diagrams by a checker who did not draw the page (2026-11-17, after the page was
+   mirrored; his 4 findings are in: non-return valve turned with the flow, FT-FW1059 / FT-FW1149 before their block valves,
+   line B leaves the main steam line before DP-MS01 and line A, ventilator take-off before PT-CR1901):
+     K1AU3-PD-011 Rev D  main steam: stop valve MV-MS1391 and its bypass, TWO lines into the HP turbine, MSV(B) / CV(B) into the
+                         bottom (taken off first) and MSV(A) / CV(A) into the top, drain pot DP-MS01 between the two take-offs,
+                         HP turbine bypass PCV-MS1020, HP turbine exhaust, ventilator, warming steam, non-return valve, drain
+                         pots DP-CR01 / DP-CR02 / DP-MS02
+     K1AU3-PD-012 Rev D  cold reheat and hot reheat: desuperheater, reheater headers, safety valves, start-up vent, drain pots
+                         DP-HR01 / DP-HR02, CRV(B) into the bottom and CRV(A) into the top of the ILP turbine, LP turbine bypass
+     K1AU3-PD-017 Rev D  the two spray water lines (flow element, block valve, spray valve); PD-016 the LP bypass spray;
+                         PD-013 / -014 / -019 the take-offs to HP heater 2 and auxiliary steam and the line from the superheater
+   The flow diagram shows ONE combined reheat valve per line (CRV(A), CRV(B)); the page draws it as reheat stop valve and
+   intercept valve, as control room screen 005 does (RSV / ICV). Only that split comes from the screen.
    THE ARRANGEMENT: FHI boiler manual Part 2 Sect 1 and Part 4 Sect 3 (reheater in the front pass of the split back pass, inlet
    header below, outlet header on top, gas dampers under the passes), I/O list TT-FG1100 ~ 1113 (names of the banks). What is a
    picture only is listed at the top of hx-real.js.
    GREY = on the flow diagram, but hx-registry.js (what the app binds today) has no signal for it.
    Left out on purpose, all without a signal in the registry: hand valves other than the three isolating valves shown, test
    points and thermowells, the level switches LS-CR1001-1 / -2 of DP-CR01, PT-CR1901-3, PT-HR1901 / TE-HR1902 at reheat valve A,
-   the motor drain valves of the two reheat valves (no tag on PD-012, only TP-1204 / TP-1205), the control valve leak-off line
-   into the branch of reheat valve A, the warming line of the HP bypass to the deaerator (V-MS1511 / 1512, OR-MS1001). */
+   PT-MS1006-2 (only -1 is shown), PT-MS1901-1 / -2, TE-MS1902-1 ~ -4 and PT-ST1001-1 / -2 / -3 at the HP turbine, the motor
+   drain valves of the turbine valves (no tag on the sheets, only TP-1111 ~ 1115 and TP-1204 / 1205), the check valve V-AS1002
+   after MV-AS1011, the orifice OR-CR1001 around FV-CR1902, the control valve leak-off line into the branch of reheat valve A,
+   the warming line of the HP bypass to the deaerator (V-MS1511 / 1512, OR-MS1001).
+   Drawn simpler than the sheets: the HP exhaust leaves the casing by two lines (CR-1-001 top, CR-1-002 bottom, each with a
+   branch to the ventilator): drawn as one; PCV-AS1020-1 / -2 are two parallel valves: drawn as one with both tags;
+   XV-HR1010-1 is a small valve in a line around PCV-HR1010: named in the tag of that valve, not drawn. */
 (function () {
   const { V, E, C, X, L, page } = HX;
   const K = 'kg/cm²';
@@ -3178,6 +3191,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
   /* the four steam lines into the turbine: A lines into the top of a casing, B lines down in front of the middle bearing and
      into the bottom (UY = where a B line turns under its casing) */
   const XA = tx(46),
+    XT = 1040 /* where line B leaves the main steam line: before the drain pot DP-MS01 and before line A (PD-011) */,
     XB1 = 1205,
     XB2 = 1236,
     XR = tx(-60),
@@ -3191,11 +3205,11 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
 
   const dMS1 = drain(
     'dms1',
-    984,
+    1095,
     MY,
     W_MS / 2,
     X('XV-MS1011', '', { tag: 'XV-MS1011 · DP-MS01', cname: 'Main steam drain pot DP-MS01 valve' }),
-    { dy: 96, to: 'flash pipe', rot: 90, lab: 'l', yn: [-36, -36] }
+    { dy: 46, to: 'flash pipe', rot: -90, lab: 'l' }
   );
   const dMS2 = drain('dms2', BX - 22, 640, W_BY / 2, E('valve', '', 'XV-MS1023 · DP-MS02', [], { kind: 'shutoff' }), {
     side: 'r',
@@ -3214,7 +3228,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
   });
   const dHR1 = drain(
     'dhr1',
-    1020,
+    985,
     HY,
     W_RH / 2,
     X('XV-HR1021', '', { tag: 'XV-HR1021 · DP-HR01', cname: 'Hot reheat drain pot DP-HR01 valve' }),
@@ -3253,15 +3267,15 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
 
         /* ---- main steam to the turbine: stop valve with its bypass, drain pot, stop and control valves ---- */
         at(L('drum-steam', 'Main steam', { back: true }), 495, MY, { id: 'ms' }),
-        at(X('MV-MS1391', 'Main steam stop valve'), 900, MY, { id: 'msv', lab: 'b', yn: [22, -32] }),
-        at(X('MV-MS1392', 'Stop valve bypass'), 860, 272, { id: 'msb', rot: -90, lab: 'l', yn: [-36, -34] }),
+        at(X('MV-MS1391', 'Main steam stop valve'), 860, MY, { id: 'msv', lab: 'b', yn: [22, -32] }),
+        at(X('MV-MS1392', 'Stop valve bypass'), 820, 272, { id: 'msb', rot: -90, lab: 'l', yn: [-36, -34] }),
         ...dMS1.items,
         /* two lines into the high pressure casing, as on control room screen 005: A to the top, B to the bottom, each with its
            main stop valve and its control valve (the app has ONE position for the control valves; none for the stop valves) */
-        at(E('valve', '', '', [], { kind: 'plain' }), XA, 396, { id: 'msva', rot: -90 }),
-        at(E('valve', '', '', [], { kind: 'plain', on: LOAD }), XA, 446, { id: 'cva', rot: -90 }),
-        at(E('valve', '', '', [], { kind: 'plain' }), XB1, 396, { id: 'msvb', rot: -90 }),
-        at(E('valve', '', '', [], { kind: 'plain', on: LOAD }), XB1, 446, { id: 'cvb', rot: -90 }),
+        at(E('valve', '', '', [], { kind: 'plain' }), XA, 430, { id: 'msva', rot: -90 }),
+        at(E('valve', '', '', [], { kind: 'plain', on: LOAD }), XA, 478, { id: 'cva', rot: -90 }),
+        at(E('valve', '', '', [], { kind: 'plain' }), XB1, 430, { id: 'msvb', rot: -90 }),
+        at(E('valve', '', '', [], { kind: 'plain', on: LOAD }), XB1, 478, { id: 'cvb', rot: -90 }),
 
         /* ---- high pressure bypass ---- */
         at(E('valve', 'Isolating valve', 'V-MS1003 · manual', [], { kind: 'manual' }), BX, 354, {
@@ -3277,20 +3291,20 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         at(E('spray', '', '', [], { flow: 'l:TICMS1022', noz: 'b' }), BX, 505, { id: 'hps', rot: 90 }),
         at(
           C('TICMS1022', 'Bypass spray valve', { tag: 'TCV-FW1060', cname: 'High pressure bypass spray valve' }),
-          688,
+          695,
           498,
           { id: 'tcms', lab: 'b' }
         ),
-        at(X('XV-FW1061', 'Spray block valve', { cname: 'High pressure bypass spray block valve' }), 568, 498, {
+        at(X('XV-FW1061', 'Block valve', { cname: 'High pressure bypass spray block valve' }), 590, 498, {
           id: 'xfw61',
           lab: 'b',
-          yn: [-38, -22]
+          yn: [22, -40]
         }),
         at(L('feedwater', 'Feedwater', { back: true }), 470, 498, { id: 'fw1' }),
         ...dMS2.items,
 
         /* ---- cold reheat ---- */
-        at(E('valve', 'Ventilator valve', 'FV-CR1902', [], { kind: 'control' }), 1138, 780, { id: 'fv', lab: 'b' }),
+        at(E('valve', 'Ventilator valve', 'FV-CR1902', [], { kind: 'control' }), 1140, 716, { id: 'fv', lab: 'b' }),
         ...dCR1.items,
         at(
           E('valve', 'Turbine warming steam valve', 'MV-AS1011', [V('Position', 'ZT-AS1011', '%')], {
@@ -3307,7 +3321,11 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
           lab: 'b'
         }),
         at(L('aux-steam', 'Auxiliary steam', { back: true }), 1038, 946, { id: 'aux1' }),
-        at(E('valve', 'Non-return valve', 'XV-CR1901', [], { kind: 'check' }), 848, CY, { id: 'nrv', lab: 't' }),
+        at(E('valve', 'Non-return valve', 'XV-CR1901', [], { kind: 'check' }), 848, CY, {
+          id: 'nrv',
+          lab: 't',
+          mir: true
+        }),
         ...dCR2.items,
         at(C('PICAS1005', 'Cold reheat to auxiliary steam valve', { tag: 'PCV-AS1020-1 / -2', wrap: 14 }), 630, 866, {
           id: 'pas',
@@ -3319,12 +3337,12 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         at(L('extraction', 'High pressure heater 2'), 470, 918, { id: 'hph' }),
         at(E('spray', '', '', [], { flow: 'l:TICHR1002', noz: 'b' }), RX, 690, { id: 'dsh', rot: -90 }),
         at(C('TICHR1002', 'Reheater spray valve', { tag: 'TCV-FW1150' }), 492, 697, { id: 'tfw50', lab: 'b' }),
-        at(X('XV-FW1151', 'Spray block valve', { cname: 'Reheater spray block valve' }), 614, 697, {
+        at(X('XV-FW1151', 'Block valve', { cname: 'Reheater spray block valve' }), 580, 697, {
           id: 'xfw51',
           lab: 'b',
-          yn: [24, -22]
+          yn: [-38, -40]
         }),
-        at(L('feedwater', 'Feedwater', { back: true }), 660, 650, { id: 'fw2' }),
+        at(L('feedwater', 'Feedwater', { back: true }), 662, 624, { id: 'fw2' }),
         at(C('HICBR1391', 'Superheater steam to reheater', { tag: 'MV-BR1391', kind: 'motor', wrap: 18 }), RX, 380, {
           id: 'mbr',
           rot: -90,
@@ -3371,7 +3389,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
             lab: 'b'
           }
         ),
-        at(X('XV-CD1114', 'Spray block valve', { cname: 'Low pressure bypass spray block valve' }), 1498, 50, {
+        at(X('XV-CD1114', 'Block valve', { cname: 'Low pressure bypass spray block valve' }), 1498, 50, {
           id: 'xcd',
           lab: 'b'
         }),
@@ -3404,28 +3422,28 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
           w: W_MS,
           pts: [
             [BX, MY],
-            [860, MY]
+            [820, MY]
           ],
           flow: 'x:MV-MS1391|x:MV-MS1392',
           arrow: false
         },
-        { med: 'steam', w: W_MS, pts: [[860, MY], 'msv.l'], flow: 'x:MV-MS1391', arrow: false },
-        { med: 'steam', w: W_MS, pts: ['msv.r', [940, MY]], flow: 'x:MV-MS1391', arrow: false },
-        { med: 'steam', w: W_SM, pts: [[860, MY], 'msb.l'], flow: 'x:MV-MS1392', arrow: false },
-        { med: 'steam', w: W_SM, pts: ['msb.r', [860, 234], [940, 234], [940, MY]], flow: 'x:MV-MS1392', arrow: false },
+        { med: 'steam', w: W_MS, pts: [[820, MY], 'msv.l'], flow: 'x:MV-MS1391', arrow: false },
+        { med: 'steam', w: W_MS, pts: ['msv.r', [900, MY]], flow: 'x:MV-MS1391', arrow: false },
+        { med: 'steam', w: W_SM, pts: [[820, MY], 'msb.l'], flow: 'x:MV-MS1392', arrow: false },
+        { med: 'steam', w: W_SM, pts: ['msb.r', [820, 234], [900, 234], [900, MY]], flow: 'x:MV-MS1392', arrow: false },
         {
           med: 'steam',
           w: W_MS,
           pts: [
-            [940, MY],
-            [XA, MY]
+            [900, MY],
+            [XT, MY]
           ],
           flow: LOAD
         },
-        { med: 'steam', w: W_MS, pts: [[XA, MY], 'msva.r'], flow: LOAD, arrow: false },
+        { med: 'steam', w: W_MS, pts: [[XT, MY], [XA, MY], 'msva.r'], flow: LOAD, arrow: false },
         { med: 'steam', w: W_MS, pts: ['msva.l', 'cva.r'], flow: LOAD, arrow: false },
         { med: 'steam', w: W_MS, pts: ['cva.l', 'tg.hpIn'], flow: LOAD, arrow: false },
-        { med: 'steam', w: W_MS, pts: [[XA, MY], [XB1, MY], 'msvb.r'], flow: LOAD, arrow: false },
+        { med: 'steam', w: W_MS, pts: [[XT, MY], [XT, 272], [XB1, 272], 'msvb.r'], flow: LOAD, arrow: false },
         { med: 'steam', w: W_MS, pts: ['msvb.l', 'cvb.r'], flow: LOAD, arrow: false },
         { med: 'steam', w: W_MS, pts: ['cvb.l', [XB1, UY], [XA, UY], 'tg.hpB'], flow: LOAD, arrow: false },
         ...dMS1.pipes,
@@ -3439,13 +3457,13 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         { med: 'water', w: W_WT, pts: ['xfw61.r', 'tcms.l'], flow: 'l:TICMS1022' },
         { med: 'water', w: W_WT, pts: ['tcms.r', 'hps.b'], flow: 'l:TICMS1022', arrow: false },
         /* cold reheat: high pressure exhaust to the reheater inlet header */
-        { med: 'reheat', w: W_RH, pts: ['tg.hpEx', [tx(110), CY], 'nrv.r'], flow: LOAD, vfirst: true },
-        { med: 'reheat', w: W_RH, pts: ['nrv.l', [JX, CY]], flow: LOAD, arrow: false },
+        { med: 'reheat', w: W_RH, pts: ['tg.hpEx', [tx(110), CY], 'nrv.l'], flow: LOAD, vfirst: true },
+        { med: 'reheat', w: W_RH, pts: ['nrv.r', [JX, CY]], flow: LOAD, arrow: false },
         { med: 'reheat', w: W_RH, pts: [[JX, CY], [RX, CY], 'dsh.l'], flow: CR },
         { med: 'reheat', w: W_RH, pts: ['dsh.r', [RX, by(260)]], flow: CR },
         { med: 'reheat', w: W_RH, pts: [[RX, by(260)], 'bp.rin'], flow: CR + '|l:HICBR1391', arrow: false },
-        { med: 'reheat', w: W_SM, pts: [[tx(110), 780], 'fv.l'], arrow: false },
-        { med: 'reheat', w: W_SM, pts: ['fv.r', [1180, 780]], to: 'flash chamber', arrow: false },
+        { med: 'reheat', w: W_SM, pts: [[tx(110), 716], 'fv.l'], arrow: false },
+        { med: 'reheat', w: W_SM, pts: ['fv.r', [1182, 716]], to: 'flash chamber', arrow: false },
         ...dCR1.pipes,
         { med: 'steam', w: W_SM, pts: ['aux1.l', [948, 946], 'was.r'], flow: 'v:ZT-AS1011>1', arrow: false },
         { med: 'steam', w: W_SM, pts: ['was.l', [948, CY]], flow: 'v:ZT-AS1011>1', arrow: false },
@@ -3459,7 +3477,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         {
           med: 'water',
           w: W_WT,
-          pts: ['fw2.b', [660, 697], 'xfw51.r'],
+          pts: ['fw2.b', [662, 697], 'xfw51.r'],
           flow: 'l:TICHR1002',
           vfirst: true,
           arrow: false
@@ -3517,9 +3535,9 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
       ],
       signals: [{ pts: ['tic.l', [20, 64], [20, by(350) - 16], 'dmb.a'] }, { pts: ['dmb.a', 'dma.a'] }],
       taps: [
-        { x: 580, y: MY, side: 't', label: 'Pressure', key: 'PT-MS1006-1', unit: K, tag: 'PT-MS1006-1' },
-        { x: 660, y: MY, side: 't', label: 'Temperature', key: 'TT-MS1007', unit: '°C', dp: 0, tag: 'TT-MS1007' },
-        { x: 629, y: 498, side: 't', label: 'Spray water', key: 'FT-FW1059', unit: 't/h', tag: 'FT-FW1059' },
+        { x: 546, y: MY, side: 't', label: 'Pressure', key: 'PT-MS1006-1', unit: K, tag: 'PT-MS1006-1' },
+        { x: 620, y: MY, side: 't', label: 'Temperature', key: 'TT-MS1007', unit: '°C', dp: 0, tag: 'TT-MS1007' },
+        { x: 540, y: 498, side: 't', label: 'Spray water', key: 'FT-FW1059', unit: 't/h', tag: 'FT-FW1059' },
         { x: BX, y: 560, side: 'r', label: 'After bypass', key: 'PT-MS1021', unit: K, tag: 'PT-MS1021' },
         {
           x: BX,
@@ -3534,8 +3552,8 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         },
         {
           x: tx(110),
-          y: 716,
-          side: 'r',
+          y: 768,
+          side: 'l',
           label: 'Exhaust',
           key: 'PICR19011',
           key2: 'PICR19012',
@@ -3544,7 +3562,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         },
         { x: RX, y: 778, side: 'l', label: 'Pressure', key: 'PT-CR1003', unit: K, tag: 'PT-CR1003' },
         { x: RX, y: 730, side: 'l', label: 'Temperature', key: 'TT-CR1004', unit: '°C', dp: 0, tag: 'TT-CR1004' },
-        { x: 548, y: 697, side: 't', label: 'Spray water', key: 'FT-FW1149', unit: 't/h', tag: 'FT-FW1149' },
+        { x: 621, y: 697, side: 't', label: 'Spray water', key: 'FT-FW1149', unit: 't/h', tag: 'FT-FW1149' },
         {
           x: RX,
           y: 600,
@@ -3639,14 +3657,14 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
       ],
       texts: [
         { x: 1064, y: 716, s: 'High pressure turbine', cls: 'hx-name', anchor: 'end' },
-        { x: 1128, y: 392, s: 'Main stop valves', cls: 'hx-name', anchor: 'end' },
-        { x: 1128, y: 440, s: 'Control valves', cls: 'hx-name', anchor: 'end' },
-        { x: 1128, y: 455, s: 'Position', key: 'ZI-CV', unit: '%', anchor: 'end' },
+        { x: 1128, y: 427, s: 'Main stop valves', cls: 'hx-name', anchor: 'end' },
+        { x: 1128, y: 472, s: 'Control valves', cls: 'hx-name', anchor: 'end' },
+        { x: 1128, y: 487, s: 'Position', key: 'ZI-CV', unit: '%', anchor: 'end' },
         { x: 1332, y: 392, s: 'Reheat stop valves', cls: 'hx-name' },
         { x: 1332, y: 426, s: 'Intercept valves', cls: 'hx-name' },
         { x: 1332, y: 441, s: 'Position', key: 'ZI-ICV', unit: '%' },
-        { x: 1141, y: 378, s: 'A', cls: 'hx-tag', anchor: 'middle' },
-        { x: 1188, y: 378, s: 'B', cls: 'hx-tag', anchor: 'middle' },
+        { x: 1141, y: 411, s: 'A', cls: 'hx-tag', anchor: 'middle' },
+        { x: 1188, y: 411, s: 'B', cls: 'hx-tag', anchor: 'middle' },
         { x: 1253, y: 378, s: 'B', cls: 'hx-tag', anchor: 'middle' },
         { x: 1316, y: 378, s: 'A', cls: 'hx-tag', anchor: 'middle' },
         { x: 1534, y: 508, s: 'Intermediate and low', cls: 'hx-name', anchor: 'start' },
