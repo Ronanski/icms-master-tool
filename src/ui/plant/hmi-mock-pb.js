@@ -50,12 +50,14 @@
      the blowing: a blower START does nothing without the BLOWING PERMISSIVE, which needs MV-SB1001 open 600 s). The CRT push buttons of
      the drawings (input rows):
      - MV-SB1001 steam supply motor valve, DITL-80S: OPEN P.B. row 4 M.4210, STOP P.B. row 8 M.421A, CLOSE P.B. row 10 M.4211;
-       STATUS = output row 21 "S/B STEAM SUPPLY MOTOR VALVE OPEN" (CRT lamp). The valve takes the CRT command in REMOTE (row 0 I.024D).
+       STATUS = output row 4 "S/B STEAM SUPPLY MOTOR VALVE FULL OPENED" (CRT lamp, from I.024A row 5; 3.2.4-beta.9: live test 2026-11-17
+       read output row 21, the OPEN / CLOSE COMMAND annunciation = OR of O.016E / O.016F, and showed NOT OPEN with the valve at 100 %).
+       The valve takes the CRT command in REMOTE (row 0 I.024D).
      - Sootblower sequence, DITL-80A: AUTO / MANUAL mode select row 9 M.4005 (CRT, AUTO START SELECTED), AUTO SEQUENCE START row 10
        M.4002, SEQUENCE STOP row 4 M.4003, EMERGENCY RETRACT row 5 M.4004; STATUS = output row 5 "SOOTBLOWER SYSTEM PROGRAM ON".
      In MANUAL mode each blower is started from its own label (above) once the blowing permissive is Y. */
   if (sb) {
-    sb.mach.SBMV = pbf('MV-SB1001', 'Sootblower steam supply motor valve', 'DITL-80S', 21, 'OPEN', [['OPEN', 4], ['STOP', 8], ['CLOSE', 10]], 'NOT OPEN');
+    sb.mach.SBMV = pbf('MV-SB1001', 'Sootblower steam supply motor valve', 'DITL-80S', 4, 'OPEN', [['OPEN', 4], ['STOP', 8], ['CLOSE', 10]], 'NOT OPEN');
     sb.mach.SBMV.df.free = 1;
     sb.mach.SBSEQ = pbf('Sootblower sequence', 'Sootblower program (30 blowers)', 'DITL-80A', 5, 'PROGRAM ON', [['AUTO MODE', 9, 'set', 1], ['MANUAL MODE', 9, 'set', 0], ['SEQUENCE START', 10], ['SEQUENCE STOP', 4], ['EMERGENCY RETRACT', 5]], 'PROGRAM OFF');
     sb.mach.SBSEQ.df.free = 1;
