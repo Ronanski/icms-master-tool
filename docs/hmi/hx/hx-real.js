@@ -293,15 +293,24 @@
       `<path class="rx-coile" d="${coil}"/><path class="rx-coil" d="${coil}"/>` +
       live(o.steam, `<path class="rx-coilf" d="${coil}"/>`) +
       '<circle class="rx" cx="-18" cy="260" r="8.6"/><circle class="rxm" cx="-18" cy="260" r="4.4"/><circle class="rx" cx="-18" cy="40" r="8.6"/><circle class="rxm" cx="-18" cy="40" r="4.4"/>' +
-      /* names inside */
-      '<text class="rx-in" x="56" y="24" text-anchor="middle">Reheater pass</text><text class="rx-in" x="160" y="24" text-anchor="middle">Superheater pass</text>' +
-      '<text class="rx-in2" x="56" y="153.5" text-anchor="middle">Reheater</text><text class="rx-in2" x="56" y="299" text-anchor="middle">Economizer 2R</text>' +
-      '<text class="rx-in2" x="160" y="87" text-anchor="middle">Finishing</text><text class="rx-in2" x="160" y="97" text-anchor="middle">superheater</text><text class="rx-in2" x="160" y="230" text-anchor="middle">Economizer 3</text>' +
-      '<text class="rx-in2" x="160" y="299" text-anchor="middle">Economizer 2S</text><text class="rx-in2" x="108" y="446" text-anchor="middle">Economizer 1</text>';
+      '';
+    /* names inside (the core writes them, so they stay readable when the piece is mirrored) */
+    const words = [
+      { x: 56, y: 24, s: 'Reheater pass', cls: 'rx-in', size: 8 },
+      { x: 160, y: 24, s: 'Superheater pass', cls: 'rx-in', size: 8 },
+      { x: 56, y: 153.5, s: 'Reheater', cls: 'rx-in2', size: 8.8 },
+      { x: 56, y: 299, s: 'Economizer 2R', cls: 'rx-in2', size: 8.8 },
+      { x: 160, y: 87, s: 'Finishing', cls: 'rx-in2', size: 8.8 },
+      { x: 160, y: 97, s: 'superheater', cls: 'rx-in2', size: 8.8 },
+      { x: 160, y: 230, s: 'Economizer 3', cls: 'rx-in2', size: 8.8 },
+      { x: 160, y: 299, s: 'Economizer 2S', cls: 'rx-in2', size: 8.8 },
+      { x: 108, y: 446, s: 'Economizer 1', cls: 'rx-in2', size: 8.8 }
+    ];
     return {
       box: [-28, -50, 217, 512],
       ports: { rin: [-26.6, 260], rout: [-26.6, 40], gin: [46, -50], gout: [108, 512], l: [0, 150], r: [216, 150] },
-      svg
+      svg,
+      words
     };
   };
 

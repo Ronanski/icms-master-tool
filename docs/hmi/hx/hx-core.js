@@ -258,12 +258,22 @@
       sc = it.sc || 1;
     let box = sy.box,
       ports = sy.ports;
-    /* sc: a large piece may be drawn larger than its own measure (the turbine, a boiler pass) */
-    if (sc !== 1) {
-      box = box.map(v => v * sc);
-      ports = Object.fromEntries(Object.entries(ports).map(([k, q]) => [k, [q[0] * sc, q[1] * sc]]));
-      sy.svg = `<g transform="scale(${sc})">${sy.svg}</g>`;
+    /* sc: a large piece may be drawn larger than its own measure (the turbine, a boiler pass). mir: it is drawn as its mirror
+       image, left to right (the same piece seen from the other side); the words a symbol gives in sy.words stay readable */
+    const mir = it.mir ? -1 : 1;
+    if (sc !== 1 || mir < 0) {
+      box = [box[0] * sc, box[1] * sc, box[2] * sc, box[3] * sc];
+      if (mir < 0) box = [-box[2], box[1], -box[0], box[3]];
+      ports = Object.fromEntries(Object.entries(ports).map(([k, q]) => [k, [q[0] * sc * mir, q[1] * sc]]));
+      sy.svg = `<g transform="scale(${n1(sc * mir)} ${sc})">${sy.svg}</g>`;
     }
+    if (sy.words)
+      sy.svg += sy.words
+        .map(
+          w =>
+            `<text class="${w.cls}" style="font-size:${n1((w.size || 9) * sc)}px" x="${n1(w.x * sc * mir)}" y="${n1(w.y * sc)}" text-anchor="middle">${esc(w.s)}</text>`
+        )
+        .join('');
     if (rot) {
       const c = [
         [box[0], box[1]],
