@@ -329,5 +329,6 @@ const DREAD = (function () {
     }
   }
   D.motState = motState;
+  D.motOuts = motOuts;
   return { motOuts, motState, rsNear, isK, isKA, txt, ADR, tagOf, svcOf, fmt, auto, MAPS, maps, rowNo, inName, outName, gName, dName, dPick, rowNets, val, why, shortest, whyD };
 })();

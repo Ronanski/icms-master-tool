@@ -1783,7 +1783,7 @@
     /* group 2: a running motor trips in the field (world.js WORLD.ftrip) */
     const ftL = () => (window.WORLD && WORLD.ftrip ? WORLD.ftrip() : []);
     for (const f of ftL())
-      btn('flt-' + f.id.replace(/\W/g, '-'), f.t, 'Field fault: ' + f.t + ' (its protection relay opens the MCC). Press again to reset the relay; the operator starts it again.', () => {
+      btn('flt-' + f.id.replace(/\W/g, '-'), f.t, f.g === 'el' ? 'Field fault: ' + f.t + '. Every motor stops; the DCS stays on the UPS, the turbine oil on the emergency oil pump (DC), the emergency panel on the diesel generator. Press again when the bus is back; the operator starts the motors again.' : 'Field fault: ' + f.t + ' (its protection relay opens the MCC). Press again to reset the relay; the operator starts it again.', () => {
         const now = ftL().find(q => q.id === f.id),
           r = WORLD.ftrip(f.id, !(now && now.on));
         if (!r) return msg('Fault ' + f.t + ': not found.');

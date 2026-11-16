@@ -13,7 +13,7 @@
    load at the TCS valve rate; the 106 % speed peak of a load rejection (SU) is not modelled). The relays 78 / 81 open 52L1 in the plant
    (generator protection relay settings, plant study 05); here the instructor opens it. 52L1 closes again from the instructor command:
    the plant synchronizes it with ASD2 (sync check relay 25), the model closes it at once; then the operator raises the load again.
-   Not modelled: a blackout of the 6.6 kV bus, the 6.6 kV bus transfer, the diesel generator DG1. */
+   3.2.4: the unit black-out (BUS 1AM lost, DG1 and EMP-11) is at the end of this file. Not modelled: the 6.6 kV bus transfer HBT12. */
 const AN_EL = {
   kV: 6.6,
   pf: 0.85 /* NO-SOURCE */,
@@ -106,4 +106,25 @@ function anElecL52(U, on) {
     tb.tgt = tb.aim = +U.MW || 0;
   }
   return '';
+}
+/* 3.2.4: the unit black-out (world.js WORLD.ftrip 'el.1am'). 6.6 kV BUS 1AM dead; the 460 V emergency panel EMP-11 comes back on the
+   diesel generator DG1 (750 kW, 460 V) through ATS-11 (K1AU3E1-0040: N-BUS from 1B2-M, E-BUS from DG1). The time from the loss to EMP-11
+   live again (DG1 start + ATS-11 transfer): 10 s = NO-SOURCE for this unit (no DG1 / ATS-11 setting sheet read); 10 s is the Type 10
+   class of NFPA 110 for an emergency power supply. U.el.bo = { t: s since the loss } while the bus is dead */
+const AN_EL_BO = { emp: 10 /* s, NO-SOURCE (NFPA 110 Type 10) */ };
+function anElecBo(U, on) {
+  const e = U.el || (U.el = { l52: true });
+  if (on) e.bo = e.bo || { t: 0 };
+  else delete e.bo;
+}
+/* the state for this step: dead = BUS 1AM and the normal 460 V buses dead; emp = EMP-11 live (on DG1 during the black-out) */
+function anElecBoStep(U, dt) {
+  const b = U.el && U.el.bo;
+  if (!b) return { dead: false, emp: true };
+  b.t += dt;
+  if (b.t >= AN_EL_BO.emp && !b.e) {
+    b.e = 1;
+    if (typeof window !== 'undefined' && window.WORLD && WORLD.boEmp) WORLD.boEmp();
+  }
+  return { dead: true, emp: b.t >= AN_EL_BO.emp };
 }

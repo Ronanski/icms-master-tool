@@ -1212,11 +1212,68 @@
     'mt.swpb': { t: 'Seawater pump B trips in the field (MIT-P1501B)', sh: 'DITL-29A #B' }
   };
   W.ft = W.ft || new Set();
+  /* 3.2.4 (JENNIE, user "unahin mo nlng ang mga pinakamahalaga sa operation"): the unit black-out, a trainer fault. Single Line Diagram
+     K1AU3-E1-0-102 RD: 6.6 kV BUS 1AM is fed by TR-1A1 (K1AU3E1-0003) and transfers to unit 2 through the bus tie (HBT12); the fault is
+     the loss of 1AM with no transfer. Every 6.6 kV motor (K1AU3E1-0008) and the 460 V buses behind TR-1B1 / TR-1B2 lose their voltage:
+     the undervoltage relays (27) open the motor breakers, so every motor of the DITL drawings stops (s._ftrip, as a field trip, but no
+     ELECTRIC TROUBLE flag: the relay is not the cause) and stays stopped while the bus is dead. The DCS runs on the UPS (UPS-11,
+     K1AU3E1-0040 / 0047) and keeps scanning: the logic of the drawings decides what trips (MFT on the fans, turbine, generator).
+     Live during the black-out: the 460 V emergency panel EMP-11 through ATS-11 from the diesel generator DG1 750 kW (K1AU3E1-0040):
+     MCC-EMP11 (K1AU3E1-0032: main oil pumps M-1922A / B, vapour extractor M-1937, turning gear M-1906, diesel oil pump A M-0702A), the
+     DC charger DC-11, UPS-11, EPDP-11. The turbine oil side is in tcs.js (tcsOil, AN_EL_BO). No DITL drawing has a motor of EMP-11, so
+     every DITL motor stops. Clear = the bus is back (unit 2 or the grid): the operator starts the motors again */
+  const BO = 'el.1am',
+    BO_T = 'Unit black-out: 6.6 kV bus 1AM lost (no bus transfer)';
+  /* the undervoltage relay of one motor drawing: open = the motor stopped (s._ftrip) and the trip contact into the logic (the ELECTRIC
+     TROUBLE flags of the drawing, as a field trip), so the logic resets its RUNNING latch and the motor does not run again by itself when
+     the voltage comes back */
+  const boRelay = (s, on) => {
+    s.usw = s.usw || {};
+    for (const u of (s.nl && s.nl.usr) || []) if (/^ET/.test(u.key)) s.usw[u.key] = !!on;
+    s._ftrip = !!on;
+  };
+  /* the DITL motors on MCC-EMP11 (K1AU3E1-0032): diesel oil pump A M-0702A = DITL-31 machine A. Live again when EMP-11 is on DG1
+     (elec.js anElecBoStep calls WORLD.boEmp once); the operator starts it again */
+  const BO_EMP = ['DITL-31'];
+  W.boEmp = () => {
+    if (!W.ft.has(BO)) return;
+    for (const c of BO_EMP) {
+      const s = S.sheets.find(x => x.name.endsWith(')' + c));
+      if (s) boRelay(s, false);
+    }
+    W.busy = true;
+    if (window.lsEventAdd) lsEventAdd('ELEC', 'FIELD', 'Diesel generator DG1 on: ATS-11 puts the emergency panel EMP-11 on DG1');
+  };
+  const boSet = on => {
+    on = !!on;
+    if (on === W.ft.has(BO)) return on ? BO_T + ' is already on' : '';
+    const own = new Set([...W.ft].filter(k => FT[k]).map(k => ftSheet(FT[k].sh)));
+    for (const s of S.sheets.concat(W.inst || [])) {
+      if (!s.nl && typeof netlist === 'function') s.nl = netlist(s);
+      /* a motor drawing: RUN / TRIP output rows (DUI.motOuts, the lamps of the dock and the HMI) or a motor model */
+      let o = null;
+      try {
+        o = window.DUI && DUI.motOuts ? DUI.motOuts(s) : null;
+      } catch (e) {}
+      if (!((o && (o.trip || o.run)) || (s.nl && s.nl.mot && s.nl.mot.length))) continue;
+      if (!on && own.has(s)) continue;
+      boRelay(s, on);
+    }
+    if (on) W.ft.add(BO);
+    else W.ft.delete(BO);
+    if (window.AN && AN.elecBo) AN.elecBo(on);
+    W.busy = true;
+    return on ? BO_T : 'cleared: ' + BO_T + ' (bus 1AM back: START the motors again)';
+  };
   /* a drawing by its name, or a machine copy "DITL-29A #B" (W.inst) */
   const ftSheet = c => S.sheets.concat(W.inst || []).find(x => x.name.endsWith(')' + c));
   /* WORLD.ftrip(): the list with the state; WORLD.ftrip(id, on): the fault on / cleared (an ENG call: page and Worker); returns the text */
   W.ftrip = (id, on) => {
-    if (id == null) return Object.keys(FT).map(k => ({ id: k, g: 'mt', t: FT[k].t, on: W.ft.has(k) }));
+    if (id == null)
+      return Object.keys(FT)
+        .map(k => ({ id: k, g: 'mt', t: FT[k].t, on: W.ft.has(k) }))
+        .concat([{ id: BO, g: 'el', t: BO_T, on: W.ft.has(BO) }]);
+    if (id === BO) return boSet(on);
     const f = FT[id],
       s = f && ftSheet(f.sh);
     if (!s) return '';
@@ -1229,10 +1286,14 @@
     W.busy = true;
     return on ? f.t : 'cleared: ' + f.t + ' (relay reset in the field: START it again)';
   };
-  W.ftClear = () => W.ft.clear();
+  W.ftClear = () => {
+    if (W.ft.has(BO) && window.AN && AN.elecBo) AN.elecBo(false);
+    W.ft.clear();
+  };
   /* the trainer fault that stands on a drawing (its name), or null: the RESET of the protection relay on the motor faceplate clears it
      (Mina beta.175 PA fan practice step 4: RESET there took off the ELECTRIC TROUBLE but s._ftrip held the fan stopped, START did nothing) */
   W.ftOf = nm => [...W.ft].find(k => {
+    if (!FT[k]) return false;
     const s = ftSheet(FT[k].sh);
     return !!s && s.name === nm;
   }) || null;
