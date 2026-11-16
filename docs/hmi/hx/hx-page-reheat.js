@@ -239,7 +239,7 @@
           866,
           { id: 'was', rot: 90, lab: 'l' }
         ),
-        at(X('MV-AS1394', '', { tag: 'MV-AS1394 · warming line drain', cname: 'Warming line drain valve' }), 896, 928, {
+        at(X('MV-AS1394', '', { tag: 'MV-AS1394 · line drain', cname: 'Warming line drain valve' }), 896, 928, {
           id: 'wad',
           lab: 'b'
         }),

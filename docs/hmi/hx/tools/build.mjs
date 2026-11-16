@@ -1,6 +1,9 @@
 // Builds the ONE-FILE mockup (hx-mockup.html, the page published as the artifact) from the parts of docs/hmi/hx/, and checks the
 // pages: every value key, machine, loop and valve of hx-pages.js must be in hx-registry.js (= bound by the app today), and it
 // prints what of the registry is on no page. Usage: node docs/hmi/hx/tools/build.mjs   (exit 1 when a page names something unknown)
+//   --list                     also print every loop / machine that is on no page yet
+//   --only=hx-page-x.js --out=/some/folder/preview.html
+//                              preview of ONE page file while it is being drawn (does not touch hx-mockup.html)
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -10,7 +13,17 @@ const rd = f => fs.readFileSync(path.join(dir, f), 'utf8');
 /* ONE style only (user 2026-11-17: "dapat sa hmi pages, ayan yung nakikita, wala na ibang style"): the mockup holds the
    realistic pages. hx-pages.js (the 23 earlier summary pages, line symbols of hx-sym.js) is no longer in it: it stays in the
    folder as the list of what each system holds, and its page titles are shown in the rail as "to be drawn". */
-const REAL_PAGES = ['hx-page-reheat.js'];
+const ARGS = Object.fromEntries(process.argv.slice(2).map(a => a.replace(/^--/, '').split('=')));
+/* every hx-page-*.js of the folder is a page of the mockup; ORDER = the order of the rail (others follow by name) */
+const ORDER = ['hx-page-reheat.js'];
+const found = fs
+  .readdirSync(dir)
+  .filter(f => /^hx-page-.+\.js$/.test(f))
+  .sort();
+const REAL_PAGES = ARGS.only
+  ? [ARGS.only]
+  : [...ORDER.filter(f => found.includes(f)), ...found.filter(f => !ORDER.includes(f))];
+if (ARGS.only && !ARGS.out) throw new Error('--only needs --out=<file.html>');
 const parts = [
   'hx-real.js',
   'hx-core.js',
@@ -97,8 +110,10 @@ const noPage = {
 };
 const cover = `pages ${HX.pages.length} · loops on a page ${used.l.size} of ${Object.keys(R.loops).length} · machines and valves on a page ${Object.keys(R.machines).length - noPage.machines.length} of ${Object.keys(R.machines).length} · value keys used ${used.k.size} of ${Object.keys(R.sample.values).length}`;
 console.log(cover);
-if (noPage.loops.length) console.log('loops on NO page:', noPage.loops.join(', '));
-if (noPage.machines.length) console.log('machines / valves on NO page:', noPage.machines.join(', '));
+if (ARGS.list !== undefined) {
+  if (noPage.loops.length) console.log('loops on NO page:', noPage.loops.join(', '));
+  if (noPage.machines.length) console.log('machines / valves on NO page:', noPage.machines.join(', '));
+}
 if (bad.length) {
   console.error('UNKNOWN in hx-registry.js (not bound by the app today):\n  ' + bad.join('\n  '));
   process.exit(1);
@@ -181,13 +196,14 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
 <template id="doc"><div class="doc">${doc}</div></template>
 <script>
 ${parts.map(rd).join('\n')}
-HX.soon = ${JSON.stringify(soon)};
+HX.soon = ${JSON.stringify(ARGS.only ? [] : soon)};
 HX.shell(document.getElementById('hx'), {
   strip: [['Load', 'GCP-AI1001', 'MW'], ['Steam pressure', 'PT-MS1002', 'kg/cm²'], ['Steam temperature', 'pv:TICMS1004', '°C', 0], ['Steam flow', 'FT-MS1031', 't/h'], ['Reheat temperature', 'TT-HR1002-1', '°C', 0], ['Drum level', 'pv:LICBR1001B', 'mm', 0], ['Bed temperature', 'TT-FG1090', '°C', 0], ['Furnace pressure', 'PT-FG1085', 'mmH₂O', 0], ['Coal flow', 'pv:FIC-CM', 't/h'], ['Total air flow', 'ABC-002|SI0060', 't/h']],
-  start: 'reheat-steam',
+  start: ${JSON.stringify(realPages[0].id)},
   extra: [{ id: 'next-coder', group: 'Handoff', title: 'For the next coder', render: () => document.getElementById('doc').content.cloneNode(true).firstElementChild }]
 });
 </script>
 `;
-fs.writeFileSync(path.join(dir, 'hx-mockup.html'), html);
-console.log('built hx-mockup.html', html.length, 'bytes');
+const outFile = ARGS.out ? path.resolve(ARGS.out) : path.join(dir, 'hx-mockup.html');
+fs.writeFileSync(outFile, html);
+console.log('built', ARGS.out ? outFile : 'hx-mockup.html', html.length, 'bytes');

@@ -101,7 +101,7 @@
         `<path class="rxpe" d="M${x + 4} -10h4.2v-21"/><rect class="rxv" x="${x + 4.6}" y="-45" width="7.2" height="14" rx="2.4"/>` +
         `<path class="rxd" d="M${x - 2.2} -6h4.4v6h-4.4z"/><rect class="rxs" x="${x - 4.6}" y="-14.5" width="9.2" height="9" rx="2"/>` +
         `<rect class="rxv" x="${x - 3}" y="-27.5" width="6" height="13" rx="1"/><path class="rxe" d="M${x - 3} -17.5l6 -2.5l-6 -2.5l6 -2.5"/><path class="rxd" d="M${x - 3.8} -30h7.6v2.6h-7.6z"/>`;
-    return { box: [-22, -46, 29, 1], ports: { l: [-22, 0], r: [29, 0], b: [0, 0], t: [0, -45] }, svg: s };
+    return { box: [-22, -46, 29, 9], ports: { l: [-22, 0], r: [29, 0], b: [0, 0], t: [0, -45] }, svg: s };
   };
 
   /* ---------------- small things on a line ---------------- */

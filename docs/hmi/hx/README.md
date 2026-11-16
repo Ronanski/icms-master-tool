@@ -162,6 +162,15 @@ User 2026-11-17: "wag yung parang P&ID ha. realistic with animation ha. magaan d
 
 **Method for the next page** (what was done for the reheat page): the six steps of 6b, then (7) decide which equipment of the system is the picture (one or two large cut-open pieces) and where it stands in the plant; find its arrangement in the manuals before drawing it and write the source at the symbol; (8) lay the pipes between the pieces as they run, keep every valve and transmitter on its line; (9) run the overlap check in both themes; (10) measure the weight; (11) pictures of the whole page and close-ups; (12) a checker who did not draw it compares the connections with the flow diagram, and a second one looks at the picture as an operator.
 
+## 6e. Tools for drawing a page (`tools/`)
+
+- One page = one file `hx-page-<system>.js` in this folder. `tools/build.mjs` takes every such file into the mockup (the order of the rail is `ORDER` in the build script).
+- `node tools/build.mjs --only=hx-page-x.js --out=/some/folder/preview.html` builds a preview of that one page while it is being drawn; it does not touch `hx-mockup.html`. `--list` prints every loop and machine of the registry that is on no page yet.
+- `node tools/check-layout.js <mockup.html> <pageId> <outdir> [dark|light]`: words over words, over a pipe, over a symbol of another item, outside the drawing, page errors. 0 of each is the rule, in both themes. It also saves a picture. (It looks at the realistic pipes too; the first checker did not, and two labels on a pipe went unseen until 2026-11-17.)
+- `node tools/shot-page.js <mockup.html> <pageId> <out.png> [x0 y0 x1 y1] [dark|light] [scale]`: a picture of the page or of a part of its drawing (drawing units) to look at details.
+- `node tools/perf-page.js <mockup.html> <pageId>`: SVG elements, running animations, main thread time (budget in 6d).
+- Realistic symbols at hand in `hx-real.js`: valves by `kind`, `pot`, `spray`, `vent`, `ctl`, `louver`, `tgset`, `backpass`, `floor`, `pump` (with motor), `vpump` (vertical pump in a can), `heater` (feedwater heater with U tubes), `deaerator`, `drum`, `fan`, `tank`, `generator`, `cooler` (plate heat exchanger), `strainer`. Machines (`M(...)`) take the state colour on the motor and turn their wheel while running. A symbol a page needs and the set does not have: add it to `hx-real.js` in the same manner (cut open, few paths, classes only, source of its arrangement in the comment).
+
 ## 6c. The two mini pop-ups (`hx-cards-ui.js`)
 
 User 2026-11-17: "meron yan mini popup for operator control and permissives? may originality dapat ha". Every operable equipment has two cards in the HX design:
