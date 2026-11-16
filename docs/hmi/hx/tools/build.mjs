@@ -30,6 +30,7 @@ const key = (p, k) => {
 for (const p of HX.pages) {
   const items = p.plan ? p.plan.items : p.lanes.flatMap(l => l.items.flatMap(i => (Array.isArray(i) ? i : [i])));
   for (const t of (p.plan && p.plan.taps) || []) for (const k of [t.key, t.key2]) if (k) key(p.id + ' tap', k);
+  for (const t of (p.plan && p.plan.texts) || []) if (t.key) key(p.id + ' text', t.key);
   for (const it of items) {
     if (!win.HXSYM[it.sym] && it.k !== 'link') bad.push(`${p.id}: symbol ${it.sym}`);
     if (it.k === 'link' && !HX.byId[it.to]) bad.push(`${p.id}: link to ${it.to}`);
@@ -122,7 +123,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
 .doc pre code { border: 0; background: none; padding: 0; font-size: 12px; line-height: 1.5; }
 </style>
 <div class="wrap">
-  <div class="top"><h1>LMYP #1 HMI SHELL</h1><span class="tag">Mockup · sample data</span><p>23 pages for the whole plant. Each page has three views: Process, Controls, Trends. Values are what the app showed at 150 MW (3.2.3-beta.272); the small ripple is only so the trends move.</p></div>
+  <div class="top"><h1>LMYP #1 HMI SHELL</h1><span class="tag">Mockup · sample data</span><p>Start with page 01: the new sample of a full operator drawing (every valve, spray, drain pot and transmitter on its own line, read from the flow diagrams). Pages 02 to 24 are the earlier summary pages. Values are what the app showed at 150 MW (3.2.3-beta.272); the small ripple is only so the trends move.</p></div>
   <div id="hx"></div>
 </div>
 <template id="doc"><div class="doc">${doc}</div></template>

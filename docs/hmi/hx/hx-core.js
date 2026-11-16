@@ -306,7 +306,7 @@
         body.push([
           14.5,
           (bx, by, an) =>
-            `<text class="hx-lab" x="${n1(bx)}" y="${n1(by)}" text-anchor="${an}">PV <tspan class="hx-val" data-lp="${esc(it.loop)}|pv|${dp}">-----</tspan> · SV <tspan class="hx-val" data-lp="${esc(it.loop)}|sv|${dp}">-----</tspan><tspan class="hx-unit"> ${esc(it.pv === true ? '' : it.pv)}</tspan></text>`
+            `<text class="hx-lab" x="${n1(bx)}" y="${n1(by)}" text-anchor="${an}">Measured <tspan class="hx-val" data-lp="${esc(it.loop)}|pv|${dp}">-----</tspan> · Set point <tspan class="hx-val" data-lp="${esc(it.loop)}|sv|${dp}">-----</tspan><tspan class="hx-unit"> ${esc(it.pv === true ? '' : it.pv)}</tspan></text>`
         ]);
       }
     }
@@ -521,7 +521,7 @@
           dx = Math.sign(Math.round(b[0] - a[0])),
           dy = Math.sign(Math.round(b[1] - a[1]));
         ar += head(a, b, pp.med, [b[0] + dx * 4, b[1] + dy * 4]);
-        ends += `<text class="hx-end" x="${n1(b[0] + dx * 13)}" y="${n1(b[1] + dy * 13 + (dy > 0 ? 8 : dy < 0 ? -2 : 3.5))}" text-anchor="${dx > 0 ? 'start' : dx < 0 ? 'end' : 'middle'}">${esc(pp.to)}</text>`;
+        ends += `<text class="hx-end" x="${n1(b[0] + dx * 13 + (pp.toSide === 'r' ? 8 : 0))}" y="${n1(b[1] + dy * 13 + (dy > 0 ? 8 : dy < 0 ? -2 : 3.5) - (pp.toSide === 'r' ? 9 : 0))}" text-anchor="${dx > 0 || pp.toSide === 'r' ? 'start' : dx < 0 ? 'end' : 'middle'}">${esc(pp.to)}</text>`;
       }
       const d = rpath(o, pp.r);
       ls += `<g class="hx-idle" data-flow="${esc(pp.flow || '')}"><path class="hx-ln" d="${d}" style="stroke:var(--hx-m-${pp.med});stroke-width:${w}"/><path class="hx-lnf" d="${d}"/>${ar}</g>`;
@@ -536,13 +536,17 @@
         bx = sd === 'r' ? 9 : sd === 'l' ? -9 : 0,
         y0 = sd === 't' ? -37 : sd === 'b' ? 21 : -9,
         dp = t.dp == null ? 1 : t.dp;
-      const val = `<tspan class="hx-val" data-hv="${esc(t.key)}" data-dp="${dp}">-----</tspan>${t.key2 ? ` / <tspan class="hx-val" data-hv="${esc(t.key2)}" data-dp="${dp}">-----</tspan>` : ''}<tspan class="hx-unit"> ${esc(t.unit || '')}</tspan>`;
+      const val = t.key
+        ? `<tspan class="hx-val" data-hv="${esc(t.key)}" data-dp="${dp}">-----</tspan>${t.key2 ? ` / <tspan class="hx-val" data-hv="${esc(t.key2)}" data-dp="${dp}">-----</tspan>` : ''}<tspan class="hx-unit"> ${esc(t.unit || '')}</tspan>`
+        : `<tspan class="hx-val hx-nov">-----</tspan><tspan class="hx-unit"> ${esc(t.unit || '')}</tspan>`;
       const lead = sd === 't' ? 'M0 -3V-9' : sd === 'b' ? 'M0 3V9' : sd === 'r' ? 'M3 0H7' : 'M-3 0H-7';
-      taps += `<g class="hx-node hx-tap" data-open="value:${esc(t.key)}" tabindex="0" role="button" aria-label="${esc(t.label)}" transform="translate(${n1(t.x)} ${n1(t.y)})"><path class="hxd" d="${lead}"/><circle class="hx-dot" r="3.2"/><text class="hx-lab" x="${bx}" y="${y0}" text-anchor="${an}">${esc(t.label)}</text><text x="${bx}" y="${y0 + 14}" text-anchor="${an}">${val}</text>${t.tag ? `<text class="hx-tag" x="${bx}" y="${y0 + 25}" text-anchor="${an}">${esc(t.tag)}</text>` : ''}</g>`;
+      taps += `<g class="hx-node hx-tap"${t.key ? ` data-open="value:${esc(t.key)}" tabindex="0" role="button"` : ''} aria-label="${esc(t.label)}" transform="translate(${n1(t.x)} ${n1(t.y)})"><path class="hxd" d="${lead}"/><circle class="hx-dot" r="3.2"/><text class="hx-lab" x="${bx}" y="${y0}" text-anchor="${an}">${esc(t.label)}</text><text x="${bx}" y="${y0 + 14}" text-anchor="${an}">${val}</text>${t.tag ? `<text class="hx-tag" x="${bx}" y="${y0 + 25}" text-anchor="${an}">${esc(t.tag)}</text>` : ''}</g>`;
     }
     let tx = '';
     for (const t of P.texts || [])
-      tx += `<text class="${t.cls || 'hx-note'}" x="${t.x}" y="${t.y}" text-anchor="${t.anchor || 'start'}">${esc(t.s)}</text>`;
+      tx += t.key
+        ? `<text class="hx-lab hx-live" x="${t.x}" y="${t.y}" text-anchor="${t.anchor || 'start'}">${esc(t.s)} <tspan class="hx-val" data-hv="${esc(t.key)}" data-dp="${t.dp == null ? 1 : t.dp}">-----</tspan><tspan class="hx-unit"> ${esc(t.unit || '')}</tspan></text>`
+        : `<text class="${t.cls || 'hx-note'}" x="${t.x}" y="${t.y}" text-anchor="${t.anchor || 'start'}">${esc(t.s)}</text>`;
     const legend =
       used.map(m => `<span><i style="background:var(--hx-m-${m})"></i>${MEDIA[m] || m}</span>`).join('') +
       `<em>Red = running / open · Green = stopped / closed · Grey = no signal in the app yet</em>`;
