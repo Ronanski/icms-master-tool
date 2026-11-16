@@ -31,6 +31,7 @@
     '<linearGradient id="rxv" x1="0" y1="0" x2="1" y2="0"><stop offset="0" style="stop-color:var(--rx-st2)"/><stop offset="0.3" style="stop-color:var(--rx-st1)"/><stop offset="1" style="stop-color:var(--rx-st3)"/></linearGradient>' +
     '<linearGradient id="rxglow" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--rx-hot);stop-opacity:0.34"/><stop offset="0.55" style="stop-color:var(--rx-hot);stop-opacity:0.1"/><stop offset="1" style="stop-color:var(--rx-hot);stop-opacity:0"/></linearGradient>' +
     '<linearGradient id="rxcoil" gradientUnits="userSpaceOnUse" x1="0" y1="270" x2="0" y2="34"><stop offset="0" style="stop-color:var(--rx-coil0)"/><stop offset="1" style="stop-color:var(--rx-coil1)"/></linearGradient>' +
+    '<linearGradient id="rxfire" x1="0" y1="1" x2="0" y2="0"><stop offset="0" style="stop-color:var(--rx-hot);stop-opacity:0.75"/><stop offset="0.45" style="stop-color:var(--rx-hot);stop-opacity:0.3"/><stop offset="1" style="stop-color:var(--rx-hot);stop-opacity:0.1"/></linearGradient>' +
     '<pattern id="rxtube" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="2.5" r="1.45" style="fill:var(--hx-m-sea)"/></pattern>';
 
   /* ---------------- valves ---------------- */
@@ -524,6 +525,125 @@
     box: [-14, -15, 14, 17],
     ports: { l: [-13, 0], r: [13, 0], t: [0, -14], b: [0, 16] },
     svg: '<path class="rxd" d="M-13 -8h3v16h-3zM10 -8h3v16h-3z"/><path class="rx" d="M-10 -6H10V6H6L3 16H-3L-6 6H-10Z"/><path class="rxe" d="M-5 -2L0 12L5 -2"/><path class="rxd" d="M-6 -11h12v5h-12z"/>'
+  });
+
+  /* ---------------- the boiler: furnace, cyclone, seal pot, air heater, precipitator, stack ---------------- */
+  /* What is from a source: FHI manual Part 2 Sect 1 (circulating fluidized bed furnace with its grate, superheater panels
+     No. 1 and No. 2 in the furnace, 2 recycle cyclones with a seal pot each, 4 start-up burners, 4 screw ash coolers, a rotary
+     air heater), Part 4 Sect 1 (the superheater panels hang in the upper FRONT of the furnace, opposite the cyclone inlets).
+     Shapes and proportions are a picture only (the boiler general arrangement K1AU3-B-0-001 is not in document-references). */
+  /* the furnace, cut open; front wall on the left, the outlet to the cyclone on the upper right. fire = the rule that shows
+     the fire (bed bubbling, solids rising). Ports: out (to the cyclone), ret (solids back from the seal pot), coal / lime
+     (front wall, low), sa1 / sa2 (secondary air, front / rear), pa (primary air into the wind box), ash1 / ash2 (bed drains),
+     bur (start-up burner, front), roof */
+  R.furnace = o => {
+    const inner = 'M-54 6H54V234L29 314H-29L-54 234Z';
+    return {
+      box: [-61, -1, 63, 351],
+      ports: {
+        out: [62, 44],
+        ret: [43, 290],
+        coal: [-45, 276],
+        lime: [-50, 258],
+        sa1: [-60, 214],
+        sa2: [60, 214],
+        pa: [0, 350],
+        ash1: [-20, 350],
+        ash2: [20, 350],
+        bur: [-56, 238],
+        roof: [0, 0],
+        l: [-60, 120],
+        r: [60, 120]
+      },
+      svg:
+        '<path class="rxv" d="M-60 0H60V236L34 316V350H-34V316L-60 236Z"/>' +
+        `<path class="rxvoid" d="${inner}"/><path class="rxvoid" d="M53 18h9v52h-9zM-29 319h58v25h-58z"/>` +
+        live(
+          o.fire,
+          `<path class="rxfire" d="${inner}"/><path class="rx-rise" d="M-38 280V40M-13 290V20M13 290V20M38 280V74"/>`
+        ) +
+        '<path class="rxbed" d="M-37 290L-29 314H29L37 290Z"/>' +
+        live(
+          o.fire,
+          '<g class="rx-bub"><circle cx="-18" cy="300" r="3.2"/><circle cx="2" cy="304" r="2.6"/><circle cx="19" cy="299" r="3"/></g>'
+        ) +
+        '<path class="rx-bank" style="--m:var(--hx-m-steam)" d="M-46 6V86a4.5 4.5 0 0 0 9 0V6M-29 6V86a4.5 4.5 0 0 0 9 0V6M-12 6V86a4.5 4.5 0 0 0 9 0V6"/>' +
+        '<path class="rxtray" d="M-29 316.5H29"/><path class="rxe" d="M-51 12V230M51 76V230"/>'
+    };
+  };
+  /* a recycle cyclone, cut open: gas and solids in at the side, clean gas out through the pipe on top, solids down the leg.
+     flow = the rule that turns the swirl. Ports: in, gas (top), dip (bottom of the leg) */
+  R.cyclone = o => ({
+    box: [-41, -15, 33, 197],
+    ports: { in: [-40, 36], gas: [0, -14], dip: [0, 196], l: [-40, 36], t: [0, -14], b: [0, 196] },
+    svg:
+      '<path class="rxv" d="M-32 0H32V86L9 160V196H-9V160L-32 86Z"/><path class="rxvoid" d="M-27 5H27V84L5.5 158V196H-5.5V158L-27 84Z"/><path class="rxvoid" d="M-40 14h14v44h-14z"/>' +
+      live(
+        o.flow,
+        '<path class="rx-swirl" d="M-24 24Q0 36 24 24M-24 50Q0 62 24 50M-21 78Q0 88 21 78M-14 110Q0 118 14 110M-8 138Q0 144 8 138"/><path class="rx-fall" style="--m:var(--hx-m-solid)" d="M0 150V194"/>'
+      ) +
+      '<path class="rx" d="M-13 -14h26v58h-26z"/><path class="rxvoid" d="M-9 -14h18v54h-18z"/>'
+  });
+  /* the seal pot under a cyclone: the solids come down the leg, are kept fluid by air and flow over into the furnace.
+     flow = the rule that shows them moving. Ports: in (top, from the leg), out (to the furnace), air (below) */
+  R.sealpot = o => ({
+    box: [-17, -1, 49, 47],
+    ports: { in: [0, 0], out: [48, 16], air: [16, 46], t: [0, 0], r: [48, 16], b: [16, 46] },
+    svg:
+      '<path class="rx" d="M-16 0H16V8H48V24H44V46H-16Z"/><path class="rxvoid" d="M-11 0H11V13H43V19H39V41H-11Z"/><path class="rxbed" d="M-11 16H11V22H39V41H-11Z"/><path class="rxwall" style="stroke-width:3" d="M13 13V30"/>' +
+      live(o.flow, '<g class="rx-bub"><circle cx="-2" cy="34" r="2.6"/><circle cx="24" cy="34" r="2.6"/></g>')
+  });
+  /* rotary air heater seen from the side, cut open: the rotor with its heating elements turns through the gas side (right)
+     and the two air sides (primary left, secondary middle). The drive takes the state colour (use M(...) or "on").
+     Ports: paB / paT, saB / saT (air in below, out on top), gasT / gasB (gas in on top, out below) */
+  R.airheater = () => {
+    let el = '';
+    for (let y = -22; y <= 22; y += 5.5) el += `M-51 ${y}H51`;
+    return {
+      box: [-59, -45, 59, 39],
+      ports: {
+        paT: [-36, -31],
+        paB: [-36, 31],
+        saT: [-4, -31],
+        saB: [-4, 31],
+        gasT: [34, -31],
+        gasB: [34, 31],
+        l: [-58, 0],
+        r: [58, 0],
+        t: [0, -44],
+        b: [0, 38]
+      },
+      svg:
+        '<path class="rxv" d="M-58 -31H58V31H-58Z"/><path class="rxvoid" d="M-53 -26H53V26H-53Z"/><path class="rx-tint" style="--m:var(--rx-hot)" d="M14 -26H53V26H14Z"/><path class="rx-tint" style="--m:var(--hx-m-air)" d="M-53 -26H14V26H-53Z"/>' +
+        `<path class="rx-elem" d="${el}"/><path class="rxwall" style="stroke-width:2.4" d="M-20 -26V26M14 -26V26"/>` +
+        '<path class="rx" d="M-2.5 -36h5v72h-5z"/><rect class="rxs" x="-9" y="-44" width="18" height="9" rx="2"/><path class="rxd" d="M-58 31h8v7h-8zM50 31h8v7h-8z"/>'
+    };
+  };
+  /* electrostatic precipitator, cut open: three fields of collecting plates, the ash hoppers below. on / machine state colours
+     the rectifiers on the roof. Ports: l (gas in), r (gas out), h1 / h2 / h3 (hoppers) */
+  R.esp = () => {
+    let pl = '';
+    for (let x = -66; x <= 66; x += 6) if (Math.abs(x + 24) > 3 && Math.abs(x - 24) > 3) pl += `M${x} -22V20`;
+    return {
+      box: [-95, -37, 95, 53],
+      ports: { l: [-94, 0], r: [94, 0], h1: [-48, 52], h2: [0, 52], h3: [48, 52], t: [0, -36], b: [0, 52] },
+      svg:
+        '<path class="rxv" d="M-94 -9L-74 -28H74L94 -9V9L74 26H-74L-94 9Z"/><path class="rxvoid" d="M-89 -7L-72 -23H72L89 -7V7L72 22H-72L-89 7Z"/>' +
+        `<path class="rx-plate" d="${pl}"/>` +
+        '<path class="rx" d="M-70 26L-54 52H-42L-26 26ZM-22 26L-6 52H6L22 26ZM26 26L42 52H54L70 26Z"/>' +
+        '<rect class="rxs" x="-56" y="-36" width="16" height="8" rx="1.5"/><rect class="rxs" x="-8" y="-36" width="16" height="8" rx="1.5"/><rect class="rxs" x="40" y="-36" width="16" height="8" rx="1.5"/>'
+    };
+  };
+  /* the stack. flow = the rule that shows the plume. Ports: in (at the foot, side), l / r */
+  R.stack = o => ({
+    box: [-21, -196, 21, 1],
+    ports: { in: [-18, -14], l: [-18, -14], r: [18, -14], b: [0, 0], t: [0, -195] },
+    svg:
+      live(
+        o.flow,
+        '<g class="rx-plume"><circle cx="2" cy="-200" r="6"/><circle cx="7" cy="-210" r="8"/><circle cx="1" cy="-222" r="10"/></g>'
+      ) +
+      '<path class="rxv" d="M-18 0L-9 -190H9L18 0Z"/><path class="rxe" d="M-15 -60H15M-12 -124H12"/><path class="rxd" d="M-10.5 -195h21v5h-21z"/>'
   });
 
   /* ---------------- scenery ---------------- */
