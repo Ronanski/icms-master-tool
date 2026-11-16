@@ -1263,13 +1263,13 @@
   /* 3.2.4 (JENNIE): an HP heater tube leak (unit.js anHpLeak), the same set as TL */
   const HL = { 'hl.1': 'No.1 HP heater tube leak (grows)', 'hl.2': 'No.2 HP heater tube leak (grows)' };
   /* 3.2.4 (JENNIE): the air heater plugged on the gas side (boiler.js AN_APL), the same set as TL */
-  const AP = { 'aph.plug': 'Air heater plugged, gas side (grows)' };
+  const AP = { 'aph.plug': 'Air heater plugged, gas side (grows)', 'cd.air': 'Condenser air in-leakage (grows)' };
   const tlSet = (id, on) => {
     if (on) W.ft.add(id);
     else W.ft.delete(id);
     W.busy = true;
     const t = TL[id] || HL[id] || AP[id];
-    return on ? t : 'cleared: ' + t + (AP[id] ? ' (washed)' : ' (tube repaired)');
+    return on ? t : 'cleared: ' + t + (id === 'aph.plug' ? ' (washed)' : id === 'cd.air' ? ' (sealed)' : ' (tube repaired)');
   };
   /* 3.2.4-beta.13 (JENNIE, priority list item: coal quality): wet coal, a trainer fault (unit.js anCoalWet: the coal moisture 33.96 % of the
      performance coal, FHI P2S7 Tab 2, rises to 40 %, NO-SOURCE trainer setting: rain on the coal yard). No DITL contact: the DCS has no

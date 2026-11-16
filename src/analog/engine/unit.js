@@ -2213,7 +2213,11 @@ function anSvFlow(U, list, P) {
 }
 function anVacMW(U) {
   if (!isFinite(U.cdT) || !(U.ms > 0)) return 0;
-  const dT = Math.max(-1, U.cdT - AN_CD.Tref);
+  /* 3.2.4 (JENNIE): the LP exhaust sees the whole condenser pressure, the steam and the air in it (U.cdP = steam + U.cdAirP): the
+     temperature of the back pressure is the saturation of U.cdP when the air raises it above the steam side (an air leak, the
+     ejectors short); before, only the cooling water side (U.cdT) moved the power */
+  const Tb = isFinite(U.cdP) ? anTsatA(U.cdP) : -Infinity,
+    dT = Math.max(-1, Math.max(U.cdT, Tb) - AN_CD.Tref);
   U.dMWv = (6 * dT * 0.7 * U.ms) / 3600;
   return U.dMWv;
 }
@@ -3211,11 +3215,20 @@ function anAuxStep(U, dt) {
     U.asP = Math.max(-1, Pa + ((w1010 + w1020 - w1030 - wej - wGf) / 3600) * (h / (K.Va * dRa)));
     U.gsP = Math.max(Pc - 1.0332, Pg + ((wGf + wHp - wSeal - wGu) / 3600) * (h / (K.Vg * dRg)));
     /* condenser air */
+    /* 3.2.4 (JENNIE): trainer fault cd.air "Condenser air in-leakage (grows)": a crack at a flange or an expansion joint under
+       vacuum. The in-leakage orifice (25.5 kg/h design, ED 066 p6) opens: x2 every 10 min (NO-SOURCE trainer rate) up to x64
+       (about 1,600 kg/h, NO-SOURCE). The ejectors take more air only at a higher condenser pressure (their curves), so the back
+       pressure rises until the leak and the ejectors meet; the turbine logic acts on the vacuum. Clear = back to the design orifice */
+    {
+      const W = typeof window !== 'undefined' ? window.WORLD : null,
+        on = !!(W && W.ft && W.ft.has('cd.air'));
+      U.cdLk = on ? Math.min(64, (U.cdLk > 1 ? U.cdLk : 1) * Math.pow(2, h / 600)) : 1;
+    }
     const PaP = Patm * 98066.5,
       PcP = Pc * 98066.5,
       Pin = Math.max(Pc, Pga) * 98066.5,
       ain =
-        anAirOr(K.cdaLeak, PaP, PcP, Tc) +
+        anAirOr(K.cdaLeak * (U.cdLk > 1 ? U.cdLk : 1), PaP, PcP, Tc) +
         (Pga < Patm ? anAirOr(K.cdaGl, PaP, Pin, Tc) : 0) +
         anAirOr(K.cdaVb * mVb, PaP, PcP, Tc),
       rhoA = (U.cdAirP * 98066.5) / (287 * (Tc + 273.15)),
