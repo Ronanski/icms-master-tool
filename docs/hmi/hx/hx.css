@@ -338,6 +338,16 @@
 .rxtb { fill: url(#rxtube); stroke: var(--rx-st3); stroke-width: 0.8; }
 .rxwt { fill: var(--rx-wt); }
 .rxwt.rxoil { fill: var(--hx-m-oil); }
+.rxwt.rxcoal, .rxcoalp { fill: #2b3037; }
+.rxwt.rxsolid { fill: var(--hx-m-solid); }
+.rxcoalp { stroke: none; opacity: 0.9; }
+.rx-belt { fill: none; stroke: var(--rx-st1); stroke-width: 2; stroke-dasharray: 5 4; }
+.rx-flight { fill: none; stroke: var(--rx-st1); stroke-width: 8; stroke-dasharray: 1.6 5.4; }
+.rxflame { fill: var(--rx-hot); stroke: none; opacity: 0; transform-box: fill-box; transform-origin: left center; }
+.hx-run .rx-belt, .hx-run .rx-flight { animation: rx-belt 0.9s steps(18) infinite; }
+.hx-run .rxflame { opacity: 0.95; animation: rx-flame 0.5s steps(4) infinite alternate; }
+@keyframes rx-belt { to { stroke-dashoffset: -9; } }
+@keyframes rx-flame { to { transform: scaleX(0.82); } }
 .rxconc { fill: var(--rx-conc); stroke: var(--rx-edge); stroke-width: 0.6; }
 .rxcol { fill: var(--rx-col); }
 .rxscr { fill: var(--rx-chip); stroke: var(--rx-edge); stroke-width: 0.8; }
@@ -492,7 +502,7 @@
   .hx-pick { display: block; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hx-run .hxr, .hx-on > .hx-lnf, .hx-trip .hxs, .hx-st.trip, .hx-real .hx-on > .hx-lnf, .hx-run .rx-blade, .hx-run .rx-jet, .hx-run .rx-rip, .hx-run .rxrot, .hx-run .rx-lift, .hx-on > .rx-tubef, .hx-on > .rx-fall, .hx-on > .rx-rise, .hx-on > .rx-swirl, .hx-on > .rx-bub circle, .hx-run .rx-elem, .hx-on > .rx-gas, .hx-on > .rx-coilf, .hx-on > .rx-mist, .hx-trip .rxs { animation: none; }
+  .hx-run .hxr, .hx-on > .hx-lnf, .hx-trip .hxs, .hx-st.trip, .hx-real .hx-on > .hx-lnf, .hx-run .rx-blade, .hx-run .rx-jet, .hx-run .rx-rip, .hx-run .rxrot, .hx-run .rx-lift, .hx-on > .rx-tubef, .hx-on > .rx-fall, .hx-on > .rx-rise, .hx-on > .rx-swirl, .hx-on > .rx-bub circle, .hx-run .rx-elem, .hx-run .rx-belt, .hx-run .rx-flight, .hx-run .rxflame, .hx-on > .rx-gas, .hx-on > .rx-coilf, .hx-on > .rx-mist, .hx-trip .rxs { animation: none; }
   .hx-on > .rx-plume circle { animation: none; opacity: 0.5; }
   .rxix, .rxbl { transition: none; }
 }

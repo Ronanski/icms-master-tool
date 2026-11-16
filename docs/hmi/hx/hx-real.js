@@ -646,6 +646,135 @@
       '<path class="rxv" d="M-18 0L-9 -190H9L18 0Z"/><path class="rxe" d="M-15 -60H15M-12 -124H12"/><path class="rxd" d="M-10.5 -195h21v5h-21z"/>'
   });
 
+  /* ---------------- vessels and small machines of the other systems ---------------- */
+  /* lying pressure vessel, cut open (a flash tank, a drain separator, a heater shell without tubes). w = length.
+     level: [key, low, high] moves the level; without liquid: 'none'. Ports: t, b, l, r, t2 (second nozzle on top) */
+  R.vessel = o => {
+    const w = o.w || 90,
+      a = -w / 2,
+      b = w / 2,
+      id = o.id || 'v',
+      inner = `M${a + 16} -12.5H${b - 16}Q${b - 4.5} -12.5 ${b - 4.5} 0Q${b - 4.5} 12.5 ${b - 16} 12.5H${a + 16}Q${a + 4.5} 12.5 ${a + 4.5} 0Q${a + 4.5} -12.5 ${a + 16} -12.5Z`;
+    return {
+      box: [a - 1, -24, b + 1, 24],
+      ports: { t: [0, -23], t2: [b - 22, -23], b: [0, 23], l: [a, 0], r: [b, 0] },
+      svg:
+        `<path class="rxd" d="M${a + 14} 17l-3 6h14l-3 -6zM${b - 28} 17l-3 6h14l-3 -6z"/><path class="rx" d="M-4 -23h8v7h-8zM${b - 26} -23h8v7h-8zM-4 16h8v7h-8z"/>` +
+        `<path class="rx" d="M${a + 16} -17H${b - 16}Q${b} -17 ${b} 0Q${b} 17 ${b - 16} 17H${a + 16}Q${a} 17 ${a} 0Q${a} -17 ${a + 16} -17Z"/><path class="rxvoid" d="${inner}"/>` +
+        (o.liquid === 'none' ? '' : lvl(id, inner, a + 4.5, -12.5, b - 4.5, 12.5, 0.4))
+    };
+  };
+  /* upright pressure vessel on legs, closed (an air receiver, a filter vessel, a polisher). Ports: t, b, l, r */
+  R.vvessel = o => {
+    const h = o.h || 70,
+      w = o.w || 34;
+    return {
+      box: [-w / 2 - 1, -h / 2 - 7, w / 2 + 1, h / 2 + 9],
+      ports: { t: [0, -h / 2 - 6], b: [0, h / 2 + 2], l: [-w / 2, h / 4], r: [w / 2, h / 4] },
+      svg:
+        `<path class="rxd" d="M${n(-w / 2 + 3)} ${n(h / 2 - 6)}v14h4v-14zM${n(w / 2 - 7)} ${n(h / 2 - 6)}v14h4v-14z"/><path class="rx" d="M-3.5 ${n(-h / 2 - 6)}h7v7h-7z"/>` +
+        `<path class="rxv" d="${vcap(w, h)}"/><path class="rxe" d="M${n(-w / 2)} ${n(-h / 2 + w / 2)}H${n(w / 2)}M${n(-w / 2)} ${n(h / 2 - w / 2)}H${n(w / 2)}"/>`
+    };
+  };
+  /* steam jet ejector: motive steam in at the left, the suction from below, the mixture out at the right.
+     flow = the rule that shows the jet. Ports: l (steam), b (suction), r (discharge) */
+  R.ejector = o => ({
+    box: [-27, -10, 31, 16],
+    ports: { l: [-26, 0], r: [30, 0], b: [-10, 15], t: [-10, -9] },
+    svg:
+      '<path class="rxd" d="M-26 -7h3v14h-3zM27 -8h3v16h-3zM-15 12h10v3h-10z"/><path class="rx" d="M-23 -5H-18L-16 -9H-4L-2 -5L10 -2.5L27 -6.5V6.5L10 2.5L-2 5V12H-18V5H-23Z"/>' +
+      live(o.flow, '<path class="rx-mist" style="stroke:var(--hx-m-steam)" d="M-18 0H24"/>')
+  });
+  /* coal bunker, cut open: the coal inside, the outlet below. level: [key, low, high]. Ports: t, b */
+  R.bunker = o => {
+    const id = o.id || 'bk',
+      inner = 'M-25 -40H25V6L8 38H-8L-25 6Z';
+    return {
+      box: [-31, -46, 31, 45],
+      ports: { t: [0, -45], b: [0, 44], l: [-30, -10], r: [30, -10] },
+      svg:
+        '<path class="rxv" d="M-30 -45H30V8L11 44H-11L-30 8Z"/>' +
+        `<path class="rxvoid" d="${inner}"/>` +
+        lvl(id, inner, -25, -40, 25, 38, 0.7).replace('class="rxwt"', 'class="rxwt rxcoal"')
+    };
+  };
+  /* belt feeder (a gravimetric coal feeder), cut open: the belt runs while the feeder runs, the drive takes the state colour.
+     Ports: in (on top, at the left), out (below, at the right), l, r */
+  R.feeder = () => ({
+    box: [-43, -19, 47, 20],
+    ports: { in: [-26, -18], out: [28, 19], l: [-42, 0], r: [46, 0], t: [-26, -18], b: [28, 19] },
+    svg:
+      '<path class="rx" d="M-31 -18h10v7h-10zM23 12h10v7h-10z"/><rect class="rx" x="-42" y="-12" width="76" height="25" rx="3"/><rect class="rxvoid" x="-38" y="-8" width="68" height="17" rx="2"/>' +
+      '<path class="rxcoalp" d="M-30 -1.5H22L26 3H-34Z"/><path class="rx-belt" d="M-33 3.2H25"/><circle class="rxd" cx="-33" cy="4" r="3.4"/><circle class="rxd" cx="25" cy="4" r="3.4"/>' +
+      '<rect class="rxs" x="34" y="-7" width="12" height="15" rx="2"/>'
+  });
+  /* start-up oil burner in the furnace wall: the flame shows while the rule "on" / the machine state says it fires.
+     The flame points to the right (into the furnace). Ports: l (oil and air in), r (flame end) */
+  R.burner = () => ({
+    box: [-21, -9, 30, 9],
+    ports: { l: [-20, 0], r: [12, 0], t: [0, -8], b: [0, 8] },
+    svg: '<path class="rxflame" d="M10 0Q16 -7 28 0Q16 7 10 0Z"/><path class="rxd" d="M-20 -6h3v12h-3z"/><path class="rx" d="M-17 -4.5H2L10 -2.5V2.5L2 4.5H-17Z"/><rect class="rxs" x="-12" y="-7.5" width="9" height="15" rx="1.5"/>'
+  });
+  /* air compressor as a package: the motor and the air end inside the enclosure, cut open. Ports: in (air in, left), out
+     (compressed air, right) */
+  R.compressor = () => ({
+    box: [-37, -24, 37, 25],
+    ports: { in: [-36, -6], out: [36, -6], l: [-36, -6], r: [36, -6], t: [0, -23], b: [0, 24] },
+    svg:
+      '<path class="rx" d="M-36 -10h6v8h-6zM30 -10h6v8h-6z"/><rect class="rxv" x="-30" y="-23" width="60" height="43" rx="4"/><rect class="rxvoid" x="-25" y="-18" width="50" height="33" rx="2.5"/><path class="rxd" d="M-28 20h56v4h-56z"/>' +
+      '<rect class="rxs" x="-21" y="-9" width="19" height="18" rx="3"/><path class="rxe" d="M-15 -9v18M-9 -9v18"/><path class="rxd" d="M-2 -1.8h5v3.6h-5z"/><circle class="rx" cx="13" cy="0" r="10"/>' +
+      wheel(13, 0, 7.5, 4)
+  });
+  /* compressed air dryer: two towers side by side. Ports: l (in), r (out) */
+  R.dryer = () => ({
+    box: [-22, -29, 22, 29],
+    ports: { l: [-21, 18], r: [21, 18], t: [0, -28], b: [0, 28] },
+    svg: `<path class="rxd" d="M-18 22h36v5h-36z"/><path class="rxv" transform="translate(-9.5 -2)" d="${vcap(15, 46)}"/><path class="rxv" transform="translate(9.5 -2)" d="${vcap(15, 46)}"/><path class="rxe" d="M-9.5 -25V-28H9.5V-25M-17 18h-4M17 18h4"/>`
+  });
+  /* tall silo with its cone, cut open, with what it holds (limestone, sand, ash). level: [key, low, high]. Ports: t, b */
+  R.silo = o => {
+    const h = o.h || 96,
+      id = o.id || 'si',
+      t = -h / 2,
+      inner = `M-17 ${t + 8}H17V${-t - 26}L5 ${-t - 4}H-5L-17 ${-t - 26}Z`;
+    return {
+      box: [-23, t - 1, 23, -t + 1],
+      ports: { t: [0, t], b: [0, -t], l: [-22, 0], r: [22, 0] },
+      svg:
+        `<path class="rxv" d="M-22 ${t + 6}L0 ${t}L22 ${t + 6}V${-t - 24}L8 ${-t}H-8L-22 ${-t - 24}Z"/><path class="rxvoid" d="${inner}"/>` +
+        lvl(id, inner, -17, t + 8, 17, -t - 4, 0.6).replace('class="rxwt"', 'class="rxwt rxsolid"') +
+        `<path class="rxd" d="M-22 ${-t - 24}v24h3.5v-24zM18.5 ${-t - 24}v24h3.5v-24z"/>`
+    };
+  };
+  /* belt conveyor: the belt moves while it runs, the drive takes the state colour. w = length. Ports: l (feed end, on top),
+     r (discharge end) */
+  R.conveyor = o => {
+    const w = o.w || 110,
+      a = -w / 2,
+      b = w / 2;
+    return {
+      box: [a - 6, -9, b + 14, 10],
+      ports: { l: [a + 6, -8], r: [b + 4, 4], t: [0, -8], b: [0, 9] },
+      svg:
+        `<path class="rxd" d="M${a + 10} 5v4h4v-4zM${b - 14} 5v4h4v-4z"/><rect class="rx" x="${a - 5}" y="-5" width="${w + 10}" height="10" rx="5"/><path class="rx-belt" d="M${a} -5H${b}"/>` +
+        `<circle class="rxd" cx="${a}" cy="0" r="3.6"/><circle class="rxd" cx="${b}" cy="0" r="3.6"/><rect class="rxs" x="${b + 3}" y="-8" width="10" height="12" rx="2"/>`
+    };
+  };
+  /* screw conveyor / screw ash cooler, cut open: the flights move while it runs, the drive takes the state colour.
+     w = length. Ports: in (on top, left), out (below, right) */
+  R.screw = o => {
+    const w = o.w || 100,
+      a = -w / 2,
+      b = w / 2;
+    return {
+      box: [a - 1, -15, b + 16, 15],
+      ports: { in: [a + 12, -14], out: [b - 12, 14], l: [a, 0], r: [b + 15, 0], t: [a + 12, -14], b: [b - 12, 14] },
+      svg:
+        `<path class="rx" d="M${a + 7} -14h10v6h-10zM${b - 17} 8h10v6h-10z"/><rect class="rx" x="${a}" y="-9" width="${w}" height="18" rx="4"/><rect class="rxvoid" x="${a + 4}" y="-5.5" width="${w - 8}" height="11" rx="2.5"/>` +
+        `<path class="rxst" d="M${a + 4} 0H${b - 4}"/><path class="rx-flight" d="M${a + 6} 0H${b - 6}"/><rect class="rxs" x="${b + 1}" y="-7.5" width="14" height="15" rx="2"/>`
+    };
+  };
+
   /* ---------------- scenery ---------------- */
   /* the basement floor: o.w wide from (0, 0) */
   R.floor = o => ({
