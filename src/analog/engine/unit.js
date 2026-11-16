@@ -2068,7 +2068,11 @@ const AN_FG = { cpG: 1.15, ash: 0.0682, mCy: 780e3, hA: 120, mF: 138e3, mB: 642e
    - wall heat by the circulating solids: (ua0 - uag) x phi x (Tb - water). ua0 = the design wall conductance uaW 0.976 T/H per K
      (AN_UNIT, CALC from the design heat balance) x 554 kW per T/H (the unit of Cw / Qs) = 541 kW/K. phi = the solids that the gas
      carries up the furnace relative to full load = bed inventory share x (gas velocity share)^2: the entrainment rises with the
-     gas velocity (P2S6, qualitative); the exponent 2 is NO-SOURCE (circulation rate not in the documents, 03-boiler). The gas
+     gas velocity (P2S6, qualitative; P2S4: the solids density falls up the furnace). 3.2.3-beta.269 (Jennie): the exponent nU 3.5 is set
+     by the plant DCS trend, scenario 1 (14-plant-trends): bed TIFG1090 flat 952 ~ 962 C from 150 to 90 MW with PA + SA 610 -> 505 T/H.
+     With 2 (NO-SOURCE) the model bed fell 828 -> 775 C at 90 MW and coal / pressure swung 48 ~ 56.5 T/H, 121.1 ~ 123.4 kg/cm2 every
+     ~18 min; with 3.5 the bed is 816 C, coal 53.0 ~ 54.6 T/H (plant 55.4), pressure 122.1 ~ 122.4, O2 9.1 % (plant 9.1). The
+     circulation rate itself is not in the documents (03-boiler). The gas
      velocity share = total air / anchor air x (Tb + 273) / (Tb0 + 273) (the gas expands with its temperature).
    - wall heat through the refractory of the lower furnace: 25 mm refractory over the tubes (13-thermal-masses), k 1.5 W/m K
      (textbook castable) = 60 W/m2 K, in series with a dense bed film 300 W/m2 K (textbook) = 50 W/m2 K, over the lower walls 46.38 m
@@ -2093,7 +2097,8 @@ const AN_BB = {
   uaBR: 30.8 /* kW/K, bed -> refractory centre (beta.263, see the bed balance) */,
   uaRW: 43.1 /* kW/K, refractory centre -> water */,
   uag: 32,
-  kW: 554
+  kW: 554,
+  nU: 3.5 /* wall law exponent, plant trend scenario 1 (see above) */
 };
 const AN_BED = {
   s: [0.43, 0.525, 0.626, 0.715, 0.86, 1],
@@ -4707,7 +4712,7 @@ function anUnitStep0(dt) {
       mAir = (av[0] + av[1] + av[2]) / 3.6,
       gcp = (mAir + fg) * anHxCp(U.Tb) /* kW/K, flue gas at the bed */,
       uRel = U.taf0 > 0 ? (taf / U.taf0) * ((U.Tb + 273) / (U.Tb0 + 273)) : 0,
-      phi = Math.min(1.2, Math.max(0, isFinite(U.bedI) ? U.bedI / AN_BI.t0 : 1)) * Math.min(1.44, uRel * uRel),
+      phi = Math.min(1.2, Math.max(0, isFinite(U.bedI) ? U.bedI / AN_BI.t0 : 1)) * Math.pow(Math.min(1.2, uRel), AN_BB.nU),
       /* beta.263: the lower furnace refractory is its own lump. 25 mm castable k 1.5 W/m K over the tubes (13-thermal-masses), bed film
          300 W/m2 K (textbook), 359 m2: bed -> refractory centre 1 / (1/300 + 0.0125/1.5) = 85.7 W/m2 K = 30.8 kW/K, centre -> water
          1.5 / 0.0125 = 120 W/m2 K = 43.1 kW/K (in series 17.9 = uaL). Its time constant L2 / alpha (alpha = 1.5 / (2300 x 1000)) is
