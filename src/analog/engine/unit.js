@@ -2085,6 +2085,12 @@ const AN_FG = { cpG: 1.15, ash: 0.0682, mCy: 780e3, hA: 120, mF: 138e3, mB: 642e
    470 T/H, against the design 850 C (FHI design data) and 476 T/H: not fitted, the result of the balance. */
 const AN_BB = {
   lhvC: (3662 * 4.1868) / 3.6,
+  /* 3.2.3-beta.271 (Jennie, physics audit 2026-11-15 MISSING item): the coal heat that never reaches the bed, gas or water: carbon
+     left unburnt in the fly and bottom ash, ash heat, CO. FHI Tab 3: efficiency 90.9 % LHV at MCR. The model at 150 MW without it:
+     input 83.5 T/H x 4,259 kW = 355.4 MW, stack 194.2 kg/s from 125 to 30 C = 20.3 MW (5.7 %), room loss kamb 0.6 MW (0.2 %):
+     94.1 %, so these losses are 3.2 % of the LHV (CALC, the split between them is not in the documents). Coal per MW was 4 % under
+     the plant (snapshot FIC-CM 87.0 T/H at 150 MW, model 83.5) */
+  fUC: 0.032,
   lhvO: 42700 / 3.6,
   cpA: 1.005,
   cpS: 0.84,
@@ -4724,7 +4730,7 @@ function anUnitStep0(dt) {
       qSol = (B.ua0w - B.uag) * phi * dW + qRW /* kW, to the furnace walls: the circulating solids + through the refractory */,
       qPan = isFinite(U.hxQp) ? U.hxQp : 0 /* kW, to the in-furnace SH panels (hx.js, last scan) */,
       qGas = gcp > 0.01 ? gcp * dW * (1 - Math.exp(-B.uag / gcp)) : 0 /* kW, from the gas over the upper walls */,
-      qFuel = Fb * B.lhvC + oil * B.lhvO,
+      qFuel = Fb * B.lhvC * (1 - B.fUC) + oil * B.lhvO,
       qAirG =
         (mAir + fg) * (hFg(U.Tb) - hFg(U.Tamb)) -
         (av[0] / 3.6) * (hAir(tPa) - hAir(U.Tamb)) -
