@@ -1,6 +1,6 @@
 # HANDOFF — iisang file ng estado (para sa kahit sinong Claude o account)
 
-Huling update: **2026-11-15 PHT** (SOHEE: beta.266 start-up FW valve P1 mula sa BFWP discharge ng model).
+Huling update: **2026-11-16 PHT** (HX: mockup ng bagong HMI shell, 23 pages, nasa `docs/hmi/hx/`; hindi kasama sa app).
 
 Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md` at git log.
 
@@ -13,6 +13,7 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 6. Bagong session o account / local Claude Code sa PC: `docs/handoff/LOCAL_TAKEOVER.md` (setup at prompt).
 
 ## 2. Kasalukuyang estado (2026-11-10 PHT)
+- **HMI SHELL MOCKUP (HX, 2026-11-16, utos ng user: "hmi shell lang ... no need to integrate sa app, pero dapat retrofit ready", "BE ORIGINAL"):** `docs/hmi/hx/` = 23 pages ng buong planta, bawat isa ay may Process, Controls at Trends; orihinal na disenyo; sample data = ang ipinakita ng app sa 150 MW (beta.272). Artifact: https://claude.ai/artifact/CNyBPZhk1L73aa86NsKqVq. WALA sa app (walang binago sa `src/` at `dist/`). Procedure ng susunod na coder at ng mag-i-integrate: `docs/hmi/hx/README.md` (seksyon 5 = adapter `HX.data`). Hindi nasubok sa totoong engine; ang 19 temp pages ay nananatili.
 - **TRACKER (bagong account 2026-11-15):** https://claude.ai/artifact/4ghD2uQkHeyKwrmqcaypTs (ang luma na 6P9z7mA24JJkYdCGQuqMd1 ay sa lumang account). Walang merge sa main nang walang GO ng user; Stable sa GO STABLE lang.
 - **BUOD NG HANDOVER (basahin muna):** `docs/handoff/HANDOVER_2026-11-10.md` — lahat mula 2026-11-07, gawain ng bawat team member, at ang hindi pa tapos (re-shell at plant plan).
 - **Stable:** v3.2.2 (2026-11-10, user "Ok go sa 1"; = 3.2.1 + Worker bilang default ng Stable site). Ang 3.2.1 (GO STABLE ng user) = 3.2.1-beta.281, re-shell layout C. GitHub Release: apk, Windows exe, html, report pdf. Hindi nasubok: tingnan ang `docs/versions/v3.2.1/Release-Report-v3.2.1.pdf`.
@@ -128,6 +129,7 @@ Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat 
 - Rules: `CLAUDE.md` (COMMANDMENTS), kopya para sa hook `docs/handoff/COMMANDMENTS.md`; `PROJECT_RULES.md`; paano mag-publish ng Beta: `docs/handoff/PUBLISH_BETA.md`.
 - Setup ng bagong session: `docs/handoff/LOCAL_TAKEOVER.md`, `docs/handoff/NEW_ACCOUNT_SETUP.md`; skills `docs/handoff/skills/`.
 - Bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md`; plant model at loop check docs: `docs/versions/v3.2.1/`. Lumang Training live test (beta.76): `docs/handoff/LIVE_TEST_FINDINGS.md`.
+- Bagong HMI shell (mockup, hindi pa sa app): `docs/hmi/hx/` (`README.md` muna).
 - HMI: `docs/hmi/` (`HMI_STYLE.md`, `HMI_SYSTEMS.md`, `OPERATING_POINTS.md`, `operating-points.json`). Source: HMI pages `src/ui/plant/`, split view / loop check `src/ui/training/`, plant model `src/analog/engine/` (`plant.js`, `unit.js`, `boiler.js`, `tcs.js`), switch list `src/world/plantsw.js`, mundo ABC + DITL `src/world/world.js`.
 - Build at test: `npm run build` (iisang html sa `dist/`, huwag i-edit), `npm run check`, `tests/regress/` (README sa loob).
 - Workflows: `.github/workflows/` (`checks.yml` bawat push; `site.yml` kusa pagkatapos ng Checks; `release.yml` at `clean-releases.yml` = GO STABLE lang).
