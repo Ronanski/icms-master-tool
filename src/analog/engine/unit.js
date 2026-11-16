@@ -5361,7 +5361,8 @@ function anUnitStep0(dt) {
        pressure still rises (as before); with the ID fan running the model is unchanged. */
     const nair = !idf && U.taf0 > 0 ? Math.min(1, taf / (0.1 * U.taf0)) : null;
     for (const p of U.fp) {
-      p.pr.uf = idf ? 1 : 0;
+      /* an air heater plugged on the gas side (boiler.js AN_APL): the fan moves less gas at the same opening */
+      p.pr.uf = idf ? 1 / Math.sqrt(1 + (AN_APL.dp * (U.aphPl || 0)) / 442) : 0;
       p.pr.ld = ld;
       if (!p.pr.src) {
         p.pr.smul = nair == null ? undefined : nair;
