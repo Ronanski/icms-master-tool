@@ -69,6 +69,9 @@
   }
   function fill() {
     if (!con || con.hidden) return;
+    /* 3.2.4-beta.8: a fault, speed or save press redraws the console: keep where it was scrolled (it jumped back to the top) */
+    const ob = con.querySelector('.scibody'),
+      top = ob ? ob.scrollTop : 0;
     con.textContent = '';
     const hd = E('div', 'scihd');
     hd.append(E('b', '', 'Instructor console'));
@@ -125,6 +128,7 @@
           rr.append(E('span', '', e.name), ld, dl);
           svl.append(rr);
         }
+        body.scrollTop = top;
       })
     );
     /* speed */
@@ -196,6 +200,7 @@
     );
     body.append(r);
     con.append(body);
+    body.scrollTop = top;
   }
   function openCon() {
     if (!con) return;

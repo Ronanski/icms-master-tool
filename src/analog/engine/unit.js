@@ -4325,7 +4325,7 @@ const AN_SB = {
      boiler start-up), operating condition 10.5 kg/cm2, supply 16 kg/cm2 / 305 C, quantity per lance 3900 kg/hour, blowing time per lance
      19 minutes 40 seconds (total sootblowing time 40 minutes); the local panel moves the lance (3.2.16). Flow diagram K1AU3-PD-015: both
      on the sootblower header (SB-1-034 / SB-1-036). The DCS starts them: DITL-80F row 25 AIR PREHEATER SOOTBLOWER OPERATING (the start
-     command of the DITL-80 program); a rise of it runs one cycle: hot end, then cold end. The medium: DITL-80K row 19 PLANT AIR / STEAM
+     command of the DITL-80 program, count 29); a rise of it runs the cold end; DITL-80 output 19 (count 30) the hot end (3.2.4-beta.8). The medium: DITL-80K row 19 PLANT AIR / STEAM
      SELECT (M.4212, 1 = plant air: no steam taken). While a lance blows: its RESET POSITION is 0 (plantsw.js) and its pressure PT-SB1040 /
      PT-SB1042 (I/O list STN102 AI0549 / AI0550, 0 ~ 16) is the header pressure (at most 16). NO-SOURCE: the steps of the lance (one
      rotor turn each), the plant air pressure at the blower */
@@ -4397,16 +4397,27 @@ function anSbStep(U, dt) {
 function anSbAph(U, dt, P) {
   const K = AN_SB.aph,
     A = U.sbA || (U.sbA = { op: 0, ph: 0, t: 0, p40: 0, p42: 0 }),
-    op = typeof anDitlRun === 'function' ? anDitlRun('DITL-80F@25') : null;
+    op = typeof anDitlRun === 'function' ? anDitlRun('DITL-80F@25') : null,
+    /* 3.2.4-beta.8 (the program stood at count 30): the DITL-80 (S3) program starts the two air heater blowers in two steps of its
+       counter: count 29 = DITL-80F row 25 AIR PREHEATER SOOTBLOWER START COMMAND / OPERATING (80K), count 30 = DITL-80 output row 19 AIR
+       PREHEATER HOT END SOOTBLOWER START COMMAND (to the local panel). The L20 OMM gives hot & cold end SEQUENTIAL, 19 min 40 s each: the
+       first step runs the cold end N-1042, the second the hot end N-1040 (the order of the counter). Before: one rise ran both, so the
+       second step had no blower to wait for and the program never reached PROGRAM END */
+    hot = typeof anDitlRun === 'function' ? anDitlRun('(S3)DITL-80@19') : null;
   if (op === 1 && !A.op && !A.ph) {
+    A.ph = 2;
+    A.t = 0;
+  }
+  if (hot === 1 && !A.hot && !A.ph) {
     A.ph = 1;
     A.t = 0;
   }
   A.op = op === 1 ? 1 : 0;
+  A.hot = hot === 1 ? 1 : 0;
   if (A.ph && dt > 0) {
     A.t += dt;
     if (A.t >= K.tB) {
-      A.ph = A.ph === 1 ? 2 : 0;
+      A.ph = 0;
       A.t = 0;
     }
   }
