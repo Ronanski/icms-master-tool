@@ -141,6 +141,10 @@
       const ok = waits.get(m.id);
       waits.delete(m.id);
       E.heavy = Math.max(0, (E.heavy || 0) - 1);
+      if (Array.isArray(m.ft) && G.WORLD && G.WORLD.ft) {
+        G.WORLD.ft.clear();
+        for (const k of m.ft) G.WORLD.ft.add(k);
+      }
       if (ok) ok(m.r);
       return;
     }
@@ -190,7 +194,10 @@
         } catch (x) {
           r = null;
         }
-        post({ t: 'done', id: m.id, r });
+        /* 3.2.4-beta.15 (JENNIE, live test of beta.13): the trainer faults that stand (WORLD.ft) go with the answer. A starting state
+           clears them in the engine only (DITL150.apply runs there alone): the Instructor still showed Wet coal ON after "150 MW" */
+        const W = G.WORLD;
+        post({ t: 'done', id: m.id, r, ft: W && W.ft ? [...W.ft] : null });
       }
     } else if (m.t === 'patch') {
       if (E.busy) {
