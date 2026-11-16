@@ -2562,3 +2562,15 @@ oo. sa mga list ba, ano2 na mga nagawa mo?
 
 ## 2026-11-16 08:00 PM PHT · agent
 Answered with the state of the 16 tools. Put everything in the repo: all pages, data files, the complete turnover PDF, page PDFs, screenshots and this conversation.
+
+## 2026-11-16 08:01 PM PHT · user
+aba pagandahin mo lahat ng gawa mo, dapat applications mga yun or webapp, minimalistic, maayos font style, color grade, layout, design, spacing, lahat standard. iaudit mo.
+
+## 2026-11-16 08:18 PM PHT · agent
+Measured all pages, made one design standard (`docs/plant-tools/standard/README.md`), applied it to every page, measured again, republished and saved to the repo. Signal Path Finder drawings were not restyled. The old turbine link keeps the old look; new link KuTyWZpGoB1RsLZGEMGU3A.
+
+## 2026-11-16 08:20 PM PHT · user
+ano, app naba lahat ng tools? naka save progress na sa repo lahat? alam na ng next na coder ggwin? hnd sya mangapa? malalaman nya lahat ng nangyari?
+
+## 2026-11-16 08:25 PM PHT · agent
+Added "Next work, in order" to `docs/turnover/HANNI-TUTOR.md` section 4 and fixed two old lines there. Everything is on the working branch (PR #726), not on main until the user writes "merge".

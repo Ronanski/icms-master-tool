@@ -34,7 +34,7 @@ Update 2026-11-16, 8:10 PM PHT (user: "save mo lahat sa github repo", "isang rep
 
 ## 3. How to continue the Signal Path Finder
 
-- Source: `/mnt/project-files/tutor-2026-11-11/src/page.src.html` plus `data.json` (signal data, private plant data: keep it in the project folder only). Build: replace `@@DATA@@` in the source with the contents of `data.json`, write to `signal-path-finder.html`, publish to the same artifact link.
+- Source: `docs/plant-tools/signal-path-finder/page.src.html` plus `data.json` (in this repo since 2026-11-16). Build: replace `@@DATA@@` in the source with the contents of `data.json`, write to `signal-path-finder.html`, publish to the same artifact link.
 - Checks (Playwright, in `src/`): `test.js` (4 signals, PC and phone), `audit.js` (40 signals at 1280 / 820 / 400 px: cable over device or text, overflow, small text), `lab.js` (cable labels over content), `tov.js` (text over text inside drawings), `fonts.js` (font list), `sweep.js` (all 2,703 signals: missing or doubled links, unknown modules), `ff.js` (fault finder).
 - v16 results: 0 cable over device or text, 0 text overlap, 0 overflow, 0 JS errors; all 2,703 signals linked, 0 unknown modules. Not tested on a real phone or tablet.
 - Style rules the user set: light page; cards = Panel, TB, Terminal, Signal only; one font (IBM Plex Sans), page sizes 12/13/14/16/20, drawing text 7/8/9; cable labels = cable numbers only; little blank space. Audit the page yourself (UI/UX skill) before showing it; never make the user point out flaws.
@@ -43,7 +43,19 @@ Update 2026-11-16, 8:10 PM PHT (user: "save mo lahat sa github repo", "isang rep
 
 - Not in docs yet: 23AI60 channel for gen voltage B-C, cable and station of the TCS HMI, FL-NET port of FCS-2000.
 - 18 kV on SCADA case (GCP-AO1005 / AO0582): suspect the output scaling (DCS AO0582 0~100 % vs 0~18 kV) or the RTU560 / SYS600 point scaling; test at MPL108F 8ATB10C 13/14, expected 16.27 mA at 13.8 kV. Waiting on a field reading.
-- PDF and HTML copies of the pages for this turnover: not done yet (the HTML holds private plant data, so the copies go to the project folder, not this public repo, unless the user says otherwise).
+- PDF and HTML copies of the pages: done, in `docs/plant-tools/` and `docs/turnover/hanni/` (user order 2026-11-16 7:59 PM).
+
+### Next work, in order (start here)
+
+Read first: `docs/plant-tools/README.md`, then `docs/plant-tools/standard/README.md`. Every new or changed page goes through `standard/std.py` and is measured before the user sees it.
+
+1. Signal Path Finder: bring the drawings to the design standard (only the app bar was done; 30 % of spacing is off the grid, 7 corner radii). Run `sweep.js` after: all 2,703 signals must stay linked.
+2. Old turbine link NRX6XetGGHB3XWh69oZqz8 still has the old look. The standard page is KuTyWZpGoB1RsLZGEMGU3A. Republish the old link only after reading its live copy in full.
+3. Plant Workbench, Performance tab: partial. Values are typed by hand; no source for automatic data.
+4. Tag Lookup holds the 2,703 hardwired signals only. Not built: drawings and memory tags (tags without a wire).
+5. Assistant with live plant data: not built. Needs approval of the plant and of information technology (read-only data door). Do not build before that.
+6. Not tested anywhere: a real phone or tablet; clicks on the published pages; the real assistant answer in Tag Lookup (tested with a fake assistant only).
+7. PR #726 holds all of this. It is not merged: the user must write "merge".
 
 ## 5. Decisions log (user's own words, PHT)
 
