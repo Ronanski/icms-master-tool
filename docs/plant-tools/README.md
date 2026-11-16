@@ -6,11 +6,19 @@ Last update: 2026-11-16, 8:20 PM PHT.
 
 ## Ang mga tool
 
-- **Plant Tools List** (`plant-tools-list/plant-tools.html`): listahan ng 16 tool at estado ng bawat isa. https://claude.ai/artifact/CLWF6fLkvX8VNvtbjfYLwS (version 10).
-- **Tag Lookup** (`tag-lookup/`): ID card ng bawat isa sa 2,703 hardwired signal ng Unit 1, main test point, logic sheet na gumagamit, at assistant na sumasagot mula sa card lang (walang live data). https://claude.ai/artifact/DxJaK1sZU45T1VNfuJbQTW (version 1, capability `sample`).
-- **Signal Path Finder** (`signal-path-finder/`): buong daan ng signal bilang drawing. https://claude.ai/artifact/2A5FFvEhkDPnggoM4i95wk (version 16).
-- **Plant Workbench** (`plant-workbench/`): shift log, work orders, calibration record, spare parts, performance, trip analyzer, reports. https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ (version 2, capability `db`).
+- **Plant Tools List** (`plant-tools-list/plant-tools.html`): listahan ng 16 tool at estado ng bawat isa. https://claude.ai/artifact/CLWF6fLkvX8VNvtbjfYLwS (version 12).
+- **Tag Lookup** (`tag-lookup/`): ID card ng bawat isa sa 2,703 hardwired signal ng Unit 1, main test point, logic sheet na gumagamit, at assistant na sumasagot mula sa card lang (walang live data). https://claude.ai/artifact/DxJaK1sZU45T1VNfuJbQTW (version 2, capability `sample`).
+- **Signal Path Finder** (`signal-path-finder/`): buong daan ng signal bilang drawing. https://claude.ai/artifact/2A5FFvEhkDPnggoM4i95wk (version 17).
+- **Plant Workbench** (`plant-workbench/`): shift log, work orders, calibration record, spare parts, performance, trip analyzer, reports. https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ (version 3, capability `db`).
 - **Connection Lessons** (`connection-lessons/connection-lessons.html`): 12 aral na "kapag naputol ang koneksyon". https://claude.ai/artifact/NrXakPC4qHBDZagBt3Ztt1.
+
+## Iisang design standard (2026-11-16)
+
+Lahat ng page ay nasa iisang standard (font, laki ng text, kulay, spacing, app bar). Basahin ang `standard/README.md`; ang gumagawa nito ay `standard/std.py` at `standard/hub.py`.
+
+Mga bagong link dahil sa standard:
+- Generator Metering Hardware: https://claude.ai/artifact/VDNq62a8JjwcVG21sUsX7K (`tutor-pages/gen-metering-hardware.html`).
+- HP-IP Turbine Valves, standard na itsura: https://claude.ai/artifact/KuTyWZpGoB1RsLZGEMGU3A (`tutor-pages/turbine-valves-standard.html`, kapareho ng `turbine-page-v4.html`). Ang lumang link na NRX6XetGGHB3XWh69oZqz8 ay may lumang itsura pa: hindi ito napalitan dahil hindi nabasa nang buo ang live na kopya nito.
 
 ## Paano buuin
 

@@ -1,56 +1,100 @@
 <title>Transfer Lab</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
+:root{--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:var(--sans);
+--bg:#f6f7f9;--paper:#ffffff;--fg:#1b2129;--muted:#5b6673;--faint:#a3acb6;--edge:#d6dce3;--fill:#eef1f4;--accent:#1f5fae;--on-accent:#ffffff;--selbg:#e8f0fb;
+--ok:#1e6b34;--okbg:#e6f4ea;--warnc:#8a5a00;--warnbg:#fdf3d8;--badc:#b3261e;--badbg:#fdecea;
+--c-red:#c62828;--c-orange:#c8660a;--c-blue:#2474b5;--c-green:#1e8a3c;--c-yellow:#c99700;--c-purple:#7b4fd6;--c-teal:#0e8a8c;--c-steam:#8b98a5;--c-oil:#a67c00;
+--eq:#e9edf1;--metal:#7b8794;--pipe:#c5cdd5;--panel:var(--paper);--line:var(--edge);--dim:var(--muted);color-scheme:light;
+--ms:var(--c-red);--rh:var(--c-orange);--lp:var(--c-blue);--warn:var(--c-yellow);}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--faint:#5f6872;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;--selbg:#1d2c40;
+--ok:#7fd29a;--okbg:#17301f;--warnc:#e7bf5c;--warnbg:#33290f;--badc:#f2948c;--badbg:#3a1c1a;
+--c-red:#ef5b5b;--c-orange:#f0954a;--c-blue:#5aa9e6;--c-green:#4cc27a;--c-yellow:#f2c94c;--c-purple:#a585f0;--c-teal:#3cc0c2;--c-steam:#c3ccd4;--c-oil:#d9b13a;
+--eq:#2a3138;--metal:#7c8893;--pipe:#3f4852;color-scheme:dark;}}
+:root[data-theme="dark"]{--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--faint:#5f6872;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;--selbg:#1d2c40;
+--ok:#7fd29a;--okbg:#17301f;--warnc:#e7bf5c;--warnbg:#33290f;--badc:#f2948c;--badbg:#3a1c1a;
+--c-red:#ef5b5b;--c-orange:#f0954a;--c-blue:#5aa9e6;--c-green:#4cc27a;--c-yellow:#f2c94c;--c-purple:#a585f0;--c-teal:#3cc0c2;--c-steam:#c3ccd4;--c-oil:#d9b13a;
+--eq:#2a3138;--metal:#7c8893;--pipe:#3f4852;color-scheme:dark;}
+
 /* Layout: scenario buttons, the animated steam path (boiler, HP bypass, CV, HP turbine, reheater, ICV, IP/LP turbine, LP bypass, condenser), gauges, then what happened in plain words. Same dark look as the other labs. */
-:root{
-  --bg:#1d2124;--panel:#262b2f;--line:#3a4146;--fg:#e6eaec;--dim:#9aa4aa;
-  --ms:#e5484d;--rh:#f2994a;--lp:#5aa9e6;--ok:#3fb26b;--warn:#f2c94c;
-  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
-  color-scheme:dark;
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d2124}}
-:root[data-theme="dark"]{--bg:#1d2124}
+
+
+
 html,body{background:var(--bg);color:var(--fg);margin:0}
 body{font-family:var(--sans);font-size:16px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px}
-.wrap{max-width:1040px;margin:0 auto;display:grid;gap:14px}
-h1{font-size:22px;font-weight:600;margin:0}
-h2{font-size:17px;font-weight:600;margin:0 0 6px}
+.wrap{max-width:1040px;margin:0 auto;display:grid;gap:16px}
+h1{font-size:20px;font-weight:600;margin:0}
+h2{font-size:16px;font-weight:600;margin:0 0 8px}
 .sub{margin:4px 0 0;color:var(--dim);max-width:76ch}
 .box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;min-width:0}
-.lab{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:0 0 6px}
+.lab{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:0 0 8px}
 .btns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 @media (max-width:760px){.btns{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.b{font:600 15px var(--sans);color:var(--fg);background:transparent;border:2px solid var(--line);border-radius:6px;padding:9px 10px;cursor:pointer;text-align:left}
+.b{font:600 14px var(--sans);color:var(--fg);background:transparent;border:2px solid var(--line);border-radius:6px;padding:8px 12px;cursor:pointer;text-align:left}
 .b small{display:block;font-weight:400;font-size:12px;color:var(--dim)}
 .b:hover{border-color:var(--dim)}
 .b:focus-visible{outline:2px solid var(--warn);outline-offset:2px}
-.b.on{border-color:var(--warn);background:#3a3520}
+.b.on{border-color:var(--warn);background:var(--selbg)}
 svg{display:block;width:100%;height:auto}
 svg text{font-family:var(--sans);fill:var(--fg)}
-.pipe{fill:none;stroke:#3a4146;stroke-linecap:round;stroke-linejoin:round}
+.pipe{fill:none;stroke:var(--pipe);stroke-linecap:round;stroke-linejoin:round}
 .stm{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:4 12}
-.eq{fill:#2f363b;stroke:#5b656b;stroke-width:2}
+.eq{fill:var(--eq);stroke:var(--metal);stroke-width:2}
 .gauges{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
 @media (max-width:760px){.gauges{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .g{border:1px solid var(--line);border-radius:6px;padding:8px}
 .g .t{font-size:12px;color:var(--dim)}
-.g .v{font:500 20px var(--mono);font-variant-numeric:tabular-nums}
-.g .bar{height:6px;background:#20262a;border-radius:3px;margin-top:4px;position:relative;overflow:visible}
-.g .bar i{display:block;height:100%;border-radius:3px;background:var(--ok);transition:width .2s}
+.g .v{font:500 20px var(--sans);font-variant-numeric:tabular-nums}
+.g .bar{height:6px;background:var(--fill);border-radius:6px;margin-top:4px;position:relative;overflow:visible}
+.g .bar i{display:block;height:100%;border-radius:6px;background:var(--ok);transition:width .2s}
 .g .lim{position:absolute;top:-4px;width:2px;height:14px;background:var(--fg)}
 .g.alarm{border-color:var(--ms)}
-.say{font-size:17px;margin:0;min-height:4.5em}
+.say{font-size:16px;margin:0;min-height:4.5em}
 .say b{color:var(--warn)}
 .note{font-size:13px;color:var(--dim)}
-ul{margin:0;padding-left:20px}li{margin:3px 0}
-.clock{font:500 14px var(--mono);color:var(--dim)}
+ul{margin:0;padding-left:24px}li{margin:4px 0}
+.clock{font:500 14px var(--sans);color:var(--dim)}
+
+/* ---- plant tools standard v1: one font, sizes 12/13/14/16/20, weights 400/500/600, 4 px spacing grid, radius 6 and 10 ---- */
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg);margin:0}
+body{font-family:var(--sans);font-size:14px;line-height:1.5;font-variant-numeric:tabular-nums;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-size:20px;font-weight:600;line-height:1.3;margin:0}h2{font-size:16px;font-weight:600;line-height:1.35}h3{font-size:14px;font-weight:600}
+b,strong{font-weight:600}
+.sub{color:var(--muted);font-size:14px;margin:4px 0 0;max-width:76ch}
+.box,.sheet,.rule,.tip,.step,figure{background:var(--paper);border:1px solid var(--edge);border-radius:10px}
+.box{padding:16px}
+.lab,.label,.gh{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted);margin:0 0 8px}
+.note,.src,.hint{font-size:13px;color:var(--muted)}
+button,.b,.btn,.f,.st{font-family:var(--sans);min-height:36px;border-radius:6px}
+.b,.st{font-size:14px;font-weight:600;border-width:1px;padding:8px 12px}
+.b small{font-size:12px;font-weight:400}
+.b.on,.f.on,.b.on.l{border-color:var(--accent);background:var(--selbg);box-shadow:inset 0 0 0 1px var(--accent)}
+button:focus-visible,.b:focus-visible,.f:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible,.tap:focus-visible,.part:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=range]{accent-color:var(--accent);min-height:32px}
+.say,.now,.info{font-size:16px;line-height:1.5}
+.say b,.info b,.terms b,.now strong{color:var(--fg)}
+a{color:var(--accent)}
+.seg button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+dl dt{color:var(--fg);font-weight:600}
+.tag{color:var(--fg);font-weight:500}
+.g .v,.ro b,.v b{font-size:16px;font-weight:600}
+.st b{letter-spacing:0;font-weight:500}
+.cw{color:var(--fg);text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px;text-decoration-color:var(--cw)}
+.appbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-height:32px;margin:0}
+.appbar a{color:var(--accent);text-decoration:none;font-weight:500;display:inline-flex;align-items:center;min-height:32px}
+.appbar a:hover{text-decoration:underline}
+.appbar i{font-style:normal;color:var(--muted)}
+.seq i,.g .seq i{color:var(--muted)}
+summary{padding-block:8px}
+@media (max-width:640px){button,.b,.btn,.f,.st,.appbar a,summary{min-height:44px}input[type=range]{min-height:44px}.box{overflow-x:auto}.box>svg,.box>canvas{min-width:640px}}
 </style>
 
-<div class="wrap">
+<div class="wrap"><div class="appbar"><a href="https://claude.ai/artifact/CLWF6fLkvX8VNvtbjfYLwS" target="_blank" rel="noopener">Plant Tools</a><i>/</i><span>Transfer Lab</span></div>
 <div>
   <h1>Transfer Lab</h1>
-  <p class="sub">Panoorin ang daloy ng steam habang inililipat ang kontrol mula ICV papunta sa CV. Ang <b style="color:var(--ms)">pula</b> ay main steam, <b style="color:var(--rh)">kahel</b> ang reheat steam, <b style="color:var(--lp)">asul</b> ang papuntang condenser. Mas makapal at mas mabilis na tuldok = mas malaking flow.</p>
+  <p class="sub">Panoorin ang daloy ng steam habang inililipat ang kontrol mula ICV papunta sa CV. Ang <b class="cw" style="--cw:var(--ms)">pula</b> ay main steam, <b class="cw" style="--cw:var(--rh)">kahel</b> ang reheat steam, <b class="cw" style="--cw:var(--lp)">asul</b> ang papuntang condenser. Mas makapal at mas mabilis na tuldok = mas malaking flow.</p>
 </div>
 
 <div class="box">
@@ -88,10 +132,10 @@ ul{margin:0;padding-left:20px}li{margin:3px 0}
     <!-- boiler -->
     <rect class="eq" x="20" y="120" width="110" height="240" rx="8"/>
     <text x="75" y="232" font-size="15" text-anchor="middle" font-weight="600">BOILER</text>
-    <text x="75" y="252" font-size="12" text-anchor="middle" fill="#9aa4aa">steam na</text>
-    <text x="75" y="268" font-size="12" text-anchor="middle" fill="#9aa4aa">nagagawa</text>
+    <text x="75" y="252" font-size="12" text-anchor="middle" fill="var(--muted)">steam na</text>
+    <text x="75" y="268" font-size="12" text-anchor="middle" fill="var(--muted)">nagagawa</text>
     <text id="tGen" x="75" y="292" font-size="14" text-anchor="middle" font-family="IBM Plex Mono">115 T/H</text>
-    <text x="180" y="78" font-size="12" text-anchor="middle" fill="#9aa4aa">blow-off / vent</text>
+    <text x="180" y="78" font-size="12" text-anchor="middle" fill="var(--muted)">blow-off / vent</text>
 
     <!-- CV valve -->
     <g id="gCv"><path class="eq" d="M300 172 L340 208 L340 172 L300 208 Z"/></g>
@@ -120,11 +164,11 @@ ul{margin:0;padding-left:20px}li{margin:3px 0}
     <!-- IP/LP turbine + gen -->
     <path class="eq" d="M760 205 L860 160 L860 250 L760 230 Z"/>
     <text x="815" y="214" font-size="13" text-anchor="middle" font-weight="600">IP / LP</text>
-    <line x1="860" y1="205" x2="900" y2="205" stroke="#5b656b" stroke-width="6"/>
+    <line x1="860" y1="205" x2="900" y2="205" stroke="var(--metal)" stroke-width="6"/>
     <circle class="eq" cx="935" cy="205" r="34"/>
     <text x="935" y="201" font-size="13" text-anchor="middle" font-weight="600">GEN</text>
     <text id="tMw" x="935" y="220" font-size="13" text-anchor="middle" font-family="IBM Plex Mono">7 MW</text>
-    <g id="rotor" transform="translate(935 205)"><line x1="-26" y1="0" x2="26" y2="0" stroke="#9aa4aa" stroke-width="2" opacity=".5"/></g>
+    <g id="rotor" transform="translate(935 205)"><line x1="-26" y1="0" x2="26" y2="0" stroke="var(--muted)" stroke-width="2" opacity=".5"/></g>
 
     <!-- LP bypass -->
     <path class="eq" d="M702 350 L738 386 L702 386 L738 350 Z" transform="translate(0 0)"/>

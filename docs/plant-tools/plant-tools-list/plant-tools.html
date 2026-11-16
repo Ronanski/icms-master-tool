@@ -1,56 +1,83 @@
-<title>Plant Tools List</title>
+<title>Plant Tools</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
-<style>
-/* Layout: search + group filter, then the plain-words explainer of tool 1 (the plant data core), then the tool list grouped by work area with a status chip and priority. Same dark look as the tutor labs. */
-:root{--bg:#1d2124;--panel:#262b2f;--line:#3a4146;--fg:#e6eaec;--dim:#9aa4aa;--accent:#f2c94c;--done:#3fb26b;--half:#5aa9e6;--none:#6b747a;--plan:#c792ea;
---sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;color-scheme:dark}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d2124}}
-:root[data-theme="dark"]{--bg:#1d2124}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>:root{--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:var(--sans);
+--bg:#f6f7f9;--paper:#ffffff;--fg:#1b2129;--muted:#5b6673;--faint:#a3acb6;--edge:#d6dce3;--fill:#eef1f4;--accent:#1f5fae;--on-accent:#ffffff;--selbg:#e8f0fb;
+--ok:#1e6b34;--okbg:#e6f4ea;--warnc:#8a5a00;--warnbg:#fdf3d8;--badc:#b3261e;--badbg:#fdecea;
+--c-red:#c62828;--c-orange:#c8660a;--c-blue:#2474b5;--c-green:#1e8a3c;--c-yellow:#c99700;--c-purple:#7b4fd6;--c-teal:#0e8a8c;--c-steam:#8b98a5;--c-oil:#a67c00;
+--eq:#e9edf1;--metal:#7b8794;--pipe:#c5cdd5;--panel:var(--paper);--line:var(--edge);--dim:var(--muted);color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--faint:#5f6872;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;--selbg:#1d2c40;
+--ok:#7fd29a;--okbg:#17301f;--warnc:#e7bf5c;--warnbg:#33290f;--badc:#f2948c;--badbg:#3a1c1a;
+--c-red:#ef5b5b;--c-orange:#f0954a;--c-blue:#5aa9e6;--c-green:#4cc27a;--c-yellow:#f2c94c;--c-purple:#a585f0;--c-teal:#3cc0c2;--c-steam:#c3ccd4;--c-oil:#d9b13a;
+--eq:#2a3138;--metal:#7c8893;--pipe:#3f4852;color-scheme:dark;}}
+:root[data-theme="dark"]{--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--faint:#5f6872;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;--selbg:#1d2c40;
+--ok:#7fd29a;--okbg:#17301f;--warnc:#e7bf5c;--warnbg:#33290f;--badc:#f2948c;--badbg:#3a1c1a;
+--c-red:#ef5b5b;--c-orange:#f0954a;--c-blue:#5aa9e6;--c-green:#4cc27a;--c-yellow:#f2c94c;--c-purple:#a585f0;--c-teal:#3cc0c2;--c-steam:#c3ccd4;--c-oil:#d9b13a;
+--eq:#2a3138;--metal:#7c8893;--pipe:#3f4852;color-scheme:dark;}
+
+/* ---- plant tools standard v1: one font, sizes 12/13/14/16/20, weights 400/500/600, 4 px spacing grid, radius 6 and 10 ---- */
+*{box-sizing:border-box}
 html,body{background:var(--bg);color:var(--fg);margin:0}
-body{font-family:var(--sans);font-size:16px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 40px}
-.wrap{max-width:900px;margin:0 auto;display:grid;gap:14px}
-h1{font-size:22px;font-weight:600;margin:0}
-h2{font-size:17px;font-weight:600;margin:0}
-h3{font-size:15px;font-weight:600;margin:0}
-.sub{margin:4px 0 0;color:var(--dim);max-width:70ch}
-.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;min-width:0}
+body{font-family:var(--sans);font-size:14px;line-height:1.5;font-variant-numeric:tabular-nums;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-size:20px;font-weight:600;line-height:1.3;margin:0}h2{font-size:16px;font-weight:600;line-height:1.35}h3{font-size:14px;font-weight:600}
+b,strong{font-weight:600}
+.sub{color:var(--muted);font-size:14px;margin:4px 0 0;max-width:76ch}
+.box,.sheet,.rule,.tip,.step,figure{background:var(--paper);border:1px solid var(--edge);border-radius:10px}
+.box{padding:16px}
+.lab,.label,.gh{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted);margin:0 0 8px}
+.note,.src,.hint{font-size:13px;color:var(--muted)}
+button,.b,.btn,.f,.st{font-family:var(--sans);min-height:36px;border-radius:6px}
+.b,.st{font-size:14px;font-weight:600;border-width:1px;padding:8px 12px}
+.b small{font-size:12px;font-weight:400}
+.b.on,.f.on,.b.on.l{border-color:var(--accent);background:var(--selbg);box-shadow:inset 0 0 0 1px var(--accent)}
+button:focus-visible,.b:focus-visible,.f:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible,.tap:focus-visible,.part:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=range]{accent-color:var(--accent);min-height:32px}
+.say,.now,.info{font-size:16px;line-height:1.5}
+.say b,.info b,.terms b,.now strong{color:var(--fg)}
+a{color:var(--accent)}
+.seg button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+dl dt{color:var(--fg);font-weight:600}
+.tag{color:var(--fg);font-weight:500}
+.g .v,.ro b,.v b{font-size:16px;font-weight:600}
+.st b{letter-spacing:0;font-weight:500}
+.cw{color:var(--fg);text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px;text-decoration-color:var(--cw)}
+.appbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-height:32px;margin:0}
+.appbar a{color:var(--accent);text-decoration:none;font-weight:500;display:inline-flex;align-items:center;min-height:32px}
+.appbar a:hover{text-decoration:underline}
+.appbar i{font-style:normal;color:var(--muted)}
+.seq i,.g .seq i{color:var(--muted)}
+summary{padding-block:8px}
+@media (max-width:640px){button,.b,.btn,.f,.st,.appbar a,summary{min-height:44px}input[type=range]{min-height:44px}.box{overflow-x:auto}.box>svg,.box>canvas{min-width:640px}}
+
+/* layout: search and filter on top, tools as cards grouped by job, notes collapsed at the end */
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-input[type=search]{flex:1 1 220px;min-width:0;font:15px var(--sans);color:var(--fg);background:#20262a;border:1px solid var(--line);border-radius:6px;padding:9px 10px}
-input[type=search]:focus-visible,.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.f{font:500 14px var(--sans);color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}
-.f.on{border-color:var(--accent);background:#3a3520}
-.grp{display:grid;gap:8px}
-.gh{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:6px 0 0}
-.tool{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:start;border-top:1px solid var(--line);padding-top:10px}
-.tool:first-of-type{border-top:0;padding-top:0}
-.n{font:500 18px var(--mono);color:var(--accent);font-variant-numeric:tabular-nums}
-.tool p{margin:2px 0 0;font-size:14px;color:var(--dim)}
-.chip{font-size:12px;font-weight:600;border-radius:999px;padding:3px 9px;white-space:nowrap;border:1px solid}
-.c-done{color:var(--done);border-color:var(--done)}.c-half{color:var(--half);border-color:var(--half)}.c-none{color:var(--dim);border-color:var(--none)}.c-plan{color:var(--plan);border-color:var(--plan)}
-.pri{font-size:12px;color:var(--accent);margin-top:4px}.pri a{color:var(--half);font-size:13px;font-weight:600}
-.ex{display:grid;gap:10px}
-.ex ol{margin:0;padding-left:20px}.ex li{margin:3px 0}
-.card{font:13px var(--mono);background:#20262a;border:1px solid var(--line);border-radius:6px;padding:10px;overflow-x:auto;white-space:pre;line-height:1.6}
-.note{font-size:13px;color:var(--dim)}
-.empty{color:var(--dim);font-size:14px}
+input[type=search]{flex:1 1 240px;min-width:0;font:inherit;color:var(--fg);background:var(--paper);border:1px solid var(--edge);border-radius:6px;padding:8px 12px;min-height:40px}
+.f{font-size:13px;font-weight:500;color:var(--fg);background:var(--paper);border:1px solid var(--edge);padding:4px 12px;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.tool{display:flex;flex-direction:column;gap:8px;background:var(--paper);border:1px solid var(--edge);border-radius:10px;padding:16px;color:var(--fg);text-decoration:none;min-width:0}
+a.tool:hover{border-color:var(--accent)}
+.tool h3{margin:0;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.tool p{margin:0;font-size:13px;color:var(--muted);flex:1}
+.tool .go{font-size:13px;font-weight:500;color:var(--accent)}
+.tool .go.no{color:var(--muted);font-weight:400}
+.pill{flex:none;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill.ready{background:var(--okbg);color:var(--ok)}.pill.part{background:var(--warnbg);color:var(--warnc)}.pill.none{background:var(--fill);color:var(--muted)}
+.empty{border:1px dashed var(--edge);border-radius:10px;padding:24px;text-align:center;color:var(--muted)}
+details.box summary{font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center}
+details.box[open] summary{margin-bottom:8px}
+details.box p,details.box ol{margin:0 0 8px}details.box ol{padding-left:24px}details.box li{margin:4px 0}
+.idcard{font-size:13px;background:var(--fill);border-radius:6px;padding:12px;overflow-x:auto;white-space:pre;line-height:1.6;margin:0 0 8px}
+@media (max-width:640px){.grid{grid-template-columns:minmax(0,1fr)}#fl{flex-wrap:nowrap;overflow-x:auto;width:100%;padding-bottom:4px}#fl .f{flex:none}.f{min-height:44px}input[type=search]{min-height:44px}}
 </style>
-
 <div class="wrap">
-<div>
-  <h1>Plant Tools List</h1>
-  <p class="sub">Lahat ng tool na makakatulong sa trabaho mo sa planta, naka-grupo ayon sa trabaho. Ang bilog sa kanan ang estado ngayon. Ang may "Uunahin" ang mungkahing pagkakasunod.</p>
-</div>
-
-<div class="box bar">
-  <input id="q" type="search" placeholder="Hanapin (hal. tag, trip, inventory)" aria-label="Hanapin ang tool">
-  <div class="bar" id="fl"></div>
-</div>
-
-<div class="box ex" id="one">
-  <h2>Ano ang #1, ang "Plant data core"?</h2>
-  <p style="margin:0">Isipin mo ang <b>masterlist ng empleyado</b> ng planta, pero para sa bawat signal. Bawat tag ay may iisang "ID card". Doon nakasulat kung ano ito, saan galing, saan dumadaan, saan pumupunta, at ano ang ginagawa nito. Lahat ng ibang tool ay sa ID card na ito kukuha, kaya iisa lang ang totoo at hindi na nagkakasalungat.</p>
-  <div class="card" aria-label="Halimbawang ID card ng isang tag">TAG        TCSAI1005
+<div><h1>Plant Tools</h1>
+<p class="sub">Every tool for LMYP Unit 1 in one place. Pick a card to open the tool in a new tab.</p></div>
+<div class="bar"><input id="q" type="search" placeholder="Search tools, like trip or calibration" aria-label="Search tools"><div class="bar" id="fl"></div></div>
+<div id="list" style="display:flex;flex-direction:column;gap:16px"></div>
+<details class="box"><summary>Plant data core: notes and document sources</summary>  <p>Isipin mo ang <b>masterlist ng empleyado</b> ng planta, pero para sa bawat signal. Bawat tag ay may iisang "ID card". Doon nakasulat kung ano ito, saan galing, saan dumadaan, saan pumupunta, at ano ang ginagawa nito. Lahat ng ibang tool ay sa ID card na ito kukuha, kaya iisa lang ang totoo at hindi na nagkakasalungat.</p>
+  <div class="idcard" aria-label="Halimbawang ID card ng isang tag">TAG        TCSAI1005
 PANGALAN   Max turbine load up rate set
 RANGE      0.0 ~ 5.0 %/min
 GALING     TCS (Hitachi)  →  DCS AI0421
@@ -84,48 +111,20 @@ DOKUMENTO  DCS loop list STN101, TCS HMI list</div>
     <li>Ikabit ang bawat tag sa logic sheet na gumagamit nito.</li>
     <li>Gawing basa ng lahat ng tool: Tag Lookup muna, tapos simulator, tracer at 3D.</li>
   </ol>
+</details>
+<p class="note">Updated 2026-11-16. Status: Ready = works now, Partly built = works with limits, Not built = needs data or approval first.</p>
 </div>
-
-<div class="box grp" id="list"></div>
-
-<p class="note">Ginawa 2026-11-14, in-update 2026-11-16 (Plant Workbench, Connection Lessons at Tag Lookup). Mungkahi ang pagkakasunod; ang user ang magpapasya.</p>
-</div>
-
 <script>
-const T=[
- {n:1,g:'Pundasyon',t:'Plant data core',d:'Nasa Tag Lookup na ang 2,703 hardwired signal: tag, address, range, cabinet, marshalling, junction box, cable at logic sheet. Wala pa: mga drawing at ang mga memory tag na walang wire.',s:'half',p:1,u:'https://claude.ai/artifact/DxJaK1sZU45T1VNfuJbQTW'},
- {n:2,g:'Control systems',t:'Tag Lookup / Troubleshoot',d:'Itype ang tag, address o salita: lalabas ang ID card ng signal, ang main test point, at ang mga logic sheet na gumagamit nito. Ang buong daan bilang drawing ay nasa Signal Path Finder. Ang epekto kapag nawala ay nasa Connection Lessons (12 koneksyon pa lang).',s:'done',p:1,u:'https://claude.ai/artifact/DxJaK1sZU45T1VNfuJbQTW'},
- {n:3,g:'Control systems',t:'Logic Viewer "Bakit?"',d:'Bakit ayaw mag-AUTO, anong permissive ang humaharang.',s:'done'},
- {n:4,g:'Control systems',t:'Trip / alarm analyzer',d:'I-paste ang SER o alarm list: aayusin ayon sa oras at lalabas ang first event at ang pagitan ng bawat event. Hindi ito nanghuhula ng sanhi.',s:'done',u:'https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#trip-analyzer'},
- {n:5,g:'Control systems',t:'Loop check / function test helper',d:'Checklist at inaasahang value bawat loop.',s:'half'},
- {n:6,g:'Operation at training',t:'DCS plant simulator',d:'Cold start hanggang 150 MW; what-if bago galawin ang totoong DCS.',s:'half'},
- {n:7,g:'Operation at training',t:'Tutor labs',d:'Drum Swell, 52G at 52L, Sync, CV Demand, Transfer Lab, AI sa planta.',s:'done'},
- {n:8,g:'Operation at training',t:'Connection lessons',d:'"Kapag naputol ang koneksyon": isang koneksyon bawat aral, may pagsusulit na pabaligtad.',s:'done',u:'https://claude.ai/artifact/NrXakPC4qHBDZagBt3Ztt1'},
- {n:9,g:'Field at maintenance',t:'3D plant',d:'Kung nasaan ang equipment at instrument, at ang loob ng mga ito.',s:'half',p:4},
- {n:10,g:'Field at maintenance',t:'Work order at PM tracker',d:'PM schedule at history ng bawat instrument at equipment.',s:'done',u:'https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#work-orders'},
- {n:11,g:'Field at maintenance',t:'Calibration record',d:'Range, as-found / as-left, due date ng bawat instrument.',s:'done',u:'https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#calibration'},
- {n:12,g:'Admin at management',t:'Shift log at turnover',d:'Ano ang nangyari sa shift, mga bukas na problema, ipapasa sa susunod.',s:'done',u:'https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#shift-log'},
- {n:13,g:'Admin at management',t:'Spare parts / inventory',d:'Stock, gamit, reorder point.',s:'done',u:'https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#spare-parts'},
- {n:14,g:'Admin at management',t:'Reports',d:'Daily / monthly, outage at trip report mula sa template.',s:'done',u:'https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#reports'},
- {n:15,g:'Admin at management',t:'Performance dashboard',d:'MW, heat rate, availability, trips. Kailangan ng data mula sa planta. Sa ngayon ay mano-manong ilalagay ang araw-araw na numero.',s:'half',u:'https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#performance'},
- {n:16,g:'Kinabukasan',t:'AI assistant na may live data',d:'Gawa na ang assistant sa loob ng Tag Lookup: sumasagot mula sa ID card ng signal, walang live na value. Ang live data mula sa OPC server ay kailangan pa ng approval ng planta at IT.',s:'half',p:4,u:'https://claude.ai/artifact/DxJaK1sZU45T1VNfuJbQTW'}
-];
-const SL={done:'Meron na',half:'Kalahati na',none:'Wala pa',plan:'Plano / ideya'};
-const PL={1:'Uunahin: hakbang 1',2:'Uunahin: hakbang 2',3:'Uunahin: hakbang 3',4:'Huli'};
-const G=[...new Set(T.map(x=>x.g))];
-let grp='Lahat';
-const fl=document.getElementById('fl');
-['Lahat',...G].forEach(g=>{const b=document.createElement('button');b.type='button';b.className='f'+(g===grp?' on':'');b.textContent=g;b.onclick=()=>{grp=g;[...fl.children].forEach(c=>c.classList.toggle('on',c===b));draw();};fl.appendChild(b);});
-const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function draw(){
-  const q=document.getElementById('q').value.trim().toLowerCase();
-  const rows=T.filter(x=>(grp==='Lahat'||x.g===grp)&&(!q||(x.t+' '+x.d+' '+x.g).toLowerCase().includes(q)));
-  let h='',last='';
-  rows.forEach(x=>{if(x.g!==last){h+='<p class="gh">'+esc(x.g)+'</p>';last=x.g;}
-    h+='<div class="tool"><span class="n">'+x.n+'</span><div><h3>'+esc(x.t)+'</h3><p>'+esc(x.d)+'</p>'+(x.p?'<div class="pri">'+PL[x.p]+'</div>':'')+(x.u?'<div class="pri"><a href="'+x.u+'" target="_blank" rel="noopener">Buksan ang tool</a></div>':'')+'</div><span class="chip c-'+x.s+'">'+SL[x.s]+'</span></div>';});
-  document.getElementById('list').innerHTML=h||'<p class="empty">Walang tumugma. Subukan ang ibang salita.</p>';
-  document.getElementById('one').hidden=!(grp==='Lahat'||grp==='Pundasyon')||(q&&!'plant data core tag pundasyon'.includes(q)&&!T[0].d.toLowerCase().includes(q));
-}
-document.getElementById('q').oninput=draw;
-draw();
+const T=[["Find a signal", "Tag Lookup", "One card per hardwired signal: range, cabinet, terminals, main test point, logic sheets. Has an assistant that answers from the card.", "ready", "https://claude.ai/artifact/DxJaK1sZU45T1VNfuJbQTW"], ["Find a signal", "Signal Path Finder", "The full path of a signal as a drawing, from the field device to the operator screen, with a fault finder.", "ready", "https://claude.ai/artifact/2A5FFvEhkDPnggoM4i95wk"], ["Find a signal", "Connection Lessons", "Twelve lessons on what happens when one logic connection is lost, each with a reverse quiz.", "ready", "https://claude.ai/artifact/NrXakPC4qHBDZagBt3Ztt1"], ["Run the shift", "Shift log", "What happened in the shift, open follow-ups, and what to pass on.", "ready", "https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#shift-log"], ["Run the shift", "Work orders", "Corrective and preventive jobs. A repeating job creates its next one when marked done.", "ready", "https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#work-orders"], ["Run the shift", "Calibration record", "As-found and as-left at five points, error and pass or fail against your tolerance.", "ready", "https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#calibration"], ["Run the shift", "Spare parts", "Stock, minimum level and a reorder flag.", "ready", "https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#spare-parts"], ["Run the shift", "Trip analyzer", "Paste an event list: sorted by time, first event marked, gap between events. It does not guess the cause.", "ready", "https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#trip-analyzer"], ["Run the shift", "Reports", "Daily report, shift handover, maintenance backlog and trip records built from your entries.", "ready", "https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#reports"], ["Run the shift", "Performance", "Daily energy, coal and trips, entered by hand. Works out load factor and heat rate.", "part", "https://claude.ai/artifact/4fXaZ2RGqamjnCRb9pYXhJ#performance"], ["Learn the plant", "Drum Swell Lab", "Watch water and steam in the drum and see why the level swells and shrinks.", "ready", "https://claude.ai/artifact/DGPMzcCw3VC6dhpyyTrXdx"], ["Learn the plant", "52G and 52L Lab", "Generator and line breakers: where power flows when each one opens.", "ready", "https://claude.ai/artifact/9sa5hstmeApg1YSkArA1sM"], ["Learn the plant", "Sync Lab", "Match speed, voltage and phase, then close the generator breaker.", "ready", "https://claude.ai/artifact/JYehhTtobFpiBNDmJxMRri"], ["Learn the plant", "CV Demand Lab", "Governor, load limiter and unloading: the lowest signal drives the control valves.", "ready", "https://claude.ai/artifact/FUxNzDMV4Ms5HwLyCZL96w"], ["Learn the plant", "Transfer Lab", "Steam path through the bypasses, the intercept valves and the control valves during start-up.", "ready", "https://claude.ai/artifact/Wiy6NDxu7oSUiFDzc4jahC"], ["Learn the plant", "Turbine Valves Guide", "The high and intermediate pressure turbine valves, and the inside of one control valve.", "ready", "https://claude.ai/artifact/KuTyWZpGoB1RsLZGEMGU3A"], ["Learn the plant", "Generator Voltage Path", "Generator voltage B-C from the voltage transformer to every screen that shows it.", "ready", "https://claude.ai/artifact/KVddKmqbHmxh7fj9e5Fekz"], ["Learn the plant", "Generator Voltage Troubleshooter", "Pick the symptom and see which stop to check first.", "ready", "https://claude.ai/artifact/RUet573mt7QS675aqFfjqK"], ["Learn the plant", "Generator Metering Hardware", "What the voltage transformer cubicle and the generator control panel look like.", "ready", "https://claude.ai/artifact/VDNq62a8JjwcVG21sUsX7K"], ["Learn the plant", "Artificial Intelligence in the Plant", "Where an assistant could connect to the control network, and what it needs first.", "ready", "https://claude.ai/artifact/RrhP6eonrHX7njzh6uStbT"], ["Other tools in this project", "Three-Dimensional Plant", "Where equipment and instruments are, and what is inside them.", "part", "https://claude.ai/artifact/5ZnVRLm3WPBXd6LAKMucri"], ["Other tools in this project", "Plant Simulator", "Cold start to 150 MW on the simulated control system. It is a separate application.", "part", ""], ["Other tools in this project", "Logic Viewer", "Why a loop will not go to automatic and which permissive blocks it. Inside the simulator.", "ready", ""], ["Other tools in this project", "Loop Check Helper", "Checklist and expected value for each loop. Inside the simulator.", "part", ""], ["Not built yet", "Drawings and memory tags in Tag Lookup", "Tag Lookup holds the hardwired signals only. Drawings and tags without a wire are not in it.", "none", ""], ["Not built yet", "Assistant with live plant data", "Read-only data from the plant server needs approval from the plant and from information technology.", "none", ""]];
+const SL={ready:'Ready',part:'Partly built',none:'Not built'};
+const G=[...new Set(T.map(x=>x[0]))];let grp='All';
+const fl=document.getElementById('fl'),esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+['All',...G].forEach(g=>{const b=document.createElement('button');b.type='button';b.className='f'+(g===grp?' on':'');b.textContent=g;b.setAttribute('aria-pressed',g===grp);b.onclick=()=>{grp=g;[...fl.children].forEach(c=>{c.classList.toggle('on',c===b);c.setAttribute('aria-pressed',c===b)});draw()};fl.appendChild(b)});
+function draw(){const q=document.getElementById('q').value.trim().toLowerCase();
+ const rows=T.filter(x=>(grp==='All'||x[0]===grp)&&(!q||(x[1]+' '+x[2]+' '+x[0]).toLowerCase().includes(q)));
+ let h='';G.forEach(g=>{const r=rows.filter(x=>x[0]===g);if(!r.length)return;
+  h+='<section><p class="lab">'+esc(g)+'</p><div class="grid">'+r.map(x=>{const inner='<h3><span>'+esc(x[1])+'</span><span class="pill '+x[3]+'">'+SL[x[3]]+'</span></h3><p>'+esc(x[2])+'</p>'+(x[4]?'<span class="go">Open</span>':'<span class="go no">No page here</span>');
+   return x[4]?'<a class="tool" href="'+x[4]+'" target="_blank" rel="noopener">'+inner+'</a>':'<div class="tool">'+inner+'</div>'}).join('')+'</div></section>'});
+ document.getElementById('list').innerHTML=h||'<div class="empty">No tool matches. Try another word.</div>'}
+document.getElementById('q').oninput=draw;draw();
 </script>

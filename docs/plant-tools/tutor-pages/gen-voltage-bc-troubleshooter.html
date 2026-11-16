@@ -1,85 +1,127 @@
 <title>Gen Voltage B-C Troubleshooter</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
+:root{--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:var(--sans);
+--bg:#f6f7f9;--paper:#ffffff;--fg:#1b2129;--muted:#5b6673;--faint:#a3acb6;--edge:#d6dce3;--fill:#eef1f4;--accent:#1f5fae;--on-accent:#ffffff;--selbg:#e8f0fb;
+--ok:#1e6b34;--okbg:#e6f4ea;--warnc:#8a5a00;--warnbg:#fdf3d8;--badc:#b3261e;--badbg:#fdecea;
+--c-red:#c62828;--c-orange:#c8660a;--c-blue:#2474b5;--c-green:#1e8a3c;--c-yellow:#c99700;--c-purple:#7b4fd6;--c-teal:#0e8a8c;--c-steam:#8b98a5;--c-oil:#a67c00;
+--eq:#e9edf1;--metal:#7b8794;--pipe:#c5cdd5;--panel:var(--paper);--line:var(--edge);--dim:var(--muted);color-scheme:light;
+--chk:#b5560f;--chkbg:#fdf0e4;--fol:#7a8591;--acc:var(--accent);--accbg:var(--selbg);--scr:#0f2233;--scrfg:#d6ecff;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--faint:#5f6872;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;--selbg:#1d2c40;
+--ok:#7fd29a;--okbg:#17301f;--warnc:#e7bf5c;--warnbg:#33290f;--badc:#f2948c;--badbg:#3a1c1a;
+--c-red:#ef5b5b;--c-orange:#f0954a;--c-blue:#5aa9e6;--c-green:#4cc27a;--c-yellow:#f2c94c;--c-purple:#a585f0;--c-teal:#3cc0c2;--c-steam:#c3ccd4;--c-oil:#d9b13a;
+--eq:#2a3138;--metal:#7c8893;--pipe:#3f4852;color-scheme:dark;--chk:#f0a066;--chkbg:#3a2618;--fol:#8a949e;--scr:#081521;--scrfg:#bfe0ff;}}
+:root[data-theme="dark"]{--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--faint:#5f6872;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;--selbg:#1d2c40;
+--ok:#7fd29a;--okbg:#17301f;--warnc:#e7bf5c;--warnbg:#33290f;--badc:#f2948c;--badbg:#3a1c1a;
+--c-red:#ef5b5b;--c-orange:#f0954a;--c-blue:#5aa9e6;--c-green:#4cc27a;--c-yellow:#f2c94c;--c-purple:#a585f0;--c-teal:#3cc0c2;--c-steam:#c3ccd4;--c-oil:#d9b13a;
+--eq:#2a3138;--metal:#7c8893;--pipe:#3f4852;color-scheme:dark;--chk:#f0a066;--chkbg:#3a2618;--fol:#8a949e;--scr:#081521;--scrfg:#bfe0ff;}
+
 /* layout: symptom picker on top, then the signal path as one list of stops (top = generator, bottom = SCADA screen); each stop says OK / CHECK n / FOLLOWS */
-:root{
-  --sans:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
-  --bg:#eef0f3; --paper:#ffffff; --fg:#1b2129; --muted:#5b6673; --faint:#a3acb6; --edge:#d3d9e0; --fill:#f2f4f6;
-  --ok:#2f7d4f; --okbg:#e6f3eb; --chk:#b5560f; --chkbg:#fdf0e4; --fol:#7a8591; --acc:#1f6fd1; --accbg:#e7f0fb; --scr:#0f2233; --scrfg:#d6ecff;
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#15181c; --paper:#1d2126; --fg:#e4e7ea; --muted:#a3adb8; --faint:#5f6872; --edge:#343b43; --fill:#252a30;
-  --ok:#5cc489; --okbg:#173225; --chk:#f0a066; --chkbg:#3a2618; --fol:#8a949e; --acc:#5ea2f0; --accbg:#1a2a3c; --scr:#081521; --scrfg:#bfe0ff; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#15181c; --paper:#1d2126; --fg:#e4e7ea; --muted:#a3adb8; --faint:#5f6872; --edge:#343b43; --fill:#252a30;
-  --ok:#5cc489; --okbg:#173225; --chk:#f0a066; --chkbg:#3a2618; --fol:#8a949e; --acc:#5ea2f0; --accbg:#1a2a3c; --scr:#081521; --scrfg:#bfe0ff; color-scheme:dark}
+
+
+
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.5;
-  padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.5;
+  padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .wrap{max-width:900px;margin:0 auto}
-h1{font-size:22px;font-weight:600;margin:0 0 4px;text-wrap:balance}
+h1{font-size:20px;font-weight:600;margin:0 0 4px;text-wrap:balance}
 .sub{color:var(--muted);margin:0 0 16px}
 .label{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
-.sym{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:14px}
-.sym button{font:inherit;font-size:14px;text-align:left;padding:10px 12px;border-radius:8px;border:1.5px solid var(--edge);background:var(--paper);color:var(--fg);cursor:pointer;line-height:1.35}
-.sym button small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+.sym{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:16px}
+.sym button{font:inherit;font-size:14px;text-align:left;padding:12px 12px;border-radius:10px;border:1px solid var(--edge);background:var(--paper);color:var(--fg);cursor:pointer;line-height:1.35}
+.sym button small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
 .sym button[aria-pressed="true"]{border-color:var(--acc);background:var(--accbg)}
 .sym button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-.rule{background:var(--paper);border:1px solid var(--edge);border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:14px}
+.rule{background:var(--paper);border:1px solid var(--edge);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:14px}
 .rule b{font-weight:600}
 .path{display:flex;flex-direction:column}
-.stop{background:var(--paper);border:1.5px solid var(--edge);border-radius:10px}
+.stop{background:var(--paper);border:1px solid var(--edge);border-radius:10px}
 .stop.ok{border-color:var(--edge)}
 .stop.chk{border-color:var(--chk);box-shadow:0 0 0 3px var(--chkbg)}
 .stop.fol{opacity:.62}
-.stop summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:96px 1fr auto;gap:14px;align-items:center;padding:12px 14px}
+.stop summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:96px 1fr auto;gap:16px;align-items:center;padding:12px 16px}
 .stop summary::-webkit-details-marker{display:none}
 .stop summary:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:10px}
 .pic{width:96px;height:72px;border-radius:6px;background:var(--fill);display:grid;place-items:center}
 .pic svg{width:88px;height:66px}
 .nm{font-size:16px;font-weight:600;margin:0}
 .pl{font-size:13px;color:var(--muted);margin:0}
-.tp{margin:6px 0 0;font-size:13.5px}
-.tp .mono{font-family:var(--mono);font-size:12.5px}
-.exp{display:inline-block;font-family:var(--mono);font-size:12.5px;font-weight:500;background:var(--fill);border-radius:4px;padding:1px 6px;margin-left:4px}
-.pill{font-size:12.5px;font-weight:600;border-radius:999px;padding:4px 10px;white-space:nowrap}
+.tp{margin:8px 0 0;font-size:13px}
+.tp .mono{font-family:var(--sans);font-size:12px}
+.exp{display:inline-block;font-family:var(--sans);font-size:12px;font-weight:500;background:var(--fill);border-radius:6px;padding:1px 8px;margin-left:4px}
+.pill{font-size:12px;font-weight:600;border-radius:999px;padding:4px 12px;white-space:nowrap}
 .pill.ok{background:var(--okbg);color:var(--ok)}
 .pill.chk{background:var(--chk);color:var(--paper)}
 .pill.fol{background:var(--fill);color:var(--fol)}
-.todo{grid-column:1 / -1;margin:0;padding:10px 12px;border-radius:8px;background:var(--chkbg);font-size:14px}
+.todo{grid-column:1 / -1;margin:0;padding:12px 12px;border-radius:10px;background:var(--chkbg);font-size:14px}
 .todo:empty{display:none}
-.more{padding:0 14px 14px;font-size:13.5px;color:var(--muted)}
-.more ul{margin:4px 0 8px;padding-left:18px}
+.more{padding:0 16px 16px;font-size:13px;color:var(--muted)}
+.more ul{margin:4px 0 8px;padding-left:16px}
 .more img{display:block;width:100%;max-width:560px;height:auto;border:1px solid var(--edge);border-radius:6px;background:#fff;margin-top:8px}
 .more figure{margin:8px 0 0}
-.more figcaption{font-size:12.5px}
+.more figcaption{font-size:12px}
 .arrow{height:22px;display:flex;justify-content:flex-start;padding-left:60px}
-.arrow span{width:3px;background:var(--faint);border-radius:2px}
-.hint{font-size:12.5px;color:var(--muted);margin-top:4px}
-.tip{margin-top:18px;background:var(--paper);border:1px solid var(--edge);border-radius:8px;padding:10px 14px;font-size:14px}
+.arrow span{width:3px;background:var(--faint);border-radius:6px}
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
+.tip{margin-top:16px;background:var(--paper);border:1px solid var(--edge);border-radius:10px;padding:12px 16px;font-size:14px}
 .tip:empty{display:none}
 @media (max-width:560px){.stop summary{grid-template-columns:64px 1fr;}.pic{width:64px;height:52px}.pic svg{width:58px;height:44px}.stop summary .pill{grid-column:1 / -1;justify-self:start}.arrow{padding-left:44px}}
 
 .guide{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:12px}
-.g{background:var(--paper);border:1px solid var(--edge);border-radius:8px;padding:10px 12px;font-size:13.5px;min-width:0}
+.g{background:var(--paper);border:1px solid var(--edge);border-radius:10px;padding:12px 12px;font-size:13px;min-width:0}
 .g b{display:block;font-size:14px}
-.g .seq{display:flex;gap:4px;align-items:center;margin:6px 0 4px;flex-wrap:wrap}
+.g .seq{display:flex;gap:4px;align-items:center;margin:8px 0 4px;flex-wrap:wrap}
 .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--chk);color:var(--paper);font-size:12px;font-weight:600}
 .g .seq i{color:var(--faint);font-style:normal}
-.g small{color:var(--muted);font-size:12.5px;display:block}
-.card{background:var(--paper);border:1px solid var(--edge);border-radius:10px;display:grid;grid-template-columns:30px 96px 1fr;gap:12px;padding:12px 14px;align-items:start}
+.g small{color:var(--muted);font-size:12px;display:block}
+.card{background:var(--paper);border:1px solid var(--edge);border-radius:10px;display:grid;grid-template-columns:30px 96px 1fr;gap:12px;padding:12px 16px;align-items:start}
 .card .n{width:26px;height:26px;font-size:13px;background:var(--fg)}
-.card ul{margin:6px 0 0;padding-left:18px;font-size:13px;color:var(--muted)}
-.bad{margin-top:8px;padding:8px 10px;border-radius:6px;background:var(--chkbg);font-size:13.5px}
+.card ul{margin:8px 0 0;padding-left:16px;font-size:13px;color:var(--muted)}
+.bad{margin-top:8px;padding:8px 12px;border-radius:6px;background:var(--chkbg);font-size:13px}
 .bad b{color:var(--chk)}
-.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:10px}
-.figs figure{margin:0;background:var(--paper);border:1px solid var(--edge);border-radius:8px;padding:8px}
-.figs img{display:block;width:100%;height:auto;background:#fff;border-radius:4px}
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:12px}
+.figs figure{margin:0;background:var(--paper);border:1px solid var(--edge);border-radius:10px;padding:8px}
+.figs img{display:block;width:100%;height:auto;background:#fff;border-radius:6px}
 .figs figcaption{font-size:12px;color:var(--muted);margin-top:4px}
 @media (max-width:560px){.card{grid-template-columns:26px 1fr}.card .pic{display:none}}
+
+/* ---- plant tools standard v1: one font, sizes 12/13/14/16/20, weights 400/500/600, 4 px spacing grid, radius 6 and 10 ---- */
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg);margin:0}
+body{font-family:var(--sans);font-size:14px;line-height:1.5;font-variant-numeric:tabular-nums;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-size:20px;font-weight:600;line-height:1.3;margin:0}h2{font-size:16px;font-weight:600;line-height:1.35}h3{font-size:14px;font-weight:600}
+b,strong{font-weight:600}
+.sub{color:var(--muted);font-size:14px;margin:4px 0 0;max-width:76ch}
+.box,.sheet,.rule,.tip,.step,figure{background:var(--paper);border:1px solid var(--edge);border-radius:10px}
+.box{padding:16px}
+.lab,.label,.gh{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted);margin:0 0 8px}
+.note,.src,.hint{font-size:13px;color:var(--muted)}
+button,.b,.btn,.f,.st{font-family:var(--sans);min-height:36px;border-radius:6px}
+.b,.st{font-size:14px;font-weight:600;border-width:1px;padding:8px 12px}
+.b small{font-size:12px;font-weight:400}
+.b.on,.f.on,.b.on.l{border-color:var(--accent);background:var(--selbg);box-shadow:inset 0 0 0 1px var(--accent)}
+button:focus-visible,.b:focus-visible,.f:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible,.tap:focus-visible,.part:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=range]{accent-color:var(--accent);min-height:32px}
+.say,.now,.info{font-size:16px;line-height:1.5}
+.say b,.info b,.terms b,.now strong{color:var(--fg)}
+a{color:var(--accent)}
+.seg button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+dl dt{color:var(--fg);font-weight:600}
+.tag{color:var(--fg);font-weight:500}
+.g .v,.ro b,.v b{font-size:16px;font-weight:600}
+.st b{letter-spacing:0;font-weight:500}
+.cw{color:var(--fg);text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px;text-decoration-color:var(--cw)}
+.appbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-height:32px;margin:0}
+.appbar a{color:var(--accent);text-decoration:none;font-weight:500;display:inline-flex;align-items:center;min-height:32px}
+.appbar a:hover{text-decoration:underline}
+.appbar i{font-style:normal;color:var(--muted)}
+.seq i,.g .seq i{color:var(--muted)}
+summary{padding-block:8px}
+@media (max-width:640px){button,.b,.btn,.f,.st,.appbar a,summary{min-height:44px}input[type=range]{min-height:44px}.box{overflow-x:auto}.box>svg,.box>canvas{min-width:640px}}
+.bad b{color:var(--fg)}
 </style>
-<div class="wrap">
+<div class="wrap"><div class="appbar"><a href="https://claude.ai/artifact/CLWF6fLkvX8VNvtbjfYLwS" target="_blank" rel="noopener">Plant Tools</a><i>/</i><span>Gen Voltage B-C Troubleshooter</span></div>
   <h1>Generator voltage B-C troubleshooter</h1>
   <p class="sub">Unit 1. Find what you see, then check the numbered stops in that order.</p>
   <div class="guide" id="guide"></div>
@@ -100,8 +142,8 @@ gcp:'<svg viewBox="0 0 88 66"><rect x="8" y="3" width="72" height="60" rx="2" fi
 tcs:'<svg viewBox="0 0 88 66"><rect x="10" y="6" width="68" height="54" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><g fill="none" stroke="currentColor" stroke-width="1.6"><rect x="16" y="12" width="8" height="42"/><rect x="27" y="12" width="8" height="42"/><rect x="38" y="12" width="14" height="42"/><rect x="55" y="12" width="8" height="42"/><rect x="66" y="12" width="8" height="42"/></g><g fill="#2fb35a"><circle cx="20" cy="16" r="1.6"/><circle cx="31" cy="16" r="1.6"/><circle cx="59" cy="16" r="1.6"/><circle cx="70" cy="16" r="1.6"/></g></svg>',
 mpl:'<svg viewBox="0 0 88 66"><rect x="10" y="3" width="68" height="60" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><g stroke="currentColor" stroke-width="5"><line x1="24" y1="9" x2="24" y2="57"/><line x1="44" y1="9" x2="44" y2="57"/><line x1="64" y1="9" x2="64" y2="57"/></g><g stroke="var(--paper)" stroke-width="1"><line x1="20" y1="15" x2="28" y2="15"/><line x1="20" y1="21" x2="28" y2="21"/><line x1="20" y1="27" x2="28" y2="27"/><line x1="40" y1="15" x2="48" y2="15"/><line x1="40" y1="21" x2="48" y2="21"/><line x1="60" y1="15" x2="68" y2="15"/></g></svg>',
 fcs:'<svg viewBox="0 0 88 66"><rect x="10" y="3" width="68" height="60" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><g fill="none" stroke="currentColor" stroke-width="1.4"><rect x="16" y="9" width="7" height="24"/><rect x="25" y="9" width="7" height="24"/><rect x="34" y="9" width="7" height="24"/><rect x="43" y="9" width="7" height="24"/><rect x="52" y="9" width="7" height="24"/><rect x="61" y="9" width="11" height="24"/></g><g fill="currentColor"><rect x="16" y="40" width="56" height="4"/><rect x="16" y="50" width="56" height="4"/></g></svg>',
-rtu:'<svg viewBox="0 0 88 66"><rect x="10" y="3" width="68" height="60" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="18" y="10" width="52" height="20" fill="none" stroke="currentColor" stroke-width="1.4"/><g fill="currentColor"><rect x="22" y="13" width="5" height="14"/><rect x="30" y="13" width="5" height="14"/><rect x="38" y="13" width="5" height="14"/></g><rect x="18" y="38" width="22" height="16" fill="none" stroke="currentColor" stroke-width="1.4"/><text x="29" y="49" font-size="7" text-anchor="middle" fill="currentColor" font-family="sans-serif">W5DY</text></svg>',
-scr:'<svg viewBox="0 0 88 66"><rect x="8" y="5" width="72" height="44" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="13" y="10" width="62" height="34" fill="var(--scr)"/><text x="44" y="31" font-size="11" text-anchor="middle" fill="var(--scrfg)" font-family="monospace">13.8 kV</text><path d="M36 58h16M44 49v9" stroke="currentColor" stroke-width="2"/></svg>'};
+rtu:'<svg viewBox="0 0 88 66"><rect x="10" y="3" width="68" height="60" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="18" y="10" width="52" height="20" fill="none" stroke="currentColor" stroke-width="1.4"/><g fill="currentColor"><rect x="22" y="13" width="5" height="14"/><rect x="30" y="13" width="5" height="14"/><rect x="38" y="13" width="5" height="14"/></g><rect x="18" y="38" width="22" height="16" fill="none" stroke="currentColor" stroke-width="1.4"/><text x="29" y="49" font-size="7" text-anchor="middle" fill="currentColor" font-family="IBM Plex Sans, sans-serif">W5DY</text></svg>',
+scr:'<svg viewBox="0 0 88 66"><rect x="8" y="5" width="72" height="44" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="13" y="10" width="62" height="34" fill="var(--scr)"/><text x="44" y="31" font-size="11" text-anchor="middle" fill="var(--scrfg)" font-family="IBM Plex Sans, sans-serif">13.8 kV</text><path d="M36 58h16M44 49v9" stroke="currentColor" stroke-width="2"/></svg>'};
 
 
 const S=[

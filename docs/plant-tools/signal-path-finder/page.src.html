@@ -91,8 +91,14 @@ h1{font-size:20px;font-weight:600;margin:0 0 10px}h2{font-size:16px;font-weight:
 .scrn{margin-top:5px;font-size:12px;background:#e7f0fb;border-radius:6px;padding:3px 8px}
 .scrn em{font-style:normal;font-weight:600;color:#123a66}
 .src{margin-top:18px;font-size:12px;color:var(--muted)}
+
+/* ---- plant tools standard v1: app bar ---- */
+.appbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-height:32px;margin:0 0 4px}
+.appbar a{color:#1f5fae;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;min-height:32px}
+.appbar a:hover{text-decoration:underline}.appbar i{font-style:normal}
+@media (max-width:640px){.appbar a,input,select{min-height:44px}}
 </style>
-<div class="wrap">
+<div class="wrap"><div class="appbar"><a href="https://claude.ai/artifact/CLWF6fLkvX8VNvtbjfYLwS" target="_blank" rel="noopener">Plant Tools</a><i>/</i><span>Signal Path Finder</span></div>
   <h1>Signal path finder · Unit 1</h1>
   <div class="search"><input id="q" type="search" placeholder="Type a tag, address or description, e.g. GCP-AO1005, AI0128, drum pressure" autocomplete="off" aria-label="Search signal"><ul id="sug"></ul></div>
   <div id="out"></div>

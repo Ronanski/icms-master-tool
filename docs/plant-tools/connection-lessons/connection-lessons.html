@@ -11,33 +11,42 @@
 --ok:#7fd29a;--okbg:#17301f;--warn:#e7bf5c;--warnbg:#33290f;--bad:#f2948c;--badbg:#3a1c1a;--wire:#6aa5ee;color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.45;font-variant-numeric:tabular-nums;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.wrap{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.wrap{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 h1{font-size:20px;font-weight:600;margin:0}h2{font-size:16px;font-weight:600;margin:0}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 0}
 .pick{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-select,button{font:inherit;color:var(--fg);background:var(--paper);border:1px solid var(--edge);border-radius:6px;padding:7px 10px;min-height:36px}
+select,button{font:inherit;color:var(--fg);background:var(--paper);border:1px solid var(--edge);border-radius:6px;padding:8px 12px;min-height:36px}
 select{flex:1 1 260px;min-width:0}
 button{cursor:pointer;font-weight:500}button.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-.card{background:var(--paper);border:1px solid var(--edge);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--paper);border:1px solid var(--edge);border-radius:10px;padding:16px 16px;display:flex;flex-direction:column;gap:12px}
 .chain{display:grid;grid-template-columns:1fr 36px 1fr 36px 1fr;align-items:stretch}
-.box{border:1.5px solid var(--edge);border-radius:8px;padding:10px 12px;background:var(--fill);min-width:0}
+.box{border:1px solid var(--edge);border-radius:6px;padding:12px 12px;background:var(--fill);min-width:0}
 .box .k{font-size:12px;color:var(--muted)}.box .v{font-weight:600;overflow-wrap:anywhere}.box .s{font-size:13px;margin-top:4px}
 .box.on{border-color:var(--ok);background:var(--okbg)}.box.off{border-color:var(--bad);background:var(--badbg)}
 .arr{display:flex;align-items:center;justify-content:center}
 .arr i{display:block;height:3px;width:100%;background:var(--wire);position:relative}
 .arr i::after{content:"";position:absolute;right:-1px;top:-5px;border-left:9px solid var(--wire);border-top:6.5px solid transparent;border-bottom:6.5px solid transparent}
 .cut .arr i{background:repeating-linear-gradient(90deg,var(--bad) 0 6px,transparent 6px 11px)}.cut .arr i::after{border-left-color:var(--bad)}
-.sw{display:flex;gap:6px}.sw button.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.sw{display:flex;gap:8px}.sw button.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0;font-size:13px}dt{color:var(--muted);font-size:12px;padding-top:1px}dd{margin:0}
-.opts{display:flex;flex-direction:column;gap:6px}.opts button{text-align:left;font-weight:400}
+.opts{display:flex;flex-direction:column;gap:8px}.opts button{text-align:left;font-weight:400}
 .opts button.right{border-color:var(--ok);background:var(--okbg)}.opts button.wrong{border-color:var(--bad);background:var(--badbg)}
 .res{font-size:13px}.res.ok{color:var(--ok)}.res.bad{color:var(--bad)}
 .score{font-size:13px;color:var(--muted)}
 @media (max-width:640px){.chain{grid-template-columns:1fr}.arr{height:28px}.arr i{width:3px;height:100%}.arr i::after{right:-5px;top:auto;bottom:-1px;border-top:9px solid var(--wire);border-left:6.5px solid transparent;border-right:6.5px solid transparent;border-bottom:0}
 .cut .arr i{background:repeating-linear-gradient(180deg,var(--bad) 0 6px,transparent 6px 11px)}.cut .arr i::after{border-top-color:var(--bad);border-left-color:transparent}}
+
+/* ---- plant tools standard v1 ---- */
+b,strong{font-weight:600}
+.appbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-height:32px;margin:0}
+.appbar a{color:var(--accent);text-decoration:none;font-weight:500;display:inline-flex;align-items:center;min-height:32px;background:none;border:0;padding:0}
+.appbar a:hover{text-decoration:underline}
+.appbar i{font-style:normal;color:var(--muted)}
+summary{padding-block:8px}
+@media (max-width:640px){button,select,input:not([type=checkbox]):not([type=radio]),summary,nav a,.appbar a{min-height:44px}button.sm{min-height:44px}}
 </style>
-<div class="wrap">
+<div class="wrap"><div class="appbar"><a href="https://claude.ai/artifact/CLWF6fLkvX8VNvtbjfYLwS" target="_blank" rel="noopener">Plant Tools</a><i>/</i><span>Connection Lessons</span></div>
   <div><h1>Connection Lessons</h1><p class="sub">One connection of the Unit 1 control logic per lesson. Switch the condition and see what the logic does to the station. Then answer the question that runs backwards: from what you see to the cause.</p></div>
   <div class="pick"><select id="sel" aria-label="Lesson"></select><button id="prev" type="button">Previous</button><button id="next" type="button" class="pri">Next</button></div>
   <div class="card" id="lesson"></div>

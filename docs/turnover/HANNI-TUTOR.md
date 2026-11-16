@@ -80,6 +80,7 @@ Full conversation (private): `/mnt/project-files/turnover/hanni/conversation.md`
 - 2026-11-16 6:55 PM: "GAWEN MO NA LAHAT NG TOOLS NA SINASABI MO. DIBA MADAMI UN"; 7:01 PM "tapusin mo na lahat"; 7:09 PM "diba sabe ko lahat", "bakit huminto ka". Meaning: build every tool in the Plant Tools List straight through, no stopping to report partway.
 - 2026-11-16 7:55 PM: "save mo lahat sa github repo."; "kailangan ba new repo ? isang repo lng sna tpos mraming tools laman e"; "tpos andun din ang turnover". One repo (this one) holds all tools and the turnover.
 - 2026-11-16 7:59 PM: "ala ako pake kung private o public. basta dapat andon compilation ang lahat ng tools n gnawa mo pti mga complete turnovers." This replaces the 2026-11-15 team decision to keep the copies in the project folder only.
+- 2026-11-16 8:01 PM: "aba pagandahin mo lahat ng gawa mo, dapat applications mga yun or webapp, minimalistic, maayos font style, color grade, layout, design, spacing, lahat standard. iaudit mo." Done the same evening: one design standard for every page, `docs/plant-tools/standard/README.md` (rules, before and after numbers, what was not tested). New links: Generator Metering Hardware https://claude.ai/artifact/VDNq62a8JjwcVG21sUsX7K; HP-IP Turbine Valves in the standard look https://claude.ai/artifact/KuTyWZpGoB1RsLZGEMGU3A (the old link NRX6XetGGHB3XWh69oZqz8 still has the old look).
 
 ## 6. Complete turnover files (in this repo since 2026-11-16)
 

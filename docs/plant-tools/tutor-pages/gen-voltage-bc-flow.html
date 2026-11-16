@@ -1,31 +1,38 @@
 <title>Gen Voltage B-C Path</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-:root{
-  --sans:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
-  --bg:#eef0f3; --paper:#ffffff; --fg:#1b2129; --muted:#5b6673; --faint:#a3acb6; --edge:#c9d0d8; --fill:#f2f4f6;
-  --ac:#7b4fd6; --ma:#1f6fd1; --io:#0e8a8c; --na:#d23b3b; --nb:#d4a000; --eth:#6b7682; --sw:#0b7a5c; --swbg:#e8f5ef;
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#15181c; --paper:#1d2126; --fg:#e4e7ea; --muted:#a3adb8; --faint:#5f6872; --edge:#3a414a; --fill:#252a30;
-  --ac:#a98bf0; --ma:#5ea2f0; --io:#3cc0c2; --na:#ef6a6a; --nb:#e6b938; --eth:#9aa4ae; --sw:#4cc79f; --swbg:#16302a; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#15181c; --paper:#1d2126; --fg:#e4e7ea; --muted:#a3adb8; --faint:#5f6872; --edge:#3a414a; --fill:#252a30;
-  --ac:#a98bf0; --ma:#5ea2f0; --io:#3cc0c2; --na:#ef6a6a; --nb:#e6b938; --eth:#9aa4ae; --sw:#4cc79f; --swbg:#16302a; color-scheme:dark}
+:root{--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:var(--sans);
+--bg:#f6f7f9;--paper:#ffffff;--fg:#1b2129;--muted:#5b6673;--faint:#a3acb6;--edge:#d6dce3;--fill:#eef1f4;--accent:#1f5fae;--on-accent:#ffffff;--selbg:#e8f0fb;
+--ok:#1e6b34;--okbg:#e6f4ea;--warnc:#8a5a00;--warnbg:#fdf3d8;--badc:#b3261e;--badbg:#fdecea;
+--c-red:#c62828;--c-orange:#c8660a;--c-blue:#2474b5;--c-green:#1e8a3c;--c-yellow:#c99700;--c-purple:#7b4fd6;--c-teal:#0e8a8c;--c-steam:#8b98a5;--c-oil:#a67c00;
+--eq:#e9edf1;--metal:#7b8794;--pipe:#c5cdd5;--panel:var(--paper);--line:var(--edge);--dim:var(--muted);color-scheme:light;
+--ac:#7b4fd6;--ma:#1f6fd1;--io:#0e8a8c;--na:#d23b3b;--nb:#d4a000;--eth:#6b7682;--sw:#0b7a5c;--swbg:#e8f5ef;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--faint:#5f6872;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;--selbg:#1d2c40;
+--ok:#7fd29a;--okbg:#17301f;--warnc:#e7bf5c;--warnbg:#33290f;--badc:#f2948c;--badbg:#3a1c1a;
+--c-red:#ef5b5b;--c-orange:#f0954a;--c-blue:#5aa9e6;--c-green:#4cc27a;--c-yellow:#f2c94c;--c-purple:#a585f0;--c-teal:#3cc0c2;--c-steam:#c3ccd4;--c-oil:#d9b13a;
+--eq:#2a3138;--metal:#7c8893;--pipe:#3f4852;color-scheme:dark;--ac:#a98bf0;--ma:#5ea2f0;--io:#3cc0c2;--na:#ef6a6a;--nb:#e6b938;--eth:#9aa4ae;--sw:#4cc79f;--swbg:#16302a;}}
+:root[data-theme="dark"]{--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--faint:#5f6872;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;--selbg:#1d2c40;
+--ok:#7fd29a;--okbg:#17301f;--warnc:#e7bf5c;--warnbg:#33290f;--badc:#f2948c;--badbg:#3a1c1a;
+--c-red:#ef5b5b;--c-orange:#f0954a;--c-blue:#5aa9e6;--c-green:#4cc27a;--c-yellow:#f2c94c;--c-purple:#a585f0;--c-teal:#3cc0c2;--c-steam:#c3ccd4;--c-oil:#d9b13a;
+--eq:#2a3138;--metal:#7c8893;--pipe:#3f4852;color-scheme:dark;--ac:#a98bf0;--ma:#5ea2f0;--io:#3cc0c2;--na:#ef6a6a;--nb:#e6b938;--eth:#9aa4ae;--sw:#4cc79f;--swbg:#16302a;}
+
+
+
+
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.5;
-  padding:20px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px))}
+  padding:24px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px))}
 .wrap{max-width:1400px;margin:0 auto}
 h1{font-size:20px;font-weight:600;margin:0 0 2px}
 .sub{color:var(--muted);margin:0 0 12px}
-.key{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:12.5px;color:var(--muted);margin:0 0 10px}
-.key span{display:inline-flex;align-items:center;gap:7px}
+.key{display:flex;flex-wrap:wrap;gap:8px 24px;font-size:12px;color:var(--muted);margin:0 0 12px}
+.key span{display:inline-flex;align-items:center;gap:8px}
 .key svg{width:34px;height:12px;flex:none}
-.sheet{background:var(--paper);border:1px solid var(--edge);border-radius:8px;overflow-x:auto}
+.sheet{background:var(--paper);border:1px solid var(--edge);border-radius:10px;overflow-x:auto}
 #d{display:block;width:100%;min-width:1180px;height:auto}
 #d text{font-family:var(--sans);fill:var(--fg);font-size:10.5px}
-#d .mono{font-family:var(--mono)}
+#d .mono{font-family:var(--sans)}
 #d .t{font-size:11.5px;font-weight:600}
 #d .m{fill:var(--muted)}
 #d .s{font-size:9.5px}
@@ -37,11 +44,45 @@ h1{font-size:20px;font-weight:600;margin:0 0 2px}
 #d .ctag{fill:var(--paper)}
 #d .sw{fill:var(--swbg);stroke:var(--sw);stroke-width:1.3}
 #d .swt{fill:var(--sw)}
-details{margin-top:14px;font-size:12.5px;color:var(--muted)}
+details{margin-top:16px;font-size:12px;color:var(--muted)}
 summary{cursor:pointer;color:var(--fg);font-weight:600}
-details ul{padding-left:18px;margin:6px 0 0}
+details ul{padding-left:16px;margin:8px 0 0}
+
+/* ---- plant tools standard v1: one font, sizes 12/13/14/16/20, weights 400/500/600, 4 px spacing grid, radius 6 and 10 ---- */
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg);margin:0}
+body{font-family:var(--sans);font-size:14px;line-height:1.5;font-variant-numeric:tabular-nums;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-size:20px;font-weight:600;line-height:1.3;margin:0}h2{font-size:16px;font-weight:600;line-height:1.35}h3{font-size:14px;font-weight:600}
+b,strong{font-weight:600}
+.sub{color:var(--muted);font-size:14px;margin:4px 0 0;max-width:76ch}
+.box,.sheet,.rule,.tip,.step,figure{background:var(--paper);border:1px solid var(--edge);border-radius:10px}
+.box{padding:16px}
+.lab,.label,.gh{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted);margin:0 0 8px}
+.note,.src,.hint{font-size:13px;color:var(--muted)}
+button,.b,.btn,.f,.st{font-family:var(--sans);min-height:36px;border-radius:6px}
+.b,.st{font-size:14px;font-weight:600;border-width:1px;padding:8px 12px}
+.b small{font-size:12px;font-weight:400}
+.b.on,.f.on,.b.on.l{border-color:var(--accent);background:var(--selbg);box-shadow:inset 0 0 0 1px var(--accent)}
+button:focus-visible,.b:focus-visible,.f:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible,.tap:focus-visible,.part:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=range]{accent-color:var(--accent);min-height:32px}
+.say,.now,.info{font-size:16px;line-height:1.5}
+.say b,.info b,.terms b,.now strong{color:var(--fg)}
+a{color:var(--accent)}
+.seg button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+dl dt{color:var(--fg);font-weight:600}
+.tag{color:var(--fg);font-weight:500}
+.g .v,.ro b,.v b{font-size:16px;font-weight:600}
+.st b{letter-spacing:0;font-weight:500}
+.cw{color:var(--fg);text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px;text-decoration-color:var(--cw)}
+.appbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-height:32px;margin:0}
+.appbar a{color:var(--accent);text-decoration:none;font-weight:500;display:inline-flex;align-items:center;min-height:32px}
+.appbar a:hover{text-decoration:underline}
+.appbar i{font-style:normal;color:var(--muted)}
+.seq i,.g .seq i{color:var(--muted)}
+summary{padding-block:8px}
+@media (max-width:640px){button,.b,.btn,.f,.st,.appbar a,summary{min-height:44px}input[type=range]{min-height:44px}.box{overflow-x:auto}.box>svg,.box>canvas{min-width:640px}}
 </style>
-<div class="wrap">
+<div class="wrap"><div class="appbar"><a href="https://claude.ai/artifact/CLWF6fLkvX8VNvtbjfYLwS" target="_blank" rel="noopener">Plant Tools</a><i>/</i><span>Gen Voltage B-C Path</span></div>
   <h1>Unit 1 generator voltage B-C: hardware and software path</h1>
   <p class="sub">DCS tag TCS-AI1008 (AI0871) and SCADA point U23 (from AO0582). Hardware on top, software path at the bottom; circled numbers link the two.</p>
   <div class="key" id="key"></div>
