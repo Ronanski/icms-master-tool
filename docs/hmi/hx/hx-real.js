@@ -455,6 +455,77 @@
     };
   };
 
+  /* centrifugal fan with its motor: the housing is cut open, the wheel turns while the fan runs, the motor takes the state
+     colour. Ports: in (the inlet box at the side), out (the outlet, upward). mir: true = motor on the left */
+  R.fan = () => ({
+    box: [-45, -34, 49, 26],
+    ports: { in: [-44, 0], out: [-2, -33], l: [-44, 0], t: [-2, -33], r: [48, 0], b: [0, 25] },
+    svg:
+      '<path class="rxd" d="M-36 20h84v4.5h-84z"/><path class="rx" d="M-27 14l-4 6h34l-4 -6z"/>' +
+      '<path class="rx" d="M-9 -30h14v30h-14zM-41 -10h9v20h-9z"/><path class="rxd" d="M-11 -33h18v3.4h-18zM-44 -12h3.2v24h-3.2z"/>' +
+      '<circle class="rx" cx="-14" cy="0" r="20"/><circle class="rxvoid" cx="-14" cy="0" r="15.5"/>' +
+      wheel(-14, 0, 14.5, 9) +
+      '<path class="rxd" d="M6 -2.4h10v4.8h-10z"/><rect class="rxs" x="15.5" y="-12" width="29" height="24" rx="3.5"/><path class="rxe" d="M21 -12v24M26.5 -12v24M32 -12v24M37.5 -12v24"/>' +
+      '<path class="rxhi" d="M18 -8.5h24"/><path class="rxd" d="M44.5 -9.5h4v19h-4zM24 -17h11v5h-11zM19 12h6v8h-6zM35 12h6v8h-6z"/>'
+  });
+  /* upright storage tank, cut open, with its liquid. w, h = size. Ports: t (top), b (bottom), l / r (low at the sides).
+     level: [key, low, high] moves the level; liquid = 'water' | 'oil' picks its colour */
+  R.tank = o => {
+    const w = o.w || 56,
+      h = o.h || 76,
+      a = -w / 2,
+      t = -h / 2,
+      id = o.id || 'tk',
+      inner = `M${a + 4.5} ${t + 9}H${-a - 4.5}V${-t - 4.5}H${a + 4.5}Z`;
+    return {
+      box: [a - 1, t - 7, -a + 1, -t + 1],
+      ports: { t: [0, t - 6], b: [0, -t], l: [a, -t - 10], r: [-a, -t - 10] },
+      svg:
+        `<path class="rx" d="M-4 ${t - 6}h8v6h-8z"/><path class="rxv" d="M${a} ${t + 6}L0 ${t}L${-a} ${t + 6}V${-t}H${a}Z"/><path class="rxvoid" d="${inner}"/>` +
+        lvl(id, inner, a + 4.5, t + 9, -a - 4.5, -t - 4.5, 0.6).replace(
+          'class="rxwt"',
+          `class="rxwt${o.liquid === 'oil' ? ' rxoil' : ''}"`
+        ) +
+        `<path class="rxe" d="M${a} ${t + 6}H${-a}"/>`
+    };
+  };
+  /* generator with its exciter, closed (seen from the side). The shaft comes in at the left. The body takes the state colour
+     of the rule in "on". Ports: l (shaft end), t (terminals, on top), r (exciter end) */
+  R.generator = () => ({
+    box: [-61, -34, 71, 37],
+    ports: { l: [-60, 0], t: [0, -33], r: [70, 0], b: [0, 36] },
+    svg:
+      '<path class="rxd" d="M-48 30h112v6h-112z"/><rect class="rx" x="-60" y="-4.5" width="130" height="9"/>' +
+      '<path class="rx" d="M-52 30V-6Q-52 -14 -45 -14H-41Q-34 -14 -34 -6V30Z"/>' +
+      '<rect class="rxs" x="-30" y="-27" width="62" height="54" rx="6"/><path class="rxhi" d="M-25 -22h52"/><path class="rxe" d="M-18 -27v54M-6 -27v54M6 -27v54M18 -27v54"/>' +
+      '<path class="rx" d="M-22 -33h46v7h-46zM-24 27h8v4h-8zM18 27h8v4h-8z"/><rect class="rx" x="42" y="-14" width="22" height="28" rx="3"/><path class="rxe" d="M49 -14v28M56 -14v28"/><path class="rxd" d="M40 14h26v16h-26z"/>'
+  });
+  /* plate heat exchanger (a cooler): the pack of plates between two frames. Ports: a1 / a2 (one side, left), b1 / b2
+     (the other side, right) */
+  R.cooler = () => ({
+    box: [-27, -25, 27, 26],
+    ports: {
+      a1: [-26, -14],
+      a2: [-26, 14],
+      b1: [26, -14],
+      b2: [26, 14],
+      l: [-26, 0],
+      r: [26, 0],
+      t: [0, -24],
+      b: [0, 25]
+    },
+    svg:
+      '<path class="rx" d="M-26 -17h7v6h-7zM-26 11h7v6h-7zM19 -17h7v6h-7zM19 11h7v6h-7z"/><path class="rxd" d="M-18 21h36v4h-36z"/>' +
+      '<rect class="rx" x="-19" y="-24" width="6" height="46" rx="1.5"/><rect class="rx" x="13" y="-24" width="6" height="46" rx="1.5"/>' +
+      '<rect class="rxv" x="-13" y="-21" width="26" height="40"/><path class="rxe" d="M-9.7 -21v40M-6.5 -21v40M-3.2 -21v40M0 -21v40M3.2 -21v40M6.5 -21v40M9.7 -21v40"/><path class="rxd" d="M-21 -21.5h42v2.6h-42zM-21 15.5h42v2.6h-42z"/>'
+  });
+  /* strainer on a line: a pot with its basket. Ports: l / r */
+  R.strainer = () => ({
+    box: [-14, -15, 14, 17],
+    ports: { l: [-13, 0], r: [13, 0], t: [0, -14], b: [0, 16] },
+    svg: '<path class="rxd" d="M-13 -8h3v16h-3zM10 -8h3v16h-3z"/><path class="rx" d="M-10 -6H10V6H6L3 16H-3L-6 6H-10Z"/><path class="rxe" d="M-5 -2L0 12L5 -2"/><path class="rxd" d="M-6 -11h12v5h-12z"/>'
+  });
+
   /* ---------------- scenery ---------------- */
   /* the basement floor: o.w wide from (0, 0) */
   R.floor = o => ({

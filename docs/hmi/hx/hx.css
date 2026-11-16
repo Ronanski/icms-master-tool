@@ -337,6 +337,7 @@
 .rxm { fill: var(--hx-m-reheat); stroke: var(--rx-edge); stroke-width: 0.7; }
 .rxtb { fill: url(#rxtube); stroke: var(--rx-st3); stroke-width: 0.8; }
 .rxwt { fill: var(--rx-wt); }
+.rxwt.rxoil { fill: var(--hx-m-oil); }
 .rxconc { fill: var(--rx-conc); stroke: var(--rx-edge); stroke-width: 0.6; }
 .rxcol { fill: var(--rx-col); }
 .rxscr { fill: var(--rx-chip); stroke: var(--rx-edge); stroke-width: 0.8; }
