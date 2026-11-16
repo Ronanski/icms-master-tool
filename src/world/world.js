@@ -1264,6 +1264,17 @@
     W.busy = true;
     return on ? TL[id] : 'cleared: ' + TL[id] + ' (tube repaired)';
   };
+  /* 3.2.4-beta.13 (JENNIE, priority list item: coal quality): wet coal, a trainer fault (unit.js anCoalWet: the coal moisture 33.96 % of the
+     performance coal, FHI P2S7 Tab 2, rises to 40 %, NO-SOURCE trainer setting: rain on the coal yard). No DITL contact: the DCS has no
+     coal analyser; the operator sees more coal per MW (FIC-CM), the O2 and the bed temperature */
+  const WET = 'cf.wet',
+    WET_T = 'Wet coal: moisture 34 % to 40 % (less heat per tonne)';
+  const wetSet = on => {
+    if (on) W.ft.add(WET);
+    else W.ft.delete(WET);
+    W.busy = true;
+    return on ? WET_T : 'cleared: ' + WET_T + ' (dry coal again)';
+  };
   const BO = 'el.1am',
     BO_T = 'Unit black-out: 6.6 kV bus 1AM lost (no bus transfer)';
   /* the undervoltage relay of one motor drawing: open = the motor stopped (s._ftrip) and the trip contact into the logic (the ELECTRIC
@@ -1316,10 +1327,12 @@
         .map(k => ({ id: k, g: 'mt', t: FT[k].t, on: W.ft.has(k) }))
         .concat([{ id: BO, g: 'el', t: BO_T, on: W.ft.has(BO) }])
         .concat(Object.keys(JAM).map(k => ({ id: k, g: 'cf', t: JAM_T(k), on: W.ft.has(k) })))
-        .concat(Object.keys(TL).map(k => ({ id: k, g: 'tl', t: TL[k], on: W.ft.has(k) })));
+        .concat(Object.keys(TL).map(k => ({ id: k, g: 'tl', t: TL[k], on: W.ft.has(k) })))
+        .concat([{ id: WET, g: 'cf', t: WET_T, on: W.ft.has(WET) }]);
     if (id === BO) return boSet(on);
     if (JAM[id]) return jamSet(id, on);
     if (TL[id]) return tlSet(id, !!on);
+    if (id === WET) return wetSet(!!on);
     const f = FT[id],
       s = f && ftSheet(f.sh);
     if (!s) return '';

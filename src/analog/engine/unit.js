@@ -2151,7 +2151,7 @@ const AN_BI = { t0: 174.3, tCold: 100, kA: 0.0682, kL: 0.59, kB: 0.2, q: 0.8, fa
 function anBedStep(U, dt, rpm, pa, fa) {
   const K = AN_BI;
   if (!isFinite(U.bedI)) U.bedI = U.cold ? K.tCold : K.t0;
-  const sol = K.kA * (isFinite(U.cbn) ? U.cbn : (U.Fc || 0) * (U.burn || 0)) + K.kL * (U.lmQ || 0);
+  const sol = K.kA * (U.coalR || 1) * (isFinite(U.cbn) ? U.cbn : (U.Fc || 0) * (U.burn || 0)) + K.kL * (U.lmQ || 0);
   U.bedIn = K.kB * sol + (U.sdQ || 0);
   U.bedOut = K.q * rpm;
   U.bedI = Math.max(0, U.bedI + ((U.bedIn - U.bedOut) * dt) / 3600);
@@ -3772,6 +3772,22 @@ const AN_MFW = {
    joins the flue gas (U.mG, the ID fan sees it as gas volume, 28.9 / 18 per kg against air). The economizer leak's heat to the
    backpass gas is not modelled (its gas mass is). U.tlW / U.tlE T/H */
 const AN_TL = { d: 0.01 /* m, NO-SOURCE */, dpE: 3.5 /* kg/cm2 at MCR, FHI T3 */, mcr: 460 };
+/* 3.2.4-beta.13 (JENNIE, priority list item: coal quality): the trainer fault 'cf.wet' (world.js): wet coal. Performance coal, FHI P2S7
+   Tab 2 / Tab 3: H 2.75 %, water 33.96 %, HHV 4,008 / LHV 3,662 kcal/kg. The two heating values differ by the heat of the water that leaves
+   as vapour, 9 H + water = 0.5871 kg per kg of coal: 346 / 0.5871 = 589.3 kcal per kg of water (CALC from Tab 2, the textbook latent
+   heat 2,442 kJ/kg = 583 is the check). With the moisture m the dry share of each kg is r = (1 - m) / (1 - 0.3396): HHV r x 4,008, water
+   9 H r + m, LHV = HHV - 589.3 x water. At 40 % (NO-SOURCE, a trainer setting: at 42 % the 150 MW coal is 100 T/H, the feeder MV high limit 83.3 % of ABC-004A, and the logic puts the masters to MANUAL): r 0.909, LHV 3,274 kcal/kg (89 % of the design). The
+   combustibles, ash and sulphur of each kg go with r: the stoichiometric air (AN_GAS.afs), the ash of the fuel gas, the Ca / S ratio.
+   U.coalR = r, U.coalK = LHV / 3,662 */
+const AN_COAL = { m0: 0.3396, mW: 0.4, h: 0.0275, hhv: 4008, lhv: 3662, lat: 346 / (9 * 0.0275 + 0.3396) };
+function anCoalWet(U) {
+  const W = typeof window !== 'undefined' ? window.WORLD : null,
+    K = AN_COAL,
+    m = W && W.ft && W.ft.has('cf.wet') ? K.mW : K.m0,
+    r = (1 - m) / (1 - K.m0);
+  U.coalR = r;
+  U.coalK = (K.hhv * r - K.lat * (9 * K.h * r + m)) / K.lhv;
+}
 function anTubeLeak(U) {
   const W = typeof window !== 'undefined' ? window.WORLD : null,
     on = k => !!(W && W.ft && W.ft.has(k)),
@@ -4581,6 +4597,7 @@ function anUnitStep0(dt) {
     return !!(W && W.ft && W.ft.has('cf.jam' + 'ABC'[i]));
   };
   anTubeLeak(U);
+  anCoalWet(U);
   const F = U.fuel.reduce((a, l, i) => {
       const o = U.cfo ? anDitlPos(U.cfo[i], 0) : null;
       return jam(i) ? a : a + (anUnitVal(l) || 0) * (o == null ? 1 : o / 100);
@@ -4877,7 +4894,7 @@ function anUnitStep0(dt) {
       tPa = isFinite(U.aphPa) ? U.aphPa : U.Tamb,
       tSa = isFinite(U.aphSa) ? U.aphSa : U.Tamb,
       dW = U.Tb - U.Tw /* bed over the wall water, both signs */,
-      fg = (Fb * (1 - AN_FG.ash) + oil) / 3.6 /* fuel gas, kg/s */,
+      fg = (Fb * (1 - AN_FG.ash * (U.coalR || 1)) + oil) / 3.6 /* fuel gas, kg/s (beta.13: the ash share with the wet coal) */,
       /* beta.261: cp(T). Air: Incropera Table A.4 (300 K 1.007, 700 K 1.075, 1100 K 1.159 kJ/kg K) as cp = 1.0 + 0.000155 T(C), CALC;
          flue gas: anHxCp (hx.js, FHI Tab 2 fuel at 20 % excess air). The heat to bring the air in and the fuel to the bed is the enthalpy
          of the flue gas at the bed less that of the air as it comes in (preheated by the air heater), both from the room */
@@ -4898,7 +4915,7 @@ function anUnitStep0(dt) {
       qSol = (B.ua0w - B.uag) * phi * dW + qRW /* kW, to the furnace walls: the circulating solids + through the refractory */,
       qPan = isFinite(U.hxQp) ? U.hxQp : 0 /* kW, to the in-furnace SH panels (hx.js, last scan) */,
       qGas = gcp > 0.01 ? gcp * dW * (1 - Math.exp(-B.uag / gcp)) : 0 /* kW, from the gas over the upper walls */,
-      qFuel = Fb * B.lhvC * (1 - B.fUC) + oil * B.lhvO,
+      qFuel = Fb * B.lhvC * (U.coalK || 1) * (1 - B.fUC) + oil * B.lhvO,
       qAirG =
         (mAir + fg) * (hFg(U.Tb) - hFg(U.Tamb)) -
         (av[0] / 3.6) * (hAir(tPa) - hAir(U.Tamb)) -
@@ -5186,7 +5203,7 @@ function anUnitStep0(dt) {
      the 6.4 / 2.2 % of one snapshot has no source, it stood the B side on LOW-LOW at 150 MW */
   if (U.afs > 0) {
     const taf = U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0),
-      o2s = Math.max(0, Math.min(21, 21 * (1 - (Fe * U.afs) / Math.max(1, taf))));
+      o2s = Math.max(0, Math.min(21, 21 * (1 - ((Fe - Fb * (1 - (U.coalR || 1))) * U.afs) / Math.max(1, taf))));
     U.o2v += ((o2s - U.o2v) * dt) / U.tauO2;
     for (const L of U.o2) anUnitWrite(L, U.o2v);
   }
