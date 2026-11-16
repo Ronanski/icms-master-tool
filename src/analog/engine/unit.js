@@ -871,6 +871,7 @@ function anUnitStart() {
   U.cdTs = NaN; /* 3.2.1 AN_CD: the condenser starts at its steady value */
   U.lpT = undefined; /* 3.2.1 AN_LP: the LP heaters too */
   U.bedI = NaN; /* the bed inventory starts again (anBedStep) */
+  U.svOpen = {}; /* 3.2.4-beta.1: the safety valves start seated (AN_SV) */
   U.soxZ = NaN; /* the lime in the bed too (boiler.js anSoxStep) */
   U.bedLeg = 0;
   if (AN_SRC.valve)
@@ -951,6 +952,7 @@ function anUnitCold() {
   U.cdTs = NaN; /* 3.2.1 AN_CD: the condenser starts at its steady value */
   U.lpT = undefined; /* 3.2.1 AN_LP: the LP heaters too */
   U.bedI = NaN; /* the bed inventory starts again (anBedStep) */
+  U.svOpen = {}; /* 3.2.4-beta.1: the safety valves start seated (AN_SV) */
   U.soxZ = NaN; /* the lime in the bed too (boiler.js anSoxStep) */
   if (AN_SRC.valve)
     for (const k in AN_FV0) delete AN_SRC.valve[k]; /* 3.2.1: the field valves at their normal line-up */
@@ -2162,6 +2164,45 @@ function anBedStep(U, dt, rpm, pa, fa) {
   }
   U.bedK = Math.max(0, Math.min(1, pa / 106)) * (U.bedI / K.t0);
   return U.bedK;
+}
+/* 3.2.4-beta.1 (Jennie, user 2026-11-17 "unahin mo nlng ang mga pinakamahalaga sa operation"): THE BOILER SAFETY VALVES. Before: none,
+   so an over-pressure had no relief. Source: K1AU3-D1-0-011 RA Engineering Data of Safety Valve for Section I (FHI master documents
+   D1, Consolidated / Dresser 1700 series, Fluids Control approval Rev. E): set pressure kg/cm2 G and rated capacity kg/h of Unit 1:
+     drum      ZV-BR1001 153.5 / 174,207 (3" 1749WB), ZV-BR1002 158.0 / 180,344
+     SH outlet ZV-MS1001 137.0 / 115,836 (3" 1749WE, 541 C; set below the low drum valve, P4S1 p4-1-3: it opens first so the
+               superheater keeps a flow)
+     reheater  ZV-HR1001 42.0 / 120,785, ZV-HR1002 43.0 / 122,174 (6" 1785WE), ZV-HR1003 44.5 / 197,548 (6" 1705RRWE)
+   Pop action: full lift at the set pressure; the rated capacity is at 3 % accumulation (ASME Section I PG-67.2 / PG-69.2) and the
+   steam flow of an open valve goes with the absolute pressure (critical flow, CALC). Reseat at the set less 4 % blowdown (ASME Section
+   I PG-72.1: 2 to 4 %, the upper value; the data sheet has no blowdown). The drum and SH valves take the steam between the drum and
+   FT-MS1031 as the sootblowers (U.msb): the drum loses it and the cycle needs it back as make-up. The reheater valves take it from the
+   reheater mass balance. U.msv (drum + SH, T/H), U.msvR (reheater, T/H), U.svOpen = { tag: 1 } of the valves open */
+const AN_SV = {
+  bd: 0.04,
+  acc: 0.03,
+  d: [
+    { t: 'ZV-BR1001', p: 153.5, q: 174.207 },
+    { t: 'ZV-BR1002', p: 158.0, q: 180.344 }
+  ],
+  s: [{ t: 'ZV-MS1001', p: 137.0, q: 115.836 }],
+  r: [
+    { t: 'ZV-HR1001', p: 42.0, q: 120.785 },
+    { t: 'ZV-HR1002', p: 43.0, q: 122.174 },
+    { t: 'ZV-HR1003', p: 44.5, q: 197.548 }
+  ]
+};
+function anSvFlow(U, list, P) {
+  if (!U.svOpen || typeof U.svOpen !== 'object') U.svOpen = {};
+  let q = 0;
+  if (!isFinite(P)) return 0;
+  for (const v of list) {
+    const o = U.svOpen[v.t] ? P > v.p * (1 - AN_SV.bd) : P >= v.p;
+    if (o) {
+      U.svOpen[v.t] = 1;
+      q += (v.q * (P + 1.033)) / (v.p * (1 + AN_SV.acc) + 1.033);
+    } else delete U.svOpen[v.t];
+  }
+  return q;
 }
 function anVacMW(U) {
   if (!isFinite(U.cdT) || !(U.ms > 0)) return 0;
@@ -4692,6 +4733,8 @@ function anUnitStep0(dt) {
     U.mb += q;
     if (x.rh) U.mhp += q;
   }
+  /* 3.2.4-beta.1: the safety valves of the drum (drum pressure) and of the SH outlet (main steam pressure P1), AN_SV */
+  U.msv = anSvFlow(U, AN_SV.d, U.Pd) + anSvFlow(U, AN_SV.s, P1);
   /* drum: stored energy. 2.2.0-beta.14 (cold start): the firing heats the water first (U.Tw), then the pressure rises against the
      storage of the steam AND of the saturated water (C + Cw x dTsat/dP) */
   const tsatOf = steamTsat; /* 3.2.0-beta.15: IF97 steam table (steam.js), was the fit 100 + 47.1 x ln(P + 1) */
@@ -4756,7 +4799,7 @@ function anUnitStep0(dt) {
       he = isFinite(U.hxHe) ? Math.min(U.hxHe, hg - 1) : anHxHw(Math.min(ts, isFinite(U.hpT2) ? U.hpT2 : ts)),
       kWe = Math.max(100, (hg - he) / 3.6),
       r = B.kW / kWe,
-      mDr = Math.max(0, U.ms + U.mb + (U.msb || 0) - (U.w1s || 0) - (U.w2s || 0));
+      mDr = Math.max(0, U.ms + U.mb + (U.msb || 0) + (U.msv || 0) - (U.w1s || 0) - (U.w2s || 0));
     U.kWe = kWe;
     if (U.Tw < ts - 0.01) {
       U.Qs = 0;
@@ -4885,7 +4928,7 @@ function anUnitStep0(dt) {
        pressure (as the outlets of the main steam line). 2.2.0-beta.17: + the ICV flow (roll steam, initial load) until the transfer */
     const Prh0 = U.rhp.length && U.rhp[0].a0.length && U.rhp[0].a0[0] > 0 ? U.rhp[0].a0[0] : 34,
       orb = U.rhbv ? Math.max(0, Math.min(100, +U.rhbv.S.rt.v[U.rhbv.n] || 0)) : 0,
-      qout = (U.m0 * U.rr * (U.lpb * olp + U.rhb * orb)) / 100 + qip;
+      qout = (U.m0 * U.rr * (U.lpb * olp + U.rhb * orb)) / 100 + qip + (U.msvR = anSvFlow(U, AN_SV.r, U.rr * Prh0)); /* 3.2.4-beta.1 RH safety valves */
     U.rr = Math.max(0, U.rr + ((U.mhp + U.ms - qout) * dt) / (U.Crh * Prh0));
   }
   /* live Cold start F12 (user 2026-11-13 "may steam naba sa reheat line?"): an empty reheater reads 0 kg/cm2 on PT-HR1003-1 / -2, a live
@@ -4941,7 +4984,7 @@ function anUnitStep0(dt) {
         Tm0: U.hxT0,
         Pd: U.Pd,
         Pms: U.Pms,
-        mOut: U.ms + U.mb + (U.msb || 0),
+        mOut: U.ms + U.mb + (U.msb || 0) + (U.msv || 0),
         w1: U.w1s,
         w2: U.w2s,
         wrh: U.wrhs,
