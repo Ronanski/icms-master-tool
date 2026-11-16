@@ -374,6 +374,16 @@
 .rx-coilf { fill: none; stroke: #fff; stroke-width: 1.2; stroke-dasharray: 3 13; opacity: 0; }
 .rx-mist { fill: none; stroke: var(--hx-m-water); stroke-width: 1.3; stroke-dasharray: 1.6 3; stroke-linecap: round; opacity: 0; }
 .rx-plume circle { fill: var(--rx-st1); opacity: 0; transform-box: fill-box; transform-origin: center; }
+.rxrot { fill: none; stroke: var(--rx-st1); stroke-width: 2; stroke-linecap: round; transform-box: view-box; transform-origin: 0 0; }
+.rx-lift { fill: none; stroke: var(--hx-m-condensate); stroke-width: 1.3; stroke-dasharray: 2.4 5; opacity: 0; }
+.rx-tube { fill: none; stroke: var(--m); stroke-width: 2.2; }
+.rx-tubef { fill: none; stroke: #fff; stroke-width: 1; stroke-dasharray: 3 11; opacity: 0; }
+.rxtray { fill: none; stroke: var(--rx-st2); stroke-width: 1.5; stroke-dasharray: 2.6 1.6; }
+.rx-fall { fill: none; stroke: var(--m); stroke-width: 1.4; stroke-dasharray: 2 3.4; stroke-linecap: round; opacity: 0; }
+.hx-run .rxrot { animation: hx-spin 1.3s steps(26) infinite; }
+.hx-run .rx-lift { opacity: 1; animation: rx-jet 0.7s steps(14) infinite; }
+.hx-on > .rx-tubef { opacity: 0.9; animation: rx-jet 0.9s steps(18) infinite; }
+.hx-on > .rx-fall { opacity: 1; animation: rx-mist 0.6s steps(9) infinite; }
 .hx-run .rx-steam { opacity: 0.26; }
 .hx-run .rx-blade { animation: rx-blade 0.3s steps(6) infinite; }
 .hx-run .rx-jet { opacity: 0.95; animation: rx-jet 0.7s steps(14) infinite; }
@@ -465,7 +475,7 @@
   .hx-pick { display: block; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hx-run .hxr, .hx-on > .hx-lnf, .hx-trip .hxs, .hx-st.trip, .hx-real .hx-on > .hx-lnf, .hx-run .rx-blade, .hx-run .rx-jet, .hx-run .rx-rip, .hx-on > .rx-gas, .hx-on > .rx-coilf, .hx-on > .rx-mist, .hx-trip .rxs { animation: none; }
+  .hx-run .hxr, .hx-on > .hx-lnf, .hx-trip .hxs, .hx-st.trip, .hx-real .hx-on > .hx-lnf, .hx-run .rx-blade, .hx-run .rx-jet, .hx-run .rx-rip, .hx-run .rxrot, .hx-run .rx-lift, .hx-on > .rx-tubef, .hx-on > .rx-fall, .hx-on > .rx-gas, .hx-on > .rx-coilf, .hx-on > .rx-mist, .hx-trip .rxs { animation: none; }
   .hx-on > .rx-plume circle { animation: none; opacity: 0.5; }
   .rxix, .rxbl { transition: none; }
 }

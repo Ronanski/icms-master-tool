@@ -319,6 +319,142 @@
     };
   };
 
+  /* ---------------- machines ---------------- */
+  /* a liquid level inside a cut vessel: the page moves rect[data-lv] between y1 (empty) and y0 (full) when the item has
+     level: [key, low, high]; without it the level stands where it is drawn (f = 0 .. 1) */
+  const lvl = (id, shape, x0, y0, x1, y1, f) =>
+    `<clipPath id="rxc-${id}"><path d="${shape}"/></clipPath><rect class="rxwt" data-lv="${n(y0)},${n(y1)}" clip-path="url(#rxc-${id})" x="${n(x0)}" y="${n(y1 - (y1 - y0) * f)}" width="${n(x1 - x0)}" height="${n((y1 - y0) * f)}"/>`;
+  /* a wheel that turns while its machine runs (drawn around the centre cx, cy): k curved vanes */
+  const wheel = (cx, cy, r, k) => {
+    let v = '';
+    for (let i = 0; i < k; i++)
+      v += `<path transform="rotate(${n((360 / k) * i)})" d="M0 0Q${n(r * 0.35)} ${n(-r * 0.75)} ${n(r * 0.96)} ${n(-r * 0.3)}"/>`;
+    return `<g transform="translate(${n(cx)} ${n(cy)})"><g class="rxrot">${v}</g><circle class="rxk" r="${n(r * 0.2)}"/></g>`;
+  };
+  /* centrifugal pump with its motor on one base plate. The casing is cut open: the impeller turns while the pump runs. The
+     motor takes the state colour. Ports: s = suction (at the side), d = discharge (on top). mir: true = motor on the left */
+  R.pump = () => ({
+    box: [-37, -28, 46, 23],
+    ports: { s: [-36, 0], d: [-2, -27], l: [-36, 0], t: [-2, -27], r: [45, 0], b: [0, 22] },
+    svg:
+      '<path class="rxd" d="M-31 17h76v4.5h-76z"/><path class="rx" d="M-22 12l-3 5h26l-3 -5z"/>' +
+      '<path class="rx" d="M-33 -6.5h8v13h-8zM-7 -24h10v13h-10z"/><path class="rxd" d="M-36 -8.5h3.2v17h-3.2zM-9 -27h14v3.2h-14z"/>' +
+      '<circle class="rx" cx="-12" cy="0" r="15.5"/><circle class="rxvoid" cx="-12" cy="0" r="11"/>' +
+      wheel(-12, 0, 10, 6) +
+      '<path class="rxd" d="M3.5 -2.2h8v4.4h-8z"/><path class="rx" d="M5 -4.6h5v9.2h-5z"/>' +
+      '<rect class="rxs" x="11.5" y="-11.5" width="29" height="23" rx="3.5"/><path class="rxe" d="M17 -11.5v23M22.5 -11.5v23M28 -11.5v23M33.5 -11.5v23"/>' +
+      '<path class="rxhi" d="M14 -8h24"/><path class="rxd" d="M40.5 -9h4v18h-4zM20 -16.5h11v5h-11zM15 11.5h6v5.5h-6zM31 11.5h6v5.5h-6z"/>'
+  });
+  /* vertical pump in a can (a condensate extraction pump): motor on top, the can cut open. Ports: s = suction into the can,
+     d = discharge from the head */
+  R.vpump = () => ({
+    box: [-23, -44, 23, 38],
+    ports: { s: [-22, 12], d: [22, -11], l: [-22, 12], r: [22, -11], t: [0, -43], b: [0, 37] },
+    svg:
+      '<path class="rx" d="M-21 8h14v8h-14zM7 -15h14v8h-14z"/><path class="rxd" d="M-23 6h3v12h-3zM20 -17h3v12h-3z"/>' +
+      '<rect class="rxv" x="-8" y="-6" width="16" height="42" rx="3"/><rect class="rxvoid" x="-5" y="-1" width="10" height="33" rx="2"/>' +
+      '<path class="rxst" d="M0 -6V30"/><path class="rxd" d="M-4 6h8l-1.5 5h-5zM-4 17h8l-1.5 5h-5z"/><path class="rx-lift" d="M-2.6 30V0M2.6 30V0"/>' +
+      '<path class="rx" d="M-11 -18h22v12h-22z"/><rect class="rxs" x="-9.5" y="-42" width="19" height="24" rx="3"/><path class="rxe" d="M-9.5 -36h19M-9.5 -30h19M-9.5 -24h19"/><path class="rxd" d="M-6 -44.5h12v3h-12z"/>'
+  });
+  /* feedwater heater, lying, cut open: the feedwater goes through the U tubes, the steam condenses on them. w = length.
+     Ports: in / out (feedwater at the channel head: below / on top), st (steam in, on top), dr (drain, below).
+     flow = the rule that moves the water in the tubes; level: [key, low, high] moves the condensate level */
+  R.heater = o => {
+    const w = o.w || 124,
+      a = -w / 2,
+      b = w / 2,
+      id = o.id || 'h',
+      shell = `M${a + 10} -19H${b - 18}V19H${a + 10}Q${a} 19 ${a} 0Q${a} -19 ${a + 10} -19Z`,
+      inner = `M${a + 11} -14H${b - 22}V14H${a + 11}Q${a + 5} 14 ${a + 5} 0Q${a + 5} -14 ${a + 11} -14Z`,
+      tubes = [9.5, 6, 2.6]
+        .map((r, i) => `M${b - 22} ${-r}H${a + 22 + i * 5}A${r} ${r} 0 0 0 ${a + 22 + i * 5} ${r}H${b - 22}`)
+        .join('');
+    return {
+      box: [a - 1, -27, b + 1, 27],
+      ports: {
+        in: [b - 9, 26],
+        out: [b - 9, -26],
+        st: [a + w * 0.36, -26],
+        dr: [a + w * 0.22, 26],
+        l: [a, 0],
+        r: [b, 0]
+      },
+      svg:
+        `<path class="rxd" d="M${a + 18} 19l-3 6h14l-3 -6zM${b - 44} 19l-3 6h14l-3 -6z"/>` +
+        `<path class="rx" d="M${n(a + w * 0.36 - 5)} -26h10v8h-10zM${n(a + w * 0.22 - 4)} 18h8v8h-8zM${b - 14} -26h10v8h-10zM${b - 14} 18h10v8h-10z"/>` +
+        `<path class="rx" d="${shell}"/><path class="rxvoid" d="${inner}"/>` +
+        lvl(id, inner, a + 5, 2, b - 22, 14, 0.45) +
+        `<path class="rx-tube" style="--m:var(--hx-m-water)" d="${tubes}"/>` +
+        live(o.flow, `<path class="rx-tubef" d="${tubes}"/>`) +
+        `<path class="rx" d="M${b - 18} -20.5H${b - 6}Q${b} -20.5 ${b} -14V14Q${b} 20.5 ${b - 6} 20.5H${b - 18}Z"/><path class="rxd" d="M${b - 21} -21.5h3.4v43h-3.4z"/><path class="rxe" d="M${b - 17} 0H${b - 1}"/>`
+    };
+  };
+  /* deaerator: the deaerating dome with its trays on the storage tank, both cut open. Ports: cin (condensate into the dome),
+     stin (heating steam under the trays), vent (top of the dome), out (from the tank down to the feed pumps), l / r (tank
+     ends). flow = the rule that shows the water falling over the trays; level: [key, low, high] moves the water level */
+  R.deaerator = o => {
+    const id = o.id || 'd',
+      tank = 'M-68 2H68Q88 2 88 23Q88 44 68 44H-68Q-88 44 -88 23Q-88 2 -68 2Z',
+      inner = 'M-66 7H66Q82 7 82 23Q82 39 66 39H-66Q-82 39 -82 23Q-82 7 -66 7Z';
+    return {
+      box: [-89, -52, 89, 53],
+      ports: {
+        cin: [-31, -30],
+        stin: [31, -12],
+        vent: [0, -51],
+        out: [48, 52],
+        l: [-88, 23],
+        r: [88, 23],
+        t: [0, -51],
+        b: [0, 44]
+      },
+      svg:
+        '<path class="rxd" d="M-56 44l-4 8h20l-4 -8zM44 44l-4 8h20l-4 -8z"/><path class="rx" d="M43 43h10v9h-10zM-30 -34h8v8h-8zM22 -16h8v8h-8zM-3 -51h6v6h-6z"/>' +
+        `<path class="rx" d="${tank}"/><path class="rxv" d="M-23 -34Q-23 -46 0 -46Q23 -46 23 -34V6H-23Z"/>` +
+        `<path class="rxvoid" d="${inner}"/><path class="rxvoid" d="M-18 -33Q-18 -41 0 -41Q18 -41 18 -33V8H-18Z"/>` +
+        lvl(id, inner, -82, 12, 82, 39, 0.62) +
+        '<path class="rxtray" d="M-18 -28H9M-9 -20H18M-18 -12H9M-9 -4H18"/>' +
+        live(
+          o.flow,
+          '<path class="rx-fall" style="--m:var(--hx-m-condensate)" d="M-13 -33V-28M13 -27V-20M-13 -19V-12M13 -11V-4M-13 -3V14M0 2V14"/>'
+        )
+    };
+  };
+  /* steam drum seen from the side, cut open: water below, steam above, the separators along the water line. w = length.
+     Ports: fw (feedwater in), st (steam out, on top), sv (safety valves, on top), dn1 / dn2 (downcomers, below), ri1 / ri2
+     (risers coming back, on the side below the water line), l / r (ends). level: [key, low, high] moves the water level */
+  R.drum = o => {
+    const w = o.w || 190,
+      a = -w / 2,
+      b = w / 2,
+      id = o.id || 'dr',
+      shell = `M${a + 24} -24H${b - 24}Q${b} -24 ${b} 0Q${b} 24 ${b - 24} 24H${a + 24}Q${a} 24 ${a} 0Q${a} -24 ${a + 24} -24Z`,
+      inner = `M${a + 24} -18.5H${b - 24}Q${b - 6} -18.5 ${b - 6} 0Q${b - 6} 18.5 ${b - 24} 18.5H${a + 24}Q${a + 6} 18.5 ${a + 6} 0Q${a + 6} -18.5 ${a + 24} -18.5Z`;
+    let sep = '';
+    for (let x = a + 34; x <= b - 34; x += 16) sep += `M${n(x - 3.5)} -7h7v9h-7z`;
+    return {
+      box: [a - 1, -31, b + 1, 31],
+      ports: {
+        st: [0, -30],
+        sv: [b - 46, -30],
+        fw: [a + 40, 30],
+        dn1: [a + 70, 30],
+        dn2: [b - 70, 30],
+        ri1: [a, 8],
+        ri2: [b, 8],
+        l: [a, 0],
+        r: [b, 0],
+        t: [0, -30],
+        b: [0, 30]
+      },
+      svg:
+        `<path class="rx" d="M-5 -30h10v7h-10zM${b - 51} -30h10v7h-10zM${a + 35} 23h10v7h-10zM${a + 65} 23h10v7h-10zM${b - 75} 23h10v7h-10z"/>` +
+        `<path class="rx" d="${shell}"/><path class="rxvoid" d="${inner}"/>` +
+        lvl(id, inner, a + 6, -18.5, b - 6, 18.5, 0.5) +
+        `<path class="rxd" d="${sep}"/><path class="rxtray" d="M${a + 30} -12H${b - 30}"/><path class="rx-rip" d="M${a + 10} 0.4q5 -2.2 10 0t10 0t10 0"/>`
+    };
+  };
+
   /* ---------------- scenery ---------------- */
   /* the basement floor: o.w wide from (0, 0) */
   R.floor = o => ({
