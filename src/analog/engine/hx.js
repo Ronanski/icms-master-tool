@@ -386,7 +386,13 @@ function anHxStep(U, I, dt) {
   const gE3 = anHxGas(M.e3, K.gE3, mGS, tS, Rf.e3),
     gE2s = anHxGas(M.e2s, K.gE2s, mGS, gE3.Tg, Rf.e2s),
     tMix = mG > 0.01 ? (mGR * anHxCp(gE2r.Tg) * gE2r.Tg + mGS * anHxCp(gE2s.Tg) * gE2s.Tg) / (mGR * anHxCp(gE2r.Tg) + mGS * anHxCp(gE2s.Tg)) : I.Tg,
-    gE1 = anHxGas(M.e1, K.gE1, mG, tMix, Rf.e1);
+    /* 3.2.4 (JENNIE): an economizer tube leak (unit.js anTubeLeak, U.tlE) sprays the feedwater into the gas ahead of the No.1
+       economizer: the water (liquid at the No.2 HP heater outlet temperature) flashes and is heated to steam at the gas temperature
+       (IF97 steamH at the backpass, about 0 kg/cm2 G), and the gas gives that heat: mG cp dT = mL (h steam - h water). Energy balance,
+       no fit. The bank where the tube breaks is not known (NO-SOURCE): the gas mixed ahead of the No.1 economizer is used */
+    mL = Math.max(0, +I.mL || 0),
+    tE1 = mL > 0 && mG > 0.01 ? Math.max(+I.Tfw > 0 ? +I.Tfw : 0, tMix - (mL * Math.max(0, steamH(0, tMix) - anHxHw(+I.Tfw || 0))) / (mG * anHxCp(tMix))) : tMix,
+    gE1 = anHxGas(M.e1, K.gE1, mG, tE1, Rf.e1);
   /* each bank's mean gas temperature, for the next scan's pass split */
   {
     const mean = (a, b) => (a + b) / 2;

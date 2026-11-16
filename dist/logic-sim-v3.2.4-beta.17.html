@@ -23846,7 +23846,13 @@ function anHxStep(U, I, dt) {
   const gE3 = anHxGas(M.e3, K.gE3, mGS, tS, Rf.e3),
     gE2s = anHxGas(M.e2s, K.gE2s, mGS, gE3.Tg, Rf.e2s),
     tMix = mG > 0.01 ? (mGR * anHxCp(gE2r.Tg) * gE2r.Tg + mGS * anHxCp(gE2s.Tg) * gE2s.Tg) / (mGR * anHxCp(gE2r.Tg) + mGS * anHxCp(gE2s.Tg)) : I.Tg,
-    gE1 = anHxGas(M.e1, K.gE1, mG, tMix, Rf.e1);
+    /* 3.2.4 (JENNIE): an economizer tube leak (unit.js anTubeLeak, U.tlE) sprays the feedwater into the gas ahead of the No.1
+       economizer: the water (liquid at the No.2 HP heater outlet temperature) flashes and is heated to steam at the gas temperature
+       (IF97 steamH at the backpass, about 0 kg/cm2 G), and the gas gives that heat: mG cp dT = mL (h steam - h water). Energy balance,
+       no fit. The bank where the tube breaks is not known (NO-SOURCE): the gas mixed ahead of the No.1 economizer is used */
+    mL = Math.max(0, +I.mL || 0),
+    tE1 = mL > 0 && mG > 0.01 ? Math.max(+I.Tfw > 0 ? +I.Tfw : 0, tMix - (mL * Math.max(0, steamH(0, tMix) - anHxHw(+I.Tfw || 0))) / (mG * anHxCp(tMix))) : tMix,
+    gE1 = anHxGas(M.e1, K.gE1, mG, tE1, Rf.e1);
   /* each bank's mean gas temperature, for the next scan's pass split */
   {
     const mean = (a, b) => (a + b) / 2;
@@ -27753,8 +27759,8 @@ const AN_MFW = {
    inlet (HP heater outlet U.hpT2) at the drum pressure plus the economizer drop 3.5 kg/cm2 at MCR (FHI T3) with the square of the flow.
    Where it goes: the drum loses the water (plant.js drum balance; an economizer leak is lost before the drum, after FT-FW1007); the
    water wall leak boils in the bed (the bed balance takes it from saturated water to steam at the bed temperature, IF97) and the steam
-   joins the flue gas (U.mG, the ID fan sees it as gas volume, 28.9 / 18 per kg against air). The economizer leak's heat to the
-   backpass gas is not modelled (its gas mass is). U.tlW / U.tlE T/H */
+   joins the flue gas (U.mG, the ID fan sees it as gas volume, 28.9 / 18 per kg against air). The economizer leak flashes in the
+   backpass and cools the gas ahead of the No.1 economizer (hx.js, I.mL). U.tlW / U.tlE T/H */
 const AN_TL = { d: 0.01 /* m, NO-SOURCE */, dpE: 3.5 /* kg/cm2 at MCR, FHI T3 */, mcr: 460, t2: 600 /* s, NO-SOURCE */, tw: 0.006 /* m, NO-SOURCE */, odW: 0.0635, odE: 0.0572 };
 /* 3.2.4-beta.16 (JENNIE, tube leak grows): FHI T9 p29 (plant-study 03): the leak erodes the tubes next to it. The jet of steam and water
    cuts the next tube, which leaks too, so the open area grows with itself: the area of the hole doubles each t2 = 10 min of plant time
@@ -29164,6 +29170,7 @@ function anUnitStep0(dt) {
         mRh,
         Tcr: tcr,
         mEco: U.mEco,
+        mL: (U.tlE || 0) / 3.6 /* an economizer tube leak, kg/s (hx.js) */,
         Tfw: U.hpT2,
         dR: isFinite(U.dmpR) ? U.dmpR : 1 /* no position read: open */,
         dS: isFinite(U.dmpS) ? U.dmpS : 1
@@ -40091,7 +40098,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.4-beta.17';
-      c3.textContent += ' · build 7ccb0ff'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 4916f2f'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -78817,7 +78824,13 @@ function anHxStep(U, I, dt) {
   const gE3 = anHxGas(M.e3, K.gE3, mGS, tS, Rf.e3),
     gE2s = anHxGas(M.e2s, K.gE2s, mGS, gE3.Tg, Rf.e2s),
     tMix = mG > 0.01 ? (mGR * anHxCp(gE2r.Tg) * gE2r.Tg + mGS * anHxCp(gE2s.Tg) * gE2s.Tg) / (mGR * anHxCp(gE2r.Tg) + mGS * anHxCp(gE2s.Tg)) : I.Tg,
-    gE1 = anHxGas(M.e1, K.gE1, mG, tMix, Rf.e1);
+    /* 3.2.4 (JENNIE): an economizer tube leak (unit.js anTubeLeak, U.tlE) sprays the feedwater into the gas ahead of the No.1
+       economizer: the water (liquid at the No.2 HP heater outlet temperature) flashes and is heated to steam at the gas temperature
+       (IF97 steamH at the backpass, about 0 kg/cm2 G), and the gas gives that heat: mG cp dT = mL (h steam - h water). Energy balance,
+       no fit. The bank where the tube breaks is not known (NO-SOURCE): the gas mixed ahead of the No.1 economizer is used */
+    mL = Math.max(0, +I.mL || 0),
+    tE1 = mL > 0 && mG > 0.01 ? Math.max(+I.Tfw > 0 ? +I.Tfw : 0, tMix - (mL * Math.max(0, steamH(0, tMix) - anHxHw(+I.Tfw || 0))) / (mG * anHxCp(tMix))) : tMix,
+    gE1 = anHxGas(M.e1, K.gE1, mG, tE1, Rf.e1);
   /* each bank's mean gas temperature, for the next scan's pass split */
   {
     const mean = (a, b) => (a + b) / 2;
@@ -82726,8 +82739,8 @@ const AN_MFW = {
    inlet (HP heater outlet U.hpT2) at the drum pressure plus the economizer drop 3.5 kg/cm2 at MCR (FHI T3) with the square of the flow.
    Where it goes: the drum loses the water (plant.js drum balance; an economizer leak is lost before the drum, after FT-FW1007); the
    water wall leak boils in the bed (the bed balance takes it from saturated water to steam at the bed temperature, IF97) and the steam
-   joins the flue gas (U.mG, the ID fan sees it as gas volume, 28.9 / 18 per kg against air). The economizer leak's heat to the
-   backpass gas is not modelled (its gas mass is). U.tlW / U.tlE T/H */
+   joins the flue gas (U.mG, the ID fan sees it as gas volume, 28.9 / 18 per kg against air). The economizer leak flashes in the
+   backpass and cools the gas ahead of the No.1 economizer (hx.js, I.mL). U.tlW / U.tlE T/H */
 const AN_TL = { d: 0.01 /* m, NO-SOURCE */, dpE: 3.5 /* kg/cm2 at MCR, FHI T3 */, mcr: 460, t2: 600 /* s, NO-SOURCE */, tw: 0.006 /* m, NO-SOURCE */, odW: 0.0635, odE: 0.0572 };
 /* 3.2.4-beta.16 (JENNIE, tube leak grows): FHI T9 p29 (plant-study 03): the leak erodes the tubes next to it. The jet of steam and water
    cuts the next tube, which leaks too, so the open area grows with itself: the area of the hole doubles each t2 = 10 min of plant time
@@ -84137,6 +84150,7 @@ function anUnitStep0(dt) {
         mRh,
         Tcr: tcr,
         mEco: U.mEco,
+        mL: (U.tlE || 0) / 3.6 /* an economizer tube leak, kg/s (hx.js) */,
         Tfw: U.hpT2,
         dR: isFinite(U.dmpR) ? U.dmpR : 1 /* no position read: open */,
         dS: isFinite(U.dmpS) ? U.dmpS : 1
@@ -121198,7 +121212,7 @@ window.LS_GUIDE = (function () {
         'Engineering = white symbols, only wires, values and valves coloured'
       );
     const ver = (document.title.match(/v\d[\w.-]*/) || [''])[0];
-    row('Version', E('span', 'scsver', ver + ' · build 7ccb0ff'));
+    row('Version', E('span', 'scsver', ver + ' · build 4916f2f'));
   }
   function openSet(near) {
     if (!set) {

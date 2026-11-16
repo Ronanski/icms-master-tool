@@ -3800,8 +3800,8 @@ const AN_MFW = {
    inlet (HP heater outlet U.hpT2) at the drum pressure plus the economizer drop 3.5 kg/cm2 at MCR (FHI T3) with the square of the flow.
    Where it goes: the drum loses the water (plant.js drum balance; an economizer leak is lost before the drum, after FT-FW1007); the
    water wall leak boils in the bed (the bed balance takes it from saturated water to steam at the bed temperature, IF97) and the steam
-   joins the flue gas (U.mG, the ID fan sees it as gas volume, 28.9 / 18 per kg against air). The economizer leak's heat to the
-   backpass gas is not modelled (its gas mass is). U.tlW / U.tlE T/H */
+   joins the flue gas (U.mG, the ID fan sees it as gas volume, 28.9 / 18 per kg against air). The economizer leak flashes in the
+   backpass and cools the gas ahead of the No.1 economizer (hx.js, I.mL). U.tlW / U.tlE T/H */
 const AN_TL = { d: 0.01 /* m, NO-SOURCE */, dpE: 3.5 /* kg/cm2 at MCR, FHI T3 */, mcr: 460, t2: 600 /* s, NO-SOURCE */, tw: 0.006 /* m, NO-SOURCE */, odW: 0.0635, odE: 0.0572 };
 /* 3.2.4-beta.16 (JENNIE, tube leak grows): FHI T9 p29 (plant-study 03): the leak erodes the tubes next to it. The jet of steam and water
    cuts the next tube, which leaks too, so the open area grows with itself: the area of the hole doubles each t2 = 10 min of plant time
@@ -5211,6 +5211,7 @@ function anUnitStep0(dt) {
         mRh,
         Tcr: tcr,
         mEco: U.mEco,
+        mL: (U.tlE || 0) / 3.6 /* an economizer tube leak, kg/s (hx.js) */,
         Tfw: U.hpT2,
         dR: isFinite(U.dmpR) ? U.dmpR : 1 /* no position read: open */,
         dS: isFinite(U.dmpS) ? U.dmpS : 1
