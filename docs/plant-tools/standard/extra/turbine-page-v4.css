@@ -1,0 +1,10 @@
+.tbtn{display:none}
+.card{background:var(--paper);border:1px solid var(--edge);border-radius:10px;padding:16px}
+.kick{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted);margin:0 0 8px}
+.lead{font-size:14px}
+.seg button{border-radius:6px;background:var(--paper);font-size:14px}
+.scroll{border-radius:6px}
+.tag{color:var(--fg)}
+.info{border-left-color:var(--accent)}
+.steps li::marker{color:var(--fg)}
+@media (max-width:640px){.seg button{min-height:44px}}

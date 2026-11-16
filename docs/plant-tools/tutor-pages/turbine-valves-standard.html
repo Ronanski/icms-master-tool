@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="tl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HP-IP Turbine Valves</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:var(--sans);
+--bg:#f6f7f9;--paper:#ffffff;--fg:#1b2129;--muted:#5b6673;--faint:#a3acb6;--edge:#d6dce3;--fill:#eef1f4;--accent:#1f5fae;--on-accent:#ffffff;--selbg:#e8f0fb;
+--ok:#1e6b34;--okbg:#e6f4ea;--warnc:#8a5a00;--warnbg:#fdf3d8;--badc:#b3261e;--badbg:#fdecea;
+--c-red:#c62828;--c-orange:#c8660a;--c-blue:#2474b5;--c-green:#1e8a3c;--c-yellow:#c99700;--c-purple:#7b4fd6;--c-teal:#0e8a8c;--c-steam:#8b98a5;--c-oil:#a67c00;
+--eq:#e9edf1;--metal:#7b8794;--pipe:#c5cdd5;--panel:var(--paper);--line:var(--edge);--dim:var(--muted);color-scheme:light;
+--acc:var(--accent);--casing:#e3e8ed;--ink:#4d5964;--rotor:#c9d1d8;--bucket:#7f8c99;--nozzle:#aab5bf;--inner:#d5dce3;--std:#eef1f4;--void:#ffffff;--ms:#d23c3c;--rh:#e07b24;--lp:#2f7fc1;--ex:#149a8a;--gl:#7a8a3a;--oil:#c08a00;--trip:#7b4fd6;--air:#8a96a3;--stel:#b07d2b;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--faint:#5f6872;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;--selbg:#1d2c40;
+--ok:#7fd29a;--okbg:#17301f;--warnc:#e7bf5c;--warnbg:#33290f;--badc:#f2948c;--badbg:#3a1c1a;
+--c-red:#ef5b5b;--c-orange:#f0954a;--c-blue:#5aa9e6;--c-green:#4cc27a;--c-yellow:#f2c94c;--c-purple:#a585f0;--c-teal:#3cc0c2;--c-steam:#c3ccd4;--c-oil:#d9b13a;
+--eq:#2a3138;--metal:#7c8893;--pipe:#3f4852;color-scheme:dark;--casing:#2b3238;--ink:#9aa6b0;--rotor:#4a555e;--bucket:#9aa6b2;--nozzle:#66737e;--inner:#343c43;--std:#252c32;--void:#15191c;--ms:#ef5b5b;--rh:#f0954a;--lp:#5aa9e6;--ex:#3cc0ae;--gl:#a8b85a;--oil:#e0b23a;--trip:#a585f0;--air:#9aa6b0;--stel:#c99a4a;}}
+:root[data-theme="dark"]{--bg:#16191d;--paper:#1e2227;--fg:#e6e9ed;--muted:#9aa5b1;--faint:#5f6872;--edge:#343b44;--fill:#262c33;--accent:#6aa5ee;--on-accent:#0e1620;--selbg:#1d2c40;
+--ok:#7fd29a;--okbg:#17301f;--warnc:#e7bf5c;--warnbg:#33290f;--badc:#f2948c;--badbg:#3a1c1a;
+--c-red:#ef5b5b;--c-orange:#f0954a;--c-blue:#5aa9e6;--c-green:#4cc27a;--c-yellow:#f2c94c;--c-purple:#a585f0;--c-teal:#3cc0c2;--c-steam:#c3ccd4;--c-oil:#d9b13a;
+--eq:#2a3138;--metal:#7c8893;--pipe:#3f4852;color-scheme:dark;--casing:#2b3238;--ink:#9aa6b0;--rotor:#4a555e;--bucket:#9aa6b2;--nozzle:#66737e;--inner:#343c43;--std:#252c32;--void:#15191c;--ms:#ef5b5b;--rh:#f0954a;--lp:#5aa9e6;--ex:#3cc0ae;--gl:#a8b85a;--oil:#e0b23a;--trip:#a585f0;--air:#9aa6b0;--stel:#c99a4a;}
+
+
+
+
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg)}
+body{font:16px/1.55 var(--sans);padding:24px 16px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:16px}
+header{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+h1{font-size:20px;font-weight:600;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:16px;font-weight:600;margin:0 0 4px;text-wrap:balance}
+h3{font-size:14px;font-weight:600;margin:0 0 4px}
+p{margin:0 0 8px}
+.sub{color:var(--dim);max-width:80ch;margin:8px 0 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.kick{font:500 12px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--acc);margin:0 0 8px}
+.lead{color:var(--dim);margin:0 0 12px;max-width:85ch}
+.seg{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.seg button,.tbtn{font:500 14px var(--sans);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:8px 16px;cursor:pointer;min-height:36px}
+.seg button:hover,.tbtn:hover{border-color:var(--dim)}
+.seg button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:#fff}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible,.pt:focus-visible,.sol:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+svg{display:block;width:100%;height:auto}
+#turb{min-width:980px}#cv{min-width:860px}#oil{min-width:760px}#crv{min-width:640px;max-width:760px;margin:0 auto}#msv{max-width:620px;margin:0 auto}
+.t{font-family:var(--sans);fill:var(--fg)}
+.cs{fill:var(--casing);stroke:var(--ink);stroke-width:2.5}
+.ro{fill:var(--rotor);stroke:var(--ink);stroke-width:2}
+.bk{fill:var(--bucket);stroke:none;stroke-width:0}
+.nz{fill:var(--nozzle);stroke:none;stroke-width:0}
+.inr{fill:var(--inner);stroke:var(--ink);stroke-width:2}
+.sd{fill:var(--std);stroke:var(--ink);stroke-width:2}
+.wl{fill:none;stroke:var(--ink);stroke-width:3}
+.wl2{fill:none;stroke:var(--ink);stroke-width:2}
+.th{fill:none;stroke:var(--dim);stroke-width:1.5}
+.vd{fill:var(--void);stroke:var(--ink);stroke-width:2}
+.brg{fill:var(--std);stroke:var(--ink);stroke-width:2}
+.stel{fill:var(--stel);stroke:none;stroke-width:0}
+.st{fill:var(--ms);stroke:none;stroke-width:0}
+.fms{fill:none;stroke:var(--ms);stroke-width:10}
+.frh{fill:none;stroke:var(--rh);stroke-width:10}
+.flp{fill:none;stroke:var(--lp);stroke-width:10}
+.fex{fill:none;stroke:var(--ex);stroke-width:6}
+.fgl{fill:none;stroke:var(--gl);stroke-width:5}
+.foil{fill:none;stroke:var(--oil);stroke-width:6}
+.ftrip{fill:none;stroke:var(--trip);stroke-width:6}
+.fair{fill:none;stroke:var(--air);stroke-width:5}
+.cl{fill:none;stroke:var(--dim);stroke-width:1.2}
+.bd{fill:var(--panel);stroke:var(--acc);stroke-width:3}
+.ldr{fill:none;stroke:var(--dim);stroke-width:1.5}
+.eq{fill:var(--panel);stroke:var(--ink);stroke-width:2}
+.eqf{fill:var(--inner);stroke:var(--ink);stroke-width:2}
+.spr{fill:none;stroke:var(--dim);stroke-width:3}
+.pis{fill:var(--nozzle);stroke:var(--ink);stroke-width:2}
+.oilf{fill:var(--oil);stroke:none;stroke-width:0}
+.stm{fill:var(--ms);stroke:none;stroke-width:0}
+.c-dim{fill:var(--dim)}.c-acc{fill:var(--acc)}.c-ms{fill:var(--ms)}.c-rh{fill:var(--rh)}.c-lp{fill:var(--lp)}.c-ex{fill:var(--ex)}.c-gl{fill:var(--gl)}.c-oil{fill:var(--oil)}.c-trip{fill:var(--trip)}.c-air{fill:var(--air)}.c-fg{fill:var(--fg)}
+.dot{fill:var(--acc)}.ptr{fill:var(--fg)}
+.pt{cursor:pointer}.pt:hover .bd{stroke-width:5}.pt.sel .bd{fill:var(--acc)}.pt.sel .c-acc{fill:#fff}
+.pt.sel .t{font-weight:600;text-decoration:underline}
+.fl{stroke-dasharray:14 14;stroke-linecap:round;stroke-linejoin:round;animation:run 1.1s linear infinite;transition:opacity .3s}
+.fl.slow{animation-duration:3s}.fl.off{opacity:0;animation:none}
+@keyframes run{to{stroke-dashoffset:-28}}
+@media (prefers-reduced-motion:reduce){.fl{animation:none;stroke-dasharray:none}}
+.stmz{transition:fill .3s}.hot{fill:color-mix(in srgb,var(--ms) 22%,var(--void))}.hotrh{fill:color-mix(in srgb,var(--rh) 22%,var(--void))}
+.mv{transition:transform .25s ease-out}
+.sol{cursor:pointer}.sol.on rect{fill:color-mix(in srgb,var(--acc) 25%,var(--panel));stroke:var(--acc)}
+.sol.off rect{fill:var(--panel);stroke:var(--ms);stroke-dasharray:6 4}
+.vclosed{fill:color-mix(in srgb,var(--dim) 25%,var(--panel))}
+.grid2{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;margin-top:16px}
+@media (max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.info{border-left:3px solid var(--acc);padding:2px 0 2px 16px;min-height:150px}
+.info .src,.src{font-size:13px;color:var(--dim)}
+.tag{font:500 13px var(--sans);color:var(--acc)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px;color:var(--dim);margin:12px 0 0}
+.legend i{display:inline-block;width:22px;height:0;border-top:4px dashed;vertical-align:middle;margin-right:8px}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:2px 16px;font-size:14px;margin:0}
+.facts dt{color:var(--dim)}.facts dd{margin:0;font-variant-numeric:tabular-nums}
+.ctl{display:grid;gap:8px;margin:12px 0}
+.ctl label{font-size:14px;color:var(--dim)}
+input[type=range]{width:100%;accent-color:var(--acc);min-height:32px}
+.read{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0}
+.g{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.g .k{font-size:12px;color:var(--dim)}.g .v{font:500 16px var(--sans);font-variant-numeric:tabular-nums}
+.note{border-left:3px solid var(--rh);padding:2px 0 2px 12px}
+ol,ul{margin:4px 0 12px;padding-left:24px}li{margin:4px 0}
+.steps li::marker{font-weight:600;color:var(--acc)}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:760px){.two{grid-template-columns:minmax(0,1fr)}}
+footer{font-size:13px;color:var(--dim)}
+footer ul{padding-left:16px}
+
+/* ---- plant tools standard v1: one font, sizes 12/13/14/16/20, weights 400/500/600, 4 px spacing grid, radius 6 and 10 ---- */
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg);margin:0}
+body{font-family:var(--sans);font-size:14px;line-height:1.5;font-variant-numeric:tabular-nums;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-size:20px;font-weight:600;line-height:1.3;margin:0}h2{font-size:16px;font-weight:600;line-height:1.35}h3{font-size:14px;font-weight:600}
+b,strong{font-weight:600}
+.sub{color:var(--muted);font-size:14px;margin:4px 0 0;max-width:76ch}
+.box,.sheet,.rule,.tip,.step,figure{background:var(--paper);border:1px solid var(--edge);border-radius:10px}
+.box{padding:16px}
+.lab,.label,.gh{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted);margin:0 0 8px}
+.note,.src,.hint{font-size:13px;color:var(--muted)}
+button,.b,.btn,.f,.st{font-family:var(--sans);min-height:36px;border-radius:6px}
+.b,.st{font-size:14px;font-weight:600;border-width:1px;padding:8px 12px}
+.b small{font-size:12px;font-weight:400}
+.b.on,.f.on,.b.on.l{border-color:var(--accent);background:var(--selbg);box-shadow:inset 0 0 0 1px var(--accent)}
+button:focus-visible,.b:focus-visible,.f:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible,.tap:focus-visible,.part:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=range]{accent-color:var(--accent);min-height:32px}
+.say,.now,.info{font-size:16px;line-height:1.5}
+.say b,.info b,.terms b,.now strong{color:var(--fg)}
+a{color:var(--accent)}
+.seg button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+dl dt{color:var(--fg);font-weight:600}
+.tag{color:var(--fg);font-weight:500}
+.g .v,.ro b,.v b{font-size:16px;font-weight:600}
+.st b{letter-spacing:0;font-weight:500}
+.cw{color:var(--fg);text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px;text-decoration-color:var(--cw)}
+.appbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-height:32px;margin:0}
+.appbar a{color:var(--accent);text-decoration:none;font-weight:500;display:inline-flex;align-items:center;min-height:32px}
+.appbar a:hover{text-decoration:underline}
+.appbar i{font-style:normal;color:var(--muted)}
+.seq i,.g .seq i{color:var(--muted)}
+summary{padding-block:8px}
+@media (max-width:640px){button,.b,.btn,.f,.st,.appbar a,summary{min-height:44px}input[type=range]{min-height:44px}.box{overflow-x:auto}.box>svg,.box>canvas{min-width:640px}}
+.tbtn{display:none}
+.card{background:var(--paper);border:1px solid var(--edge);border-radius:10px;padding:16px}
+.kick{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted);margin:0 0 8px}
+.lead{font-size:14px}
+.seg button{border-radius:6px;background:var(--paper);font-size:14px}
+.scroll{border-radius:6px}
+.tag{color:var(--fg)}
+.info{border-left-color:var(--accent)}
+.steps li::marker{color:var(--fg)}
+@media (max-width:640px){.seg button{min-height:44px}}
+</style></head><body>
+<div class="wrap"><div class="appbar"><a href="https://claude.ai/artifact/CLWF6fLkvX8VNvtbjfYLwS" target="_blank" rel="noopener">Plant Tools</a><i>/</i><span>HP-IP Turbine Valves</span></div>
+<header>
+ <div>
+  <h1>HP-IP turbine at ang mga valve nito</h1>
+  <p class="sub">Na-trace mula sa drawing ng MHPS maintenance manual (MAINT). Davao copy ang manual na ito (XZ-DPC551), pero parehong MHPS design, SF-33.5, 150 MW, 3600 rpm, kapareho ng sa Limay. Pindutin ang mga numero at label para sa paliwanag. Bawat label may doc at page.</p>
+ </div>
+ <button class="tbtn" id="theme" type="button" aria-label="Palitan ang light o dark">Light / Dark</button>
+</header>
+
+<section class="card" id="s1">
+ <p class="kick">1 · Cross-section (trace ng MAINT p67, 310PB65-413)</p>
+ <h2>HIP at LP turbine sa iisang rotor</h2>
+ <p class="lead">HP stages 1 hanggang 11 (pakaliwa), IP stages 12 hanggang 21 at LP stages 22 hanggang 24 (pakanan). Counter-flow ang HP at IP sa loob ng iisang HIP outer casing. Pababa ang LP exhaust papunta sa condenser.</p>
+ <div class="seg" role="group" aria-label="Daloy">
+  <button type="button" data-ts="run" aria-pressed="true">Normal (CV ang kontrol)</button>
+  <button type="button" data-ts="ip" aria-pressed="false">IP start (bago transfer)</button>
+  <button type="button" data-ts="none" aria-pressed="false">Walang daloy (10/3, 11/9)</button>
+ </div>
+ <div class="scroll"><svg id="turb" viewBox="340 400 2820 1730" role="img" aria-label="Cross-section ng HIP at LP turbine, trace mula MAINT p67"><path class="cs" d="M2052 905 V488 H2560 V1060 H2475 V1095 L2345 1100 L2290 1000 L2290 820 L2200 870 L2150 905 Z"/><path class="cs" d="M2052 1556 V2035 H2790 V1500 H2640 V1290 L2475 1290 L2475 1367 L2345 1362 L2290 1462 L2290 1642 L2200 1592 L2150 1556 Z"/><path class="vd lpv" d="M2058 1122 V925 L2290 790 V515 H2535 V1040 H2462 V1088 L2345 1094 V1122 Z"/><path class="vd lpv" d="M2058 1340 V1537 L2290 1672 V2010 H2765 V1525 H2615 V1300 L2462 1300 V1374 L2345 1368 V1340 Z"/><path class="sd" d="M370 1089 L715 1089 L715 1104 L905 1104 L905 1360 L860 1360 L860 1453 L370 1453 Z"/><path class="brg" d="M640 1110 H780 V1195 H640 Z"/><path class="brg" d="M640 1110 H780 V1195 H640 Z" transform="matrix(1 0 0 -1 0 2462)"/><path class="brg" d="M790 1135 H875 V1198 H790 Z"/><path class="brg" d="M790 1135 H875 V1198 H790 Z" transform="matrix(1 0 0 -1 0 2462)"/><path class="brg" d="M2515 1105 H2625 V1170 H2515 Z"/><path class="brg" d="M2515 1105 H2625 V1170 H2515 Z" transform="matrix(1 0 0 -1 0 2462)"/><path class="brg" d="M2955 1085 H2990 V1377 H2955 Z"/><path class="wl" d="M2052 530 L1990 535 L1985 560 L2010 590 L2005 750 L2052 760"/><path class="wl" d="M2052 530 L1990 535 L1985 560 L2010 590 L2005 750 L2052 760" transform="matrix(1 0 0 -1 0 2462)"/><path class="th" d="M2140 470 H2470 M2140 500 H2470"/><rect class="stel" x="2140" y="470" width="330" height="30" opacity="0.35"/><path class="cs" d="M925 1110 L945 1080 L965 1050 L985 1018 L1000 990 L1015 966 L1040 950 L1080 945 L1135 942 L1135 915 L1225 915 L1225 942 L1320 942 L1345 935 L1365 925 L1365 940 L1495 940 L1495 920 L1520 940 L1600 942 L1620 965 L1640 995 L1670 1018 L1750 1022 L1765 1005 L1800 998 L1960 950 L1985 930 L1980 910 L1995 895 L2010 885 L2020 875 L2052 872 L2052 905 L2020 908 L1995 925 L1975 960 L1940 975 L1800 1012 L1760 1022 L1745 1040 L1670 1045 L1640 1030 L1615 1005 L1595 975 L1495 972 L1365 975 L1225 972 L1135 975 L1080 978 L1050 985 L1030 1000 L1015 1025 L1000 1055 L985 1085 L965 1120 L950 1131 L925 1131 Z"/><path class="cs" d="M925 1110 L945 1080 L965 1050 L985 1018 L1000 990 L1015 966 L1040 950 L1080 945 L1135 942 L1135 915 L1225 915 L1225 942 L1320 942 L1345 935 L1365 925 L1365 940 L1495 940 L1495 920 L1520 940 L1600 942 L1620 965 L1640 995 L1670 1018 L1750 1022 L1765 1005 L1800 998 L1960 950 L1985 930 L1980 910 L1995 895 L2010 885 L2020 875 L2052 872 L2052 905 L2020 908 L1995 925 L1975 960 L1940 975 L1800 1012 L1760 1022 L1745 1040 L1670 1045 L1640 1030 L1615 1005 L1595 975 L1495 972 L1365 975 L1225 972 L1135 975 L1080 978 L1050 985 L1030 1000 L1015 1025 L1000 1055 L985 1085 L965 1120 L950 1131 L925 1131 Z" transform="matrix(1 0 0 -1 0 2462)"/><path class="inr" d="M1095 1086 L1092 1045 L1108 1030 L1135 1060 L1205 1063 L1205 995 L1215 990 L1315 990 L1325 1000 L1385 1000 L1390 1086 Z"/><path class="inr" d="M1095 1086 L1092 1045 L1108 1030 L1135 1060 L1205 1063 L1205 995 L1215 990 L1315 990 L1325 1000 L1385 1000 L1390 1086 Z" transform="matrix(1 0 0 -1 0 2462)"/><path class="cs" d="M1365 690 H1495 V1060 H1475 V940 H1385 V1060 H1365 Z"/><path class="cs" d="M1365 1772 H1495 V1402 H1475 V1522 H1385 V1402 H1365 Z"/><path class="cs" d="M1015 1500 H1125 V1655 H1105 V1520 H1035 V1655 H1015 Z"/><path class="cs" d="M1500 1450 H1645 V1770 H1500 Z"/><circle class="cs" cx="1572" cy="1865" r="95"/><circle class="vd" cx="1572" cy="1865" r="70"/><path class="cs" d="M1740 1440 V1675 H1760 V1450 M1785 1450 V1675 H1805 V1440"/><path class="cs" d="M1850 1430 V1675 H1870 V1440 M1925 1440 V1675 H1945 V1430"/><path class="ro" d="M380 1231 L380 1203 L560 1203 L560 1190 L600 1190 L600 1203 L648 1203 L648 1158 L712 1158 L712 1200 L900 1200 L910 1145 L1100 1145 L1100 1142 L1395 1142 L1400 1150 L1470 1150 L1475 1138 L1640 1138 L1645 1122 L2035 1122 L2040 1128 L2340 1128 L2345 1140 L2475 1140 L2480 1172 L2640 1172 L2645 1180 L3060 1180 L3060 1065 L3090 1065 L3090 1231 Z"/><path class="ro" d="M380 1231 L380 1203 L560 1203 L560 1190 L600 1190 L600 1203 L648 1203 L648 1158 L712 1158 L712 1200 L900 1200 L910 1145 L1100 1145 L1100 1142 L1395 1142 L1400 1150 L1470 1150 L1475 1138 L1640 1138 L1645 1122 L2035 1122 L2040 1128 L2340 1128 L2345 1140 L2475 1140 L2480 1172 L2640 1172 L2645 1180 L3060 1180 L3060 1065 L3090 1065 L3090 1231 Z" transform="matrix(1 0 0 -1 0 2462)"/><rect class="nz" x="1393" y="1080" width="9" height="58"/><rect class="bk" x="1380" y="1086" width="10" height="56"/><rect class="nz" x="1358" y="1080" width="9" height="58"/><rect class="bk" x="1345" y="1086" width="10" height="56"/><rect class="nz" x="1331" y="1080" width="9" height="58"/><rect class="bk" x="1318" y="1086" width="10" height="56"/><rect class="nz" x="1303" y="1080" width="9" height="58"/><rect class="bk" x="1290" y="1086" width="10" height="56"/><rect class="nz" x="1276" y="1080" width="9" height="58"/><rect class="bk" x="1263" y="1086" width="10" height="56"/><rect class="nz" x="1248" y="1080" width="9" height="58"/><rect class="bk" x="1235" y="1086" width="10" height="56"/><rect class="nz" x="1223" y="1080" width="9" height="58"/><rect class="bk" x="1210" y="1086" width="10" height="56"/><rect class="nz" x="1198" y="1080" width="9" height="58"/><rect class="bk" x="1185" y="1086" width="10" height="56"/><rect class="nz" x="1171" y="1080" width="9" height="58"/><rect class="bk" x="1158" y="1086" width="10" height="56"/><rect class="nz" x="1146" y="1080" width="9" height="58"/><rect class="bk" x="1133" y="1086" width="10" height="56"/><rect class="nz" x="1120" y="1080" width="9" height="58"/><rect class="bk" x="1107" y="1086" width="10" height="56"/><rect class="nz" x="1637" y="1054" width="9" height="60"/><rect class="bk" x="1650" y="1058" width="10" height="64"/><rect class="nz" x="1680" y="1048" width="9" height="66"/><rect class="bk" x="1693" y="1052" width="10" height="70"/><rect class="nz" x="1712" y="1042" width="9" height="72"/><rect class="bk" x="1725" y="1046" width="10" height="76"/><rect class="nz" x="1742" y="1036" width="9" height="78"/><rect class="bk" x="1755" y="1040" width="10" height="82"/><rect class="nz" x="1792" y="1028" width="9" height="86"/><rect class="bk" x="1805" y="1032" width="10" height="90"/><rect class="nz" x="1825" y="1022" width="9" height="92"/><rect class="bk" x="1838" y="1026" width="10" height="96"/><rect class="nz" x="1857" y="1016" width="9" height="98"/><rect class="bk" x="1870" y="1020" width="10" height="102"/><rect class="nz" x="1904" y="1009" width="9" height="105"/><rect class="bk" x="1917" y="1013" width="10" height="109"/><rect class="nz" x="1939" y="1000" width="9" height="114"/><rect class="bk" x="1952" y="1004" width="10" height="118"/><rect class="nz" x="1977" y="986" width="9" height="128"/><rect class="bk" x="1990" y="990" width="10" height="132"/><rect class="nz" x="2036" y="958" width="10" height="172"/><rect class="bk" x="2056" y="950" width="12" height="178"/><rect class="nz" x="2120" y="893" width="10" height="237"/><rect class="bk" x="2142" y="885" width="16" height="243"/><rect class="nz" x="2251" y="813" width="10" height="317"/><rect class="bk" x="2276" y="805" width="22" height="335"/><g transform="matrix(1 0 0 -1 0 2462)"><rect class="nz" x="1393" y="1080" width="9" height="58"/><rect class="bk" x="1380" y="1086" width="10" height="56"/><rect class="nz" x="1358" y="1080" width="9" height="58"/><rect class="bk" x="1345" y="1086" width="10" height="56"/><rect class="nz" x="1331" y="1080" width="9" height="58"/><rect class="bk" x="1318" y="1086" width="10" height="56"/><rect class="nz" x="1303" y="1080" width="9" height="58"/><rect class="bk" x="1290" y="1086" width="10" height="56"/><rect class="nz" x="1276" y="1080" width="9" height="58"/><rect class="bk" x="1263" y="1086" width="10" height="56"/><rect class="nz" x="1248" y="1080" width="9" height="58"/><rect class="bk" x="1235" y="1086" width="10" height="56"/><rect class="nz" x="1223" y="1080" width="9" height="58"/><rect class="bk" x="1210" y="1086" width="10" height="56"/><rect class="nz" x="1198" y="1080" width="9" height="58"/><rect class="bk" x="1185" y="1086" width="10" height="56"/><rect class="nz" x="1171" y="1080" width="9" height="58"/><rect class="bk" x="1158" y="1086" width="10" height="56"/><rect class="nz" x="1146" y="1080" width="9" height="58"/><rect class="bk" x="1133" y="1086" width="10" height="56"/><rect class="nz" x="1120" y="1080" width="9" height="58"/><rect class="bk" x="1107" y="1086" width="10" height="56"/><rect class="nz" x="1637" y="1054" width="9" height="60"/><rect class="bk" x="1650" y="1058" width="10" height="64"/><rect class="nz" x="1680" y="1048" width="9" height="66"/><rect class="bk" x="1693" y="1052" width="10" height="70"/><rect class="nz" x="1712" y="1042" width="9" height="72"/><rect class="bk" x="1725" y="1046" width="10" height="76"/><rect class="nz" x="1742" y="1036" width="9" height="78"/><rect class="bk" x="1755" y="1040" width="10" height="82"/><rect class="nz" x="1792" y="1028" width="9" height="86"/><rect class="bk" x="1805" y="1032" width="10" height="90"/><rect class="nz" x="1825" y="1022" width="9" height="92"/><rect class="bk" x="1838" y="1026" width="10" height="96"/><rect class="nz" x="1857" y="1016" width="9" height="98"/><rect class="bk" x="1870" y="1020" width="10" height="102"/><rect class="nz" x="1904" y="1009" width="9" height="105"/><rect class="bk" x="1917" y="1013" width="10" height="109"/><rect class="nz" x="1939" y="1000" width="9" height="114"/><rect class="bk" x="1952" y="1004" width="10" height="118"/><rect class="nz" x="1977" y="986" width="9" height="128"/><rect class="bk" x="1990" y="990" width="10" height="132"/><rect class="nz" x="2036" y="958" width="10" height="172"/><rect class="bk" x="2056" y="950" width="12" height="178"/><rect class="nz" x="2120" y="893" width="10" height="237"/><rect class="bk" x="2142" y="885" width="16" height="243"/><rect class="nz" x="2251" y="813" width="10" height="317"/><rect class="bk" x="2276" y="805" width="22" height="335"/></g><path class="cl" d="M360 1231 H3120"/><text x="1385" y="1222" font-size="18" text-anchor="middle" class="t c-dim">1</text><text x="1350" y="1222" font-size="18" text-anchor="middle" class="t c-dim">2</text><text x="1323" y="1222" font-size="18" text-anchor="middle" class="t c-dim">3</text><text x="1295" y="1222" font-size="18" text-anchor="middle" class="t c-dim">4</text><text x="1268" y="1222" font-size="18" text-anchor="middle" class="t c-dim">5</text><text x="1240" y="1222" font-size="18" text-anchor="middle" class="t c-dim">6</text><text x="1215" y="1222" font-size="18" text-anchor="middle" class="t c-dim">7</text><text x="1190" y="1222" font-size="18" text-anchor="middle" class="t c-dim">8</text><text x="1163" y="1222" font-size="18" text-anchor="middle" class="t c-dim">9</text><text x="1138" y="1222" font-size="18" text-anchor="middle" class="t c-dim">10</text><text x="1112" y="1222" font-size="18" text-anchor="middle" class="t c-dim">11</text><text x="1655" y="1222" font-size="18" text-anchor="middle" class="t c-dim">12</text><text x="1698" y="1222" font-size="18" text-anchor="middle" class="t c-dim">13</text><text x="1730" y="1222" font-size="18" text-anchor="middle" class="t c-dim">14</text><text x="1760" y="1222" font-size="18" text-anchor="middle" class="t c-dim">15</text><text x="1810" y="1222" font-size="18" text-anchor="middle" class="t c-dim">16</text><text x="1843" y="1222" font-size="18" text-anchor="middle" class="t c-dim">17</text><text x="1875" y="1222" font-size="18" text-anchor="middle" class="t c-dim">18</text><text x="1922" y="1222" font-size="18" text-anchor="middle" class="t c-dim">19</text><text x="1957" y="1222" font-size="18" text-anchor="middle" class="t c-dim">20</text><text x="1995" y="1222" font-size="18" text-anchor="middle" class="t c-dim">21</text><text x="2062" y="1222" font-size="18" text-anchor="middle" class="t c-dim">22</text><text x="2150" y="1222" font-size="18" text-anchor="middle" class="t c-dim">23</text><text x="2287" y="1222" font-size="18" text-anchor="middle" class="t c-dim">24</text><path class="fms fl" id="fMsA" d="M1430 600 V1075 Q1430 1105 1395 1110 H1110 Q1085 1110 1075 1080 L1050 1010"/><path class="fms fl" id="fMsB" d="M1430 1860 V1387 Q1430 1357 1395 1352 H1110 Q1080 1352 1072 1395 V1700"/><path class="frh fl" id="fRh" d="M1572 1770 V1450 Q1572 1380 1640 1372 L2030 1412 L2070 1460 L2300 1530 Q2420 1600 2440 1720 V2000"/><path class="frh fl" id="fRhU" d="M1600 1180 Q1600 1100 1650 1092 L2030 1050 L2070 1002 L2300 932 Q2420 862 2450 780"/><path class="flp fl" id="fVent" d="M1070 1700 V1500 Q1070 1440 1150 1420"/><path class="fex fl" id="fEx" d="M1773 1450 V1720 M1897 1450 V1720 M2165 1600 V2060"/><path class="fgl fl" id="fGl" d="M900 1300 V1720 M930 1300 V1720 M960 1300 V1720 M2405 1330 V1460 L2460 1520 V1720"/><g class="pt" data-p="msin" tabindex="0" role="button"><text x="1430" y="560" font-size="24" text-anchor="middle" font-weight="600" class="t c-fg">Main steam inlet (MSV/CV A)</text><text x="1430" y="590" font-size="24" text-anchor="middle" font-weight="400" class="t c-dim">p67 top, from CV(A)</text></g><g class="pt" data-p="msin" tabindex="0" role="button"><text x="1340" y="1880" font-size="24" text-anchor="end" font-weight="600" class="t c-fg">Main steam inlet</text><text x="1340" y="1910" font-size="24" text-anchor="end" font-weight="400" class="t c-dim">(CV B), p67 bottom</text></g><g class="pt" data-p="hpex" tabindex="0" role="button"><text x="1012" y="1760" font-size="24" text-anchor="start" font-weight="600" class="t c-fg">HP exhaust</text><text x="1012" y="1790" font-size="24" text-anchor="start" font-weight="400" class="t c-dim">to cold reheat NRV</text></g><g class="pt" data-p="rhin" tabindex="0" role="button"><text x="1572" y="2005" font-size="24" text-anchor="middle" font-weight="600" class="t c-fg">Hot reheat inlet</text><text x="1572" y="2035" font-size="24" text-anchor="middle" font-weight="400" class="t c-dim">from RSV/ICV</text></g><g class="pt" data-p="ext" tabindex="0" role="button"><text x="1835" y="1760" font-size="24" text-anchor="middle" font-weight="600" class="t c-fg">Extractions</text><text x="1835" y="1790" font-size="24" text-anchor="middle" font-weight="400" class="t c-dim">No.2, No.3,4</text></g><g class="pt" data-p="ext" tabindex="0" role="button"><text x="2180" y="2070" font-size="24" text-anchor="start" font-weight="600" class="t c-fg">No.5,6 extraction</text></g><g class="pt" data-p="gland" tabindex="0" role="button"><text x="975" y="1760" font-size="24" text-anchor="end" font-weight="600" class="t c-fg">Gland lines</text><text x="975" y="1790" font-size="24" text-anchor="end" font-weight="400" class="t c-dim">No.1 packing</text></g><g class="pt" data-p="relief" tabindex="0" role="button"><text x="2305" y="452" font-size="24" text-anchor="middle" font-weight="600" class="t c-fg">Atmospheric relief diaphragm</text></g><path class="ldr" d="M2165 2035 V2055"/><g class="pt bdg" data-p="1" tabindex="0" role="button" aria-label="Part 1"><path class="ldr" d="M450 1000 L500 1150"/><circle cx="500" cy="1150" r="5" class="dot"/><circle class="bd" cx="450" cy="1000" r="24"/><text x="450" y="1008" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">1</text></g><g class="pt bdg" data-p="23" tabindex="0" role="button" aria-label="Part 23"><path class="ldr" d="M540 1000 L560 1195"/><circle cx="560" cy="1195" r="5" class="dot"/><circle class="bd" cx="540" cy="1000" r="24"/><text x="540" y="1008" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">23</text></g><g class="pt bdg" data-p="24" tabindex="0" role="button" aria-label="Part 24"><path class="ldr" d="M610 1000 L615 1190"/><circle cx="615" cy="1190" r="5" class="dot"/><circle class="bd" cx="610" cy="1000" r="24"/><text x="610" y="1008" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">24</text></g><g class="pt bdg" data-p="4" tabindex="0" role="button" aria-label="Part 4"><path class="ldr" d="M700 1000 L680 1160"/><circle cx="680" cy="1160" r="5" class="dot"/><circle class="bd" cx="700" cy="1000" r="24"/><text x="700" y="1008" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">4</text></g><g class="pt bdg" data-p="25" tabindex="0" role="button" aria-label="Part 25"><path class="ldr" d="M782 1000 L810 1140"/><circle cx="810" cy="1140" r="5" class="dot"/><circle class="bd" cx="782" cy="1000" r="24"/><text x="782" y="1008" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">25</text></g><g class="pt bdg" data-p="2" tabindex="0" role="button" aria-label="Part 2"><path class="ldr" d="M845 1000 L832 1180"/><circle cx="832" cy="1180" r="5" class="dot"/><circle class="bd" cx="845" cy="1000" r="24"/><text x="845" y="1008" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">2</text></g><g class="pt bdg" data-p="6" tabindex="0" role="button" aria-label="Part 6"><path class="ldr" d="M960 840 L960 1135"/><circle cx="960" cy="1135" r="5" class="dot"/><circle class="bd" cx="960" cy="840" r="24"/><text x="960" y="848" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">6</text></g><g class="pt bdg" data-p="17" tabindex="0" role="button" aria-label="Part 17"><path class="ldr" d="M1100 840 L1100 955"/><circle cx="1100" cy="955" r="5" class="dot"/><circle class="bd" cx="1100" cy="840" r="24"/><text x="1100" y="848" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">17</text></g><g class="pt bdg" data-p="14" tabindex="0" role="button" aria-label="Part 14"><path class="ldr" d="M1170 840 L1170 1100"/><circle cx="1170" cy="1100" r="5" class="dot"/><circle class="bd" cx="1170" cy="840" r="24"/><text x="1170" y="848" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">14</text></g><g class="pt bdg" data-p="11" tabindex="0" role="button" aria-label="Part 11"><path class="ldr" d="M1240 840 L1215 1078"/><circle cx="1215" cy="1078" r="5" class="dot"/><circle class="bd" cx="1240" cy="840" r="24"/><text x="1240" y="848" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">11</text></g><g class="pt bdg" data-p="18" tabindex="0" role="button" aria-label="Part 18"><path class="ldr" d="M1300 840 L1290 995"/><circle cx="1290" cy="995" r="5" class="dot"/><circle class="bd" cx="1300" cy="840" r="24"/><text x="1300" y="848" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">18</text></g><g class="pt bdg" data-p="7" tabindex="0" role="button" aria-label="Part 7"><path class="ldr" d="M1560 820 L1560 1140"/><circle cx="1560" cy="1140" r="5" class="dot"/><circle class="bd" cx="1560" cy="820" r="24"/><text x="1560" y="828" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">7</text></g><g class="pt bdg" data-p="12" tabindex="0" role="button" aria-label="Part 12"><path class="ldr" d="M1690 880 L1698 1046"/><circle cx="1698" cy="1046" r="5" class="dot"/><circle class="bd" cx="1690" cy="880" r="24"/><text x="1690" y="888" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">12</text></g><g class="pt bdg" data-p="15" tabindex="0" role="button" aria-label="Part 15"><path class="ldr" d="M1790 880 L1775 1080"/><circle cx="1775" cy="1080" r="5" class="dot"/><circle class="bd" cx="1790" cy="880" r="24"/><text x="1790" y="888" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">15</text></g><g class="pt bdg" data-p="13" tabindex="0" role="button" aria-label="Part 13"><path class="ldr" d="M2120 640 L2145 895"/><circle cx="2145" cy="895" r="5" class="dot"/><circle class="bd" cx="2120" cy="640" r="24"/><text x="2120" y="648" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">13</text></g><g class="pt bdg" data-p="16" tabindex="0" role="button" aria-label="Part 16"><path class="ldr" d="M2250 640 L2280 840"/><circle cx="2280" cy="840" r="5" class="dot"/><circle class="bd" cx="2250" cy="640" r="24"/><text x="2250" y="648" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">16</text></g><g class="pt bdg" data-p="19" tabindex="0" role="button" aria-label="Part 19"><path class="ldr" d="M2620 620 L2556 700"/><circle cx="2556" cy="700" r="5" class="dot"/><circle class="bd" cx="2620" cy="620" r="24"/><text x="2620" y="628" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">19</text></g><g class="pt bdg" data-p="20" tabindex="0" role="button" aria-label="Part 20"><path class="ldr" d="M2620 470 L2470 485"/><circle cx="2470" cy="485" r="5" class="dot"/><circle class="bd" cx="2620" cy="470" r="24"/><text x="2620" y="478" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">20</text></g><g class="pt bdg" data-p="8" tabindex="0" role="button" aria-label="Part 8"><path class="ldr" d="M2405 990 L2405 1135"/><circle cx="2405" cy="1135" r="5" class="dot"/><circle class="bd" cx="2405" cy="990" r="24"/><text x="2405" y="998" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">8</text></g><g class="pt bdg" data-p="3" tabindex="0" role="button" aria-label="Part 3"><path class="ldr" d="M2561 960 L2561 1175"/><circle cx="2561" cy="1175" r="5" class="dot"/><circle class="bd" cx="2561" cy="960" r="24"/><text x="2561" y="968" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">3</text></g><g class="pt bdg" data-p="25" tabindex="0" role="button" aria-label="Part 25"><path class="ldr" d="M2660 960 L2600 1140"/><circle cx="2600" cy="1140" r="5" class="dot"/><circle class="bd" cx="2660" cy="960" r="24"/><text x="2660" y="968" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">25</text></g><g class="pt bdg" data-p="21" tabindex="0" role="button" aria-label="Part 21"><path class="ldr" d="M2972 1000 L2972 1090"/><circle cx="2972" cy="1090" r="5" class="dot"/><circle class="bd" cx="2972" cy="1000" r="24"/><text x="2972" y="1008" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">21</text></g><g class="pt bdg" data-p="10" tabindex="0" role="button" aria-label="Part 10"><path class="ldr" d="M3110 1000 L3075 1100"/><circle cx="3075" cy="1100" r="5" class="dot"/><circle class="bd" cx="3110" cy="1000" r="24"/><text x="3110" y="1008" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">10</text></g><g class="pt bdg" data-p="9" tabindex="0" role="button" aria-label="Part 9"><path class="ldr" d="M1250 1290 L1250 1235"/><circle cx="1250" cy="1235" r="5" class="dot"/><circle class="bd" cx="1250" cy="1290" r="24"/><text x="1250" y="1298" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">9</text></g><g class="pt bdg" data-p="22" tabindex="0" role="button" aria-label="Part 22"><path class="ldr" d="M555 1340 L610 1262"/><circle cx="610" cy="1262" r="5" class="dot"/><circle class="bd" cx="555" cy="1340" r="24"/><text x="555" y="1348" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">22</text></g><g class="pt bdg" data-p="26" tabindex="0" role="button" aria-label="Part 26"><path class="ldr" d="M2700 1470 L2700 1265"/><circle cx="2700" cy="1265" r="5" class="dot"/><circle class="bd" cx="2700" cy="1470" r="24"/><text x="2700" y="1478" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">26</text></g><g class="pt bdg" data-p="5" tabindex="0" role="button" aria-label="Part 5"><path class="ldr" d="M893 1500 L880 1215"/><circle cx="880" cy="1215" r="5" class="dot"/><circle class="bd" cx="893" cy="1500" r="24"/><text x="893" y="1508" font-size="24" text-anchor="middle" font-weight="600" class="t c-acc">5</text></g><path class="th" d="M832 2105 H2561 M832 2090 V2120 M2561 2090 V2120"/><text x="1300" y="2096" font-size="22" text-anchor="middle" class="t c-dim">5555 (No.1 to No.2 bearing CL, printed p67)</text></svg></div>
+ <div class="legend"><span><i class="cw" style="--cw:var(--ms)"></i>Main steam</span><span><i class="cw" style="--cw:var(--rh)"></i>Reheat steam (IP at LP)</span><span><i class="cw" style="--cw:var(--lp)"></i>HP papuntang condenser (ventilator)</span><span><i class="cw" style="--cw:var(--ex)"></i>Extraction</span><span><i class="cw" style="--cw:var(--gl)"></i>Gland / packing leak-off</span></div>
+ <div class="grid2">
+  <div class="info" id="tInfo" aria-live="polite"></div>
+  <div>
+   <p class="note" id="tState"></p>
+   <h3>Particulars (p67)</h3>
+   <dl class="facts"><dt>Type</dt><dd>SF-33.5</dd><dt>Rated output</dt><dd>150 MW, 3600 rpm</dd><dt>Main steam</dt><dd>12.36 MPa (126.0 ata), 538 °C</dd><dt>Reheat steam</dt><dd>3.41 MPa (34.77 ata), 538 °C</dd><dt>Exhaust</dt><dd>6.87 kPa (0.070 ata)</dd></dl>
+  </div>
+ </div>
+</section>
+
+<section class="card" id="s2">
+ <p class="kick">2 · Main stop valve (trace ng 310SK07-379, MAINT p566 to 568)</p>
+ <h2>MSV: on/off, may internal bypass at strainer</h2>
+ <p class="lead">Bukas buo o sarado lang ang MSV. Bago bumuka ang main disc, bumubukas muna ang maliit na internal bypass sa loob ng disc (S2). Ito ang "CV chest prewarming valve" sa p76. Nasa paligid ng disc ang strainer (mga 14 mesh, p470 to 472).</p>
+ <div class="two">
+  <div class="scroll"><svg id="msv" viewBox="-80 230 1180 1060" role="img" aria-label="Section ng main stop valve"><path class="cs" d="M-60 800 H300 V690 H130 V535 H750 V690 Q790 760 760 880 Q730 990 600 1060 L560 1060 V1220 H320 V1060 Q290 1040 280 1000 V1000 H-60 Z"/><path class="vd" id="msChest" d="M-60 830 H300 V720 H600 Q640 800 610 900 Q590 980 540 1000 H520 L500 985 H380 L360 1000 H330 Q310 990 305 970 H-60 Z"/><path class="vd" id="msOut" d="M360 1000 H520 L535 1030 V1220 H345 V1030 Z"/><path class="stel" d="M358 992 l22 -10 l4 10 l-22 10 Z M522 992 l-22 -10 l-4 10 l22 10 Z"/><rect class="eqf" x="370" y="760" width="140" height="40"/><path class="eqf" d="M405 560 H420 V690 H405 Z M460 560 H475 V690 H460 Z"/><rect class="th" id="msStr" x="330" y="740" width="230" height="240" stroke-dasharray="6 6" fill="none"/><g id="msDiscG"><path class="eq" d="M392 880 H488 V935 Q488 980 440 985 Q392 980 392 935 Z"/><path class="vd" d="M428 950 H452 V986 H428 Z"/></g><g id="msStemG"><rect class="ro" x="422" y="380" width="36" height="540"/><path class="ro" d="M426 958 H454 V978 Q440 990 426 978 Z"/></g><rect class="eq" x="300" y="250" width="280" height="130" rx="10"/><rect class="oilf" id="msOil" x="306" y="340" width="268" height="34" opacity="0.55"/><rect class="pis" id="msPiston" x="306" y="320" width="268" height="20"/><path class="spr" id="msSpring" d=""/><text x="600" y="290" font-size="20" class="t c-dim">Actuator (schematic, p76)</text><text x="600" y="318" font-size="20" class="t c-dim">servo 2 coils, fast acting</text><text x="600" y="346" font-size="20" class="t c-dim">valve, dump valve, ZT x3</text><path class="ldr" d="M250 690 L330 800"/><text x="250" y="682" font-size="22" text-anchor="end" class="t c-fg">Strainer (14 mesh)</text><path class="ldr" d="M250 1100 L392 935"/><text x="250" y="1124" font-size="22" text-anchor="end" class="t c-fg">Main disc</text><path class="ldr" d="M250 1160 L440 975"/><text x="250" y="1184" font-size="22" text-anchor="end" class="t c-fg">Internal bypass (S2 = 3.2)</text><path class="ldr" d="M250 500 L422 520"/><text x="250" y="492" font-size="22" text-anchor="end" class="t c-fg">Valve stem</text><path class="ldr" d="M820 1000 L515 995"/><text x="820" y="1024" font-size="22" text-anchor="start" class="t c-fg">Seat</text><path class="ldr" d="M820 800 L510 780"/><text x="820" y="792" font-size="22" text-anchor="start" class="t c-fg">Valve cap / bushing</text><path class="fms fl" id="msFin" d="M-60 900 H330"/><path class="fms fl" id="msFout" d="M440 1010 V1270"/><text x="-60" y="780" font-size="22" font-weight="600" class="t c-ms">Steam inlet</text><text x="560" y="1200" font-size="22" font-weight="600" class="t">To control valve</text></svg></div>
+  <div>
+   <div class="ctl"><label for="msR">MSV stroke: <b id="msV">0 %</b></label><input id="msR" type="range" min="0" max="100" value="0"></div>
+   <div class="read">
+    <div class="g"><div class="k">Bypass lift (S2)</div><div class="v" id="msB">0.0 / 3.2 mm</div></div>
+    <div class="g"><div class="k">Main disc lift (S1)</div><div class="v" id="msM">0 / 112 mm</div></div>
+   </div>
+   <p id="msT"></p>
+   <p class="src">Stroke: main 112 ±1.5 mm, bypass 3.2 ±0.1 mm (MAINT p559, STIE-14610). S1 = L1 − S2 (p566 to 567, STIE-14613). Pinalaki nang 4 beses ang bypass lift sa drawing para makita. Actuator: servo valve (2 coils), solenoid fast acting valve, dump valve, 3 ZT bawat MSV (p76, 310SD14-354 sh.5).</p>
+  </div>
+ </div>
+</section>
+
+<section class="card" id="s3">
+ <p class="kick">3 · Control valve (trace ng 310PK01-994, MAINT p526; yoke p530 to 531)</p>
+ <h2>CV: pilot muna, saka main disc</h2>
+ <p class="lead">Hinihila ng actuator ang stem pakaliwa para bumuka. Sa CV(A), unang 5 mm ng stem ang nagbubukas ng maliit na pilot sa loob ng disc. Pagkatapos noon, kasama na ang main disc hanggang 43 mm. Spring ang nagsasara; control oil ang nagbubukas. Kapag nawala ang trip oil, binubuksan ng dump valve ang oil sa drain at isinasara ng spring ang valve.</p>
+ <div class="seg" role="group" aria-label="Aling CV"><button type="button" data-cv="A" aria-pressed="true">CV(A), may pilot</button><button type="button" data-cv="B" aria-pressed="false">CV(B), walang pilot</button></div>
+ <div class="seg" role="group" aria-label="Kondisyon">
+  <button type="button" data-f="ok" aria-pressed="true">Normal</button>
+  <button type="button" data-f="servo" aria-pressed="false">Servo o oil</button>
+  <button type="button" data-f="pilot" aria-pressed="false">Pilot lang (disc naipit)</button>
+  <button type="button" data-f="disc" aria-pressed="false">Disc hiwalay sa stem</button>
+  <button type="button" data-f="msv" aria-pressed="false">MSV sarado</button>
+  <button type="button" data-f="str" aria-pressed="false">Strainer barado</button>
+  <button type="button" data-f="nrv" aria-pressed="false">Cold reheat NRV sarado</button>
+ </div>
+ <div class="ctl"><label for="cvR">Position demand mula TCS: <b id="cvV">20 %</b></label><input id="cvR" type="range" min="0" max="100" value="20"></div>
+ <div class="scroll"><svg id="cv" viewBox="-640 -40 2280 860" role="img" aria-label="Section ng control valve"><path class="cs" d="M705 118 H870 L885 140 Q1000 66 1160 72 Q1290 82 1312 140 H1430 V400 H1312 Q1290 458 1160 466 Q1110 468 1125 470 V700 H1035 V470 Q1000 462 885 400 L870 422 H705 Z"/><path class="vd stmz" id="cvChest" d="M885 175 Q1000 108 1150 112 Q1210 118 1228 170 H1060 V370 H1228 Q1210 422 1150 428 H1110 V700 H1050 V428 Q990 425 885 365 Z"/><path class="vd" id="cvOut" d="M1238 150 H1430 V390 H1238 Q1250 270 1238 150 Z"/><path class="eqf" d="M880 175 H1062 V203 H880 Z M880 337 H1062 V365 H880 Z"/><path class="th" d="M900 203 v-8 M900 337 v8 M914 203 v-8 M914 337 v8 M928 203 v-8 M928 337 v8 M942 203 v-8 M942 337 v8 M956 203 v-8 M956 337 v8 M970 203 v-8 M970 337 v8 M984 203 v-8 M984 337 v8 M998 203 v-8 M998 337 v8 M1012 203 v-8 M1012 337 v8 M1026 203 v-8 M1026 337 v8 M1040 203 v-8 M1040 337 v8 M1054 203 v-8 M1054 337 v8 "/><path class="eqf" d="M1222 150 H1240 Q1232 172 1228 176 H1222 Z M1222 390 H1240 Q1232 368 1228 364 H1222 Z"/><path class="stel" d="M1218 168 l14 6 l-4 8 l-12 -6 Z M1218 372 l14 -6 l-4 -8 l-12 6 Z"/><path class="eqf" d="M705 210 H880 V232 H705 Z M705 308 H880 V330 H705 Z"/><g id="cvDiscG"><path class="eq" d="M1062 205 H1172 Q1216 196 1230 230 Q1240 270 1230 310 Q1216 344 1172 335 H1062 Z"/><path class="vd" id="cvPilotPort" d="M1196 249 H1236 V291 H1196 Z"/><path class="th" d="M1100 215 V325 M1130 215 V325"/></g><g id="cvStemG"><rect class="ro" x="-300" y="233" width="1480" height="74"/><path class="ro" d="M1150 244 H1192 Q1204 270 1192 296 H1150 Z"/></g><rect class="eq" x="-520" y="150" width="380" height="240" rx="10"/><rect class="oilf" id="cvOil" x="-300" y="156" width="154" height="228" opacity="0.55"/><path class="spr" id="cvSpring" d=""/><rect class="pis" id="cvPiston" x="-320" y="156" width="22" height="228"/><rect class="eq" x="-470" y="20" width="220" height="80" rx="8"/><text x="-360" y="52" font-size="22" text-anchor="middle" font-weight="600" class="t">Servo valve</text><text x="-360" y="82" font-size="20" text-anchor="middle" class="t c-dim">2 coils (p75)</text><rect class="eq" x="-470" y="440" width="220" height="80" rx="8"/><text x="-360" y="472" font-size="22" text-anchor="middle" font-weight="600" class="t">Dump valve</text><text x="-360" y="502" font-size="20" text-anchor="middle" class="t c-dim">+ fast acting solenoid</text><path class="foil fl" id="cvOilIn" d="M-600 60 H-470 M-250 60 H-200 V156"/><path class="ftrip fl" id="cvTrip" d="M-600 480 H-470"/><path class="foil fl" id="cvDump" d="M-200 384 V480 H-250"/><text x="-600" y="-12" font-size="20" class="t c-oil">Control oil 163 kg/cm2g</text><text x="-600" y="540" font-size="20" class="t c-trip">Trip oil (ETS)</text><text x="-245" y="566" font-size="20" class="t c-dim">to drain (FCD)</text><path class="th" d="M-250 520 V550"/><rect class="eqf" x="-120" y="80" width="90" height="70" rx="6"/><text x="-75" y="122" font-size="20" text-anchor="middle" font-weight="600" class="t">ZT x3</text><path class="th" d="M-75 150 V233"/><path class="th" d="M-140 640 H60 M-140 640 v-18 M-120 640 v-10 M-100 640 v-10 M-80 640 v-10 M-60 640 v-10 M-40 640 v-18 M-20 640 v-10 M0 640 v-10 M20 640 v-10 M40 640 v-10 M60 640 v-18 "/><path class="ptr" id="cvPtr" d="M60 646 l-10 18 h20 Z"/><text x="-140" y="700" font-size="20" class="t c-dim">Local lift indicator</text><text x="60" y="620" font-size="18" text-anchor="middle" class="t c-dim">0</text><text x="-140" y="620" font-size="18" text-anchor="middle" class="t c-dim">48 mm</text><path class="th" d="M-75 307 V560"/><rect class="eqf" x="-90" y="560" width="30" height="30"/><text x="-500" y="130" font-size="20" class="t c-dim">Spring closes</text><text x="-290" y="130" font-size="20" class="t c-dim">Oil opens</text><text x="-520" y="420" font-size="20" class="t c-dim">Actuator (schematic, p75 / p530)</text><path class="ldr" d="M1300 40 L1215 180"/><text x="1300" y="32" font-size="22" text-anchor="start" class="t c-fg">Seat φ165.1, stellite</text><path class="ldr" d="M1480 520 L1200 320"/><text x="1480" y="544" font-size="22" text-anchor="start" class="t c-fg">Main disc</text><path class="ldr" d="M960 40 L980 190"/><text x="960" y="32" font-size="22" text-anchor="middle" class="t c-fg">Sleeve (labyrinth)</text><path class="ldr" d="M620 600 L1170 270"/><text x="620" y="624" font-size="22" text-anchor="middle" class="t c-fg">Pilot (bypass) φ50.8, lift 5</text><path class="ldr" d="M640 40 L760 232"/><text x="640" y="32" font-size="22" text-anchor="middle" class="t c-fg">Valve stem</text><path class="fms fl" id="cvFin" d="M1080 740 V400"/><path class="fms fl" id="cvFout" d="M1250 270 H1560"/><text x="1080" y="800" font-size="22" text-anchor="middle" class="t c-ms">Steam inlet (from MSV)</text><text x="1460" y="330" font-size="22" font-weight="600" class="t">To HP turbine</text><text x="1460" y="358" font-size="20" class="t c-dim">(1st stage)</text><path class="th" d="M1180 520 H1237 M1180 510 V530 M1237 510 V530"/><text x="1160" y="590" font-size="20" class="t c-dim">stroke: 5 pilot + 43 main = 48 (p526, p530)</text></svg></div>
+ <div class="read">
+  <div class="g"><div class="k">Demand</div><div class="v" id="rD">20 %</div></div>
+  <div class="g"><div class="k">ZT sa DCS</div><div class="v" id="rZ">20 %</div></div>
+  <div class="g"><div class="k">Local lift</div><div class="v" id="rL">9.6 mm</div></div>
+  <div class="g"><div class="k">Pilot lift</div><div class="v" id="rP">5.0 mm</div></div>
+  <div class="g"><div class="k">Main disc lift</div><div class="v" id="rM">4.6 mm</div></div>
+  <div class="g"><div class="k">Bukas na area (CALC)</div><div class="v" id="rA">--</div></div>
+  <div class="g"><div class="k">1st stage pressure</div><div class="v" id="rS">--</div></div>
+ </div>
+ <p class="note" id="cvT"></p>
+ <p class="src">Seat φ165.1, pilot φ50.8, pilot lift 5, stroke 43 (p526). CV(A): main 43 ±3, bypass (pilot) 5 +0.1/0 (p562). CV(B): main 43 ±3, walang bypass sa listahan (p565). Actuator stroke 48.2; ports ETS, FCD drain, FAS hydraulic, displacement transducer (p530). Solenoid fast acting valve at dump valve (p75). Bukas na area = CALC: main π × 165.1 × lift, pilot π × 50.8 × lift, hanggang sa area ng butas. Walang lift vs flow curve sa docs (NO-SOURCE), kaya area lang ang ipinapakita, hindi T/H.</p>
+</section>
+
+<section class="card" id="s4">
+ <p class="kick">4 · Combined reheat valve (schematic mula 310PK01-996 p818, RSV p846, ICV p850)</p>
+ <h2>RSV at ICV sa iisang katawan</h2>
+ <p class="lead">Hot reheat papasok mula sa ibaba, dadaan sa strainer, saka sa RSV at ICV, palabas papuntang IP turbine. RSV = on/off. ICV = nagre-regulate. Sa IP start, ICV ang nagpapaikot ng turbine at nagdadala ng unang load.</p>
+ <div class="seg" role="group" aria-label="RSV"><button type="button" id="rsvB" aria-pressed="true">RSV bukas</button></div>
+ <div class="ctl"><label for="icR">ICV stroke: <b id="icV">40 %</b></label><input id="icR" type="range" min="0" max="100" value="40"></div>
+ <div class="scroll"><svg id="crv" viewBox="0 40 1300 680" role="img" aria-label="Schematic ng combined reheat valve"><path class="cs" d="M120 150 H760 Q840 150 870 210 L980 210 V120 H1140 V210 Q1180 260 1180 330 V420 Q1180 470 1130 480 H760 V470 H600 V620 H460 V470 H120 Z"/><path class="vd" id="crIn" d="M190 190 H740 V440 H560 V620 H500 V440 H190 Z"/><path class="vd" id="crOut" d="M770 240 H1000 V140 H1120 V240 Q1150 280 1150 330 V410 Q1150 440 1120 440 H770 Z"/><path class="frh fl" id="crFin" d="M530 700 V330 H690"/><path class="frh fl" id="crFout" d="M760 330 H1060 V60"/><rect class="th" id="crStr" x="300" y="205" width="420" height="220" stroke-dasharray="6 6" fill="none"/><path class="stel" d="M748 220 h20 v30 h-20 Z M748 380 h20 v30 h-20 Z"/><path class="eqf" d="M740 190 H770 V250 H740 Z M740 380 H770 V440 H740 Z"/><g id="crIcvG"><path class="eq" d="M560 230 H748 V265 H660 V365 H748 V400 H560 Z"/><rect class="ro" x="20" y="300" width="545" height="30"/></g><g id="crRsvG"><path class="eqf" d="M672 270 H750 V360 H672 Z"/><rect class="ro" x="745" y="302" width="500" height="26"/></g><text x="30" y="280" font-size="22" font-weight="600" class="t">ICV actuator</text><text x="30" y="370" font-size="20" class="t c-dim">(stroke 127)</text><text x="1250" y="280" font-size="22" text-anchor="end" font-weight="600" class="t">RSV actuator</text><text x="1250" y="370" font-size="20" text-anchor="end" class="t c-dim">(stroke 140)</text><text x="530" y="660" font-size="22" text-anchor="middle" font-weight="600" class="t c-rh">Hot reheat inlet</text><text x="1060" y="110" font-size="22" text-anchor="middle" font-weight="600" class="t">To IP turbine</text><text x="310" y="190" font-size="20" class="t c-dim">Strainer (fine 14 mesh / perforated plate)</text><text x="610" y="520" font-size="20" text-anchor="middle" class="t">ICV disc (outer, seat φ476)</text><text x="780" y="560" font-size="20" text-anchor="start" class="t">RSV disc (inner, seat φ406)</text><path class="ldr" d="M610 500 L640 400 M790 540 L720 360"/></svg></div>
+ <p id="crT"></p>
+ <p class="src">Stroke: RSV 140 ±3, bypass 11.5 ±0.1; ICV 127 ±1.5, bypass 13 ±0.1 (MAINT p843, STIE-14628). Seat RSV φ406, ICV φ476, bypass φ120 sa pareho (p818). Strainer: temporary fine 14 mesh, temporary coarse mesh, permanent perforated plate (p818). ICV parts: upper head, sealing ring, ICV stem, intercept valve, valve seat (p850). RSV parts: bypass valve, valve cap, RSV disc, RSV stem, collar (p846). ICV: servo 2 coils; RSV at ICV: solenoid fast acting valve at dump valve (p77). Schematic ito: tama ang mga bahagi at direksyon, hindi eksakto ang hugis at hindi to scale ang galaw.</p>
+</section>
+
+<section class="card" id="s5">
+ <p class="kick">5 · Control oil at trip oil (schematic mula STIE-14843 p854 to 858, 310SD14-354 sh.7 p78)</p>
+ <h2>Paano sabay-sabay nagsasara ang lahat ng valve</h2>
+ <p class="lead">Pindutin ang A1, A2, B1, B2 o Hand trip. Dalawang solenoid sa isang MTSV ang kailangang ma-de-energize bago ito mag-dump. Magkasunod (series) ang MTSV A at B, kaya alinman sa dalawa ay sapat para mag-trip.</p>
+ <div class="seg"><button type="button" id="oReset">Reset (lahat energized)</button><button type="button" id="oTest">Test: B1 lang</button></div>
+ <div class="scroll"><svg id="oil" viewBox="0 20 1420 740" role="img" aria-label="Schematic ng control oil at trip oil"><rect class="eq" x="20" y="40" width="220" height="80" rx="8"/><text x="130" y="76" font-size="22" text-anchor="middle" font-weight="600" class="t">Control oil pumps</text><text x="130" y="104" font-size="18" text-anchor="middle" class="t c-dim">A / B, filters A / B</text><rect class="eq" x="30" y="170" width="190" height="80" rx="8"/><text x="125" y="206" font-size="22" text-anchor="middle" font-weight="600" class="t">Accumulator</text><text x="125" y="234" font-size="18" text-anchor="middle" class="t c-dim">N2 10 MPag</text><path class="foil fl" id="oCtl" d="M220 80 H1020 M125 120 V170 M220 80 H260 V420"/><text x="300" y="64" font-size="20" class="t c-oil">Control oil 163 kg/cm2g to every valve servo</text><rect class="eq" x="270" y="380" width="160" height="70" rx="8"/><text x="350" y="411" font-size="22" text-anchor="middle" font-weight="600" class="t">Orifice</text><text x="350" y="439" font-size="18" text-anchor="middle" class="t c-dim">φ5.0</text><rect class="eq" x="470" y="330" width="230" height="190" rx="8" id="oEtd"/><text x="585" y="433" font-size="22" text-anchor="middle" font-weight="600" class="t"></text><text x="585" y="355" font-size="20" text-anchor="middle" font-weight="600" class="t">Emergency trip device</text><rect class="eqf" x="490" y="370" width="90" height="130" rx="6" id="oMa"/><text x="535" y="395" font-size="18" text-anchor="middle" font-weight="600" class="t">MTSV A</text><rect class="eqf" x="592" y="370" width="90" height="130" rx="6" id="oMb"/><text x="637" y="395" font-size="18" text-anchor="middle" font-weight="600" class="t">MTSV B</text><g class="sol" id="sA1" data-sol="A1" tabindex="0" role="button"><rect class="eq" x="500" y="410" width="70" height="36" rx="4"/><text x="535" y="435" font-size="20" text-anchor="middle" font-weight="600" class="t">A1</text></g><g class="sol" id="sA2" data-sol="A2" tabindex="0" role="button"><rect class="eq" x="500" y="455" width="70" height="36" rx="4"/><text x="535" y="480" font-size="20" text-anchor="middle" font-weight="600" class="t">A2</text></g><g class="sol" id="sB1" data-sol="B1" tabindex="0" role="button"><rect class="eq" x="602" y="410" width="70" height="36" rx="4"/><text x="637" y="435" font-size="20" text-anchor="middle" font-weight="600" class="t">B1</text></g><g class="sol" id="sB2" data-sol="B2" tabindex="0" role="button"><rect class="eq" x="602" y="455" width="70" height="36" rx="4"/><text x="637" y="480" font-size="20" text-anchor="middle" font-weight="600" class="t">B2</text></g><path class="foil fl" id="oFeed" d="M350 450 V480 H470"/><path class="ftrip fl" id="oTrip" d="M700 425 H760 V200 H1020 M760 425 V560 H1020"/><rect class="eq" x="780" y="580" width="190" height="70" rx="8"/><text x="875" y="611" font-size="22" text-anchor="middle" font-weight="600" class="t">Trip accumulator</text><text x="875" y="639" font-size="18" text-anchor="middle" class="t c-dim">N2 7.9 MPag</text><text x="780" y="290" font-size="20" class="t c-trip">Trip oil (ETS), orifice φ1.6,</text><text x="780" y="316" font-size="20" class="t c-trip">to every dump valve</text><path class="ftrip" d="M875 560 V580"/><rect class="eq" x="1020" y="40" width="260" height="200" rx="8"/><text x="1150" y="148" font-size="22" text-anchor="middle" font-weight="600" class="t"></text><rect class="eqf" id="oV0" x="1035" y="52" width="230" height="38" rx="5"/><text x="1150" y="78" font-size="20" text-anchor="middle" font-weight="600" class="t">MSV A / B</text><rect class="eqf" id="oV1" x="1035" y="98" width="230" height="38" rx="5"/><text x="1150" y="124" font-size="20" text-anchor="middle" font-weight="600" class="t">CV A / B</text><rect class="eqf" id="oV2" x="1035" y="144" width="230" height="38" rx="5"/><text x="1150" y="170" font-size="20" text-anchor="middle" font-weight="600" class="t">RSV A / B</text><rect class="eqf" id="oV3" x="1035" y="190" width="230" height="38" rx="5"/><text x="1150" y="216" font-size="20" text-anchor="middle" font-weight="600" class="t">ICV A / B</text><rect class="eq" x="1020" y="520" width="260" height="80" rx="8"/><text x="1150" y="556" font-size="22" text-anchor="middle" font-weight="600" class="t">Relay dump valve</text><text x="1150" y="584" font-size="18" text-anchor="middle" class="t c-dim">on main oil tank</text><path class="fair fl" id="oAir" d="M1280 560 H1360 V700 H860"/><rect class="eqf" id="oNrv" x="540" y="670" width="310" height="60" rx="6"/><text x="695" y="708" font-size="20" text-anchor="middle" font-weight="600" class="t">Extraction + cold reheat NRVs</text><text x="1370" y="640" font-size="20" class="t c-air">Air</text><g class="sol" id="sHT" data-sol="HT" tabindex="0" role="button"><rect class="eq" x="270" y="560" width="160" height="60" rx="6"/><text x="350" y="598" font-size="20" text-anchor="middle" font-weight="600" class="t">Hand trip</text></g><path class="th" d="M350 560 V520 M430 590 H470 V520"/></svg></div>
+ <p class="note" id="oT"></p>
+ <p class="src">Control oil 163 kg/cm2g, pumps A/B, filters A/B, accumulator N2 10 MPag. Orifice φ5.0 papuntang emergency trip device sa main oil tank. Trip oil accumulator N2 7.9 MPag, orifice φ1.6, ETS papunta sa dump valve ng MSV, CV, RSV, ICV. Relay dump valve: inilalabas ang air, kaya nagsasara ang extraction at cold reheat check valves. Single solenoid test: walang trip (p857). Trip signals: overspeed 110 to 111 %, backup 112 %, vacuum very low, thrust wear 2oo3, bearing oil pressure very low, at iba pa (p858).</p>
+</section>
+
+<section class="card" id="s6">
+ <p class="kick">6 · IP start: takbo ng mga valve</p>
+ <h2>Mula reset hanggang transfer</h2>
+ <ol class="steps">
+  <li><b>Reset at chest warming.</b> Energized ang master trip solenoids, buo ang trip oil, 100 % ang RSV. Bahagyang bumubukas ang CV(B), saka ang MSV sa internal bypass para initin ang CV chest. Isinasara ng TCS ang MSV kapag CV chest dT &gt; 90 °C, binubuksan ulit sa &lt; 80 °C. <span class="src">(Study Book 05, SU; IBD TA-7, TA-29; p76)</span></li>
+  <li><b>Roll hanggang 400 rpm sa CV.</b> CV(A) mga 10 %, CV(B) mga 3 %, saka naka-lock ang CV. <span class="src">(SU; TCA523_1)</span></li>
+  <li><b>400 hanggang 3600 rpm sa ICV.</b> ICV ang kumokontrol ng speed. Sa dulo ng 3600 rpm hold, sumasara nang buo ang CV sa mga 5 min at full open ang ventilator valve. <span class="src">(SU)</span></li>
+  <li><b>Sync at initial load.</b> 4.5 MW, sa ICV pa rin. Walang steam sa HP; naka-vacuum ito sa ventilator valve. Steam ng boiler: HP bypass, reheater, saka ICV at LP bypass. <span class="src">(SU)</span></li>
+  <li><b>Transfer (ICV papuntang CV).</b> Full open ang ICV, CV na ang kontrol. Bumubukas ang CV, pumapasok ang steam sa HP, tumataas ang HP exhaust pressure, bumubukas ang cold reheat NRV, sumasara ang ventilator valve. Sinasara ng DCS ang HP bypass kapag CV &gt; 2 %. <span class="src">(SU; ABC-050; IBD TC-17, TC-19)</span></li>
+  <li><b>Transfer complete.</b> Ayon sa MHPS, load + 3 to 5 % ang flow sa transfer, at bababa lang ang RH sa mga 3 ata, hindi sa 0. <span class="src">(MHPS start-up 503 p2 item k, p4)</span></li>
+  <li><b>Trip.</b> De-energized ang master trip solenoids, nadump ang trip oil, sabay sumasara ang MSV, CV, RSV, ICV at ang extraction at cold reheat check valves. <span class="src">(p854 to 858)</span></li>
+ </ol>
+</section>
+
+<section class="card" id="s7">
+ <p class="kick">7 · Ang nangyari: 10/3 at 11/9</p>
+ <h2>1st stage at HP exhaust pressure ang magsasabi</h2>
+ <p>Binabasa ng DCS ang posisyon ng CV (ZT), hindi ang tunay na daloy. Sinara ng ABC-050 ang HP bypass kasi lumampas sa 2 % ang CV. Kung walang dumaan sa CV, nawala ang daan ng steam at bumagsak ang reheat.</p>
+ <div class="two">
+  <div>
+   <h3>11/9</h3>
+   <p>May "Cold reheat NRV open" sa 8:50:54. 0.6 ang 1st stage at 0.4 ang HP exhaust. Kaya hindi NRV ang dahilan sa 11/9: hindi umabot ang steam sa HP.</p>
+   <h3>10/3</h3>
+   <p>CV(A) 20 to 22 %, CV(B) 13 to 15 % (10:16 to 10:21), MS flow 0.0, MSP pataas sa mga 127 (±3), HRH 0.6. Wala pa ang 1st stage at HP exhaust trend, kaya bukas pa ang dalawang posibilidad.</p>
+  </div>
+  <div>
+   <h3>Paano paghiwalayin</h3>
+   <ul>
+    <li><b>Mataas ang 1st stage at HP exhaust:</b> pumasok ang steam pero walang labasan. Cold reheat NRV sarado.</li>
+    <li><b>Halos 0 ang 1st stage:</b> hindi pumasok ang steam. MSV, disc ng CV, o strainer.</li>
+    <li><b>Pilot lang o disc hiwalay:</b> sa CV(A) lang posible (may pilot). May kaunting daloy pa rin (CALC 3.7 % o 9.5 % ng seat area), hindi 0. Walang pilot ang CV(B) (p565), at bukas din ito ng 13 to 15 %. Kaya hindi nito maipapaliwanag ang MS flow 0 sa dalawang CV.</li>
+   </ul>
+  </div>
+ </div>
+ <p class="note">Trend na kailangan (10/3 10:10 to 11:05, 11/9 8:45 to 9:00): 1st stage pressure PT-ST1001, HP exhaust pressure PT-CR1901, MSV position ZT-ST1903, CV position ZT-ST1904, cold reheat NRV ZSC-CR1901, ventilator valve ZSC / ZSO-CR1902.</p>
+</section>
+
+<footer class="card">
+ <h3>Ano ang trace at ano ang schematic</h3>
+ <ul>
+  <li><b>Trace (sukat mula sa drawing):</b> turbine section (p67 sa 3500 px, axis at bearing CL, 3.213 mm/px; stage, casing, port at bearing positions), CV section (p526, 0.847 mm/px), MSV section (310SK07-379, 0.76 px/mm).</li>
+  <li><b>Schematic (tama ang bahagi at direksyon, hindi eksakto ang hugis):</b> actuators ng MSV at CV, combined reheat valve, oil at trip circuit.</li>
+  <li>Hindi to scale ang mga printed dimension maliban sa 5555 (p67 bearing CL to CL). Pinalaki ang MSV bypass lift.</li>
+ </ul>
+ <h3>Sources</h3>
+ <ul>
+  <li>MAINT = tg-2-1-2-maintenance.pdf (MHPS, Davao copy XZ-DPC551, parehong design): p67 310PB65-413 sectional arrangement; p74 to 78 310SD14-354 sh.3 to 7; p470 to 473 strainer, CV(B) unbalanced; p522 310SK07-379; p526 310PK01-994; p530 to 531 310QK04-252; p559 STIE-14610; p562, p565 CV strokes; p566 to 568 STIE-14613; p818 310PK01-996; p843 STIE-14628; p846 310SK03-626; p850 310SK03-628; p854 to 858 STIE-14843.</li>
+  <li>OEM 310TK00-131 (Limay XZ-DPC566). Study Book 05 (SU, MTM, IBD TA-7, TA-29, TC-17, TC-19). ABC-050, ABC-052. MHPS start-up 503. TCS Modbus point list. Alarm history 2026-11-09. Trend 3301 to 3303 (10/3).</li>
+  <li>NO-SOURCE: lift vs flow curve ng CV at ICV; diameter ng MSV internal bypass; drain part 8 ("Later" sa drawing).</li>
+ </ul>
+</footer>
+</div>
+<script>(function(){
+const $=id=>document.getElementById(id);
+const qa=(s,r)=>Array.from((r||document).querySelectorAll(s));
+// theme
+const root=document.documentElement;
+$('theme').addEventListener('click',()=>{const dark=root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;root.dataset.theme=dark?'light':'dark';try{localStorage.setItem('hipTheme',root.dataset.theme)}catch(e){}});
+try{const t=localStorage.getItem('hipTheme');if(t)root.dataset.theme=t}catch(e){}
+
+/* ---------- 1. turbine parts ---------- */
+const P={
+1:['Turbine front standard','Pedestal sa harap (governor end). Dito nakalagay ang No.1 journal bearing, thrust bearing, at ang speed, eccentricity at shaft position detectors.','p67 part 1'],
+2:['No.1 journal bearing','Sumusuporta sa rotor sa HP end. Lube oil ang nagpapalutang sa shaft. Trip kapag bearing oil pressure very low.','p67 part 2; p858'],
+3:['No.2 journal bearing','Sumusuporta sa rotor sa LP end, bago ang turning gear at generator coupling.','p67 part 3'],
+4:['Thrust bearing','Hinahawakan ang rotor sa axial na direksyon. Counter-flow ang HP at IP kaya nagkakansela ang malaking bahagi ng thrust. Trip sa thrust wear (2oo3).','p67 part 4; p858'],
+5:['Oil deflectors','Pinipigil ang tagas ng lube oil palabas ng bearing sa paligid ng shaft.','p67 part 5'],
+6:['No.1 shaft packing','Labyrinth seal sa HP end. Tatlo ang leak-off line sa ilalim: papuntang gland condenser, No.3 extraction line, at steam seal regulator.','p67 part 6; gland 310PB61-987 p85'],
+7:['No.2 shaft packing','Labyrinth sa gitna, sa pagitan ng HP inlet at IP inlet. Dito tumatagas ang kaunting steam mula HP papuntang IP.','p67 part 7'],
+8:['No.3 shaft packing','Labyrinth sa LP end. Vacuum sa loob, kaya gland steam ang pumapasok dito para hindi makapasok ang hangin.','p67 part 8; p85'],
+9:['Turbine rotor','Iisang rotor para sa HP (1 to 11), IP (12 to 21) at LP (22 to 24), sa bearing No.1 at No.2.','p67 part 9'],
+10:['Generator rotor','Naka-coupling sa turbine rotor pagkatapos ng turning gear.','p67 part 10'],
+11:['HP nozzle diaphragms','Nakakabit sa HP inner casing. Dito bumibilis at lumiliko ang steam bago tumama sa bucket. Pakaliwa ang daloy sa HP.','p67 part 11'],
+12:['IP nozzle diaphragms','Nakakabit sa HIP outer casing. Pakanan ang daloy sa IP.','p67 part 12'],
+13:['LP nozzle diaphragms','Sa LP casing, stages 22 to 24.','p67 part 13'],
+14:['HP bucket blades','Sa rotor, 11 stages. Stage 1 ang "1st stage": dito binabasa ang 1st stage pressure (PT-ST1001), ang pinakamalinaw na tanda kung may steam talagang pumasok sa CV.','p67 part 14; TCS point list'],
+15:['IP bucket blades','10 stages (12 to 21), gamit ang hot reheat steam.','p67 part 15'],
+16:['LP bucket blades','3 stages. 33.5 inch ang huling blade (SF-33.5).','p67 part 16 at particulars'],
+17:['HIP outer casing','Iisang casing ng HP at IP. Dalawang main steam inlet (taas at baba), HP exhaust sa ibaba, hot reheat inlet sa ibaba.','p67 part 17'],
+18:['HP inner casing','Nasa loob ng outer casing. Hawak ang HP nozzle diaphragms. Dito unang pumapasok ang main steam.','p67 part 18'],
+19:['LP casing','Exhaust hood pababa sa condenser.','p67 part 19'],
+20:['Atmospheric relief diaphragm','Nasa itaas ng LP casing. Pumuputok kapag tumaas ang pressure sa LP exhaust lampas sa atmospheric, para protektahan ang casing at condenser.','p67 part 20'],
+21:['Turning gear','Mabagal na pinapaikot ang rotor bago roll at pagkatapos ng shutdown para hindi mabaluktot ang rotor.','p67 part 21'],
+22:['Shaft position detector','Binabantayan ang axial position ng rotor (thrust wear).','p67 part 22; p858'],
+23:['Turbine speed','Speed pickups: 3 para sa control, 3 para sa overspeed.','p67 part 23; p74'],
+24:['Low speed eccentricity detector','Binabantayan ang baluktot ng rotor habang mabagal ang ikot.','p67 part 24'],
+25:['Vibration detectors','Sa No.1 at No.2 journal bearing.','p67 part 25'],
+26:['Differential expansion detector','Binabantayan ang pagkakaiba ng expansion ng rotor at casing habang start-up at load change.','p67 part 26'],
+msin:['Main steam inlet A at B','Dalawang inlet sa HIP casing: isa sa itaas (galing CV(A)) at isa sa ibaba (galing CV(B)). Diretso sa HP inner casing at sa 1st stage.','p67 (CL of main steam inlet); p74 sh.3'],
+hpex:['HP exhaust','Labasan ng HP sa ibaba, papuntang cold reheat at sa cold reheat NRV. Habang IP start at sarado ang CV, ikinokonekta ng ventilator valve ang HP exhaust sa condenser para naka-vacuum ang HP.','p67 (CL of HP exhaust); p74 VV; Study Book 05'],
+rhin:['Hot reheat inlet','Mula sa RSV at ICV. Pumapasok sa IP stage 12, pakanan papuntang LP.','p67 (CL of reheat steam inlet)'],
+ext:['Extractions','Nakaprint sa p67: No.2 extraction, No.3,4 extraction at No.5,6 extraction. Bawat isa may extraction check valve na sinasara ng relay dump valve sa trip.','p67; p854 to 858'],
+gland:['Gland lines','Mula sa No.1 shaft packing: to gland condenser, to No.3 extraction line, to steam seal regulator. Sa LP end: from steam seal regulator, to gland condenser.','p67; p85 310PB61-987'],
+relief:['Atmospheric relief diaphragm','Tingnan ang part 20.','p67 part 20']
+};
+function showPart(k){const p=P[k];if(!p)return;qa('#turb .pt').forEach(g=>g.classList.toggle('sel',g.dataset.p==String(k)));
+ $('tInfo').innerHTML='<p class="tag">'+(isNaN(k)?'Linya':'Part '+k)+'</p><h3>'+p[0]+'</h3><p>'+p[1]+'</p><p class="src">Source: MAINT '+p[2]+'</p>';}
+qa('#turb .pt').forEach(g=>{g.addEventListener('click',()=>showPart(g.dataset.p));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showPart(g.dataset.p)}})});
+const TS={run:{on:['fMsA','fMsB','fRh','fRhU','fEx','fGl'],t:'Normal: main steam sa dalawang inlet, pakaliwa sa HP 1 to 11, labas sa HP exhaust papuntang reheater. Bumabalik bilang hot reheat sa ibaba, pakanan sa IP 12 to 21 at LP 22 to 24, pababa sa condenser.'},
+ ip:{on:['fRh','fRhU','fVent','fGl'],t:'IP start bago transfer: sarado ang CV, walang main steam sa HP. Naka-vacuum ang HP sa ventilator valve. ICV ang nagdadala ng hot reheat sa IP at LP. HP bypass ang nagpapadaloy sa reheater.'},
+ none:{on:['fGl'],t:'Walang daloy: bukas daw ang CV (ZT), pero walang steam na dumadaan sa HP. Walang pumapasok sa reheater, kaya bumabagsak ang reheat pressure at ang MW. Tingnan ang Bahagi 7.'}};
+function tState(s){qa('[data-ts]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.ts===s));['fMsA','fMsB','fRh','fRhU','fEx','fGl','fVent'].forEach(id=>$(id).classList.toggle('off',!TS[s].on.includes(id)));$('tState').textContent=TS[s].t;}
+qa('[data-ts]').forEach(b=>b.addEventListener('click',()=>tState(b.dataset.ts)));
+tState('run');showPart(14);
+
+/* helpers */
+function zig(x0,y0,x1,y1,n,amp){let d='M'+x0+' '+y0;for(let i=1;i<=n;i++){const t=i/n,x=x0+(x1-x0)*t,y=y0+(y1-y0)*t;const o=i===n?0:(i%2?amp:-amp);d+=' L'+(x1===x0?x+o:x).toFixed(1)+' '+(x1===x0?y:y+o).toFixed(1);}return d;}
+const tr=(el,x,y)=>el.setAttribute('transform','translate('+x+' '+y+')');
+const onoff=(id,on,slow)=>{const e=$(id);e.classList.toggle('off',!on);e.classList.toggle('slow',!!slow);};
+
+/* ---------- 2. MSV ---------- */
+function msv(){const m=+$('msR').value;$('msV').textContent=m+' %';
+ const st=m/100*115.2,b=Math.min(st,3.2),md=Math.max(0,st-3.2);
+ const vis=b*0.76*4+md*0.76;
+ tr($('msStemG'),0,-vis);tr($('msDiscG'),0,-md*0.76);
+ const pv=vis*0.6;$('msPiston').setAttribute('y',320-pv);$('msOil').setAttribute('y',340-pv);$('msOil').setAttribute('height',34+pv);$('msSpring').setAttribute('d',zig(440,256,440,318-pv,8,90));
+ $('msB').textContent=b.toFixed(1)+' / 3.2 mm';$('msM').textContent=md.toFixed(0)+' / 112 mm';
+ $('msChest').classList.add('hot');$('msOut').classList.toggle('hot',st>0);onoff('msFin',true,st===0);onoff('msFout',st>0,md===0);
+ $('msT').textContent=st===0?'Sarado: may steam hanggang sa disc, wala sa labasan.':md===0?'Bypass lang: maliit na daloy papuntang CV chest para initin ito bago mag-roll.':'Bukas ang main disc. Sa normal operation, buong bukas ang MSV.';}
+$('msR').addEventListener('input',msv);
+
+/* ---------- 3. CV ---------- */
+let cvSel='A',fault='ok';
+const F={ok:'Normal: sinusunod ng stem ang demand. Sa CV(A), pilot muna (unang 5 mm), saka ang main disc. Tumataas ang daloy at ang 1st stage pressure.',
+ servo:'Servo o oil: may utos ang TCS pero hindi gumagalaw ang stem. Magkaiba ang demand at ang ZT. Hindi ito tugma sa 10/3, kasi tumaas ang ZT at ang local lift.',
+ pilot:'Pilot lang (disc naipit sa sleeve): bumukas ang pilot (5 mm) pero hindi na makagalaw ang stem lampas doon. Huminto ang ZT sa mga 10 %. Kaunting daloy lang, mga 3.7 % ng seat area (CALC).',
+ disc:'Disc hiwalay sa stem: tama ang ZT at ang local lift, pero nakaupo pa rin ang main disc. Sa CV(A), bukas buo ang pilot port, kaya mga 9.5 % ng seat area pa rin ang daloy (CALC). Sa CV(B), walang pilot, kaya 0. Papasa pa rin ito sa stroke test.',
+ msv:'MSV sarado: normal ang galaw ng CV, pero walang steam na dumarating. Halos 0 ang 1st stage. Sabay na tatamaan ang CV(A) at CV(B). Tingnan ang ZT-ST1903.',
+ str:'Strainer barado (halimbawa lang, 10 % ang natitirang daanan): normal ang galaw ng valve pero kaunti ang daloy. Kadalasan unti-unti ang bara, hindi biglaan.',
+ nrv:'Cold reheat NRV sarado: pumasok ang steam sa HP pero walang labasan. Napupuno ang HP hanggang halos MSP, kaya MATAAS ang 1st stage at HP exhaust pressure. Iyan ang pagkakaiba nito sa ibang fault.'};
+const SEAT=Math.PI/4*165.1*165.1,PPORT=Math.PI/4*50.8*50.8;
+function cv(){
+ const d=+$('cvR').value;$('cvV').textContent=d+' %';
+ const A=cvSel==='A',full=A?48.2:43;let f=fault;
+ qa('[data-f="pilot"]')[0].disabled=!A;if(!A&&f==='pilot'){f=fault='ok';qa('[data-f]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f==='ok'));}
+ let stem=d/100*full;if(f==='servo')stem=0;if(f==='pilot')stem=Math.min(stem,5);
+ let pil=A?Math.min(stem,5):0,main=A?Math.max(0,stem-5):stem;
+ if(f==='pilot')main=0;
+ let pArea=A?Math.min(PPORT,Math.PI*50.8*pil):0;
+ if(f==='disc'){main=0;pil=A?stem:0;pArea=A&&stem>0?Math.min(PPORT,Math.PI*50.8*stem):0;}
+ const mArea=Math.min(SEAT,Math.PI*165.1*main);
+ let area=Math.max(mArea,pArea);const steam=f!=='msv';const pass=f==='str'?0.1:1;
+ const eff=steam?area/SEAT*pass:0;const blocked=f==='nrv';
+ // drawing (0.847 mm/px)
+ const sx=stem/0.847;tr($('cvStemG'),-sx,0);tr($('cvDiscG'),-(f==='disc'?0:main/0.847),0);
+ $('cvPiston').setAttribute('x',-320-sx);$('cvOil').setAttribute('x',-298-sx);$('cvOil').setAttribute('width',152+sx);$('cvSpring').setAttribute('d',zig(-514,270,-322-sx,270,10,70));
+ tr($('cvPtr'),-stem*200/48.2,0);
+ $('cvPilotPort').style.display=A?'':'none';
+ $('cvChest').classList.toggle('hot',steam);$('cvOut').classList.toggle('hot',steam&&(area>0||false));
+ onoff('cvFin',steam&&(area>0&&!blocked),eff<0.05);onoff('cvFout',eff>0&&!blocked,eff<0.05);onoff('cvOilIn',f!=='servo');onoff('cvTrip',true,true);onoff('cvDump',false);
+ $('rD').textContent=d+' %';$('rZ').textContent=Math.round(stem/full*100)+' %';$('rL').textContent=stem.toFixed(1)+' mm';
+ $('rP').textContent=A?(f==='disc'?(stem>0?'port bukas':'0.0 mm'):pil.toFixed(1)+' mm'):'wala';$('rM').textContent=main.toFixed(1)+' mm';
+ $('rA').textContent=steam?(area/SEAT*100).toFixed(1)+' %':'walang steam';
+ $('rS').textContent=blocked&&area>0?'Mataas (puno)':eff<=0?'Halos 0':eff<0.12?'Mababa':'Tumataas';
+ $('cvT').textContent=F[f];}
+qa('[data-cv]').forEach(b=>b.addEventListener('click',()=>{cvSel=b.dataset.cv;qa('[data-cv]').forEach(x=>x.setAttribute('aria-pressed',x===b));cv();}));
+qa('[data-f]').forEach(b=>b.addEventListener('click',()=>{fault=b.dataset.f;qa('[data-f]').forEach(x=>x.setAttribute('aria-pressed',x===b));cv();}));
+$('cvR').addEventListener('input',cv);
+
+/* ---------- 4. CRV ---------- */
+let rsv=true;
+function crv(){const i=+$('icR').value;$('icV').textContent=i+' %';const lift=i/100*127;
+ tr($('crIcvG'),-lift*0.69,0);tr($('crRsvG'),rsv?-48:0,0);
+ const a=Math.min(1,4*lift/476);const fl=rsv?a:0;
+ $('crIn').classList.add('hotrh');$('crOut').classList.toggle('hotrh',fl>0);onoff('crFin',fl>0,fl<0.3);onoff('crFout',fl>0,fl<0.3);
+ $('rsvB').setAttribute('aria-pressed',rsv);$('rsvB').textContent=rsv?'RSV bukas':'RSV sarado';
+ $('crT').textContent=!rsv?'Sarado ang RSV: walang hot reheat na dadaan, kahit bukas ang ICV.':i===0?'Bukas ang RSV pero sarado ang ICV: walang daloy papuntang IP.':'Bukas ang RSV, ICV ang nagre-regulate. Bukas na area ng ICV mga '+Math.round(a*100)+' % (CALC, π × 476 × lift).';}
+$('rsvB').addEventListener('click',()=>{rsv=!rsv;crv();});$('icR').addEventListener('input',crv);
+
+/* ---------- 5. oil ---------- */
+const sol={A1:1,A2:1,B1:1,B2:1,HT:0};
+function oil(){
+ const ta=!sol.A1&&!sol.A2,tb=!sol.B1&&!sol.B2,trip=ta||tb||sol.HT;
+ ['A1','A2','B1','B2'].forEach(k=>{const g=$('s'+k);g.classList.toggle('on',!!sol[k]);g.classList.toggle('off',!sol[k]);g.setAttribute('aria-label',k+(sol[k]?' energized':' de-energized'));});
+ $('sHT').classList.toggle('off',!!sol.HT);
+ onoff('oTrip',!trip);onoff('oAir',!trip);onoff('oCtl',true);onoff('oFeed',true);
+ for(let i=0;i<4;i++)$('oV'+i).classList.toggle('vclosed',trip);$('oNrv').classList.toggle('vclosed',trip);
+ const off=['A1','A2','B1','B2'].filter(k=>!sol[k]);
+ $('oT').textContent=trip?'TRIP: nadump ang trip oil'+(sol.HT?' (hand trip)':ta&&tb?' (MTSV A at B)':ta?' (MTSV A)':' (MTSV B)')+'. Bukas ang lahat ng dump valve, kaya isinasara ng spring ang MSV, CV, RSV at ICV. Nawala rin ang air sa relay dump valve, kaya sumasara ang extraction at cold reheat check valves.':off.length?'Walang trip: de-energized ang '+off.join(', ')+', pero kailangan pareho ang dalawang solenoid ng isang MTSV. Ganito ang single solenoid test (p857).':'Normal: energized lahat ng solenoid, buo ang trip oil, kaya kayang buksan ng control oil ang mga valve.';}
+qa('.sol').forEach(g=>{const k=g.dataset.sol;const t=()=>{sol[k]=k==='HT'?(sol[k]?0:1):(sol[k]?0:1);oil();};g.addEventListener('click',t);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();t();}});});
+$('oReset').addEventListener('click',()=>{Object.assign(sol,{A1:1,A2:1,B1:1,B2:1,HT:0});oil();});
+$('oTest').addEventListener('click',()=>{Object.assign(sol,{A1:1,A2:1,B1:0,B2:1,HT:0});oil();});
+
+msv();cv();crv();oil();
+})();
+</script>
+</body></html>
