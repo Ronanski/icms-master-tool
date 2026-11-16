@@ -18,7 +18,7 @@
   const NS = 'http://www.w3.org/2000/svg',
     W = 1280,
     H = 640,
-    SYM = window.HXSYM,
+    SYM = window.HXSYM || {},
     REAL = window.HXREAL || {};
   const HX = (window.HX = { pages: [], byId: {}, W, H, data: null });
   const esc = s =>
@@ -251,7 +251,8 @@
         back = it.back;
       it._p = { l: [x - w / 2, y], r: [x + w / 2, y], t: [x, y - 13], b: [x, y + 13] };
       it._box = [x - w / 2, y - 13, x + w / 2, y + 13];
-      return `<g class="hx-link" data-go="${esc(it.to)}" tabindex="0" role="link" transform="translate(${n1(x)} ${n1(y)})"><rect x="${n1(-w / 2)}" y="-13" width="${n1(w)}" height="26" rx="13"/><text x="0" y="4" text-anchor="middle">${back ? '‹ ' : ''}${esc(t)}${back ? '' : ' ›'}</text></g>`;
+      const ready = !!HX.byId[it.to];
+      return `<g class="hx-link${ready ? '' : ' soon'}"${ready ? ` data-go="${esc(it.to)}" tabindex="0" role="link"` : ''} transform="translate(${n1(x)} ${n1(y)})">${ready ? '' : '<title>This page is not drawn yet</title>'}<rect x="${n1(-w / 2)}" y="-13" width="${n1(w)}" height="26" rx="13"/><text x="0" y="4" text-anchor="middle">${back ? '‹ ' : ''}${esc(t)}${back ? '' : ' ›'}</text></g>`;
     }
     const sy = ((real && REAL[it.sym]) || SYM[it.sym])(Object.assign({ id: pageId + '-' + it._id }, it)),
       rot = it.rot || 0,
@@ -996,9 +997,14 @@
     const groups = [];
     for (const p of HX.pages)
       (groups.find(g => g.name === p.group) || groups[groups.push({ name: p.group, pages: [] }) - 1]).pages.push(p);
+    /* HX.soon: systems that are not drawn yet (title only): listed grey, not clickable */
+    const soonG = [];
+    for (const p of HX.soon || [])
+      if (!HX.byId[p.id])
+        (soonG.find(g => g.name === p.group) || soonG[soonG.push({ name: p.group, pages: [] }) - 1]).pages.push(p);
     host.classList.add('hx');
     host.innerHTML =
-      `<div class="hx-shell"><nav class="hx-nav" aria-label="Plant pages">${groups.map(g => `<h2>${esc(g.name)}</h2>${g.pages.map(p => `<button data-page="${p.id}"><i>${String(p.no).padStart(2, '0')}</i>${esc(p.title)}</button>`).join('')}`).join('')}${(opts.extra || []).map(x => `<h2>${esc(x.group)}</h2><button data-page="${x.id}"><i>··</i>${esc(x.title)}</button>`).join('')}</nav>` +
+      `<div class="hx-shell"><nav class="hx-nav" aria-label="Plant pages">${groups.map(g => `<h2>${esc(g.name)}</h2>${g.pages.map(p => `<button data-page="${p.id}"><i>${String(p.no).padStart(2, '0')}</i>${esc(p.title)}</button>`).join('')}`).join('')}${soonG.length ? `<h2 class="hx-soon-h">To be drawn in this look</h2>${soonG.map(g => g.pages.map(p => `<span class="hx-soon"><i>··</i>${esc(p.title)}</span>`).join('')).join('')}` : ''}${(opts.extra || []).map(x => `<h2>${esc(x.group)}</h2><button data-page="${x.id}"><i>··</i>${esc(x.title)}</button>`).join('')}</nav>` +
       `<div class="hx-main"><select class="hx-pick" aria-label="Plant page">${groups.map(g => `<optgroup label="${esc(g.name)}">${g.pages.map(p => `<option value="${p.id}">${String(p.no).padStart(2, '0')} ${esc(p.title)}</option>`).join('')}</optgroup>`).join('')}${(opts.extra || []).map(x => `<option value="${x.id}">${esc(x.title)}</option>`).join('')}</select>` +
       `<div class="hx-strip">${(opts.strip || []).map(s => `<div><span>${esc(s[0])}</span><b data-hv="${esc(s[1])}" data-dp="${s[3] == null ? 1 : s[3]}">-----</b><small>${esc(s[2])}</small></div>`).join('')}</div><div class="hx-slot"></div></div></div>`;
     const slot = host.querySelector('.hx-slot');

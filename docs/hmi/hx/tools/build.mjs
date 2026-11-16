@@ -7,15 +7,56 @@ import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rd = f => fs.readFileSync(path.join(dir, f), 'utf8');
-const parts = ['hx-sym.js', 'hx-real.js', 'hx-core.js', 'hx-cards-ui.js', 'hx-registry.js', 'hx-cards.js', 'hx-sample.js', 'hx-page-reheat.js', 'hx-pages.js'];
+/* ONE style only (user 2026-11-17: "dapat sa hmi pages, ayan yung nakikita, wala na ibang style"): the mockup holds the
+   realistic pages. hx-pages.js (the 23 earlier summary pages, line symbols of hx-sym.js) is no longer in it: it stays in the
+   folder as the list of what each system holds, and its page titles are shown in the rail as "to be drawn". */
+const REAL_PAGES = ['hx-page-reheat.js'];
+const parts = [
+  'hx-real.js',
+  'hx-core.js',
+  'hx-cards-ui.js',
+  'hx-registry.js',
+  'hx-cards.js',
+  'hx-sample.js',
+  ...REAL_PAGES
+];
 
 /* ---- check ---- */
 const win = { location: { hash: '' } };
-const ctx = vm.createContext({ window: win, console, document: { createElement: () => ({ style: {}, append() {}, set textContent(v) {} }), head: { append() {} } }, setInterval: () => 0, Date, Math, JSON, Object, Array, String, Number, isFinite, Infinity, Set, Error });
-for (const f of ['hx-sym.js', 'hx-real.js', 'hx-core.js', 'hx-registry.js']) vm.runInContext(rd(f) + '\n;globalThis.HX=window.HX;globalThis.HXREG=window.HXREG;', ctx, { filename: f });
-for (const f of ['hx-page-reheat.js', 'hx-pages.js']) vm.runInContext(rd(f), ctx, { filename: f });
+const ctx = vm.createContext({
+  window: win,
+  console,
+  document: { createElement: () => ({ style: {}, append() {}, set textContent(v) {} }), head: { append() {} } },
+  setInterval: () => 0,
+  Date,
+  Math,
+  JSON,
+  Object,
+  Array,
+  String,
+  Number,
+  isFinite,
+  Infinity,
+  Set,
+  Error
+});
+for (const f of ['hx-sym.js', 'hx-real.js', 'hx-core.js', 'hx-registry.js'])
+  vm.runInContext(rd(f) + '\n;globalThis.HX=window.HX;globalThis.HXREG=window.HXREG;', ctx, { filename: f });
+for (const f of REAL_PAGES) vm.runInContext(rd(f), ctx, { filename: f });
 const HX = win.HX,
   R = win.HXREG;
+/* the systems still to be drawn in the realistic look: the titles of the earlier summary pages (their old summary of the
+   reheat system is replaced by the realistic page) */
+const done = new Set(HX.pages.map(p => p.id));
+const realPages = HX.pages.slice();
+vm.runInContext(rd('hx-pages.js'), ctx, { filename: 'hx-pages.js' });
+const soon = HX.pages
+  .filter(p => !done.has(p.id) && p.id !== 'reheat-bypass')
+  .map(p => ({ id: p.id, group: p.group, title: p.title }));
+HX.pages.length = 0;
+HX.pages.push(...realPages);
+for (const k of Object.keys(HX.byId)) if (!done.has(k)) delete HX.byId[k];
+const soonIds = new Set(soon.map(p => p.id));
 const bad = [],
   used = { m: new Set(), l: new Set(), v: new Set(), k: new Set() };
 const key = (p, k) => {
@@ -32,20 +73,28 @@ for (const p of HX.pages) {
   for (const t of (p.plan && p.plan.taps) || []) for (const k of [t.key, t.key2]) if (k) key(p.id + ' tap', k);
   for (const t of (p.plan && p.plan.texts) || []) if (t.key) key(p.id + ' text', t.key);
   for (const it of items) {
-    if (!win.HXSYM[it.sym] && !(win.HXREAL && win.HXREAL[it.sym]) && it.k !== 'link') bad.push(`${p.id}: symbol ${it.sym}`);
-    if (it.k === 'link' && !HX.byId[it.to]) bad.push(`${p.id}: link to ${it.to}`);
+    if (!win.HXSYM[it.sym] && !(win.HXREAL && win.HXREAL[it.sym]) && it.k !== 'link')
+      bad.push(`${p.id}: symbol ${it.sym}`);
+    if (it.k === 'link' && !HX.byId[it.to] && !soonIds.has(it.to)) bad.push(`${p.id}: link to ${it.to}`);
     if (it.go && !HX.byId[it.go]) bad.push(`${p.id}: go ${it.go}`);
-    if (it.k === 'mach') (it.mach in R.machines ? used.m.add(it.mach) : bad.push(`${p.id}: machine ${it.mach}`));
-    if (it.k === 'loop') (it.loop in R.loops ? used.l.add(it.loop) : bad.push(`${p.id}: loop ${it.loop}`));
-    if (it.k === 'valve') (it.valve in R.machines || it.valve in R.sample.valves ? used.v.add(it.valve) : bad.push(`${p.id}: valve ${it.valve}`));
+    if (it.k === 'mach') it.mach in R.machines ? used.m.add(it.mach) : bad.push(`${p.id}: machine ${it.mach}`);
+    if (it.k === 'loop') it.loop in R.loops ? used.l.add(it.loop) : bad.push(`${p.id}: loop ${it.loop}`);
+    if (it.k === 'valve')
+      it.valve in R.machines || it.valve in R.sample.valves
+        ? used.v.add(it.valve)
+        : bad.push(`${p.id}: valve ${it.valve}`);
     for (const v of it.vals || []) key(p.id, v.key);
   }
-  for (const x of p.loops || []) (x[0] in R.loops ? used.l.add(x[0]) : bad.push(`${p.id}: loop ${x[0]}`));
-  for (const x of p.machines || []) (x[0] in R.machines ? used.m.add(x[0]) : bad.push(`${p.id}: machine ${x[0]}`));
-  for (const x of p.valves || []) (x[0] in R.machines || x[0] in R.sample.valves ? used.v.add(x[0]) : bad.push(`${p.id}: valve ${x[0]}`));
+  for (const x of p.loops || []) x[0] in R.loops ? used.l.add(x[0]) : bad.push(`${p.id}: loop ${x[0]}`);
+  for (const x of p.machines || []) x[0] in R.machines ? used.m.add(x[0]) : bad.push(`${p.id}: machine ${x[0]}`);
+  for (const x of p.valves || [])
+    x[0] in R.machines || x[0] in R.sample.valves ? used.v.add(x[0]) : bad.push(`${p.id}: valve ${x[0]}`);
   for (const g of p.trends || []) for (const pen of g.pens) key(p.id + ' trend', pen[1]);
 }
-const noPage = { loops: Object.keys(R.loops).filter(k => !used.l.has(k)), machines: Object.keys(R.machines).filter(k => !used.m.has(k) && !used.v.has(k)) };
+const noPage = {
+  loops: Object.keys(R.loops).filter(k => !used.l.has(k)),
+  machines: Object.keys(R.machines).filter(k => !used.m.has(k) && !used.v.has(k))
+};
 const cover = `pages ${HX.pages.length} · loops on a page ${used.l.size} of ${Object.keys(R.loops).length} · machines and valves on a page ${Object.keys(R.machines).length - noPage.machines.length} of ${Object.keys(R.machines).length} · value keys used ${used.k.size} of ${Object.keys(R.sample.values).length}`;
 console.log(cover);
 if (noPage.loops.length) console.log('loops on NO page:', noPage.loops.join(', '));
@@ -57,7 +106,10 @@ if (bad.length) {
 
 /* ---- README.md -> the "For the next coder" page (headings, lists, code, tables of the README only) ---- */
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const inl = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+const inl = s =>
+  esc(s)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
 function md(src) {
   const out = [];
   let list = null,
@@ -123,12 +175,13 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
 .doc pre code { border: 0; background: none; padding: 0; font-size: 12px; line-height: 1.5; }
 </style>
 <div class="wrap">
-  <div class="top"><h1>LMYP #1 HMI SHELL</h1><span class="tag">Mockup · sample data</span><p>Start with page 01: the new sample of a full operator drawing (every valve, spray, drain pot and transmitter on its own line, read from the flow diagrams). Pages 02 to 24 are the earlier summary pages. Values are what the app showed at 150 MW (3.2.3-beta.272); the small ripple is only so the trends move.</p></div>
+  <div class="top"><h1>LMYP #1 HMI SHELL</h1><span class="tag">Mockup · sample data</span><p>One look for every page: the plant as it stands, cut open, with every valve, spray, drain pot and transmitter on its own line. The systems still to be drawn in this look are listed grey in the rail. Values are what the app showed at 150 MW (3.2.3-beta.272); the small ripple is only so the trends move.</p></div>
   <div id="hx"></div>
 </div>
 <template id="doc"><div class="doc">${doc}</div></template>
 <script>
 ${parts.map(rd).join('\n')}
+HX.soon = ${JSON.stringify(soon)};
 HX.shell(document.getElementById('hx'), {
   strip: [['Load', 'GCP-AI1001', 'MW'], ['Steam pressure', 'PT-MS1002', 'kg/cm²'], ['Steam temperature', 'pv:TICMS1004', '°C', 0], ['Steam flow', 'FT-MS1031', 't/h'], ['Reheat temperature', 'TT-HR1002-1', '°C', 0], ['Drum level', 'pv:LICBR1001B', 'mm', 0], ['Bed temperature', 'TT-FG1090', '°C', 0], ['Furnace pressure', 'PT-FG1085', 'mmH₂O', 0], ['Coal flow', 'pv:FIC-CM', 't/h'], ['Total air flow', 'ABC-002|SI0060', 't/h']],
   start: 'reheat-steam',

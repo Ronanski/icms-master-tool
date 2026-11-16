@@ -171,9 +171,13 @@
   };
 
   /* ---------------- the turbine set: two casings on one shaft, cut open, on its foundation, condenser below ---------------- */
-  /* origin = the shaft at the coupling between the two casings. Left: intermediate and low pressure casing with its exhaust
-     hood, right: high pressure casing. Ports: hpIn / hpEx (main steam in, cold reheat out), ipA / ipB (hot reheat in),
-     cdIn (bypass steam into the condenser), gen (shaft end towards the generator), floor (local y of the basement floor). */
+  /* origin = the shaft at the coupling between the two casings. As drawn here: intermediate and low pressure casing with its
+     exhaust hood on the left, high pressure casing on the right; the steam enters both casings at the middle of the train and
+     leaves at the far ends. A page that shows the train as the control room does (screen 035 SHAFT MONITOR: thrust bearing,
+     HP, ILP, turning gear, generator, exciter from left to right) places it with mir: true.
+     Ports: hpIn / hpB (main steam into the top / the bottom of the high pressure casing: line A / line B), hpEx (cold reheat
+     out), ipA / ipB (hot reheat into the top / the bottom), cdIn (bypass steam into the condenser), gen (shaft end towards the
+     generator). The basement floor is at local y 310. */
   R.tgset = () => {
     const rows = (xs, hs) => xs.map((x, i) => `M${x} ${-hs[i]}V${hs[i]}`).join('');
     const dia = (xs, hs) => xs.map((x, i) => `M${x} ${-hs[i]}V-8M${x} 8V${hs[i]}`).join('');
@@ -204,7 +208,7 @@
       `<path class="rx-disc" d="${rows(ipX, ipH)}"/><path class="rx-blade" d="${rows(ipX, ipH)}"/>` +
       '<path class="rx-jet" style="--m:var(--hx-m-reheat)" d="M-39 -13H-126M-39 13H-126M-136 22V96M-154 30V98M-172 22V96"/>' +
       '<rect class="rx" x="-190" y="-6.5" width="160" height="13"/>' +
-      '<rect class="rx" x="-52" y="-43" width="12" height="13" rx="1.5"/><rect class="rx" x="-80" y="-49" width="12" height="14" rx="1.5"/>' +
+      '<rect class="rx" x="-66" y="-47" width="12" height="14" rx="1.5"/><rect class="rx" x="-66" y="33" width="12" height="14" rx="1.5"/>' +
       /* high pressure casing */
       '<path class="rx" d="M30 -20Q31 -30 46 -30L112 -38Q126 -38 126 -27V27Q126 38 112 38L46 30Q31 30 30 20Z"/>' +
       '<path class="rxvoid" d="M35.5 -17Q36.5 -24.5 46 -24.5L111.5 -32.5Q120.5 -32.5 120.5 -26V26Q120.5 32.5 111.5 32.5L46 24.5Q36.5 24.5 35.5 17Z"/>' +
@@ -213,7 +217,7 @@
       `<path class="rx-disc" d="${rows(hpX, hpH)}"/><path class="rx-blade" d="${rows(hpX, hpH)}"/>` +
       '<path class="rx-jet" style="--m:var(--hx-m-steam)" d="M39 -12H118M39 12H118"/>' +
       '<rect class="rx" x="30" y="-6" width="96" height="12"/>' +
-      '<rect class="rx" x="40" y="-42" width="12" height="13" rx="1.5"/><rect class="rx" x="102" y="35" width="16" height="13" rx="1.5"/>' +
+      '<rect class="rx" x="40" y="-42" width="12" height="13" rx="1.5"/><rect class="rx" x="40" y="29" width="12" height="13" rx="1.5"/><rect class="rx" x="102" y="35" width="16" height="13" rx="1.5"/>' +
       /* bearing pedestals */
       ped(0) +
       ped(149) +
@@ -222,9 +226,10 @@
       box: [-262, -66, 186, 310],
       ports: {
         hpIn: [46, -42],
+        hpB: [46, 42],
         hpEx: [110, 48],
-        ipB: [-46, -43],
-        ipA: [-74, -49],
+        ipA: [-60, -47],
+        ipB: [-60, 47],
         cdIn: [-249, 119],
         gen: [-262, 0],
         t: [0, -15]
