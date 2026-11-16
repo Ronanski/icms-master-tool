@@ -39678,7 +39678,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.3-beta.270';
-      c3.textContent += ' · build 61cea89'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build c01f2e9'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -120067,7 +120067,7 @@ window.LS_GUIDE = (function () {
         'Engineering = white symbols, only wires, values and valves coloured'
       );
     const ver = (document.title.match(/v\d[\w.-]*/) || [''])[0];
-    row('Version', E('span', 'scsver', ver + ' · build 61cea89'));
+    row('Version', E('span', 'scsver', ver + ' · build c01f2e9'));
   }
   function openSet(near) {
     if (!set) {
@@ -121183,7 +121183,6 @@ window.LS_GUIDE = (function () {
     why: ['Why', 'Why is it …? The live cause of the selected wire, back to the root signal'],
     insp: ['Inspector', 'The inputs, forces and values of the sheet (analog: the Inspector; digital: the panel of the sheet)'],
     fp: ['Faceplate', 'The controller faceplates of the open analog sheet'],
-    train: ['Training', 'The step of the training procedure you are on'],
     alm: ['Alarms', 'The standing alarms and the last event']
   };
   /* 3.2.3-beta.270: no Training section (the Training is off, guide.js LS_TRAINING_OFF) */
