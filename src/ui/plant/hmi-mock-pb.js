@@ -46,6 +46,23 @@
       if (!sb.mach[id]) sb.mach[id] = pbf(n, /80F/.test(d) ? 'Air preheater sootblower' : 'Sootblower', d, +r, 'OPERATING', [['START', +r], ['SKIP', +r + 1]]);
       return `<text${a} data-hit="${id}" style="cursor:pointer" data-dy="${d}|o|${r}" data-on="${n}"`;
     });
+  /* 3.2.4-beta.8 (live test 2026-11-17: the backpass fouled for 4.5 h at 150 MW and no press on this page could open the steam or start
+     the blowing: a blower START does nothing without the BLOWING PERMISSIVE, which needs MV-SB1001 open 600 s). The CRT push buttons of
+     the drawings (input rows):
+     - MV-SB1001 steam supply motor valve, DITL-80S: OPEN P.B. row 4 M.4210, STOP P.B. row 8 M.421A, CLOSE P.B. row 10 M.4211;
+       STATUS = output row 21 "S/B STEAM SUPPLY MOTOR VALVE OPEN" (CRT lamp). The valve takes the CRT command in REMOTE (row 0 I.024D).
+     - Sootblower sequence, DITL-80A: AUTO / MANUAL mode select row 9 M.4005 (CRT, AUTO START SELECTED), AUTO SEQUENCE START row 10
+       M.4002, SEQUENCE STOP row 4 M.4003, EMERGENCY RETRACT row 5 M.4004; STATUS = output row 5 "SOOTBLOWER SYSTEM PROGRAM ON".
+     In MANUAL mode each blower is started from its own label (above) once the blowing permissive is Y. */
+  if (sb) {
+    sb.mach.SBMV = pbf('MV-SB1001', 'Sootblower steam supply motor valve', 'DITL-80S', 21, 'OPEN', [['OPEN', 4], ['STOP', 8], ['CLOSE', 10]], 'NOT OPEN');
+    sb.mach.SBMV.df.free = 1;
+    sb.mach.SBSEQ = pbf('Sootblower sequence', 'Sootblower program (30 blowers)', 'DITL-80A', 5, 'PROGRAM ON', [['AUTO MODE', 9, 'set', 1], ['MANUAL MODE', 9, 'set', 0], ['SEQUENCE START', 10], ['SEQUENCE STOP', 4], ['EMERGENCY RETRACT', 5]], 'PROGRAM OFF');
+    sb.mach.SBSEQ.df.free = 1;
+    sb.art = sb.art
+      .replace(/<text([^>]*?)>MV-SB1001<\/text>/, '<text$1 data-hit="SBMV" style="cursor:pointer;text-decoration:underline">MV-SB1001</text>')
+      .replace(/<text([^>]*?)>Sootblower sequence<\/text>/, '<text$1 data-hit="SBSEQ" style="cursor:pointer;text-decoration:underline">Sootblower sequence</text>');
+  }
   /* COAL, LIMESTONE AND SAND (Jennie OK 2026-11-08: the sand start buttons of 20.PNG). The order of the drawings (MINA_NEXT "PR 310 retest"):
      ISOLATING VALVE OPEN first (DITL-776 row 3 M.0870 "SAND ISO. VALVE OPEN (CRT)", memory list 103): valves -1 / -2 open, ROUTE OK
      (out 13 M.0872), then SYSTEM READY; then SYSTEM START (DITL-771 row 3 M.0800 "SAND SYSTEM START (CRT)") / STOP (row 4 M.0802): SYSTEM ON

@@ -613,6 +613,19 @@
           }
           for (const f of rf) {
             const o = outRow(f.code, f.nn, sb);
+            /* 3.2.4-beta.8 (sootblower sequence stopped after N-1014): the COUNTER of the sootblower DITL-80 (S3) is drawn with its outputs
+               N=0, 1 ~ 4 and 28 ~ 31 only; 5 ~ 27 are left out of the drawing (the same 0.5 SEC ON DELAY to the start command of each
+               sootblower, as 1 ~ 4: TR950 ~ TR953, M.4011 / 4019 / 4021 / 4029). Their readers name them 80-63 ~ 80-85 (DITL-80B row 13
+               N-1015 80-63 ... DITL-80E row 21 N-1038 80-86 = count 28): count = nn - 58. The count of the counter, held 0.5 s */
+            if (!o && f.code === '80' && f.nn >= 63 && f.nn <= 85) {
+              const d3 = dSheet('80', sb),
+                g = d3 && isSB(d3) && d3.nl && (d3.nl.gates || []).find(x => x.t === 'CNT');
+              if (g) {
+                addIn(s, i, { k: 'c', cs: d3, n: f.nn - 58, on: 0, ref: '80-' + f.nn + ' (counter ' + (f.nn - 58) + ')' });
+                dd++;
+              }
+              continue;
+            }
             if (!o) continue;
             /* 2.2.0-beta.6: machine k of this row on a drawing made for one machine: the output whose TO column names this row
                in brackets is the one of the other machine (DITL-03B out 70 FAB A STOPPED TO 28A-29, out 71 FAB B STOPPED TO
@@ -1369,6 +1382,16 @@
           if (q.k === 'v') {
             const x = q.sh.S && q.sh.S.rt ? +q.sh.S.rt.v[q.n] : NaN;
             if (isFinite(x)) (s.avw = s.avw || {})[q.key] = x;
+            continue;
+          }
+          /* 3.2.4-beta.8: a step of the sootblower counter left out of the drawing (0.5 SEC ON DELAY of the count) */
+          if (q.k === 'c') {
+            const g = q.cs.nl && (q.cs.nl.gates || []).find(x => x.t === 'CNT');
+            q.on = g && g.N === q.n ? q.on + (dt || 0) : 0;
+            if (q.on >= 0.5) {
+              on.add(row);
+              break;
+            }
             continue;
           }
           const v =
