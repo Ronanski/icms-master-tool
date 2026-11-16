@@ -323,7 +323,7 @@ const AN_HMI_CTL = {
   LICHD11032: { pv: null, sv: null, mv: 0.1, mode: 'A' },
   'LICBR1001B': { pv: null, sv: null, mv: 0.6, mode: 'M' } /* start-up drum level valve FCVFW11302 0.6 % M (03.png) */,
   'AICFG10571': { pv: 41.0, sv: 200.0, mv: 11.0, mode: 'M' },
-  'AICFG112': { pv: null, sv: 3.5, mv: 72.5, mode: 'M' } /* 3.2.1 b6: plant trends 2026-11-08: the O2 sensors fail often (user), the trim is held: SA = (LN5 air - PA - FA) x 1.09 at 150 and 90 MW = S1-LN15(72.5 %) */ /* 2.2.0-beta.7: MV from the drawing: SA demand 211.5 T/H x O2 trim = SAF FLOW CTL R-SV 215.3 (7.PNG) -> trim 1.0 = S1-LN15(50 %), the MH of AICFG112 (PID summary). Before: the O2 model was anchored at the manual 100 % of the cold start and went to 2.4 % */,
+  'AICFG112': { pv: null, sv: 3.5, mv: 72.5, mode: 'A' } /* 3.2.3-beta.272: AUTO as the logic at full load (M.0103 / M.0102 = 0): healthy analyzers, the trim on LN16 SV 3.5 (plant-study 14: simulator keeps the drawing; a held trim is an analyzer fault scenario) */ /* 3.2.1 b6: plant trends 2026-11-08: the O2 sensors fail often (user), the trim is held: SA = (LN5 air - PA - FA) x 1.09 at 150 and 90 MW = S1-LN15(72.5 %) */ /* 2.2.0-beta.7: MV from the drawing: SA demand 211.5 T/H x O2 trim = SAF FLOW CTL R-SV 215.3 (7.PNG) -> trim 1.0 = S1-LN15(50 %), the MH of AICFG112 (PID summary). Before: the O2 model was anchored at the manual 100 % of the cold start and went to 2.4 % */,
   'DPICFG108': { pv: 1434.0, sv: 1475.0, mv: 0.0, mode: 'M' },
   'EIC-TM': { pv: 148.6, sv: 150.0, mv: 75.0, mode: 'A' },
   'FIC-CF': { pv: 72.8, sv: 73.0, mv: 72.8, mode: 'R' } /* 2.2.0-beta.1: not on a screen; from the drawing: PV = average of the 3 feeder MVs (72.8 %), MV = feeder AUTO-MV (bias 0.0), SV = FIC-CM.MV 73.0 % */,
