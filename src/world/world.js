@@ -1328,7 +1328,7 @@
         .concat([{ id: BO, g: 'el', t: BO_T, on: W.ft.has(BO) }])
         .concat(Object.keys(JAM).map(k => ({ id: k, g: 'cf', t: JAM_T(k), on: W.ft.has(k) })))
         .concat(Object.keys(TL).map(k => ({ id: k, g: 'tl', t: TL[k], on: W.ft.has(k) })))
-        .concat([{ id: WET, g: 'cf', t: WET_T, on: W.ft.has(WET) }]);
+        .concat([{ id: WET, g: 'cq', t: WET_T, on: W.ft.has(WET) }]);
     if (id === BO) return boSet(on);
     if (JAM[id]) return jamSet(id, on);
     if (TL[id]) return tlSet(id, !!on);
