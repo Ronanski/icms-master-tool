@@ -532,6 +532,33 @@
       } catch (e) {}
       if (v === 1) now.set('W|' + p.tag, { sh: p.sh, kind: 'ALM', nm: p.tag + ' ' + p.d, lv: 'LOW-LOW' });
     }
+    /* 3.2.4 (JENNIE, live test of beta.4: the feeder A chute plugged, the alarm list had only the O2 HIGH): the local panel alarms of
+       the coal feeders go to the annunciator through DITL-19 (the same drawing for B and C): outputs 63 NO COAL ON BELT, 64 INLET PLUGED,
+       65 DISCHARGE PLUGED, 66 BELT TRACKING, 68 OUTLET TEMP. HIGH (CRT, ANN). One alarm line for each output at 1 */
+    for (const s of dSheets()) {
+      const m = /^DITL-19(?: #([BC]))?$/.exec(dnm(s));
+      if (!m || !s.nl) continue;
+      let L = [];
+      try {
+        L = DUI.outs(s) || [];
+      } catch (e) {}
+      for (const x of L) {
+        const n = String(x.name || '').replace(/^Output row \d+ · /, '');
+        if (!/NO COAL ON BELT|INLET PLUG|DISCHARGE PLUG|BELT TRACKING|OUTLET TEMP/.test(n)) continue;
+        let v = null;
+        try {
+          v = DUI.outVal(s, x.row);
+        } catch (e) {}
+        const w = n
+          .replace(/\s*·.*$/, '')
+          .replace(/\s*\b[IMBO]\.[0-9A-F]{4}\S*/g, '')
+          .replace(/^COAL FEEDER [A-C]\s*/, '')
+          .replace(/PLUGED/, 'PLUGGED')
+          .trim()
+          .toLowerCase();
+        if (v === 1) now.set('F|' + dnm(s) + '|' + x.row, { sh: dnm(s), kind: 'ALM', nm: 'Coal feeder ' + (m[1] || 'A') + ' ' + w, lv: 'ALARM' });
+      }
+    }
     /* e5 prep (drum level transmitter 1 fails, headless at 150 MW): ABC-010 compares DRUM LEVEL (1) and (3), |a - b| > 5 % = B.0804
        "DRUM LEVEL(1)(3) DEVIATION 5% FOR ANN.(CRT)". The bit went to 1 and the alarm list had no line for it: the CRT line from the bit */
     for (const p of BALM) {
