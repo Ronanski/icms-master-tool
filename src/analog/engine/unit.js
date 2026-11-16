@@ -283,7 +283,7 @@ function anUnitStop() {
   U.fwC = null; /* 3.2.1 anFwTagStep: its controllers and F(X) are found again */
   U.asC = null; /* 3.2.1 anAsTagStep: page 08 values */
   U.asT15 = U.asTgs = undefined;
-  if (U.fwp && U.fwp.pr) U.fwp.pr.op = undefined;
+  if (U.fwp && U.fwp.pr) U.fwp.pr.op = U.fwp.pr.hx = undefined; /* 3.2.4-beta.6: hx = the main valve flow (anMainFw) */
   for (const p of U.fp || []) {
     p.pr.uf = undefined;
     p.pr.ld = 0;
@@ -643,6 +643,7 @@ function anUnitStart() {
      the snapshots show it at 0.1 % M at 150 MW */
   U.suv = ctlOut('ABC-010', 'LICBR1001B');
   U.fwp = procOf('ABC-010', 'FICFW1007');
+  U.fwv = ctlOut('ABC-010', 'FICFW1007'); /* 3.2.4-beta.6: the command of the main feedwater valve FCV-FW1130-1 (anMainFw) */
   U.ksu = 0.3; /* 3.2.3: no longer used for the flow (anSuFw, the valve sheet); kept for the probes that read it */
   /* furnace pressure: the two IDF actuators in series (hydraulic coupling PICFG108, inlet damper PICFG108A) take the flue gas out */
   U.fp = procsOf('ABC-008', ['PICFG108', 'PICFG108A']);
@@ -2284,6 +2285,16 @@ const AN_FW = {
   q0: 549,
   dp0: 0.29
 };
+/* the BFWP discharge (kg/cm2 g) at a total feedwater flow w (T/H), with the pumps that run now: the same law as anFwStep */
+function anFwPdAt(U, w) {
+  const K = AN_FW,
+    n = (U.fwRun || []).reduce((a, r) => a + (r ? 1 : 0), 0),
+    ps = typeof window !== 'undefined' && window.WORLD && WORLD.sucP ? WORLD.sucP() : NaN,
+    Ps = isFinite(ps) ? ps : 0;
+  if (!n) return Ps;
+  const q = Math.max(K.qMin, Math.max(0, w) / K.sg / n);
+  return Math.max(0, Math.min(250, Ps - 0.4 * (q / K.q0) * (q / K.q0) + (K.sg / 10) * swInterp(K.qQ, K.qH, q) - K.kz));
+}
 function anFwStep(U, dt) {
   const K = AN_FW,
     dr = d => (typeof anDitlRun === 'function' ? anDitlRun(d) : null),
@@ -3716,6 +3727,59 @@ function anSuFw(x, pd, p1) {
     dp = Math.max(0, P1 - Math.max(0, +pd || 0));
   return ((AN_SUFW.w76 * anSuFwCv(x)) / AN_SUFW.cv76) * Math.sqrt(dp / AN_SUFW.dp76);
 }
+/* 3.2.4-beta.6 (live test of beta.4, 2026-11-17: after a feeder jam with no operator action the MS blow-off opened 130 T/H at 135
+   kg/cm2, steam out 612 T/H, and the feedwater stopped at 550 T/H with both BFWPs running: drum level LOW-LOW, MFT). The feedwater was
+   the valve opening x the span of the FICFW1007 PV (0 ~ 550 T/H), so it could never pass the top of the transmitter range. Now the
+   main feedwater valve FCV-FW1130-1 passes what its trim and its dP let through. Source: K1AU3-E2-0-123 R1 Drawing of Control valve
+   p142, Copes-Vulcan control valve metric specification sheet, FHIC item 27 / CV item 32, 8" CL1500 SD-16 Raven trim: COND 1 480,000
+   kg/h, P1 163.6, P2 147.2 kg/cm2 g, Cv 154 at 80 % travel; COND 2 450,900 kg/h, 168.1 / 147.2, Cv 129 at 71 %; COND 3 46,000 kg/h,
+   214.7 / 64.6, Cv 4.49 at 6 %; max Cv 208.8 at full travel. The Cv is taken straight between the points of the sheet (71 -> 80 ->
+   100 % give 2.8 and 2.7 Cv per %, one straight line; the Raven is a staged trim, the sheet gives no curve), below 6 % straight to 0.
+   Flow of a liquid: W = 480 T/H x Cv / 154 x sqrt(dP / 16.4) (COND 2 by this law: 454 T/H, sheet 450.9). The dP of the valve is the
+   BFWP discharge (U.fwPd, PT-FW1011) less the drum (U.Pd) less the line on each side, both with the square of the flow: pump to valve
+   1.5 kg/cm2 at 480 T/H (KSB data sheet discharge 165.1 at 491 T/H against the valve P1 163.6, COND 1), valve to drum 2.2 kg/cm2 at
+   480 T/H (P2 147.2 against the drum at MCR 145.0 = SH outlet 129 + SH pressure drop 16, FHI P2S7 design data). Check at 150 MW
+   (Start at 150 MW: drum 133.3, BFWP 165.6): 475 T/H at about 64 % travel; HMI snapshot 03.png 499 T/H at 56 % (check only) */
+const AN_MFW = {
+  pts: [
+    [6, 4.49],
+    [71, 129],
+    [80, 154],
+    [100, 208.8]
+  ],
+  w0: 480,
+  cv0: 154,
+  dp0: 16.4,
+  kUp: 1.5 /* kg/cm2 at w0, pump discharge to the valve */,
+  kDn: 2.2 /* kg/cm2 at w0, valve to the drum */
+};
+/* the output (MV) net of a controller of an ABC sheet, as ctlOut of anUnitStart */
+function anCtlOutOf(k, t) {
+  const x = AN.sheets.find(y => y.name === k),
+    c = x && x.S && AN.hmiCtrls ? (AN.hmiCtrls(x.S) || []).find(q => q.tag === t) : null;
+  return c && c.out != null ? { S: x.S, n: c.out, c, t } : null;
+}
+function anMainFwCv(x) {
+  const P = AN_MFW.pts;
+  if (!(x > 0)) return 0;
+  if (x <= P[0][0]) return (P[0][1] * x) / P[0][0];
+  for (let i = 1; i < P.length; i++)
+    if (x <= P[i][0]) {
+      const [x0, c0] = P[i - 1],
+        [x1, c1] = P[i];
+      return c0 + ((c1 - c0) * (x - x0)) / (x1 - x0);
+    }
+  return P[P.length - 1][1];
+}
+/* T/H through the main valve at travel x (%), drum pressure pd and BFWP discharge p1 (kg/cm2 g). W^2 = a (p1 - pd - k W^2 / w0^2)
+   with a = w0^2 (Cv / cv0)^2 / dp0 and k = kUp + kDn, so W = sqrt(a D / (1 + k a / w0^2)) */
+function anMainFw(x, pd, p1) {
+  const K = AN_MFW,
+    D = Math.max(0, (+p1 || 0) - Math.max(0, +pd || 0)),
+    r = anMainFwCv(x) / K.cv0,
+    a = (K.w0 * K.w0 * r * r) / K.dp0;
+  return a > 0 && D > 0 ? Math.sqrt((a * D) / (1 + ((K.kUp + K.kDn) * a) / (K.w0 * K.w0))) : 0;
+}
 const AN_AV = {
   lock: 3.5,
   reg: 3.5,
@@ -5082,6 +5146,26 @@ function anUnitStep0(dt) {
   if (U.suv && U.fwp && U.fwp.pr) {
     const o = Math.max(0, Math.min(100, anAv('LICBR1001B', +U.suv.S.rt.v[U.suv.n] || 0)));
     U.fwp.pr.op = anSuFw(o, U.Pd, U.fwPd);
+  }
+  /* 3.2.4-beta.6: the main feedwater valve FCV-FW1130-1 by its Cv and dP (anMainFw); the PV of FICFW1007 shows it up to the top of
+     its range, the drum gets all of it (plant.js, the drum balance). pr.mul: the pumps that give water (0 = none) */
+  /* a save point (and the st150 of the build) from before beta.6 has no U.fwv: the state load deletes the keys it does not carry
+     (state.js anStateInto), so the valve is found again here */
+  if (!U.fwv) U.fwv = anCtlOutOf('ABC-010', 'FICFW1007');
+  if (U.fwv && U.fwp && U.fwp.pr && isFinite(U.fwPd)) {
+    const pr = U.fwp.pr,
+      o = Math.max(0, Math.min(100, anAv('FICFW1007', +U.fwv.S.rt.v[U.fwv.n] || 0))),
+      m = pr.mul == null ? 1 : pr.mul;
+    /* the pump and the valve on one flow: the BFWP discharge falls along the KSB curve as the flow rises, so the flow is where the
+       valve law and the pump curve meet (anFwPdAt, bisection) and not the valve at the head of the last step */
+    const su = pr.op || 0,
+      g = w => anMainFw(o, U.Pd, anFwPdAt(U, w + su)) - w;
+    let lo = 0,
+      hi = 1500;
+    if (g(0) <= 0) hi = 0;
+    else for (let i = 0; i < 40; i++) g((lo + hi) / 2) > 0 ? (lo = (lo + hi) / 2) : (hi = (lo + hi) / 2);
+    U.fwMain = (lo + hi) / 2;
+    pr.hx = m * (U.fwMain + (pr.op || 0));
   }
   /* ---- 2.2.0-beta.12 (M3): machines stopped, furnace pressure ---- */
   for (const m of U.mul || []) {

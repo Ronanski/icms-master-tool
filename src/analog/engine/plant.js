@@ -777,6 +777,7 @@ function anProcStep(S, dt) {
               fwp: fw.proc,
               su,
               suK: 0.3 * fsp,
+              fsp,
               sh1: s1,
               k: 0.02,
               ks: 10,
@@ -868,7 +869,11 @@ function anProcStep(S, dt) {
          (unit.js U.ksu, pr.op of FICFW1007), so it was counted twice, and the drum kept filling for minutes after the start-up valve
          shut (the transmitter lags, T 75 s): -149 -> -119 mm with the valve at 0 %. Now the drum gets the start-up flow of now and the
          main valve part of the transmitter (its reading less the lagged start-up part) */
-      if (opE != null) {
+      /* 3.2.4-beta.6: the PV of FICFW1007 stops at the top of its range (FT-FW1007, 550 T/H); the water through the main valve
+         (unit.js anMainFw, fwp.hx) does not: with the unit model on the drum gets the flow of the valves (main + start-up) of now */
+      const hx = fwp && fwp.hx != null && isFinite(fwp.hx) && typeof AN_UNIT !== 'undefined' && AN_UNIT.on ? fwp.hx : null;
+      if (hx != null) ffw = hx; /* the main + start-up valve flow of now; the transmitter lag (T 75 s) is only in the PV */
+      else if (opE != null) {
         const T = fwp.T > 0 ? fwp.T : 75;
         pr.integ.opL = pr.integ.opL == null || AN.steady ? opE : pr.integ.opL + (opE - pr.integ.opL) * Math.min(1, dt / T);
         ffw = Math.max(0, ffw - pr.integ.opL) + opE;
