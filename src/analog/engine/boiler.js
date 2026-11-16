@@ -365,7 +365,20 @@ function anFanStart(U) {
   if (U.mul && U.mul[2] && U.mul[2].run.length === 1) U.mul[2].drw = ['DITL-27A'];
   U.fnZ = {};
 }
+/* 3.2.4 (JENNIE): air heater plugged on the gas side (trainer fault aph.plug, world.js). FHI T6 p7 / P5S2: fouling shows as a rising
+   draft loss; the APH is blown every 4 - 8 h (T9 p11) and washed when plugged. The gas side loss of the APH at MCR is not readable
+   (APH s18 table scrambled): dp 110 mmH2O NO-SOURCE, inside the -442 / -450 mmH2O ID fan suction of the fan manual (AN_FN.ga.Pi).
+   The plugging adds to that loss: +1 x dp every 30 min (NO-SOURCE trainer rate), up to +3 x. The same gas then needs a deeper ID
+   fan suction (U.fnGi, the fan current follows), and the fan at the same opening moves less gas: the share of the fan command that
+   reaches the furnace pressure is the square root of the old over the new system loss (fan law at one speed, unit.js pr.uf).
+   U.aphPl = the added loss in units of dp; clearing the fault (water wash) puts it back to 0 */
+const AN_APL = { dp: 110, t: 1800, max: 3 };
 function anFanStep(U, dt) {
+  {
+    const W = typeof window !== 'undefined' ? window.WORLD : null,
+      on = !!(W && W.ft && W.ft.has('aph.plug'));
+    U.aphPl = on ? Math.min(AN_APL.max, (U.aphPl > 0 ? U.aphPl : 0) + (dt > 0 ? dt : 0) / AN_APL.t) : 0;
+  }
   const F = U.fn,
     K = AN_FN;
   if (!F) return;
@@ -447,7 +460,7 @@ function anFanStep(U, dt) {
   const taf = U.taf && U.tafS ? U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0) : 0,
     rg = Math.pow(taf / K.ga.T0, 2),
     idf = fnRun(K.run.idf);
-  U.fnGi = K.ga.Pi.map((p, i) => lag('gi' + i, idf ? p * rg : 0, 2));
+  U.fnGi = K.ga.Pi.map((p, i) => lag('gi' + i, idf ? (p - AN_APL.dp * (U.aphPl || 0)) * rg : 0, 2));
   U.fnGo = lag('go', idf ? K.ga.Po * rg : 0, 2);
   const dpg = U.fnGo - (U.fnGi[0] + U.fnGi[1]) / 2,
     dpg0 = K.ga.Po - (K.ga.Pi[0] + K.ga.Pi[1]) / 2;
