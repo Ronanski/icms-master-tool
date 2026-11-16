@@ -113,6 +113,8 @@ function anEngAPI() {
     /* 3.2.1 (IRENE): the position of a DITL valve machine (0 ~ 100 %) and the pneumatic valves on the instrument air (unit.js AN_AV) */
     ditlPos: (name, j) => anDitlPos(name, j || 0),
     ditlRun: anDitlRun,
+    /* 3.2.4: the unit black-out on / off (elec.js anElecBo; world.js WORLD.ftrip el.1am) */
+    elecBo: on => anElecBo(AN_UNIT, on),
     airValves: () => AN_AV,
     avSv: anAvSv,
     av: anAv /* 3.2.3-beta.180: the opening that reaches the process for a controller command (airlock / spring) */,
