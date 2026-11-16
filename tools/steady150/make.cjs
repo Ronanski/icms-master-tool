@@ -11,20 +11,23 @@ process.chdir(root);
 const { open } = require(path.join(root, 'tests/regress/lib.js'));
 const html = 'dist/' + fs.readdirSync('dist').find(x => /^logic-sim-v[\d.]+(?:-beta\.\d+)?\.html$/.test(x));
 const MAX = +process.argv[2] || 120, CHUNK = +process.argv[3] || 10;
+/* 3.2.3-beta.272: loops the snapshot line-up leaves in MANUAL that the logic runs in AUTO at full load: the O2 trim (ABC-002 M.0103 / M.0102 = 0 at 150 MW, SV 3.5 = LN16) */
+const AUTO = { AICFG112: 3.5 };
 const LIM = { MW: 0.3, Tb: 1, Pd: 0.3, msT: 1, rh: 1, F: 0.5 };
 async function chunk(sv, min, log) {
   const { browser, page } = await open(html);
   try {
     await page.waitForFunction(() => AN.sheets && AN.sheets.length >= 54 && window.WORLD && WORLD.idx && S.sheets.length >= PRE_N, null, { timeout: 120000 });
     await page.waitForTimeout(1500);
-    await page.evaluate(async sv => {
+    await page.evaluate(async ([sv, AUTO]) => {
       await AN.ades();
       WORLD.set(true);
       document.getElementById('load150').click();
       await AN._startP;
       if (sv) { const o = JSON.parse(sv); await DITL150.savePut({ kf: o.kf, kd: o.kd, ver: 'st150' }); }
+      else for (const [t, v] of Object.entries(AUTO)) LS_GUIDE.A.auto(t, v);
       window.__h = { C: AN.sheets.find(s => s.name === 'ABC-001C') };
-    }, sv);
+    }, [sv, AUTO]);
     for (let m = 0; m < min; m++) {
       const e = await page.evaluate(() => {
         const h = window.__h, U = AN.unit;
