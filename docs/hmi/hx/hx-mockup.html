@@ -235,6 +235,14 @@
 .hx-mode.man text { fill: var(--hx-warn) !important; }
 .hx-mode.rem rect { stroke: var(--hx-remote); }
 .hx-mode.rem text { fill: var(--hx-remote) !important; }
+.hx-arw { stroke: none; }
+.hx-idle > .hx-arw { opacity: 0.42; }
+.hx-sig { fill: none; stroke: var(--hx-mute); stroke-width: 1.1; stroke-dasharray: 4 3; }
+.hx-dot { fill: var(--hx-ink); stroke: var(--hx-panel); stroke-width: 1.2; }
+.hx-end { font: 500 10.4px var(--hx-font); fill: var(--hx-mute) !important; paint-order: stroke; stroke: var(--hx-panel); stroke-width: 3px; }
+.hx-tap { cursor: pointer; }
+.hx-tap:hover .hx-dot, .hx-tap:focus-visible .hx-dot { fill: var(--hx-accent); }
+.hx-zone { font: 600 10.5px var(--hx-cond); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--hx-mute) !important; }
 .hx-node { cursor: default; outline: none; }
 .hx-link { outline: none; }
 .hx-link:focus-visible rect { stroke: var(--hx-accent); stroke-width: 2.4; }
@@ -430,6 +438,18 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
 <li><code>joins: [{ from: 'id.port', to: 'id.port', med, via: 'h' | 'v' | 'hv' | 'vh', mid, flow }]</code> for a line between lanes.</li>
 <li>New kind of equipment: add one function to <code>hx-sym.js</code> (drawn around 0, 0; returns <code>svg</code>, <code>ports</code>, <code>box</code>).</li>
 <li>New machine or tag in the app: run <code>tools/dump-live150.js</code> on the built app, then <code>tools/make-registry.py</code>.</li>
+</ul>
+<h3>6b. A page as a plan (the full operator drawing)</h3>
+<p>The user did not accept the first 23 pages as operator graphics (2026-11-17): only the main line had pipes; spray valves, drains and vents stood in a row with no line. <code>hx-page-reheat.js</code> is the sample of the answer: a page drawn as a <b>plan</b>, where every valve, spray, drain pot and transmitter sits on its own line. New pages should be made this way; the lane pages are a summary level only.</p>
+<ul>
+<li><code>plan: { h, items, pipes, taps, texts, signals }</code> instead of <code>lanes</code>.</li>
+<li><code>items</code>: the same <code>E</code>, <code>M</code>, <code>C</code>, <code>X</code>, <code>L</code> with <code>x</code>, <code>y</code> (the drawing is 1280 wide, <code>h</code> high). <code>rot: -90</code> or <code>90</code> turns a valve onto a vertical line (with -90 the actuator points left; port <code>r</code> is then the top end and <code>l</code> the bottom end). <code>lab: 't' | 'b' | 'l' | 'r'</code> = where the words go. <code>cname</code> = the longer name used on the Controls view.</li>
+<li><code>pipes</code>: <code>{ med, w, flow, pts, to, arrow }</code>. A point is <code>'id.port'</code> or <code>[x, y]</code>; <code>null</code> keeps the x or y of the point before. Two points not in line get a right-angle bend. <code>to: 'flash chamber'</code> ends the pipe with an arrow and that word.</li>
+<li><code>taps</code>: a transmitter on its line: <code>{ x, y, side, label, key, key2, unit, dp, tag }</code> (<code>key2</code> shows two transmitters as <code>a / b</code>).</li>
+<li><code>signals</code>: thin dashed control signal between items. <code>texts</code>: free words (<code>cls: 'hx-name' | 'hx-zone' | 'hx-note'</code>).</li>
+<li>An item of the flow diagram that the app does not bind yet is drawn with <code>E</code> (grey, tag shown), never left out and never given an invented signal.</li>
+<li>Method that was used for the reheat page, to repeat for every page: (1) read the flow diagram sheet(s) of the system and write down the order of every item along every line; (2) list what the control room page of that system shows (content only); (3) take the tags the app binds from <code>hx-registry.js</code>; (4) place and connect; (5) run a check for words over words, pipes and symbols (0 allowed); (6) have someone who did not draw it compare the page with the flow diagram, connection by connection.</li>
+<li>Flow diagrams: private repo <code>Ronanski/icms-plant-documents</code>, <code>flow-diagram-K1AU3-A1-0-001.zip</code>: use the RB file (Rev D) when the sheet is in it. Drawing list on page 2 ~ 4 of each PDF. Reheat = <code>K1AU3-PD-012</code>, main steam = <code>K1AU3-PD-011</code>.</li>
 </ul>
 <h3>7. What is real and what is sample</h3>
 <ul>
@@ -973,6 +993,37 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
     };
   };
 
+  /* drain pot under a steam line */
+  S.pot = () => ({
+    box: [-6, -11, 6, 11],
+    ports: { t: [0, -10], b: [0, 10], l: [-5, 0], r: [5, 0] },
+    svg: `<path class="hxo" d="${vcapsule(10, 20)}"/>`
+  });
+  /* reheater: inlet header, four tube assemblies, outlet header (steam from the top header to the bottom one in the drawing) */
+  S.reheater = o => {
+    const w = o.w || 104,
+      h = o.h || 124,
+      hd = 15,
+      g = (h - 2 * hd - 8) / 4;
+    let b = '';
+    for (let i = 0; i < 4; i++)
+      b += zig(-w / 2 + 16, w / 2 - 16, -h / 2 + hd + 4 + g * (i + 0.5), Math.min(7, g * 0.3), 9);
+    return {
+      box: [-w / 2 - 1, -h / 2 - 1, w / 2 + 1, h / 2 + 1],
+      ports: {
+        t: [0, -h / 2],
+        b: [0, h / 2],
+        l: [-w / 2, 0],
+        r: [w / 2, 0],
+        tl: [-w / 2, -h / 2 + hd / 2],
+        tr: [w / 2, -h / 2 + hd / 2],
+        bl: [-w / 2, h / 2 - hd / 2],
+        br: [w / 2, h / 2 - hd / 2]
+      },
+      svg: `<rect class="hxo" x="${n(-w / 2 + 8)}" y="${n(-h / 2 + hd)}" width="${n(w - 16)}" height="${n(h - 2 * hd)}"/><path class="hxd" d="${b}"/><rect class="hxo" x="${n(-w / 2)}" y="${n(-h / 2)}" width="${n(w)}" height="${hd}" rx="4"/><rect class="hxo" x="${n(-w / 2)}" y="${n(h / 2 - hd)}" width="${n(w)}" height="${hd}" rx="4"/>`
+    };
+  };
+
   /* ---- small things on a line ---- */
   S.filter = o => {
     const w = o.w || 26;
@@ -1181,7 +1232,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
     if (it.k === 'link') return { up: 15, dn: 15 };
     const box = SYM[it.sym](Object.assign({ id: 'm' }, it)).box,
       side = it.lab === 'r' || it.lab === 'l',
-      lines = wrap(it.name || '', it.wrap || (side ? 22 : 19)).length,
+      lines = it.name ? wrap(it.name, it.wrap || (side ? 22 : 19)).length : 0,
       tg = tagOf(it) ? 1 : 0,
       rows =
         (it.k === 'mach' || it.k === 'valve' ? 1 : 0) + (it.k === 'loop' ? 1 + (it.pv ? 1 : 0) : 0) + it.vals.length;
@@ -1250,27 +1301,41 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
   }
 
   /* ---------- one node: symbol + its words ---------- */
+  /* rot: a symbol may be turned (90, -90) to sit on a vertical line. lab: where its words go: 't' name above and details below,
+     'b' all below, 'r' / 'l' all beside it */
+  const rotP = (p, r) => (r === 90 ? [-p[1], p[0]] : r === -90 ? [p[1], -p[0]] : r === 180 ? [-p[0], -p[1]] : p);
   function drawNode(it, pageId) {
     const x = it._x,
       y = it._y;
-    let s = '',
-      box,
-      ports;
     if (it.k === 'link') {
       const t = it.name,
         w = Math.max(74, t.length * 6.3 + 22),
         back = it.back;
-      box = [-w / 2, -13, w / 2, 13];
-      ports = { l: [-w / 2, 0], r: [w / 2, 0], t: [0, -13], b: [0, 13] };
-      s = `<g class="hx-link" data-go="${esc(it.to)}" tabindex="0" role="link" transform="translate(${n1(x)} ${n1(y)})"><rect x="${n1(-w / 2)}" y="-13" width="${n1(w)}" height="26" rx="13"/><text x="0" y="4" text-anchor="middle">${back ? '‹ ' : ''}${esc(t)}${back ? '' : ' ›'}</text></g>`;
-      it._p = Object.fromEntries(Object.entries(ports).map(([k, p]) => [k, [x + p[0], y + p[1]]]));
-      it._box = [x + box[0], y + box[1], x + box[2], y + box[3]];
-      return s;
+      it._p = { l: [x - w / 2, y], r: [x + w / 2, y], t: [x, y - 13], b: [x, y + 13] };
+      it._box = [x - w / 2, y - 13, x + w / 2, y + 13];
+      return `<g class="hx-link" data-go="${esc(it.to)}" tabindex="0" role="link" transform="translate(${n1(x)} ${n1(y)})"><rect x="${n1(-w / 2)}" y="-13" width="${n1(w)}" height="26" rx="13"/><text x="0" y="4" text-anchor="middle">${back ? '‹ ' : ''}${esc(t)}${back ? '' : ' ›'}</text></g>`;
     }
-    const sy = SYM[it.sym](Object.assign({ id: pageId + '-' + it._id }, it));
-    box = sy.box;
-    ports = sy.ports;
-    it._p = Object.fromEntries(Object.entries(ports).map(([k, p]) => [k, [x + p[0], y + p[1]]]));
+    const sy = SYM[it.sym](Object.assign({ id: pageId + '-' + it._id }, it)),
+      rot = it.rot || 0;
+    let box = sy.box,
+      ports = sy.ports;
+    if (rot) {
+      const c = [
+        [box[0], box[1]],
+        [box[2], box[1]],
+        [box[0], box[3]],
+        [box[2], box[3]]
+      ].map(q => rotP(q, rot));
+      box = [
+        Math.min(...c.map(q => q[0])),
+        Math.min(...c.map(q => q[1])),
+        Math.max(...c.map(q => q[0])),
+        Math.max(...c.map(q => q[1]))
+      ];
+      ports = Object.fromEntries(Object.entries(ports).map(([k, q]) => [k, rotP(q, rot)]));
+    }
+    it._p = Object.fromEntries(Object.entries(ports).map(([k, q]) => [k, [x + q[0], y + q[1]]]));
+    it._box = [x + box[0], y + box[1], x + box[2], y + box[3]];
     const open =
       it.k === 'mach'
         ? 'mach:' + it.mach
@@ -1279,67 +1344,95 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
           : it.k === 'valve'
             ? 'valve:' + it.valve
             : '';
-    /* words above: name (up to 3 lines) and the small tag */
-    const side = it.lab === 'r' || it.lab === 'l';
-    const lines = wrap(it.name || '', it.wrap || (side ? 22 : 19));
-    const tg = tagOf(it);
-    let up = '',
-      dn = '',
-      ty = box[1] - 6;
-    if (!side) {
-      if (tg) {
-        up += `<text class="hx-tag" x="0" y="${n1(ty)}" text-anchor="middle">${esc(tg)}</text>`;
-        ty -= 11.5;
-      }
-      for (let i = lines.length - 1; i >= 0; i--) {
-        up += `<text class="hx-name" x="0" y="${n1(ty)}" text-anchor="middle">${esc(lines[i])}</text>`;
-        ty -= 14;
-      }
-    }
-    /* words below: state / loop / valve line, then the values */
-    let by = side
-      ? -((lines.length + (tg ? 1 : 0) + (it.k !== 'eq' ? 1 : 0) + it.vals.length) * 14) / 2 + 10
-      : box[3] + 15;
-    const bx = side ? (it.lab === 'r' ? box[2] + 8 : box[0] - 8) : 0,
-      anc = side ? (it.lab === 'r' ? 'start' : 'end') : 'middle';
-    if (side) {
-      for (const ln of lines) {
-        dn += `<text class="hx-name" x="${n1(bx)}" y="${n1(by)}" text-anchor="${anc}">${esc(ln)}</text>`;
-        by += 14;
-      }
-      if (tg) {
-        dn += `<text class="hx-tag" x="${n1(bx)}" y="${n1(by - 1)}" text-anchor="${anc}">${esc(tg)}</text>`;
-        by += 12;
-      }
-    }
-    if (it.k === 'mach') {
-      dn += `<text class="hx-st none" data-st="${esc(it.mach)}" x="${n1(bx)}" y="${n1(by)}" text-anchor="${anc}">-----</text>`;
-      by += 14.5;
-    } else if (it.k === 'loop') {
-      dn += `<g class="hx-mode" data-mode="${esc(it.loop)}" transform="translate(${n1(bx + (side ? (it.lab === 'r' ? 0 : -92) : -46))} ${n1(by - 11)})"><rect width="50" height="15" rx="7.5"/><text x="25" y="11" text-anchor="middle">-----</text><text class="hx-val" data-lp="${esc(it.loop)}|mv" x="56" y="11.5">-----</text><text class="hx-unit" x="${it.loopUnitX || 86}" y="11.5" data-lpu="1"> %</text></g>`;
-      by += 16;
+    const lab = it.lab || 't',
+      side = lab === 'r' || lab === 'l';
+    const lines = it.name ? wrap(it.name, it.wrap || (side ? 22 : 19)) : [],
+      tg = tagOf(it);
+    /* the rows of words: each gives its svg at (x, baseline y, anchor) */
+    const head = [],
+      body = [];
+    for (const ln of lines)
+      head.push([
+        14,
+        (bx, by, an) => `<text class="hx-name" x="${n1(bx)}" y="${n1(by)}" text-anchor="${an}">${esc(ln)}</text>`
+      ]);
+    if (tg)
+      head.push([
+        11.5,
+        (bx, by, an) => `<text class="hx-tag" x="${n1(bx)}" y="${n1(by - 1.5)}" text-anchor="${an}">${esc(tg)}</text>`
+      ]);
+    if (it.k === 'mach')
+      body.push([
+        14.5,
+        (bx, by, an) =>
+          `<text class="hx-st none" data-st="${esc(it.mach)}" x="${n1(bx)}" y="${n1(by)}" text-anchor="${an}">-----</text>`
+      ]);
+    if (it.k === 'valve')
+      body.push([
+        14.5,
+        (bx, by, an) =>
+          `<text class="hx-st none" data-vs="${esc(it.valve)}" x="${n1(bx)}" y="${n1(by)}" text-anchor="${an}">-----</text>`
+      ]);
+    if (it.k === 'loop') {
+      body.push([
+        16.5,
+        (bx, by, an) =>
+          `<g class="hx-mode" data-mode="${esc(it.loop)}" transform="translate(${n1(bx - (an === 'middle' ? 46 : an === 'end' ? 92 : 0))} ${n1(by - 11)})"><rect width="50" height="15" rx="7.5"/><text x="25" y="11" text-anchor="middle">-----</text><text class="hx-val" data-lp="${esc(it.loop)}|mv" x="56" y="11.5">-----</text><text class="hx-unit" x="86" y="11.5"> %</text></g>`
+      ]);
       if (it.pv) {
-        dn += `<text class="hx-lab" x="${n1(bx)}" y="${n1(by)}" text-anchor="${anc}">PV <tspan class="hx-val" data-lp="${esc(it.loop)}|pv|${it.pvdp == null ? 1 : it.pvdp}">-----</tspan> · SV <tspan class="hx-val" data-lp="${esc(it.loop)}|sv|${it.pvdp == null ? 1 : it.pvdp}">-----</tspan><tspan class="hx-unit"> ${esc(it.pv === true ? '' : it.pv)}</tspan></text>`;
-        by += 14.5;
+        const dp = it.pvdp == null ? 1 : it.pvdp;
+        body.push([
+          14.5,
+          (bx, by, an) =>
+            `<text class="hx-lab" x="${n1(bx)}" y="${n1(by)}" text-anchor="${an}">PV <tspan class="hx-val" data-lp="${esc(it.loop)}|pv|${dp}">-----</tspan> · SV <tspan class="hx-val" data-lp="${esc(it.loop)}|sv|${dp}">-----</tspan><tspan class="hx-unit"> ${esc(it.pv === true ? '' : it.pv)}</tspan></text>`
+        ]);
       }
-    } else if (it.k === 'valve') {
-      dn += `<text class="hx-st none" data-vs="${esc(it.valve)}" x="${n1(bx)}" y="${n1(by)}" text-anchor="${anc}">-----</text>`;
-      by += 14.5;
     }
-    for (const v of it.vals) {
-      if (side)
-        dn += `<text class="hx-lab" x="${n1(bx)}" y="${n1(by)}" text-anchor="${anc}">${esc(v.label)} <tspan class="hx-val" data-hv="${esc(v.key)}" data-dp="${v.dp}">-----</tspan><tspan class="hx-unit"> ${esc(v.unit)}</tspan></text>`;
-      else
-        dn += `<text class="hx-lab" x="-4" y="${n1(by)}" text-anchor="end">${esc(v.label)}</text><text x="3" y="${n1(by)}"><tspan class="hx-val" data-hv="${esc(v.key)}" data-dp="${v.dp}">-----</tspan><tspan class="hx-unit"> ${esc(v.unit)}</tspan></text>`;
-      by += 14;
+    for (const v of it.vals)
+      body.push([
+        14,
+        (bx, by, an) =>
+          an === 'middle'
+            ? `<text class="hx-lab" x="${n1(bx - 4)}" y="${n1(by)}" text-anchor="end">${esc(v.label)}</text><text x="${n1(bx + 3)}" y="${n1(by)}"><tspan class="hx-val" data-hv="${esc(v.key)}" data-dp="${v.dp}">-----</tspan><tspan class="hx-unit"> ${esc(v.unit)}</tspan></text>`
+            : `<text class="hx-lab" x="${n1(bx)}" y="${n1(by)}" text-anchor="${an}">${esc(v.label)} <tspan class="hx-val" data-hv="${esc(v.key)}" data-dp="${v.dp}">-----</tspan><tspan class="hx-unit"> ${esc(v.unit)}</tspan></text>`
+      ]);
+    let words = '';
+    if (side) {
+      const all = head.concat(body),
+        tot = all.reduce((q, r) => q + r[0], 0),
+        bx = lab === 'r' ? box[2] + 7 : box[0] - 7;
+      let by = -tot / 2 + 10 + (it.ly || 0);
+      for (const r of all) {
+        words += r[1](bx, by, lab === 'r' ? 'start' : 'end');
+        by += r[0];
+      }
+    } else {
+      let by;
+      if (lab === 'b') {
+        by = box[3] + 13;
+        for (const r of head.concat(body)) {
+          words += r[1](0, by, 'middle');
+          by += r[0];
+        }
+      } else {
+        by = box[1] - 6;
+        for (let i = head.length - 1; i >= 0; i--) {
+          words += head[i][1](0, by, 'middle');
+          by -= head[i][0];
+        }
+        by = box[3] + 15;
+        for (const r of body) {
+          words += r[1](0, by, 'middle');
+          by += r[0];
+        }
+      }
     }
     const yn =
       it.k === 'mach'
         ? `<g class="hx-yn" data-yn="${esc(it.mach)}" transform="translate(${n1(box[2] + 2)} ${n1(box[1] - 2)})"><title>Permissive · trend · monitor</title><rect width="14" height="14" rx="3"/><text x="7" y="10.4" text-anchor="middle">-</text></g>`
         : '';
-    it._box = [x + box[0], y + box[1], x + box[2], y + box[3]];
     const attr = open
-      ? ` data-open="${esc(open)}" tabindex="0" role="button" aria-label="${esc(it.name)}"`
+      ? ` data-open="${esc(open)}" tabindex="0" role="button" aria-label="${esc(it.name || tg)}"`
       : it.go
         ? ` data-go="${esc(it.go)}" data-open="" tabindex="0" role="link" aria-label="${esc(it.name)}"`
         : '';
@@ -1353,7 +1446,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
             ? ` data-lv2="${esc(it.loop)}"`
             : '';
     const lv = it.level ? ` data-level="${esc(it.level.join('|'))}"` : '';
-    return `<g class="hx-node hx-none"${attr}${on}${lv} transform="translate(${n1(x)} ${n1(y)})"><rect class="hx-hit" x="${n1(box[0] - 4)}" y="${n1(box[1] - 4)}" width="${n1(box[2] - box[0] + 8)}" height="${n1(box[3] - box[1] + 8)}"/>${sy.svg}${up}${dn}${yn}</g>`;
+    return `<g class="hx-node hx-none"${attr}${on}${lv} transform="translate(${n1(x)} ${n1(y)})"><rect class="hx-hit" x="${n1(box[0] - 4)}" y="${n1(box[1] - 4)}" width="${n1(box[2] - box[0] + 8)}" height="${n1(box[3] - box[1] + 8)}"/>${rot ? `<g transform="rotate(${rot})">${sy.svg}</g>` : sy.svg}${words}${yn}</g>`;
   }
 
   /* ---------- lines of a lane ---------- */
@@ -1393,6 +1486,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
 
   /* ---------- the Process view ---------- */
   function drawProcess(def) {
+    if (def.plan) return drawPlan(def);
     const lay = layout(def);
     def._lay = lay;
     const byId = {};
@@ -1437,6 +1531,105 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
     };
   }
 
+  /* ---------- a page drawn as a plan: every item at its own place, every pipe from point to point ----------
+     def.plan = { h, items: [item with x, y (+ rot, lab)], pipes: [{ med, w, flow, pts, to, arrow }], taps: [...], texts: [...],
+     signals: [{ pts }] }. A point of a pipe is 'id.port' or [x, y]; null = the same x or y as the point before. Two points
+     that are not in line get a right-angle bend (sideways first; vfirst: up / down first). */
+  function drawPlan(def) {
+    const P = def.plan,
+      byId = {};
+    let uid = 0,
+      nodes = '';
+    for (const it of P.items) {
+      it._id = it.id || 'p' + ++uid;
+      it._x = it.x;
+      it._y = it.y;
+      nodes += drawNode(it, def.id);
+      byId[it._id] = it;
+    }
+    const pt = (q, prev) => {
+      if (typeof q === 'string') {
+        const [i, port] = q.split('.'),
+          it = byId[i];
+        if (!it || !it._p[port || 'r']) {
+          console.warn('HX: pipe of page ' + def.id + ' names a missing point ' + q);
+          return prev || [0, 0];
+        }
+        return it._p[port || 'r'];
+      }
+      return [q[0] == null ? prev[0] : q[0], q[1] == null ? prev[1] : q[1]];
+    };
+    const path = pp => {
+      const raw = [];
+      for (const q of pp.pts) raw.push(pt(q, raw[raw.length - 1]));
+      const o = [raw[0]];
+      for (let i = 1; i < raw.length; i++) {
+        const a = o[o.length - 1],
+          b = raw[i];
+        if (Math.abs(a[0] - b[0]) > 0.6 && Math.abs(a[1] - b[1]) > 0.6) o.push(pp.vfirst ? [a[0], b[1]] : [b[0], a[1]]);
+        o.push(b);
+      }
+      return o;
+    };
+    const head = (a, b, med, at) => {
+      const an = (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI,
+        m = at || [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      return `<path class="hx-arw" transform="translate(${n1(m[0])} ${n1(m[1])}) rotate(${n1(an)})" d="M-5 -4.6L5 0L-5 4.6Z" style="fill:var(--hx-m-${med})"/>`;
+    };
+    let ls = '',
+      ends = '';
+    const used = [];
+    for (const pp of P.pipes) {
+      const o = path(pp),
+        w = pp.w || 4;
+      if (!used.includes(pp.med)) used.push(pp.med);
+      let ar = '';
+      if (pp.arrow !== false) {
+        let bi = 0,
+          bl = 0;
+        for (let i = 1; i < o.length; i++) {
+          const l = Math.hypot(o[i][0] - o[i - 1][0], o[i][1] - o[i - 1][1]);
+          if (l > bl) ((bl = l), (bi = i));
+        }
+        if (bl >= 44) ar = head(o[bi - 1], o[bi], pp.med);
+      }
+      if (pp.to) {
+        const a = o[o.length - 2],
+          b = o[o.length - 1],
+          dx = Math.sign(Math.round(b[0] - a[0])),
+          dy = Math.sign(Math.round(b[1] - a[1]));
+        ar += head(a, b, pp.med, [b[0] + dx * 4, b[1] + dy * 4]);
+        ends += `<text class="hx-end" x="${n1(b[0] + dx * 13)}" y="${n1(b[1] + dy * 13 + (dy > 0 ? 8 : dy < 0 ? -2 : 3.5))}" text-anchor="${dx > 0 ? 'start' : dx < 0 ? 'end' : 'middle'}">${esc(pp.to)}</text>`;
+      }
+      const d = rpath(o, pp.r);
+      ls += `<g class="hx-idle" data-flow="${esc(pp.flow || '')}"><path class="hx-ln" d="${d}" style="stroke:var(--hx-m-${pp.med});stroke-width:${w}"/><path class="hx-lnf" d="${d}"/>${ar}</g>`;
+    }
+    let sig = '';
+    for (const sg of P.signals || []) sig += `<path class="hx-sig" d="${rpath(path(sg), 4)}"/>`;
+    /* a tap: the transmitter on its line, with its words on one side */
+    let taps = '';
+    for (const t of P.taps || []) {
+      const sd = t.side || 't',
+        an = sd === 'r' ? 'start' : sd === 'l' ? 'end' : 'middle',
+        bx = sd === 'r' ? 9 : sd === 'l' ? -9 : 0,
+        y0 = sd === 't' ? -37 : sd === 'b' ? 21 : -9,
+        dp = t.dp == null ? 1 : t.dp;
+      const val = `<tspan class="hx-val" data-hv="${esc(t.key)}" data-dp="${dp}">-----</tspan>${t.key2 ? ` / <tspan class="hx-val" data-hv="${esc(t.key2)}" data-dp="${dp}">-----</tspan>` : ''}<tspan class="hx-unit"> ${esc(t.unit || '')}</tspan>`;
+      const lead = sd === 't' ? 'M0 -3V-9' : sd === 'b' ? 'M0 3V9' : sd === 'r' ? 'M3 0H7' : 'M-3 0H-7';
+      taps += `<g class="hx-node hx-tap" data-open="value:${esc(t.key)}" tabindex="0" role="button" aria-label="${esc(t.label)}" transform="translate(${n1(t.x)} ${n1(t.y)})"><path class="hxd" d="${lead}"/><circle class="hx-dot" r="3.2"/><text class="hx-lab" x="${bx}" y="${y0}" text-anchor="${an}">${esc(t.label)}</text><text x="${bx}" y="${y0 + 14}" text-anchor="${an}">${val}</text>${t.tag ? `<text class="hx-tag" x="${bx}" y="${y0 + 25}" text-anchor="${an}">${esc(t.tag)}</text>` : ''}</g>`;
+    }
+    let tx = '';
+    for (const t of P.texts || [])
+      tx += `<text class="${t.cls || 'hx-note'}" x="${t.x}" y="${t.y}" text-anchor="${t.anchor || 'start'}">${esc(t.s)}</text>`;
+    const legend =
+      used.map(m => `<span><i style="background:var(--hx-m-${m})"></i>${MEDIA[m] || m}</span>`).join('') +
+      `<em>Red = running / open · Green = stopped / closed · Grey = no signal in the app yet</em>`;
+    return {
+      svg: `<svg viewBox="0 0 ${W} ${P.h}" role="img" aria-label="${esc(def.title)} process">${tx}${ls}${sig}${ends}${nodes}${taps}</svg>`,
+      legend
+    };
+  }
+
   /* ---------- what can be operated on a page (for the Controls view and the status line) ---------- */
   function inventory(def) {
     const seen = new Set(),
@@ -1448,13 +1641,12 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
       seen.add(arr === loops ? 'l' + id : arr === machs ? 'm' + id : 'v' + id);
       arr.push({ id, name });
     };
-    for (const L of def.lanes)
-      for (const c of L.items)
-        for (const it of Array.isArray(c) ? c : [c]) {
-          if (it.k === 'loop') add(loops, it.loop, it.name);
-          if (it.k === 'mach') add(machs, it.mach, it.name);
-          if (it.k === 'valve') add(valves, it.valve, it.name);
-        }
+    const all = def.plan ? def.plan.items : def.lanes.flatMap(L => L.items.flatMap(c => (Array.isArray(c) ? c : [c])));
+    for (const it of all) {
+      if (it.k === 'loop') add(loops, it.loop, it.cname || it.name);
+      if (it.k === 'mach') add(machs, it.mach, it.cname || it.name);
+      if (it.k === 'valve') add(valves, it.valve, it.cname || it.name);
+    }
     for (const x of def.loops || []) add(loops, x[0], x[1]);
     for (const x of def.machines || []) add(machs, x[0], x[1]);
     for (const x of def.valves || []) add(valves, x[0], x[1]);
@@ -1832,7 +2024,8 @@ window.HXREG = {"from":"app 3.2.3-beta.272, Start at 150 MW, 20 s after Run","ma
   };
   const vAt = (k, t) => {
     const v = S.values[k];
-    return v == null ? null : v === 0 ? 0 : v * (1 + rip(k, t));
+    /* a valve or damper at its end stop (0 or 100) does not ripple */
+    return v == null ? null : v === 0 || v === 100 ? v : v * (1 + rip(k, t));
   };
   const lAt = (tag, t) => {
     const s = lp[tag];
@@ -1932,6 +2125,361 @@ window.HXREG = {"from":"app 3.2.3-beta.272, Start at 150 MW, 20 s after Run","ma
     });
     document.body.append(fp);
   }
+})();
+
+/* HX sample of a FULL operator drawing (user 2026-11-17: "gawa ka muna ng sample mockup for hmi sa reheat system"; before that:
+   "nakahiwalay ang controls, valves, ang nakadikit lamang o yung may flow ay yung mga major equipments").
+   Here every valve, spray, drain pot and transmitter sits on its own line. The connections are read from the flow diagrams
+   K1AU3-PD-011 (main steam: HP turbine exhaust, HP bypass, ventilator, warming steam, non-return valve) and K1AU3-PD-012
+   (cold reheat and hot reheat) Rev D; the list of what an operator expects on the page was checked against control room page
+   005 REHEATER STEAM SYSTEM. The drawing itself is original: turbine on the left, boiler on the right, cold reheat going out on
+   the upper line and hot reheat coming back on the lower one.
+   Items in grey are on the flow diagram but the app registry (hx-registry.js) has no signal for them yet. */
+(function () {
+  const { V, E, C, X, L, page } = HX;
+  const K = 'kg/cm²';
+  const at = (it, x, y, o) => Object.assign(it, { x, y }, o || {});
+  /* a drain pot under a steam line at (x, y) with its drain valve; valve = an item made with X (bound) or E (grey) */
+  const drain = (id, x, y, valve) => ({
+    items: [
+      at(E('pot', '', '', []), x, y + 21, { id: id + 'p' }),
+      at(valve, x, y + 80, { id: id + 'v', rot: -90, lab: 'r' })
+    ],
+    pipes: [
+      { med: 'drain', w: 2.4, arrow: false, pts: [[x, y], id + 'p.t'] },
+      {
+        med: 'drain',
+        w: 2.4,
+        arrow: false,
+        pts: [id + 'p.b', id + 'v.r'],
+        flow: valve.valve ? 'x:' + valve.valve : ''
+      },
+      {
+        med: 'drain',
+        w: 2.4,
+        arrow: false,
+        pts: [id + 'v.l', [x, y + 116]],
+        to: 'flash chamber',
+        flow: valve.valve ? 'x:' + valve.valve : ''
+      }
+    ]
+  });
+  const d1 = drain('d1', 290, 372, X('XV-CR1011', 'Drain DP-CR01', { cname: 'Cold reheat drain pot DP-CR01 valve' }));
+  const d2 = drain('d2', 574, 372, E('valve', 'Drain DP-CR02', 'XV-CR1012', [], { kind: 'shutoff' }));
+  const d3 = drain('d3', 640, 610, X('XV-HR1021', 'Drain DP-HR01', { cname: 'Hot reheat drain pot DP-HR01 valve' }));
+  const d4 = drain('d4', 455, 610, X('XV-HR1022', 'Drain DP-HR02', { cname: 'Hot reheat drain pot DP-HR02 valve' }));
+  const LOAD = 'v:ZI-CV>1',
+    ICV = 'v:ZI-ICV>1';
+
+  page({
+    id: 'reheat-steam',
+    group: 'New sample: full operator drawing',
+    title: 'Reheat steam',
+    about:
+      'Every valve, spray, drain pot and transmitter on its own line. Connections: flow diagrams K1AU3-PD-011 and PD-012 Rev D.',
+    plan: {
+      h: 924,
+      items: [
+        /* ---- main steam, turbine valves, high pressure bypass ---- */
+        at(L('drum-steam', 'Main steam', { back: true }), 126, 120, { id: 'ms' }),
+        at(
+          E('valve', 'Stop and control valves', '', [V('Position', 'ZI-CV', '%')], {
+            kind: 'control',
+            on: LOAD,
+            wrap: 16
+          }),
+          126,
+          268,
+          { id: 'cv', rot: -90, lab: 'r' }
+        ),
+        at(E('turbine', '', '', [], { w: 72, h: 60 }), 150, 372, { id: 'hp' }),
+        at(C('PICMS1006', 'High pressure bypass valve', { tag: 'PCV-MS1020' }), 300, 186, { id: 'hpb' }),
+        at(E('spray', '', '', []), 372, 186, { id: 'hps' }),
+        at(
+          C('TICMS1022', 'Bypass spray valve', { tag: 'TCV-FW1060', cname: 'High pressure bypass spray valve' }),
+          446,
+          92,
+          { id: 'tcms' }
+        ),
+        at(X('XV-FW1061', 'Spray block valve', { cname: 'High pressure bypass spray block valve' }), 568, 92, {
+          id: 'xfw61'
+        }),
+        at(L('feedwater', 'Feedwater', { back: true }), 760, 92, { id: 'fw1' }),
+        /* ---- cold reheat ---- */
+        ...d1.items,
+        at(E('valve', 'Ventilator valve', 'FV-CR1902', [], { kind: 'control' }), 345, 316, {
+          id: 'fv',
+          rot: -90,
+          lab: 'l'
+        }),
+        at(L('aux-steam', 'Aux steam', { back: true }), 432, 258, { id: 'aux1' }),
+        at(E('valve', 'Turbine warming steam valve', 'MV-AS1011', [], { kind: 'motor', wrap: 16 }), 432, 316, {
+          id: 'was',
+          rot: -90,
+          lab: 'r'
+        }),
+        at(E('valve', 'Non-return valve', 'XV-CR1901', [], { kind: 'check' }), 512, 372, { id: 'nrv', lab: 'b' }),
+        ...d2.items,
+        at(C('PICAS1005', 'Cold reheat to auxiliary steam valve', { tag: 'PCV-AS1020', wrap: 14 }), 722, 316, {
+          id: 'pas',
+          rot: -90,
+          lab: 'r'
+        }),
+        at(L('aux-steam', 'Auxiliary steam'), 722, 244, { id: 'aux2' }),
+        at(X('MV-TS1001', 'Extraction 1 valve'), 790, 430, { id: 'ext', rot: -90, lab: 'r' }),
+        at(L('extraction', 'High pressure heater 2'), 790, 496, { id: 'hph' }),
+        at(E('spray', '', '', []), 990, 372, { id: 'dsh' }),
+        at(C('TICHR1002', 'Reheater spray valve', { tag: 'TCV-FW1150', wrap: 14 }), 990, 306, {
+          id: 'tfw50',
+          rot: -90,
+          lab: 'r'
+        }),
+        at(X('XV-FW1151', 'Spray block valve', { wrap: 14, cname: 'Reheater spray block valve' }), 990, 240, {
+          id: 'xfw51',
+          rot: -90,
+          lab: 'r'
+        }),
+        at(L('feedwater', 'Feedwater', { back: true }), 990, 140, { id: 'fw2' }),
+        at(C('HICBR1391', 'Superheater steam to reheater', { tag: 'MV-BR1391', kind: 'motor', wrap: 12 }), 1150, 300, {
+          id: 'mbr',
+          rot: -90,
+          lab: 'r'
+        }),
+        at(L('drum-steam', 'Superheater 2 inlet', { back: true }), 1150, 196, { id: 'sh2' }),
+        at(E('reheater', 'Reheater', 'four tube assemblies', [], { w: 104, h: 124 }), 1196, 498, {
+          id: 'rh',
+          lab: 'l'
+        }),
+        /* ---- hot reheat ---- */
+        at(E('valve', '3 safety valves', 'ZV-HR1001 to 1003', [], { kind: 'safety' }), 985, 578, {
+          id: 'sv',
+          rot: -90,
+          lab: 'r'
+        }),
+        at(E('vent', '', 'to silencers', []), 985, 540, { id: 'sil1', lab: 'r' }),
+        at(C('PICHR1391', 'Reheater start-up vent valve', { tag: 'MV-HR1391', kind: 'motor', wrap: 18 }), 900, 566, {
+          id: 'vent',
+          rot: -90,
+          lab: 'l'
+        }),
+        at(E('vent', '', 'silencer', []), 900, 522, { id: 'sil2', lab: 'r' }),
+        ...d3.items,
+        ...d4.items,
+        at(E('valve', 'Reheat stop and intercept valves', 'A and B', [], { kind: 'plain', on: ICV }), 404, 528, {
+          id: 'crvb'
+        }),
+        at(E('valve', '', '', [V('Position', 'ZI-ICV', '%')], { kind: 'plain', on: ICV }), 404, 552, {
+          id: 'crva',
+          lab: 'b'
+        }),
+        at(E('turbine', '', '', [], { w: 80, h: 110, flip: true }), 150, 540, { id: 'ilp' }),
+        /* ---- low pressure bypass ---- */
+        at(E('valve', 'Bypass isolating valve', 'V-HR1001 · manual', [], { kind: 'manual', wrap: 16 }), 380, 668, {
+          id: 'vhr',
+          rot: -90,
+          lab: 'l'
+        }),
+        at(C('PICHR1003', 'Low pressure bypass valve', { tag: 'PCV-HR1010' }), 316, 770, { id: 'lpb' }),
+        at(E('spray', '', '', []), 244, 770, { id: 'lps' }),
+        at(
+          C('TICHR1012', 'Bypass spray valve', {
+            tag: 'TCV-CD1115',
+            pv: '°C',
+            pvdp: 0,
+            cname: 'Low pressure bypass spray valve'
+          }),
+          404,
+          840,
+          { id: 'tcd', lab: 'b' }
+        ),
+        at(X('XV-CD1114', 'Spray block valve', { cname: 'Low pressure bypass spray block valve' }), 530, 840, {
+          id: 'xcd',
+          lab: 'b'
+        }),
+        at(L('condensate', 'Condensate', { back: true }), 650, 840, { id: 'cdl' }),
+        at(
+          E('condenser', 'Condenser', '', [V('Pressure', 'PT-CD1110', 'kg/cm² abs', 3)], { w: 112, h: 64 }),
+          142,
+          782,
+          { id: 'cd', lab: 'b' }
+        ),
+        /* ---- reheat temperature by the flue gas dampers of the back pass ---- */
+        at(
+          C('TICHR1002A', 'Reheat temperature control', { sym: 'block', w: 124, h: 34, pv: '°C', pvdp: 0, wrap: 30 }),
+          930,
+          772,
+          { id: 'tic' }
+        ),
+        at(C('HICHR1002A', 'Reheater pass damper', { sym: 'damper', tag: 'TCV-FG1116A-D' }), 1085, 772, {
+          id: 'dma',
+          lab: 'b'
+        }),
+        at(C('HICHR1002B', 'Superheater pass damper', { sym: 'damper', tag: 'TCV-FG1117A-D' }), 1200, 772, {
+          id: 'dmb',
+          lab: 'b'
+        }),
+        at(L('furnace-gas', 'Furnace and flue gas'), 1142, 890, { id: 'fgl' })
+      ],
+      pipes: [
+        /* main steam to the turbine and to the bypass */
+        { med: 'steam', pts: ['ms.b', [126, 186], 'hpb.l'], flow: 'l:PICMS1006' },
+        { med: 'steam', pts: [[126, 186], 'cv.r'], flow: LOAD, arrow: false },
+        { med: 'steam', pts: ['cv.l', 'hp.in'], flow: LOAD },
+        { med: 'steam', pts: ['hpb.r', 'hps.l'], flow: 'l:PICMS1006', arrow: false },
+        { med: 'steam', pts: ['hps.r', [640, 186], [640, 372]], flow: 'l:PICMS1006' },
+        { med: 'water', w: 2.6, pts: ['fw1.l', 'xfw61.r'], flow: 'l:TICMS1022' },
+        { med: 'water', w: 2.6, pts: ['xfw61.l', 'tcms.r'], flow: 'l:TICMS1022', arrow: false },
+        { med: 'water', w: 2.6, pts: ['tcms.l', [372, 92], 'hps.t'], flow: 'l:TICMS1022' },
+        /* cold reheat: turbine exhaust to the reheater */
+        { med: 'reheat', pts: ['hp.r', 'nrv.l'], flow: LOAD },
+        { med: 'reheat', pts: ['nrv.r', 'dsh.l'], flow: LOAD + '|l:PICMS1006' },
+        { med: 'reheat', pts: ['dsh.r', [1196, 372], 'rh.t'], flow: LOAD + '|l:PICMS1006' },
+        ...d1.pipes,
+        { med: 'reheat', w: 2.6, pts: [[345, 372], 'fv.l'], arrow: false },
+        { med: 'reheat', w: 2.6, pts: ['fv.r', [345, 282]], to: 'flash chamber', arrow: false },
+        { med: 'steam', w: 2.6, pts: ['aux1.b', 'was.r'], arrow: false },
+        { med: 'steam', w: 2.6, pts: ['was.l', [432, 372]], arrow: false },
+        ...d2.pipes,
+        { med: 'reheat', w: 2.6, pts: [[722, 372], 'pas.l'], flow: 'l:PICAS1005', arrow: false },
+        { med: 'reheat', w: 2.6, pts: ['pas.r', 'aux2.b'], flow: 'l:PICAS1005', arrow: false },
+        { med: 'reheat', w: 2.6, pts: [[790, 372], 'ext.r'], flow: 'x:MV-TS1001', arrow: false },
+        { med: 'reheat', w: 2.6, pts: ['ext.l', 'hph.t'], flow: 'x:MV-TS1001', arrow: false },
+        { med: 'water', w: 2.6, pts: ['fw2.b', 'xfw51.r'], flow: 'l:TICHR1002', arrow: false },
+        { med: 'water', w: 2.6, pts: ['xfw51.l', 'tfw50.r'], flow: 'l:TICHR1002', arrow: false },
+        { med: 'water', w: 2.6, pts: ['tfw50.l', 'dsh.t'], flow: 'l:TICHR1002', arrow: false },
+        { med: 'steam', w: 2.6, pts: ['sh2.b', 'mbr.r'], flow: 'l:HICBR1391', arrow: false },
+        { med: 'steam', w: 2.6, pts: ['mbr.l', [1150, 372]], flow: 'l:HICBR1391', arrow: false },
+        /* hot reheat: reheater back to the turbine */
+        { med: 'reheat', pts: ['rh.b', [1196, 610], [520, 610]], flow: ICV + '|l:PICHR1003' },
+        { med: 'reheat', pts: [[575, 610], [575, 528], 'crvb.r'], flow: ICV },
+        { med: 'reheat', pts: ['crvb.l', [190, 528]], flow: ICV, arrow: false },
+        { med: 'reheat', pts: [[520, 610], [520, 552], 'crva.r'], flow: ICV, arrow: false },
+        { med: 'reheat', pts: ['crva.l', [190, 552]], flow: ICV, arrow: false },
+        { med: 'steam', w: 2.4, pts: [[985, 610], 'sv.l'], arrow: false },
+        { med: 'steam', w: 2.4, pts: ['sv.r', 'sil1.b'], arrow: false },
+        { med: 'reheat', w: 2.6, pts: [[900, 610], 'vent.l'], flow: 'l:PICHR1391', arrow: false },
+        { med: 'reheat', w: 2.6, pts: ['vent.r', 'sil2.b'], flow: 'l:PICHR1391', arrow: false },
+        ...d3.pipes,
+        ...d4.pipes,
+        /* low pressure bypass to the condenser */
+        { med: 'reheat', pts: [[520, 610], [380, 610], 'vhr.r'], flow: 'l:PICHR1003', arrow: false },
+        { med: 'reheat', pts: ['vhr.l', [380, 770], 'lpb.r'], flow: 'l:PICHR1003', arrow: false },
+        { med: 'reheat', pts: ['lpb.l', 'lps.r'], flow: 'l:PICHR1003', arrow: false },
+        { med: 'reheat', pts: ['lps.l', [198, 770]], flow: 'l:PICHR1003' },
+        { med: 'condensate', w: 2.6, pts: ['cdl.l', 'xcd.r'], flow: 'l:TICHR1012', arrow: false },
+        { med: 'condensate', w: 2.6, pts: ['xcd.l', 'tcd.r'], flow: 'l:TICHR1012', arrow: false },
+        { med: 'condensate', w: 2.6, pts: ['tcd.l', [244, 840], 'lps.b'], flow: 'l:TICHR1012' },
+        /* turbine exhaust and the shaft */
+        { med: 'steam', pts: [[142, 583], 'cd.t'], flow: ICV },
+        {
+          med: 'power',
+          w: 3,
+          pts: [
+            [150, 394],
+            [150, 500]
+          ],
+          arrow: false
+        }
+      ],
+      signals: [{ pts: ['tic.r', 'dma.l'] }, { pts: ['dma.r', 'dmb.l'] }],
+      taps: [
+        { x: 192, y: 186, side: 't', label: 'Turbine inlet', key: 'PT-MS1006-1', unit: K, tag: 'PT-MS1006' },
+        { x: 664, y: 92, side: 't', label: 'Spray water', key: 'FT-FW1059', unit: 't/h', tag: 'FT-FW1059' },
+        { x: 432, y: 186, side: 'b', label: 'After bypass', key: 'PT-MS1021', unit: K, tag: 'PT-MS1021' },
+        {
+          x: 520,
+          y: 186,
+          side: 'b',
+          label: 'Temperature',
+          key: 'TT-MS1022-1',
+          key2: 'TT-MS1022-2',
+          unit: '°C',
+          dp: 0,
+          tag: 'TT-MS1022-1 / -2'
+        },
+        { x: 232, y: 372, side: 'b', label: 'Exhaust', key: 'PICR19011', unit: K, tag: 'PT-CR1901' },
+        { x: 905, y: 372, side: 't', label: 'Pressure', key: 'PT-CR1003', unit: K, tag: 'PT-CR1003' },
+        { x: 945, y: 372, side: 'b', label: 'Temperature', key: 'TT-CR1004', unit: '°C', dp: 0, tag: 'TT-CR1004' },
+        { x: 990, y: 186, side: 'l', label: 'Spray water', key: 'FT-FW1149', unit: 't/h', tag: 'FT-FW1149' },
+        {
+          x: 1052,
+          y: 372,
+          side: 'b',
+          label: 'After spray',
+          key: 'TT-CR1005-1',
+          key2: 'TT-CR1005-2',
+          unit: '°C',
+          dp: 0,
+          tag: 'TT-CR1005-1 / -2'
+        },
+        { x: 1196, y: 404, side: 'l', label: 'Inlet', key: 'PT-CR1006', unit: K, tag: 'PT-CR1006' },
+        { x: 1140, y: 610, side: 'b', label: 'Outlet', key: 'PT-HR1001', unit: K, tag: 'PT-HR1001' },
+        {
+          x: 1040,
+          y: 610,
+          side: 'b',
+          label: 'Outlet',
+          key: 'TT-HR1002-1',
+          key2: 'TT-HR1002-2',
+          unit: '°C',
+          dp: 0,
+          tag: 'TT-HR1002-1 / -2'
+        },
+        {
+          x: 805,
+          y: 610,
+          side: 'b',
+          label: 'Pressure',
+          key: 'PT-HR1003-1',
+          key2: 'PT-HR1003-2',
+          unit: K,
+          tag: 'PT-HR1003-1 / -2'
+        },
+        { x: 715, y: 610, side: 'b', label: 'Temperature', key: 'TT-HR1004', unit: '°C', dp: 0, tag: 'TT-HR1004' },
+        { x: 150, y: 446, side: 'r', label: 'Speed', key: 'SI-TB', unit: 'rpm', dp: 0, tag: 'one shaft' },
+        { x: 305, y: 840, side: 'b', label: 'Spray water', key: 'FTCD1115', unit: 't/h', tag: 'FT-CD1115' }
+      ],
+      texts: [
+        { x: 104, y: 366, s: 'High pressure', cls: 'hx-name', anchor: 'end' },
+        { x: 104, y: 382, s: 'turbine', cls: 'hx-name', anchor: 'end' },
+        { x: 104, y: 526, s: 'Intermediate and', cls: 'hx-name', anchor: 'end' },
+        { x: 104, y: 542, s: 'low pressure', cls: 'hx-name', anchor: 'end' },
+        { x: 104, y: 558, s: 'turbine', cls: 'hx-name', anchor: 'end' },
+        { x: 1090, y: 360, s: 'Cold reheat', cls: 'hx-zone', anchor: 'middle' },
+        { x: 690, y: 598, s: 'Hot reheat', cls: 'hx-zone', anchor: 'middle' },
+        { x: 868, y: 710, s: 'Reheat temperature: flue gas dampers of the back pass', cls: 'hx-zone' }
+      ]
+    },
+    trends: [
+      {
+        title: 'Reheat steam',
+        pens: [
+          ['Hot reheat temperature', 'TT-HR1002-1', '°C', 0],
+          ['Hot reheat pressure', 'PT-HR1003-1', K],
+          ['Cold reheat temperature', 'TT-CR1004', '°C', 0],
+          ['After reheater spray', 'TT-CR1005-1', '°C', 0]
+        ]
+      },
+      {
+        title: 'Turbine bypass',
+        pens: [
+          ['High pressure bypass output', 'mv:PICMS1006', '%'],
+          ['Low pressure bypass output', 'mv:PICHR1003', '%'],
+          ['After high pressure bypass', 'TT-MS1022-1', '°C', 0],
+          ['Reheater spray water', 'FT-FW1149', 't/h']
+        ]
+      },
+      {
+        title: 'Reheat temperature control',
+        pens: [
+          ['Reheat temperature', 'pv:TICHR1002A', '°C', 0],
+          ['Set point', 'sv:TICHR1002A', '°C', 0],
+          ['Reheater pass damper', 'mv:HICHR1002A', '%'],
+          ['Superheater pass damper', 'mv:HICHR1002B', '%']
+        ]
+      }
+    ]
+  });
 })();
 
 /* HX pages: the whole plant in 23 pages (LMYP #1, 460 T/H CFB boiler, 150 MW). Every tag, machine and loop below is one that the
@@ -3806,6 +4354,7 @@ window.HXREG = {"from":"app 3.2.3-beta.272, Start at 150 MW, 20 s after Run","ma
 
 HX.shell(document.getElementById('hx'), {
   strip: [['Load', 'GCP-AI1001', 'MW'], ['Steam pressure', 'PT-MS1002', 'kg/cm²'], ['Steam temperature', 'pv:TICMS1004', '°C', 0], ['Steam flow', 'FT-MS1031', 't/h'], ['Reheat temperature', 'TT-HR1002-1', '°C', 0], ['Drum level', 'pv:LICBR1001B', 'mm', 0], ['Bed temperature', 'TT-FG1090', '°C', 0], ['Furnace pressure', 'PT-FG1085', 'mmH₂O', 0], ['Coal flow', 'pv:FIC-CM', 't/h'], ['Total air flow', 'ABC-002|SI0060', 't/h']],
+  start: 'reheat-steam',
   extra: [{ id: 'next-coder', group: 'Handoff', title: 'For the next coder', render: () => document.getElementById('doc').content.cloneNode(true).firstElementChild }]
 });
 </script>

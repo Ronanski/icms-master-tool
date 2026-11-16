@@ -115,6 +115,19 @@ page({
 - New kind of equipment: add one function to `hx-sym.js` (drawn around 0, 0; returns `svg`, `ports`, `box`).
 - New machine or tag in the app: run `tools/dump-live150.js` on the built app, then `tools/make-registry.py`.
 
+## 6b. A page as a plan (the full operator drawing)
+
+The user did not accept the first 23 pages as operator graphics (2026-11-17): only the main line had pipes; spray valves, drains and vents stood in a row with no line. `hx-page-reheat.js` is the sample of the answer: a page drawn as a **plan**, where every valve, spray, drain pot and transmitter sits on its own line. New pages should be made this way; the lane pages are a summary level only.
+
+- `plan: { h, items, pipes, taps, texts, signals }` instead of `lanes`.
+- `items`: the same `E`, `M`, `C`, `X`, `L` with `x`, `y` (the drawing is 1280 wide, `h` high). `rot: -90` or `90` turns a valve onto a vertical line (with -90 the actuator points left; port `r` is then the top end and `l` the bottom end). `lab: 't' | 'b' | 'l' | 'r'` = where the words go. `cname` = the longer name used on the Controls view.
+- `pipes`: `{ med, w, flow, pts, to, arrow }`. A point is `'id.port'` or `[x, y]`; `null` keeps the x or y of the point before. Two points not in line get a right-angle bend. `to: 'flash chamber'` ends the pipe with an arrow and that word.
+- `taps`: a transmitter on its line: `{ x, y, side, label, key, key2, unit, dp, tag }` (`key2` shows two transmitters as `a / b`).
+- `signals`: thin dashed control signal between items. `texts`: free words (`cls: 'hx-name' | 'hx-zone' | 'hx-note'`).
+- An item of the flow diagram that the app does not bind yet is drawn with `E` (grey, tag shown), never left out and never given an invented signal.
+- Method that was used for the reheat page, to repeat for every page: (1) read the flow diagram sheet(s) of the system and write down the order of every item along every line; (2) list what the control room page of that system shows (content only); (3) take the tags the app binds from `hx-registry.js`; (4) place and connect; (5) run a check for words over words, pipes and symbols (0 allowed); (6) have someone who did not draw it compare the page with the flow diagram, connection by connection.
+- Flow diagrams: private repo `Ronanski/icms-plant-documents`, `flow-diagram-K1AU3-A1-0-001.zip`: use the RB file (Rev D) when the sheet is in it. Drawing list on page 2 ~ 4 of each PDF. Reheat = `K1AU3-PD-012`, main steam = `K1AU3-PD-011`.
+
 ## 7. What is real and what is sample
 
 - Real (from the app): the tags, machine names, loop tags, DITL sheets, English names of the registry; the 150 MW values; the running / stopped states; the rows of the purge and trip lists (text of temporary page 10).

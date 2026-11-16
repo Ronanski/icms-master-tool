@@ -154,7 +154,7 @@
     if (it.k === 'link') return { up: 15, dn: 15 };
     const box = SYM[it.sym](Object.assign({ id: 'm' }, it)).box,
       side = it.lab === 'r' || it.lab === 'l',
-      lines = wrap(it.name || '', it.wrap || (side ? 22 : 19)).length,
+      lines = it.name ? wrap(it.name, it.wrap || (side ? 22 : 19)).length : 0,
       tg = tagOf(it) ? 1 : 0,
       rows =
         (it.k === 'mach' || it.k === 'valve' ? 1 : 0) + (it.k === 'loop' ? 1 + (it.pv ? 1 : 0) : 0) + it.vals.length;
@@ -223,27 +223,41 @@
   }
 
   /* ---------- one node: symbol + its words ---------- */
+  /* rot: a symbol may be turned (90, -90) to sit on a vertical line. lab: where its words go: 't' name above and details below,
+     'b' all below, 'r' / 'l' all beside it */
+  const rotP = (p, r) => (r === 90 ? [-p[1], p[0]] : r === -90 ? [p[1], -p[0]] : r === 180 ? [-p[0], -p[1]] : p);
   function drawNode(it, pageId) {
     const x = it._x,
       y = it._y;
-    let s = '',
-      box,
-      ports;
     if (it.k === 'link') {
       const t = it.name,
         w = Math.max(74, t.length * 6.3 + 22),
         back = it.back;
-      box = [-w / 2, -13, w / 2, 13];
-      ports = { l: [-w / 2, 0], r: [w / 2, 0], t: [0, -13], b: [0, 13] };
-      s = `<g class="hx-link" data-go="${esc(it.to)}" tabindex="0" role="link" transform="translate(${n1(x)} ${n1(y)})"><rect x="${n1(-w / 2)}" y="-13" width="${n1(w)}" height="26" rx="13"/><text x="0" y="4" text-anchor="middle">${back ? '‹ ' : ''}${esc(t)}${back ? '' : ' ›'}</text></g>`;
-      it._p = Object.fromEntries(Object.entries(ports).map(([k, p]) => [k, [x + p[0], y + p[1]]]));
-      it._box = [x + box[0], y + box[1], x + box[2], y + box[3]];
-      return s;
+      it._p = { l: [x - w / 2, y], r: [x + w / 2, y], t: [x, y - 13], b: [x, y + 13] };
+      it._box = [x - w / 2, y - 13, x + w / 2, y + 13];
+      return `<g class="hx-link" data-go="${esc(it.to)}" tabindex="0" role="link" transform="translate(${n1(x)} ${n1(y)})"><rect x="${n1(-w / 2)}" y="-13" width="${n1(w)}" height="26" rx="13"/><text x="0" y="4" text-anchor="middle">${back ? '‹ ' : ''}${esc(t)}${back ? '' : ' ›'}</text></g>`;
     }
-    const sy = SYM[it.sym](Object.assign({ id: pageId + '-' + it._id }, it));
-    box = sy.box;
-    ports = sy.ports;
-    it._p = Object.fromEntries(Object.entries(ports).map(([k, p]) => [k, [x + p[0], y + p[1]]]));
+    const sy = SYM[it.sym](Object.assign({ id: pageId + '-' + it._id }, it)),
+      rot = it.rot || 0;
+    let box = sy.box,
+      ports = sy.ports;
+    if (rot) {
+      const c = [
+        [box[0], box[1]],
+        [box[2], box[1]],
+        [box[0], box[3]],
+        [box[2], box[3]]
+      ].map(q => rotP(q, rot));
+      box = [
+        Math.min(...c.map(q => q[0])),
+        Math.min(...c.map(q => q[1])),
+        Math.max(...c.map(q => q[0])),
+        Math.max(...c.map(q => q[1]))
+      ];
+      ports = Object.fromEntries(Object.entries(ports).map(([k, q]) => [k, rotP(q, rot)]));
+    }
+    it._p = Object.fromEntries(Object.entries(ports).map(([k, q]) => [k, [x + q[0], y + q[1]]]));
+    it._box = [x + box[0], y + box[1], x + box[2], y + box[3]];
     const open =
       it.k === 'mach'
         ? 'mach:' + it.mach
@@ -252,67 +266,95 @@
           : it.k === 'valve'
             ? 'valve:' + it.valve
             : '';
-    /* words above: name (up to 3 lines) and the small tag */
-    const side = it.lab === 'r' || it.lab === 'l';
-    const lines = wrap(it.name || '', it.wrap || (side ? 22 : 19));
-    const tg = tagOf(it);
-    let up = '',
-      dn = '',
-      ty = box[1] - 6;
-    if (!side) {
-      if (tg) {
-        up += `<text class="hx-tag" x="0" y="${n1(ty)}" text-anchor="middle">${esc(tg)}</text>`;
-        ty -= 11.5;
-      }
-      for (let i = lines.length - 1; i >= 0; i--) {
-        up += `<text class="hx-name" x="0" y="${n1(ty)}" text-anchor="middle">${esc(lines[i])}</text>`;
-        ty -= 14;
-      }
-    }
-    /* words below: state / loop / valve line, then the values */
-    let by = side
-      ? -((lines.length + (tg ? 1 : 0) + (it.k !== 'eq' ? 1 : 0) + it.vals.length) * 14) / 2 + 10
-      : box[3] + 15;
-    const bx = side ? (it.lab === 'r' ? box[2] + 8 : box[0] - 8) : 0,
-      anc = side ? (it.lab === 'r' ? 'start' : 'end') : 'middle';
-    if (side) {
-      for (const ln of lines) {
-        dn += `<text class="hx-name" x="${n1(bx)}" y="${n1(by)}" text-anchor="${anc}">${esc(ln)}</text>`;
-        by += 14;
-      }
-      if (tg) {
-        dn += `<text class="hx-tag" x="${n1(bx)}" y="${n1(by - 1)}" text-anchor="${anc}">${esc(tg)}</text>`;
-        by += 12;
-      }
-    }
-    if (it.k === 'mach') {
-      dn += `<text class="hx-st none" data-st="${esc(it.mach)}" x="${n1(bx)}" y="${n1(by)}" text-anchor="${anc}">-----</text>`;
-      by += 14.5;
-    } else if (it.k === 'loop') {
-      dn += `<g class="hx-mode" data-mode="${esc(it.loop)}" transform="translate(${n1(bx + (side ? (it.lab === 'r' ? 0 : -92) : -46))} ${n1(by - 11)})"><rect width="50" height="15" rx="7.5"/><text x="25" y="11" text-anchor="middle">-----</text><text class="hx-val" data-lp="${esc(it.loop)}|mv" x="56" y="11.5">-----</text><text class="hx-unit" x="${it.loopUnitX || 86}" y="11.5" data-lpu="1"> %</text></g>`;
-      by += 16;
+    const lab = it.lab || 't',
+      side = lab === 'r' || lab === 'l';
+    const lines = it.name ? wrap(it.name, it.wrap || (side ? 22 : 19)) : [],
+      tg = tagOf(it);
+    /* the rows of words: each gives its svg at (x, baseline y, anchor) */
+    const head = [],
+      body = [];
+    for (const ln of lines)
+      head.push([
+        14,
+        (bx, by, an) => `<text class="hx-name" x="${n1(bx)}" y="${n1(by)}" text-anchor="${an}">${esc(ln)}</text>`
+      ]);
+    if (tg)
+      head.push([
+        11.5,
+        (bx, by, an) => `<text class="hx-tag" x="${n1(bx)}" y="${n1(by - 1.5)}" text-anchor="${an}">${esc(tg)}</text>`
+      ]);
+    if (it.k === 'mach')
+      body.push([
+        14.5,
+        (bx, by, an) =>
+          `<text class="hx-st none" data-st="${esc(it.mach)}" x="${n1(bx)}" y="${n1(by)}" text-anchor="${an}">-----</text>`
+      ]);
+    if (it.k === 'valve')
+      body.push([
+        14.5,
+        (bx, by, an) =>
+          `<text class="hx-st none" data-vs="${esc(it.valve)}" x="${n1(bx)}" y="${n1(by)}" text-anchor="${an}">-----</text>`
+      ]);
+    if (it.k === 'loop') {
+      body.push([
+        16.5,
+        (bx, by, an) =>
+          `<g class="hx-mode" data-mode="${esc(it.loop)}" transform="translate(${n1(bx - (an === 'middle' ? 46 : an === 'end' ? 92 : 0))} ${n1(by - 11)})"><rect width="50" height="15" rx="7.5"/><text x="25" y="11" text-anchor="middle">-----</text><text class="hx-val" data-lp="${esc(it.loop)}|mv" x="56" y="11.5">-----</text><text class="hx-unit" x="86" y="11.5"> %</text></g>`
+      ]);
       if (it.pv) {
-        dn += `<text class="hx-lab" x="${n1(bx)}" y="${n1(by)}" text-anchor="${anc}">PV <tspan class="hx-val" data-lp="${esc(it.loop)}|pv|${it.pvdp == null ? 1 : it.pvdp}">-----</tspan> · SV <tspan class="hx-val" data-lp="${esc(it.loop)}|sv|${it.pvdp == null ? 1 : it.pvdp}">-----</tspan><tspan class="hx-unit"> ${esc(it.pv === true ? '' : it.pv)}</tspan></text>`;
-        by += 14.5;
+        const dp = it.pvdp == null ? 1 : it.pvdp;
+        body.push([
+          14.5,
+          (bx, by, an) =>
+            `<text class="hx-lab" x="${n1(bx)}" y="${n1(by)}" text-anchor="${an}">PV <tspan class="hx-val" data-lp="${esc(it.loop)}|pv|${dp}">-----</tspan> · SV <tspan class="hx-val" data-lp="${esc(it.loop)}|sv|${dp}">-----</tspan><tspan class="hx-unit"> ${esc(it.pv === true ? '' : it.pv)}</tspan></text>`
+        ]);
       }
-    } else if (it.k === 'valve') {
-      dn += `<text class="hx-st none" data-vs="${esc(it.valve)}" x="${n1(bx)}" y="${n1(by)}" text-anchor="${anc}">-----</text>`;
-      by += 14.5;
     }
-    for (const v of it.vals) {
-      if (side)
-        dn += `<text class="hx-lab" x="${n1(bx)}" y="${n1(by)}" text-anchor="${anc}">${esc(v.label)} <tspan class="hx-val" data-hv="${esc(v.key)}" data-dp="${v.dp}">-----</tspan><tspan class="hx-unit"> ${esc(v.unit)}</tspan></text>`;
-      else
-        dn += `<text class="hx-lab" x="-4" y="${n1(by)}" text-anchor="end">${esc(v.label)}</text><text x="3" y="${n1(by)}"><tspan class="hx-val" data-hv="${esc(v.key)}" data-dp="${v.dp}">-----</tspan><tspan class="hx-unit"> ${esc(v.unit)}</tspan></text>`;
-      by += 14;
+    for (const v of it.vals)
+      body.push([
+        14,
+        (bx, by, an) =>
+          an === 'middle'
+            ? `<text class="hx-lab" x="${n1(bx - 4)}" y="${n1(by)}" text-anchor="end">${esc(v.label)}</text><text x="${n1(bx + 3)}" y="${n1(by)}"><tspan class="hx-val" data-hv="${esc(v.key)}" data-dp="${v.dp}">-----</tspan><tspan class="hx-unit"> ${esc(v.unit)}</tspan></text>`
+            : `<text class="hx-lab" x="${n1(bx)}" y="${n1(by)}" text-anchor="${an}">${esc(v.label)} <tspan class="hx-val" data-hv="${esc(v.key)}" data-dp="${v.dp}">-----</tspan><tspan class="hx-unit"> ${esc(v.unit)}</tspan></text>`
+      ]);
+    let words = '';
+    if (side) {
+      const all = head.concat(body),
+        tot = all.reduce((q, r) => q + r[0], 0),
+        bx = lab === 'r' ? box[2] + 7 : box[0] - 7;
+      let by = -tot / 2 + 10 + (it.ly || 0);
+      for (const r of all) {
+        words += r[1](bx, by, lab === 'r' ? 'start' : 'end');
+        by += r[0];
+      }
+    } else {
+      let by;
+      if (lab === 'b') {
+        by = box[3] + 13;
+        for (const r of head.concat(body)) {
+          words += r[1](0, by, 'middle');
+          by += r[0];
+        }
+      } else {
+        by = box[1] - 6;
+        for (let i = head.length - 1; i >= 0; i--) {
+          words += head[i][1](0, by, 'middle');
+          by -= head[i][0];
+        }
+        by = box[3] + 15;
+        for (const r of body) {
+          words += r[1](0, by, 'middle');
+          by += r[0];
+        }
+      }
     }
     const yn =
       it.k === 'mach'
         ? `<g class="hx-yn" data-yn="${esc(it.mach)}" transform="translate(${n1(box[2] + 2)} ${n1(box[1] - 2)})"><title>Permissive · trend · monitor</title><rect width="14" height="14" rx="3"/><text x="7" y="10.4" text-anchor="middle">-</text></g>`
         : '';
-    it._box = [x + box[0], y + box[1], x + box[2], y + box[3]];
     const attr = open
-      ? ` data-open="${esc(open)}" tabindex="0" role="button" aria-label="${esc(it.name)}"`
+      ? ` data-open="${esc(open)}" tabindex="0" role="button" aria-label="${esc(it.name || tg)}"`
       : it.go
         ? ` data-go="${esc(it.go)}" data-open="" tabindex="0" role="link" aria-label="${esc(it.name)}"`
         : '';
@@ -326,7 +368,7 @@
             ? ` data-lv2="${esc(it.loop)}"`
             : '';
     const lv = it.level ? ` data-level="${esc(it.level.join('|'))}"` : '';
-    return `<g class="hx-node hx-none"${attr}${on}${lv} transform="translate(${n1(x)} ${n1(y)})"><rect class="hx-hit" x="${n1(box[0] - 4)}" y="${n1(box[1] - 4)}" width="${n1(box[2] - box[0] + 8)}" height="${n1(box[3] - box[1] + 8)}"/>${sy.svg}${up}${dn}${yn}</g>`;
+    return `<g class="hx-node hx-none"${attr}${on}${lv} transform="translate(${n1(x)} ${n1(y)})"><rect class="hx-hit" x="${n1(box[0] - 4)}" y="${n1(box[1] - 4)}" width="${n1(box[2] - box[0] + 8)}" height="${n1(box[3] - box[1] + 8)}"/>${rot ? `<g transform="rotate(${rot})">${sy.svg}</g>` : sy.svg}${words}${yn}</g>`;
   }
 
   /* ---------- lines of a lane ---------- */
@@ -366,6 +408,7 @@
 
   /* ---------- the Process view ---------- */
   function drawProcess(def) {
+    if (def.plan) return drawPlan(def);
     const lay = layout(def);
     def._lay = lay;
     const byId = {};
@@ -410,6 +453,105 @@
     };
   }
 
+  /* ---------- a page drawn as a plan: every item at its own place, every pipe from point to point ----------
+     def.plan = { h, items: [item with x, y (+ rot, lab)], pipes: [{ med, w, flow, pts, to, arrow }], taps: [...], texts: [...],
+     signals: [{ pts }] }. A point of a pipe is 'id.port' or [x, y]; null = the same x or y as the point before. Two points
+     that are not in line get a right-angle bend (sideways first; vfirst: up / down first). */
+  function drawPlan(def) {
+    const P = def.plan,
+      byId = {};
+    let uid = 0,
+      nodes = '';
+    for (const it of P.items) {
+      it._id = it.id || 'p' + ++uid;
+      it._x = it.x;
+      it._y = it.y;
+      nodes += drawNode(it, def.id);
+      byId[it._id] = it;
+    }
+    const pt = (q, prev) => {
+      if (typeof q === 'string') {
+        const [i, port] = q.split('.'),
+          it = byId[i];
+        if (!it || !it._p[port || 'r']) {
+          console.warn('HX: pipe of page ' + def.id + ' names a missing point ' + q);
+          return prev || [0, 0];
+        }
+        return it._p[port || 'r'];
+      }
+      return [q[0] == null ? prev[0] : q[0], q[1] == null ? prev[1] : q[1]];
+    };
+    const path = pp => {
+      const raw = [];
+      for (const q of pp.pts) raw.push(pt(q, raw[raw.length - 1]));
+      const o = [raw[0]];
+      for (let i = 1; i < raw.length; i++) {
+        const a = o[o.length - 1],
+          b = raw[i];
+        if (Math.abs(a[0] - b[0]) > 0.6 && Math.abs(a[1] - b[1]) > 0.6) o.push(pp.vfirst ? [a[0], b[1]] : [b[0], a[1]]);
+        o.push(b);
+      }
+      return o;
+    };
+    const head = (a, b, med, at) => {
+      const an = (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI,
+        m = at || [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      return `<path class="hx-arw" transform="translate(${n1(m[0])} ${n1(m[1])}) rotate(${n1(an)})" d="M-5 -4.6L5 0L-5 4.6Z" style="fill:var(--hx-m-${med})"/>`;
+    };
+    let ls = '',
+      ends = '';
+    const used = [];
+    for (const pp of P.pipes) {
+      const o = path(pp),
+        w = pp.w || 4;
+      if (!used.includes(pp.med)) used.push(pp.med);
+      let ar = '';
+      if (pp.arrow !== false) {
+        let bi = 0,
+          bl = 0;
+        for (let i = 1; i < o.length; i++) {
+          const l = Math.hypot(o[i][0] - o[i - 1][0], o[i][1] - o[i - 1][1]);
+          if (l > bl) ((bl = l), (bi = i));
+        }
+        if (bl >= 44) ar = head(o[bi - 1], o[bi], pp.med);
+      }
+      if (pp.to) {
+        const a = o[o.length - 2],
+          b = o[o.length - 1],
+          dx = Math.sign(Math.round(b[0] - a[0])),
+          dy = Math.sign(Math.round(b[1] - a[1]));
+        ar += head(a, b, pp.med, [b[0] + dx * 4, b[1] + dy * 4]);
+        ends += `<text class="hx-end" x="${n1(b[0] + dx * 13)}" y="${n1(b[1] + dy * 13 + (dy > 0 ? 8 : dy < 0 ? -2 : 3.5))}" text-anchor="${dx > 0 ? 'start' : dx < 0 ? 'end' : 'middle'}">${esc(pp.to)}</text>`;
+      }
+      const d = rpath(o, pp.r);
+      ls += `<g class="hx-idle" data-flow="${esc(pp.flow || '')}"><path class="hx-ln" d="${d}" style="stroke:var(--hx-m-${pp.med});stroke-width:${w}"/><path class="hx-lnf" d="${d}"/>${ar}</g>`;
+    }
+    let sig = '';
+    for (const sg of P.signals || []) sig += `<path class="hx-sig" d="${rpath(path(sg), 4)}"/>`;
+    /* a tap: the transmitter on its line, with its words on one side */
+    let taps = '';
+    for (const t of P.taps || []) {
+      const sd = t.side || 't',
+        an = sd === 'r' ? 'start' : sd === 'l' ? 'end' : 'middle',
+        bx = sd === 'r' ? 9 : sd === 'l' ? -9 : 0,
+        y0 = sd === 't' ? -37 : sd === 'b' ? 21 : -9,
+        dp = t.dp == null ? 1 : t.dp;
+      const val = `<tspan class="hx-val" data-hv="${esc(t.key)}" data-dp="${dp}">-----</tspan>${t.key2 ? ` / <tspan class="hx-val" data-hv="${esc(t.key2)}" data-dp="${dp}">-----</tspan>` : ''}<tspan class="hx-unit"> ${esc(t.unit || '')}</tspan>`;
+      const lead = sd === 't' ? 'M0 -3V-9' : sd === 'b' ? 'M0 3V9' : sd === 'r' ? 'M3 0H7' : 'M-3 0H-7';
+      taps += `<g class="hx-node hx-tap" data-open="value:${esc(t.key)}" tabindex="0" role="button" aria-label="${esc(t.label)}" transform="translate(${n1(t.x)} ${n1(t.y)})"><path class="hxd" d="${lead}"/><circle class="hx-dot" r="3.2"/><text class="hx-lab" x="${bx}" y="${y0}" text-anchor="${an}">${esc(t.label)}</text><text x="${bx}" y="${y0 + 14}" text-anchor="${an}">${val}</text>${t.tag ? `<text class="hx-tag" x="${bx}" y="${y0 + 25}" text-anchor="${an}">${esc(t.tag)}</text>` : ''}</g>`;
+    }
+    let tx = '';
+    for (const t of P.texts || [])
+      tx += `<text class="${t.cls || 'hx-note'}" x="${t.x}" y="${t.y}" text-anchor="${t.anchor || 'start'}">${esc(t.s)}</text>`;
+    const legend =
+      used.map(m => `<span><i style="background:var(--hx-m-${m})"></i>${MEDIA[m] || m}</span>`).join('') +
+      `<em>Red = running / open · Green = stopped / closed · Grey = no signal in the app yet</em>`;
+    return {
+      svg: `<svg viewBox="0 0 ${W} ${P.h}" role="img" aria-label="${esc(def.title)} process">${tx}${ls}${sig}${ends}${nodes}${taps}</svg>`,
+      legend
+    };
+  }
+
   /* ---------- what can be operated on a page (for the Controls view and the status line) ---------- */
   function inventory(def) {
     const seen = new Set(),
@@ -421,13 +563,12 @@
       seen.add(arr === loops ? 'l' + id : arr === machs ? 'm' + id : 'v' + id);
       arr.push({ id, name });
     };
-    for (const L of def.lanes)
-      for (const c of L.items)
-        for (const it of Array.isArray(c) ? c : [c]) {
-          if (it.k === 'loop') add(loops, it.loop, it.name);
-          if (it.k === 'mach') add(machs, it.mach, it.name);
-          if (it.k === 'valve') add(valves, it.valve, it.name);
-        }
+    const all = def.plan ? def.plan.items : def.lanes.flatMap(L => L.items.flatMap(c => (Array.isArray(c) ? c : [c])));
+    for (const it of all) {
+      if (it.k === 'loop') add(loops, it.loop, it.cname || it.name);
+      if (it.k === 'mach') add(machs, it.mach, it.cname || it.name);
+      if (it.k === 'valve') add(valves, it.valve, it.cname || it.name);
+    }
     for (const x of def.loops || []) add(loops, x[0], x[1]);
     for (const x of def.machines || []) add(machs, x[0], x[1]);
     for (const x of def.valves || []) add(valves, x[0], x[1]);

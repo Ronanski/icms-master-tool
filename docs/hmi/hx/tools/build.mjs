@@ -7,13 +7,13 @@ import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rd = f => fs.readFileSync(path.join(dir, f), 'utf8');
-const parts = ['hx-sym.js', 'hx-core.js', 'hx-registry.js', 'hx-sample.js', 'hx-pages.js'];
+const parts = ['hx-sym.js', 'hx-core.js', 'hx-registry.js', 'hx-sample.js', 'hx-page-reheat.js', 'hx-pages.js'];
 
 /* ---- check ---- */
 const win = { location: { hash: '' } };
 const ctx = vm.createContext({ window: win, console, document: { createElement: () => ({ style: {}, append() {}, set textContent(v) {} }), head: { append() {} } }, setInterval: () => 0, Date, Math, JSON, Object, Array, String, Number, isFinite, Infinity, Set, Error });
 for (const f of ['hx-sym.js', 'hx-core.js', 'hx-registry.js']) vm.runInContext(rd(f) + '\n;globalThis.HX=window.HX;globalThis.HXREG=window.HXREG;', ctx, { filename: f });
-vm.runInContext(rd('hx-pages.js'), ctx, { filename: 'hx-pages.js' });
+for (const f of ['hx-page-reheat.js', 'hx-pages.js']) vm.runInContext(rd(f), ctx, { filename: f });
 const HX = win.HX,
   R = win.HXREG;
 const bad = [],
@@ -28,7 +28,8 @@ const key = (p, k) => {
   if (!(k in R.sample.values)) bad.push(`${p}: value key ${k}`);
 };
 for (const p of HX.pages) {
-  const items = p.lanes.flatMap(l => l.items.flatMap(i => (Array.isArray(i) ? i : [i])));
+  const items = p.plan ? p.plan.items : p.lanes.flatMap(l => l.items.flatMap(i => (Array.isArray(i) ? i : [i])));
+  for (const t of (p.plan && p.plan.taps) || []) for (const k of [t.key, t.key2]) if (k) key(p.id + ' tap', k);
   for (const it of items) {
     if (!win.HXSYM[it.sym] && it.k !== 'link') bad.push(`${p.id}: symbol ${it.sym}`);
     if (it.k === 'link' && !HX.byId[it.to]) bad.push(`${p.id}: link to ${it.to}`);
@@ -129,6 +130,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
 ${parts.map(rd).join('\n')}
 HX.shell(document.getElementById('hx'), {
   strip: [['Load', 'GCP-AI1001', 'MW'], ['Steam pressure', 'PT-MS1002', 'kg/cm²'], ['Steam temperature', 'pv:TICMS1004', '°C', 0], ['Steam flow', 'FT-MS1031', 't/h'], ['Reheat temperature', 'TT-HR1002-1', '°C', 0], ['Drum level', 'pv:LICBR1001B', 'mm', 0], ['Bed temperature', 'TT-FG1090', '°C', 0], ['Furnace pressure', 'PT-FG1085', 'mmH₂O', 0], ['Coal flow', 'pv:FIC-CM', 't/h'], ['Total air flow', 'ABC-002|SI0060', 't/h']],
+  start: 'reheat-steam',
   extra: [{ id: 'next-coder', group: 'Handoff', title: 'For the next coder', render: () => document.getElementById('doc').content.cloneNode(true).firstElementChild }]
 });
 </script>

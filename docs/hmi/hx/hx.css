@@ -231,6 +231,14 @@
 .hx-mode.man text { fill: var(--hx-warn) !important; }
 .hx-mode.rem rect { stroke: var(--hx-remote); }
 .hx-mode.rem text { fill: var(--hx-remote) !important; }
+.hx-arw { stroke: none; }
+.hx-idle > .hx-arw { opacity: 0.42; }
+.hx-sig { fill: none; stroke: var(--hx-mute); stroke-width: 1.1; stroke-dasharray: 4 3; }
+.hx-dot { fill: var(--hx-ink); stroke: var(--hx-panel); stroke-width: 1.2; }
+.hx-end { font: 500 10.4px var(--hx-font); fill: var(--hx-mute) !important; paint-order: stroke; stroke: var(--hx-panel); stroke-width: 3px; }
+.hx-tap { cursor: pointer; }
+.hx-tap:hover .hx-dot, .hx-tap:focus-visible .hx-dot { fill: var(--hx-accent); }
+.hx-zone { font: 600 10.5px var(--hx-cond); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--hx-mute) !important; }
 .hx-node { cursor: default; outline: none; }
 .hx-link { outline: none; }
 .hx-link:focus-visible rect { stroke: var(--hx-accent); stroke-width: 2.4; }

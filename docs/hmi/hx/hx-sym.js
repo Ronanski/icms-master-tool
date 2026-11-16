@@ -523,6 +523,37 @@
     };
   };
 
+  /* drain pot under a steam line */
+  S.pot = () => ({
+    box: [-6, -11, 6, 11],
+    ports: { t: [0, -10], b: [0, 10], l: [-5, 0], r: [5, 0] },
+    svg: `<path class="hxo" d="${vcapsule(10, 20)}"/>`
+  });
+  /* reheater: inlet header, four tube assemblies, outlet header (steam from the top header to the bottom one in the drawing) */
+  S.reheater = o => {
+    const w = o.w || 104,
+      h = o.h || 124,
+      hd = 15,
+      g = (h - 2 * hd - 8) / 4;
+    let b = '';
+    for (let i = 0; i < 4; i++)
+      b += zig(-w / 2 + 16, w / 2 - 16, -h / 2 + hd + 4 + g * (i + 0.5), Math.min(7, g * 0.3), 9);
+    return {
+      box: [-w / 2 - 1, -h / 2 - 1, w / 2 + 1, h / 2 + 1],
+      ports: {
+        t: [0, -h / 2],
+        b: [0, h / 2],
+        l: [-w / 2, 0],
+        r: [w / 2, 0],
+        tl: [-w / 2, -h / 2 + hd / 2],
+        tr: [w / 2, -h / 2 + hd / 2],
+        bl: [-w / 2, h / 2 - hd / 2],
+        br: [w / 2, h / 2 - hd / 2]
+      },
+      svg: `<rect class="hxo" x="${n(-w / 2 + 8)}" y="${n(-h / 2 + hd)}" width="${n(w - 16)}" height="${n(h - 2 * hd)}"/><path class="hxd" d="${b}"/><rect class="hxo" x="${n(-w / 2)}" y="${n(-h / 2)}" width="${n(w)}" height="${hd}" rx="4"/><rect class="hxo" x="${n(-w / 2)}" y="${n(h / 2 - hd)}" width="${n(w)}" height="${hd}" rx="4"/>`
+    };
+  };
+
   /* ---- small things on a line ---- */
   S.filter = o => {
     const w = o.w || 26;

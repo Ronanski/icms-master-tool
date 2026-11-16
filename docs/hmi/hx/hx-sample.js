@@ -15,7 +15,8 @@
   };
   const vAt = (k, t) => {
     const v = S.values[k];
-    return v == null ? null : v === 0 ? 0 : v * (1 + rip(k, t));
+    /* a valve or damper at its end stop (0 or 100) does not ripple */
+    return v == null ? null : v === 0 || v === 100 ? v : v * (1 + rip(k, t));
   };
   const lAt = (tag, t) => {
     const s = lp[tag];
