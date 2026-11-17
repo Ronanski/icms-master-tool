@@ -4,6 +4,7 @@
 body.sc{
   --sc-page:#eef0f2; --sc-paper:#f7f8f8; --sc-white:#ffffff; --sc-band:#e6e9eb;
   --sc-ink:#222e39; --sc-ink2:#4d5b6a; --sc-line:#ccd1d6; --sc-line2:#a1aab3;
+  --sc-ambg:#f6e7cf; --sc-amink:#5c3f0b; --sc-selbg:#e9eff5; --sc-runbg:#f8e3e2; --sc-stopbg:#e8f6ee;
   --sc-steel:#2b6ca5; --sc-run:#ce3a34; --sc-stop:#1f8149; --sc-amber:#966816; --sc-violet:#7656b8;
   --sc-ui:"IBM Plex Sans",system-ui,"Segoe UI",sans-serif; --sc-num:"IBM Plex Mono",ui-monospace,Consolas,monospace;
   --top:56px;
@@ -30,10 +31,10 @@ body.sc #gsbar > #crband{position:relative;gap:8px!important;padding:0 8px!impor
 #scstrip .pill .dot{width:10px;height:10px;border-radius:50%;background:var(--sc-stop);flex:none}
 #scstrip .pill.trip{border-color:var(--sc-run)!important;color:var(--sc-run)!important}
 #scstrip .pill.trip .dot{background:var(--sc-run)}
-#scstrip .pill.alm{background:#f6e7cf!important;border-color:var(--sc-amber)!important;color:#5c3f0b!important}
+#scstrip .pill.alm{background:var(--sc-ambg)!important;border-color:var(--sc-amber)!important;color:var(--sc-amink)!important}
 #scstrip .pill.alm .dot{background:var(--sc-amber)}
 #scstrip .pill.alm.new{animation:scblink 1s steps(2,start) infinite}
-#scstrip .pill.frc{background:#f6e7cf!important;border-color:var(--sc-amber)!important;color:#5c3f0b!important}
+#scstrip .pill.frc{background:var(--sc-ambg)!important;border-color:var(--sc-amber)!important;color:var(--sc-amink)!important}
 #scstrip .pill.frc[hidden]{display:none!important}
 #scstrip .pill.frc .dot{background:var(--sc-amber);border-radius:2px}
 /* the list of the FORCED pill opens over the side panel (Why / Inspector), not under it: its Go / Release stayed hidden */
@@ -83,7 +84,7 @@ body.sc #gsbar #scstrip .pill.ins.on{background:var(--sc-violet)!important;color
 #scins button{min-height:32px!important;height:auto!important;padding:4px 12px!important;border:1px solid var(--sc-line2)!important;border-radius:4px!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;font:500 13px var(--sc-ui)!important;box-shadow:none!important;cursor:pointer;white-space:normal;text-align:left}
 #scins button:hover{border-color:var(--sc-violet)!important}
 #scins button.on{background:var(--sc-violet)!important;border-color:var(--sc-violet)!important;color:var(--sc-white)!important}
-#scins button.flt.on{background:#f6e7cf!important;border-color:var(--sc-amber)!important;color:#5c3f0b!important}
+#scins button.flt.on{background:var(--sc-ambg)!important;border-color:var(--sc-amber)!important;color:var(--sc-amink)!important}
 #scins button.trip{border-color:var(--sc-run)!important;color:var(--sc-run)!important}
 #scins button[data-arm]{background:var(--sc-run)!important;border-color:var(--sc-run)!important;color:var(--sc-white)!important}
 #scins .scx{padding:0 12px!important}
@@ -109,7 +110,7 @@ body.sc.sccard #gdtab{display:none!important}
 /* the breadcrumb only over a plant page that is on screen, never on Home or Logic, never empty */
 body.sc .sccrumb{display:none!important}
 body.sc.plant[data-tab="operate"]:not(.scov) .sccrumb:not(:has(b:empty)){display:inline-flex!important}
-#scboot{position:fixed;inset:0;z-index:299;background:#eef0f2}
+#scboot{position:fixed;inset:0;z-index:299;background:var(--sc-page)}
 #scstart .scsbox{margin:0 auto}
 /* Mina beta.216: the start screen links were still 11.5 px: the app rule for buttons (body.app2 ... :not(#zbar *)) counts an id, so these rules carry two */
 #scstart:not(#scnone) .scsub,#scstart:not(#scnone) .sccard span,#scstart:not(#scnone) .sccont span,#scstart:not(#scnone) .scgear,#scstart:not(#scnone) .scskip{font-size:14px!important}
@@ -143,13 +144,13 @@ body.sc.scov #scov{display:flex;flex-direction:column}
 #scov .sclamp{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sc-ink2);min-height:16px}
 #scov .sclamp .dot{width:10px;height:10px;border-radius:50%;flex:none}
 .sclamp .dot.run{background:var(--sc-run)}.sclamp .dot.stop{background:var(--sc-stop)}.sclamp .dot.trip{background:var(--sc-run);animation:scblink 1s steps(2,start) infinite}
-#scov .scalm{grid-column:span 2;background:#f6e7cf!important;border-color:var(--sc-amber)!important}
+#scov .scalm{grid-column:span 2;background:var(--sc-ambg)!important;border-color:var(--sc-amber)!important}
 #scov .scalm:not(.on){background:var(--sc-paper)!important;border-color:var(--sc-line2)!important}
 #scov .scar{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:8px;font-size:13px}
 #scov .scar .sct{font-family:var(--sc-num);color:var(--sc-ink2)}
 #scov .scar .scn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #scov .scar .scs{font-weight:600;color:var(--sc-ink2)}
-#scov .scar.new .scs{color:#5c3f0b}
+#scov .scar.new .scs{color:var(--sc-amink)}
 .scnone{margin:0;font-size:13px;color:var(--sc-ink2)}
 .sccrumb{display:none;position:fixed;top:calc(var(--scb,var(--top)) + 8px);left:calc(var(--scl,var(--railW,0px)) + 8px);z-index:79;align-items:center;gap:8px;min-height:32px!important;padding:0 12px!important;background:var(--sc-white)!important;border:1px solid var(--sc-line2)!important;border-radius:16px!important;color:var(--sc-ink)!important;font:500 13px var(--sc-ui)!important;box-shadow:0 2px 8px rgba(34,46,57,.12)!important;cursor:pointer}
 body.sc[data-tab="operate"]:not(.scov) .sccrumb{display:inline-flex}
@@ -293,7 +294,7 @@ body.sc #zbar .zsep{background:var(--sc-line);margin:0 4px}
 @media (max-width:1279px),(pointer:coarse){body.sc #zbar button{height:40px;min-width:40px}}
 /* live check beta.233: the Loop check panel kept its dark chips (progress, counts, check rows) on the dark theme; the light values of
    loopcheck.css line 4 (PASS red, FAIL green, as the app rule) */
-html[data-theme] body.sc #lcdock,html body.sc #lcdock{--lc-pass:#b3261e;--lc-fail:#1e7d3a;--lc-wait:#9a6a00;--lc-acc:#1f5fa8;--lc-chip:#e4e9ef}
+html[data-theme] body.sc #lcdock,html body.sc #lcdock{--lc-pass:#b3261e;--lc-fail:#1e7d3a;--lc-wait:var(--sc-amink);--lc-acc:#1f5fa8;--lc-chip:var(--sc-selbg)}
 /* live check beta.233: the footer hint wrapped to two cramped lines in the Engineer view; one line, the full text in its tooltip */
 body.sc #sfoot :is(#st,.sinfo){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;align-self:center}
 /* the old page-button row of the HMI frame (marked by shellc.js; navigation, not drawing) */
