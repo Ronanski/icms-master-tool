@@ -201,10 +201,25 @@
       const e = pq('[data-hxs="' + name + '"]');
       if (!e) return null;
       const t = e.textContent || '',
+        /* a system that has no motor state but a state row on its drawing (limestone filling cycle, sand system: registry
+           bind.d + bind.df.st, the row its faceplate reads): 1 = on */
+        BD = R.machines[name] && R.machines[name].bind,
+        DFV = BD && BD.df && BD.d && BD.df.st != null ? call(() => window.LS_DOCK.dout(BD.d, BD.df.st), null) : null,
         md = (pq('[data-hxd="' + name + '"]') || {}).textContent || '',
         y = (pq('[data-hxy="' + name + '"]') || {}).textContent || '';
       return {
-        st: t === 'RUNNING' ? 'run' : t === 'STOPPED' ? 'stop' : t === 'TRIP' ? 'trip' : null,
+        st:
+          DFV != null
+            ? DFV === 1
+              ? 'run'
+              : 'stop'
+            : t === 'RUNNING'
+              ? 'run'
+              : t === 'STOPPED'
+                ? 'stop'
+                : t === 'TRIP'
+                  ? 'trip'
+                  : null,
         /* a part the page of hmi-mock.js cannot tell (a machine without an AUTO selection) is left out */
         mode:
           md

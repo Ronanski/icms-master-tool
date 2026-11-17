@@ -843,6 +843,17 @@
   /* Shapes are a picture only (no outline drawing of the switchgear in document-references). The line runs from the top
      terminal to the bottom terminal. The position window of a breaker and the blade of a switch take the state colour of
      the rule in "on": red = closed, green = open. */
+  /* rotary feeder (a rotary valve under a vessel that meters a powder into a conveying line), cut open: the rotor turns while
+     the feeder runs, the drive takes the state colour. Ports: t (in), b (out), l, r */
+  R.rotary = () => ({
+    box: [-17, -18, 31, 18],
+    ports: { t: [0, -17], b: [0, 17], l: [-16, 0], r: [30, 0] },
+    svg:
+      '<path class="rx" d="M-6 -17h12v6h-12zM-6 11h12v6h-12z"/><path class="rxd" d="M-8 -18h16v2.6h-16zM-8 15.4h16v2.6h-16z"/>' +
+      '<circle class="rx" cx="0" cy="0" r="13"/><circle class="rxvoid" cx="0" cy="0" r="10"/>' +
+      wheel(0, 0, 9.5, 6) +
+      '<path class="rxd" d="M13 -2h5v4h-5z"/><rect class="rxs" x="17.5" y="-7" width="12" height="14" rx="2"/>'
+  });
   /* circuit breaker: a cubicle with its three poles behind the window and the position window below. The moving contacts
      (rx-ct) sit on the fixed ones when the breaker is closed and lift when it opens. Ports: t / b */
   R.breaker = () => ({
