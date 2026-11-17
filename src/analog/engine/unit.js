@@ -1964,6 +1964,64 @@ function anAcwStep(U, dt) {
   }
   U.acT6 = U.acT2;
   U.acTb = n ? U.acT2 + 1 : U.acT2;
+  anBacStep(U, dt);
+}
+/* 3.2.4-beta.50 (JENNIE, for the ESP AND ASH page: TT-BH1060 / TT-CW1060 were '-----', no model). The bottom ash screw coolers
+   L-1060A ~ D (DITL-21A / #B / #C / #D): bed drain ash in, cooled ash out to the chain conveyor; closed cooling water (supply TT-CW1156
+   = AN_ACW acT6) through the shell and the shaft. Source: Rauma "Technical specification" E130122B (O&M V13 Bottom ash screw cooler,
+   01_Technical Specification/3094): ash 2000 kg/h normal, 4000 kg/h max at 0.5 ~ 5 rpm; ash in max 920 C, out < 150 C normal,
+   about 250 C at max; cooling water in max 33 C, out about 60 C, 3 kg/s normal, 5.5 kg/s max; K 57 W/m2K.
+     UA      from the max case: Q = 4000 / 3600 x 0.84 x (920 - 250) = 625 kW; water 5.5 kg/s 33 -> 60 C; counter flow LMTD
+             (860, 217) = 466 K -> UA = 1.34 kW/K per cooler. Check at the normal case (2000 kg/h, 3 kg/s, 33 C): ash out 89 C < 150 OK.
+     ash     the flow of the bed drain step (AN_BI.q 0.8 T/H per rpm, the SIC-L1060x speed) while the cooler runs; in = the bed
+             temperature, at most the 920 C of the spec; cp 0.84 kJ/kgK (NO-SOURCE, textbook value of ash).
+     water   3 kg/s per cooler (spec normal) while an ACWP gives flow (x acQ / 1500); in = the supply of the loop (TT-CW1156).
+     stopped no ash: no heat; the water outlets go to the supply, the ash thermocouples cool to the water in. tau 120 s running, 1800 s
+             stopped (NO-SOURCE: the metal mass is not in the spec). 16.PNG (all four stopped at 150 MW): ash 31 ~ 55 C, water 36 ~ 38 C.
+   TT-BH1060-x1 / x2 = ash in / out (DITL-21A rows 11 / 12 INLET / OUTLET ASH TEMP.); TT-CW1060-x1 / x2 = the SHELL SIDE OUTLET /
+   SHAFT COOLING water temperatures (DITL-21A rows 14 / 13, also fed from here by plantsw.js): both outlets, one water outlet
+   temperature for both (NO-SOURCE: the shell / shaft split of the 3 kg/s is not in the spec); the inlet is TT-CW1156. LT-BH1750 bottom ash silo: silos stand in this simulator (scope 2026-11-07), 15.8 % of 16.PNG. */
+const AN_BAC = { UA: 1.34, cpA: 0.84, mw: 3, Tmax: 920, tauR: 120, tauS: 1800, silo: 15.8 };
+function anBacStep(U, dt) {
+  const K = AN_BAC,
+    Tw = isFinite(U.acT6) ? U.acT6 : 30,
+    fw = Math.max(0, Math.min(1, (+U.acQ || 0) / 1500)),
+    Tb = isFinite(U.Tb) ? U.Tb : 30;
+  U.bhSilo = K.silo;
+  'ABCD'.split('').forEach((x, i) => {
+    const o = (U.bedSc || [])[i],
+      run = typeof anDitlRun === 'function' && anDitlRun(i ? 'DITL-21A #' + x : 'DITL-21A') === 1,
+      rpm = run && o && o.S ? Math.max(0, Math.min(5, +o.S.rt.v[o.n] || 0)) : 0,
+      ma = (AN_BI.q * rpm) / 3.6 /* kg/s */,
+      Ch = ma * K.cpA,
+      Cc = K.mw * fw * 4.18,
+      Ti = Math.min(K.Tmax, Math.max(Tw, Tb));
+    let a1 = Tw,
+      a2 = Tw,
+      w2 = Tw,
+      tau = K.tauS;
+    if (Ch > 0) {
+      a1 = Ti;
+      if (Cc > 0) {
+        const cmin = Math.min(Ch, Cc),
+          cr = cmin / Math.max(Ch, Cc),
+          ntu = K.UA / cmin,
+          e = cr < 0.999 ? (1 - Math.exp(-ntu * (1 - cr))) / (1 - cr * Math.exp(-ntu * (1 - cr))) : ntu / (1 + ntu),
+          q = e * cmin * (Ti - Tw);
+        a2 = Ti - q / Ch;
+        w2 = Tw + q / Cc;
+      } else {
+        a2 = Ti; /* no cooling water flow: no heat taken, the ash leaves hot */
+      }
+      tau = K.tauR;
+    }
+    const f = Math.min(1, dt / tau),
+      L = (k, v) => (U[k] = isFinite(U[k]) ? U[k] + (v - U[k]) * f : v);
+    L('bh' + x + '1', a1);
+    L('bh' + x + '2', a2);
+    L('bw' + x + '1', w2);
+    L('bw' + x + '2', w2);
+  });
 }
 /* 3.2.1 (IRENE: PLANT MODEL, TURBINE OIL; user 2026-11-04 cross-system: "Kung mag adjust ka dito, mag aadjust din doon ang effect").
    The lube oil cooler H-1921A (B standby) on the closed cooling water: oil from the bearings (main oil tank) -> cooler -> bearings; cooling
