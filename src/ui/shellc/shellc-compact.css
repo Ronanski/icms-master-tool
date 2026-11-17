@@ -161,3 +161,35 @@ html body.sc #libws:not(#scnone) :is(.trcc,.trcg){gap:3px!important}
 html body.sc #fxws:not(#scnone) :is(button.fxbtn,select#fxpick,button.fxchip,input#fxtry){height:22px!important;min-height:22px!important;font-size:12px!important;padding:0 8px!important;border-radius:2px!important}
 html body.sc #fxws:not(#scnone) .fxhead{padding-top:4px!important;padding-bottom:4px!important}
 html body.sc #scetools:not(#scnone) .scmore button:not(.scmoreb){height:24px!important;min-height:24px!important;font-size:12px!important;padding:0 10px!important;border-radius:2px!important}
+/* ---------- step 6: the controller faceplate beside its valve in the same compact sizes (was 360 x 521) ---------- */
+html body.sc #plfp.fpo-near:not(#scnone){width:268px!important;border-radius:3px!important;box-shadow:0 6px 18px rgba(0,0,0,.45)!important}
+html body.sc #plfp.fpo-near:not(#scnone) .plfph{padding:3px 4px 3px 8px!important;border-radius:3px 3px 0 0!important;gap:4px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .plfph b{font:600 13px/20px var(--sc-ui)!important}
+html body.sc #plfp.fpo-near:not(#scnone) .plfph button.b{height:20px!important;min-height:20px!important;min-width:20px!important;padding:0 6px!important;font-size:11.5px!important;border-radius:2px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .plfph button.b:last-child{width:20px!important;padding:0!important;font-size:0!important}
+html body.sc #plfp.fpo-near:not(#scnone) .body{padding:2px 6px 6px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .body > .sub{font-size:10.5px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fp.fpx{padding:5px 7px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fpt{padding:2px 6px!important;font-size:11.5px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fpm{gap:7px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fpg{width:50px!important;padding:12px 3px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fpg :is(.hi,.lo){font-size:10px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fpg .gb{width:12px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fl{font-size:10px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fv{height:22px!important;min-height:22px!important;font-size:15px!important;line-height:20px!important;padding:0 5px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fv b{font-size:15px!important;line-height:20px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fps{height:auto!important;min-height:0!important;padding:4px 0!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fpr{gap:3px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fpr button.ra{width:38px!important;height:24px!important;min-height:24px!important;font-size:14px!important;padding:0!important;border-radius:2px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .mvb{height:60px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fpopr{gap:4px!important}
+html body.sc #plfp.fpo-near:not(#scnone) button.stp{height:22px!important;min-height:22px!important;padding:0 8px!important;font-size:11px!important;border-radius:2px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .tg{padding:2px 6px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .tg b{font-size:12px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .tg span{font-size:10px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fpe .row button.b{height:22px!important;min-height:22px!important;padding:0 8px!important;font-size:11.5px!important;border-radius:2px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fpe .row{min-height:0!important;gap:4px!important}
+html body.sc #plfp.fpo-near:not(#scnone) :is(.fpm,.fpg){min-height:0!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fpc{gap:4px!important}
+html body.sc #plfp.fpo-near:not(#scnone) .whyx:empty{display:none!important}
+html body.sc #plfp.fpo-near:not(#scnone) .fp.fpx{gap:4px!important}
