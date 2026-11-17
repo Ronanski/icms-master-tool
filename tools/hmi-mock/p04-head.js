@@ -21,6 +21,7 @@
       CA: { n: 'COP-A', t: 'P-1931A', d: 'CONTROL OIL PUMP (A) · TCS', tcs: 'copA', why: WHY },
       CB: { n: 'COP-B', t: 'P-1931B', d: 'CONTROL OIL PUMP (B) · TCS', tcs: 'copB', why: WHY },
       VX: { n: 'VAPOUR EXTRACTOR', t: 'F-1937', d: 'MAIN OIL TANK VAPOUR EXTRACTOR · TCS', tcs: 'vex', why: WHY },
+      TG: { n: 'TURNING GEAR', t: 'ZS-LO1906', d: 'TURBINE TURNING GEAR · TCS', tcs: 'tg', why: 'The turning gear turns the shaft at about 3 rpm when no steam turns it (PR-OPE-5002 7955); it needs bearing oil (ATS 1.15) and is TCS step 1.19 TURBINE TURNING. START = select the turning gear, STOP = deselect. ' + WHY },
       PU: { n: 'OIL PURIFIER', t: 'P-1941', d: 'local panel', fld: 'pur', fieldOp: true, io: 'P-1941', why: 'Field equipment: the oil purifier is started at its local panel, no DCS command.' }
     },
     unit: {
