@@ -607,7 +607,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
   <div id="hx"></div>
 </div>
 <template id="doc"><div class="doc"><h2>HX plant pages: handoff for the next coder</h2>
-<p><b>IN THE APP since 2026-11-17 (user: "Ganyan ang HMI na gsto ko. Dapat iyan lang makita ko n mga itsura. Ung temporary at old hmi, aalisin na").</b> This folder moved from <code>docs/hmi/hx/</code> to <code>src/ui/plant/hx/</code>. <code>src/ui/hmi/inject.js</code> puts <code>hx.css</code>, <code>hx-real.js</code>, <code>hx-core.js</code>, <code>hx-registry.js</code>, every page file and <code>hx-app.js</code> into the app. <code>hx-app.js</code> is the real adapter of section 5 (read its head comment): each HX page is a page of the Plant view, values / controllers / valves come from the same resolvers as the temporary pages, clicks open the faceplates of the app. A new page file must be added to the list in <code>inject.js</code> (and to <code>ORDER</code> in <code>tools/build.mjs</code>). Pages in the app: <code>hx-page-reheat.js</code>, <code>hx-page-boiler-steam.js</code>, <code>hx-page-feedwater.js</code>, <code>hx-page-condensate.js</code> (2026-11-17). A page id is the id of the page plan in <code>hx-pages.js</code> (drum-steam, feedwater, condensate ...), so the links between pages work. Machines: <code>hx-app.js</code> takes the description of a machine from the temporary page that binds it (<code>LS_MOCK.defs</code>); when a temporary page is removed, keep its <code>mach</code> and <code>unit</code> data. Not in the app: <code>hx-cards*.js</code>, <code>hx-sample.js</code>, <code>hx-pages.js</code>, <code>hx-sym.js</code>. The temporary page of a system is removed only when its HX page works in the app.</p>
+<p><b>IN THE APP since 2026-11-17 (user: "Ganyan ang HMI na gsto ko. Dapat iyan lang makita ko n mga itsura. Ung temporary at old hmi, aalisin na").</b> This folder moved from <code>docs/hmi/hx/</code> to <code>src/ui/plant/hx/</code>. <code>src/ui/hmi/inject.js</code> puts <code>hx.css</code>, <code>hx-real.js</code>, <code>hx-core.js</code>, <code>hx-registry.js</code>, every page file and <code>hx-app.js</code> into the app. <code>hx-app.js</code> is the real adapter of section 5 (read its head comment): each HX page is a page of the Plant view, values / controllers / valves come from the same resolvers as the temporary pages, clicks open the faceplates of the app. A new page file must be added to the list in <code>inject.js</code> (and to <code>ORDER</code> in <code>tools/build.mjs</code>). Pages in the app: <code>hx-page-reheat.js</code>, <code>hx-page-boiler-steam.js</code>, <code>hx-page-feedwater.js</code>, <code>hx-page-condensate.js</code>, <code>hx-page-furnace-gas.js</code> (2026-11-17). A page id is the id of the page plan in <code>hx-pages.js</code> (drum-steam, feedwater, condensate ...), so the links between pages work. Machines: <code>hx-app.js</code> takes the description of a machine from the temporary page that binds it (<code>LS_MOCK.defs</code>); when a temporary page is removed, keep its <code>mach</code> and <code>unit</code> data. Not in the app: <code>hx-cards*.js</code>, <code>hx-sample.js</code>, <code>hx-pages.js</code>, <code>hx-sym.js</code>. The temporary page of a system is removed only when its HX page works in the app.</p>
 <p>Made 2026-11-16 on the order of the user: "gawan ng mga HMI pages ... lahat ng planta macocover pati operator controls at trend", "BE ORIGINAL WALA KA DAPAT GAGAYAHIN", "hmi shell lang ... no need to integrate sa app, pero dapat retrofit ready", "babase ka lang sa available data".</p>
 <p><b>Where it stands (2026-11-17).</b> The user rejected the look twice: first the 23 summary pages ("nakahiwalay ang controls, valves"), then the full drawing of the reheat system because it looked like a P&amp;ID: <b>"wag yung parang P&amp;ID ha. realistic with animation ha. magaan din dapat sa app"</b>. The answer is the REALISTIC look of section 6d, first on ONE page, <code>hx-page-reheat.js</code>.</p>
 <p><b>The user accepted the look (2026-11-17): "ok na sige na. gawin mo na rin yung iba pang HMI page. dapat sa HMI pages, ayan yung nakikita, wala na ibang style."</b> So: (1) every page is drawn in the realistic look, one system after the other, by the method of 6d; (2) NO other style is shown: the mockup holds only realistic pages. The 23 earlier summary pages (<code>hx-pages.js</code>, line symbols <code>hx-sym.js</code>) are out of the mockup; they stay in the folder only as the list of what each system holds (machines, loops, values, trend pens) and their titles are listed grey in the rail as "to be drawn". Delete both files when the last system is drawn. (3) The placement follows the plant as the control room shows it (user: "i-align mo rin sa kung paano actual sa field ... yung pwestuhan ng mga equipment"): on the reheat page the boiler is on the left and the turbine on the right as on screen 005, and the turbine train is HP, ILP, generator from left to right as on screen 035.</p>
@@ -4726,7 +4726,203 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
   });
 })();
 
-HX.soon = [{"id":"overview","group":"Unit","title":"Plant overview"},{"id":"unit-control","group":"Unit","title":"Unit load control"},{"id":"purge-trip","group":"Unit","title":"Furnace purge and trips"},{"id":"coal","group":"Fuel","title":"Coal feeding"},{"id":"oil-burners","group":"Fuel","title":"Start-up oil and burners"},{"id":"limestone-sand","group":"Fuel","title":"Limestone and sand"},{"id":"combustion-air","group":"Air and flue gas","title":"Combustion air"},{"id":"furnace-gas","group":"Air and flue gas","title":"Furnace and flue gas"},{"id":"bottom-ash","group":"Air and flue gas","title":"Bottom ash"},{"id":"sootblowers","group":"Air and flue gas","title":"Sootblowers"},{"id":"extraction","group":"Water and steam","title":"Extraction steam"},{"id":"aux-steam","group":"Water and steam","title":"Auxiliary steam and gland seal"},{"id":"sampling","group":"Water and steam","title":"Sampling and chemical dosing"},{"id":"turbine","group":"Turbine and generator","title":"Turbine"},{"id":"turbine-oil","group":"Turbine and generator","title":"Turbine oil"},{"id":"generator","group":"Turbine and generator","title":"Generator"},{"id":"sea-water","group":"Cooling and utilities","title":"Circulating sea water"},{"id":"makeup-cooling","group":"Cooling and utilities","title":"Make-up and closed cooling water"},{"id":"compressed-air","group":"Cooling and utilities","title":"Instrument and plant air"}];
+/* HX page in the REALISTIC look: furnace and flue gas, from the bed to the stack (user 2026-11-17: "Ganyan ang HMI na gsto ko.
+   Dapat iyan lang makita ko n mga itsura").
+   THE PICTURE: the way of the gas through the plant as it stands, every large piece cut open: furnace, recycle cyclone with
+   its seal pot, back pass with its two gas dampers, rotary air heater, electrostatic precipitator, induced draft fan, stack.
+   THE CONNECTIONS: K1AU3-PD-051 Rev A, combustion air / flue gas system: furnace H-1001 with the furnace pressures
+   PT-FG1085 / 1086 / 1087, the bed and furnace temperatures TT-FG1090 / 1091 and the differential pressures DPT-FG1081 ~ 1084;
+   cyclone S-1009A / B (TT-FG1095-A / -B) and seal pot T-1009A / B (TT-FG1009, PT-FG1009); back pass with reheater, finishing
+   superheater and economizers, the gas dampers TCV-FG1116 / 1117 under the two passes, economizer No. 1 (TT-FG1110, TT-FG1113);
+   the duct to the air preheater H-1052 (PT-FG1121, O2 AE-FG1122 / 1123, TT-FG1124 / 1125), its differential pressure
+   PDT-FG1052-5, after it O2 AE-FG1131, TT-FG1132 / 1133, PT-FG1134 and the fly ash hopper; the precipitator Z-1010; the
+   induced draft fan F-1056 with its hydraulic coupling Z-1056 and inlet damper PCD-FG1056-1 (PT-FG1141, TT-FG1152,
+   PT-FG1151); the stack Z-1057 with the gas analyzers AT-FG1057-1 ~ -6, the velocity FT-FG1057-7 and TT-FG1057-8.
+   Names of the values as the temporary page 09 gives them (bed DP, plenum to lower bed DP, lower to upper DP, solids down).
+   Drawn simpler than the sheet:
+   - 2 cyclones and 2 seal pots: one of each is drawn (a section through the boiler), both temperatures are shown;
+   - the air side of the air heater, the fans and blowers of the combustion air: the Combustion air page;
+   - the single bank temperatures of the back pass TT-FG1100 ~ 1109 and 1111 have no signal in hx-registry.js: not shown.
+   Left out on purpose, all without a signal in hx-registry.js: hand valves, test points, the single bed thermocouples, the
+   bearing, winding and vibration measurements of the fan, the fly ash transmitters under the hoppers. */
+(function () {
+  const { V, E, M, C, L, page } = HX;
+  const MM = 'mmH₂O';
+  const at = (it, x, y, o) => Object.assign(it, { x, y }, o || {});
+  const W_G = 14;
+  /* places (the drawing is 1760 x 1000) */
+  const FX = 340,
+    FY = 200,
+    FS = 1.6 /* furnace: roof centre */,
+    CX = 545,
+    CY = 216,
+    CS = 1.5 /* cyclone */,
+    BPX = 660,
+    BPY = 150,
+    BS = 1.1 /* back pass: top left corner */,
+    GX = BPX + 108 * BS /* gas out of the back pass, down to the air heater */,
+    AHX = GX - 34 * 1.4,
+    AHY = 880,
+    AS = 1.4 /* air heater */,
+    EX = 1190,
+    EY = 700,
+    ES = 1.6 /* precipitator */,
+    DX = 1378 /* duct down to the fan with the inlet damper */,
+    IX = 1485,
+    IY = 870,
+    IS = 1.8 /* induced draft fan */,
+    SX = 1670,
+    SY = 870,
+    SS = 3.4; /* stack */
+  const GAS = 'm:IDF';
+
+  page({
+    id: 'furnace-gas',
+    group: 'Boiler',
+    title: 'Furnace and flue gas',
+    about:
+      'The way of the gas, cut open: furnace, cyclone, back pass, air heater, precipitator, induced draft fan, stack. Connections: flow diagram K1AU3-PD-051 Rev A.',
+    plan: {
+      look: 'real',
+      w: 1760,
+      h: 1000,
+      items: [
+        /* ---- the large pieces ---- */
+        at(E('furnace', '', '', [], { fire: 'v:TT-FG1090>300' }), FX, FY, { id: 'fu', under: true, sc: FS }),
+        at(E('cyclone', '', '', [], { flow: GAS }), CX, CY, { id: 'cy', under: true, sc: CS }),
+        at(E('sealpot', '', '', [], { flow: GAS }), CX, CY + 196 * CS, { id: 'sp', under: true, sc: CS, mir: true }),
+        at(E('backpass', '', '', [], { gasA: 'l:HICHR1002A', gasB: 'l:HICHR1002B' }), BPX, BPY, {
+          id: 'bp',
+          under: true,
+          sc: BS
+        }),
+        at(M('airheater', 'AIR PREHEATER', 'Air heater', []), AHX, AHY, { id: 'ah', sc: AS, lab: 'l' }),
+        at(E('esp', 'Precipitator', 'Z-1010', []), EX, EY, { id: 'esp', sc: ES, lab: 't' }),
+        at(M('fan', 'IDF', 'Induced draft fan', [V('Current', 'IT-F1056', 'A')]), IX, IY, {
+          id: 'idf',
+          sc: IS,
+          lab: 'b'
+        }),
+        at(E('stack', '', '', [], { flow: GAS }), SX, SY, { id: 'st', under: true, sc: SS }),
+
+        /* ---- dampers and controllers ---- */
+        at(
+          C('HICHR1002A', 'Reheater pass damper', { sym: 'louver', w: 100, tag: 'TCV-FG1116A-D', wrap: 14 }),
+          BPX + 56 * BS,
+          BPY + 350 * BS,
+          {
+            id: 'dma',
+            lab: 'b'
+          }
+        ),
+        at(
+          C('HICHR1002B', 'Superheater pass damper', { sym: 'louver', w: 100, tag: 'TCV-FG1117A-D', wrap: 14 }),
+          BPX + 160 * BS,
+          BPY + 350 * BS,
+          { id: 'dmb', lab: 'b' }
+        ),
+        at(C('PICFG108A', 'Fan inlet damper', { sym: 'louver', w: 56, tag: 'PCD-FG1056-1', wrap: 12 }), DX, 800, {
+          id: 'idd',
+          lab: 'l'
+        }),
+        at(C('PICFG108', 'Furnace pressure, fan coupling', { sym: 'ctl', unit: MM, pvdp: 0, wrap: 32 }), 1500, 600, {
+          id: 'pic',
+          lab: 't'
+        }),
+        at(C('AICFG112', 'Oxygen control', { sym: 'ctl', unit: '%', pvdp: 1, wrap: 30 }), 1050, 400, {
+          id: 'o2c',
+          lab: 't'
+        }),
+        at(L('combustion-air', 'Combustion air'), 540, 810, { id: 'cal' })
+      ],
+      pipes: [
+        { med: 'gas', w: W_G, pts: ['fu.out', 'cy.in'], flow: GAS, arrow: false },
+        { med: 'gas', w: W_G, pts: ['cy.gas', [CX, 60], [BPX + 46 * BS, 60], 'bp.gin'], flow: GAS },
+        { med: 'solid', w: 6, pts: ['sp.out', [466, CY + 212 * CS], [466, FY + 290 * FS], 'fu.ret'], flow: GAS },
+        { med: 'gas', w: W_G, pts: ['bp.gout', 'ah.gasT'], flow: GAS },
+        { med: 'gas', w: W_G, pts: ['ah.gasB', [GX, 972], [1012, 972], [1012, EY], 'esp.l'], flow: GAS },
+        { med: 'gas', w: W_G, pts: ['esp.r', [DX, EY], [DX, IY], 'idf.in'], flow: GAS },
+        {
+          med: 'gas',
+          w: W_G,
+          pts: ['idf.out', [IX - 2 * IS, 740], [1575, 740], [1575, SY - 14 * SS], 'st.in'],
+          flow: GAS
+        }
+      ],
+      taps: [
+        {
+          x: 630,
+          y: 60,
+          side: 'b',
+          label: 'Cyclone outlet',
+          key: 'TT-FG1095-A',
+          key2: 'TT-FG1095-B',
+          unit: '°C',
+          dp: 0,
+          tag: 'TT-FG1095-A / -B'
+        },
+        {
+          x: GX,
+          y: 742,
+          side: 'r',
+          label: 'Economizer 1 outlet',
+          key: 'TT-FG1110',
+          key2: 'TT-FG1113',
+          unit: '°C',
+          dp: 0,
+          tag: 'TT-FG1110 / 1113'
+        },
+        { x: 1520, y: 740, side: 't', label: 'Fan outlet', key: 'TT-FG1152', unit: '°C', dp: 0, tag: 'TT-FG1152' },
+        { x: 1575, y: 790, side: 'l', label: 'Pressure', key: 'PT-FG1151', unit: MM, dp: 0, tag: 'PT-FG1151' }
+      ],
+      texts: [
+        { x: 24, y: 150, s: 'FURNACE', cls: 'hx-zone' },
+        { x: 24, y: 172, s: 'Pressure 1', key: 'PT-FG1085', unit: MM, dp: 0 },
+        { x: 24, y: 188, s: 'Pressure 2', key: 'PT-FG1086', unit: MM, dp: 0 },
+        { x: 24, y: 204, s: 'Pressure 3', key: 'PT-FG1087', unit: MM, dp: 0 },
+        { x: 24, y: 228, s: 'Upper average', key: 'TT-FG1091', unit: '°C', dp: 0 },
+        { x: 24, y: 244, s: 'Lower average', key: 'TT-FG1090', unit: '°C', dp: 0 },
+        { x: 24, y: 268, s: 'Bed pressure drop', key: 'DPT-FG1081', unit: MM, dp: 0 },
+        { x: 24, y: 284, s: 'Plenum to lower bed 1', key: 'DPT-FG1084', unit: MM, dp: 0 },
+        { x: 24, y: 300, s: 'Plenum to lower bed 2', key: 'DPT-FG1184', unit: MM, dp: 0 },
+        { x: 24, y: 316, s: 'Lower to upper 1', key: 'DPT-FG1083', unit: MM, dp: 0 },
+        { x: 24, y: 332, s: 'Lower to upper 2', key: 'DPT-FG1183', unit: MM, dp: 0 },
+        { x: FX, y: FY + 200 * FS, s: 'Furnace', cls: 'hx-name', anchor: 'middle' },
+        { x: CX, y: CY + 58, s: 'Cyclone', cls: 'hx-name', anchor: 'middle' },
+        { x: 486, y: 650, s: 'SEAL POT', cls: 'hx-zone' },
+        { x: 486, y: 670, s: 'Solids down A', key: 'TT-FG1009-A', unit: '°C', dp: 0 },
+        { x: 486, y: 686, s: 'Solids down B', key: 'TT-FG1009-B', unit: '°C', dp: 0 },
+        { x: 486, y: 702, s: 'Pressure A', key: 'PT-FG1009-A2', unit: MM, dp: 0 },
+        { x: 486, y: 718, s: 'Pressure B', key: 'PT-FG1009-B2', unit: MM, dp: 0 },
+        { x: 834, y: 812, s: 'BEFORE THE AIR HEATER', cls: 'hx-zone' },
+        { x: 834, y: 830, s: 'Oxygen 1', key: 'AT-FG1122', unit: '%', dp: 1 },
+        { x: 834, y: 846, s: 'Oxygen 2', key: 'AT-FG1123', unit: '%', dp: 1 },
+        { x: 834, y: 862, s: 'Temperature 1', key: 'TT-FG1124', unit: '°C', dp: 0 },
+        { x: 834, y: 878, s: 'Temperature 2', key: 'TT-FG1125', unit: '°C', dp: 0 },
+        { x: 834, y: 894, s: 'Pressure', key: 'PT-FG1121', unit: MM, dp: 0 },
+        { x: 834, y: 916, s: 'Air heater pressure drop', key: 'DPT-FG1052-5', unit: MM, dp: 0 },
+        { x: 600, y: 944, s: 'AFTER THE AIR HEATER', cls: 'hx-zone', anchor: 'end' },
+        { x: 600, y: 962, s: 'Oxygen', key: 'AT-FG1131', unit: '%', dp: 1, anchor: 'end' },
+        { x: 600, y: 978, s: 'Temperature 1', key: 'TT-FG1132', unit: '°C', dp: 0, anchor: 'end' },
+        { x: 420, y: 962, s: 'Temperature 2', key: 'TT-FG1133', unit: '°C', dp: 0, anchor: 'end' },
+        { x: 420, y: 978, s: 'Pressure', key: 'PT-FG1134', unit: MM, dp: 0, anchor: 'end' },
+        { x: 1336, y: 850, s: 'Fan inlet A', key: 'PT-FG1141-A', unit: MM, dp: 0, anchor: 'end' },
+        { x: 1336, y: 866, s: 'Fan inlet B', key: 'PT-FG1141-B', unit: MM, dp: 0, anchor: 'end' },
+        { x: 1610, y: 150, s: 'STACK', cls: 'hx-zone', anchor: 'end' },
+        { x: 1610, y: 172, s: 'Oxygen', key: 'AT-FG1057-4', unit: '%', dp: 1, anchor: 'end' },
+        { x: 1610, y: 188, s: 'Nitrogen oxides', key: 'AT-FG1057-2', unit: 'ppm', dp: 0, anchor: 'end' },
+        { x: 1610, y: 204, s: 'Sulphur oxides', key: 'AT-FG1057-1', unit: 'ppm', dp: 0, anchor: 'end' },
+        { x: 1610, y: 220, s: 'Carbon monoxide', key: 'AT-FG1057-3', unit: 'ppm', dp: 0, anchor: 'end' },
+        { x: 1610, y: 236, s: 'Opacity', key: 'AT-FG1057-6', unit: '%', dp: 1, anchor: 'end' },
+        { x: 1610, y: 252, s: 'Dust', key: 'AT-FG1057-5', unit: 'mg/m³', dp: 1, anchor: 'end' },
+        { x: 1610, y: 268, s: 'Temperature', key: 'TT-FG1057-8', unit: '°C', dp: 0, anchor: 'end' },
+        { x: 1610, y: 284, s: 'Velocity', key: 'FT-FG1057-7', unit: 'm/s', dp: 1, anchor: 'end' }
+      ]
+    }
+  });
+})();
+
+HX.soon = [{"id":"overview","group":"Unit","title":"Plant overview"},{"id":"unit-control","group":"Unit","title":"Unit load control"},{"id":"purge-trip","group":"Unit","title":"Furnace purge and trips"},{"id":"coal","group":"Fuel","title":"Coal feeding"},{"id":"oil-burners","group":"Fuel","title":"Start-up oil and burners"},{"id":"limestone-sand","group":"Fuel","title":"Limestone and sand"},{"id":"combustion-air","group":"Air and flue gas","title":"Combustion air"},{"id":"bottom-ash","group":"Air and flue gas","title":"Bottom ash"},{"id":"sootblowers","group":"Air and flue gas","title":"Sootblowers"},{"id":"extraction","group":"Water and steam","title":"Extraction steam"},{"id":"aux-steam","group":"Water and steam","title":"Auxiliary steam and gland seal"},{"id":"sampling","group":"Water and steam","title":"Sampling and chemical dosing"},{"id":"turbine","group":"Turbine and generator","title":"Turbine"},{"id":"turbine-oil","group":"Turbine and generator","title":"Turbine oil"},{"id":"generator","group":"Turbine and generator","title":"Generator"},{"id":"sea-water","group":"Cooling and utilities","title":"Circulating sea water"},{"id":"makeup-cooling","group":"Cooling and utilities","title":"Make-up and closed cooling water"},{"id":"compressed-air","group":"Cooling and utilities","title":"Instrument and plant air"}];
 HX.shell(document.getElementById('hx'), {
   strip: [['Load', 'GCP-AI1001', 'MW'], ['Steam pressure', 'PT-MS1002', 'kg/cm²'], ['Steam temperature', 'pv:TICMS1004', '°C', 0], ['Steam flow', 'FT-MS1031', 't/h'], ['Reheat temperature', 'TT-HR1002-1', '°C', 0], ['Drum level', 'pv:LICBR1001B', 'mm', 0], ['Bed temperature', 'TT-FG1090', '°C', 0], ['Furnace pressure', 'PT-FG1085', 'mmH₂O', 0], ['Coal flow', 'pv:FIC-CM', 't/h'], ['Total air flow', 'ABC-002|SI0060', 't/h']],
   start: "reheat-steam",

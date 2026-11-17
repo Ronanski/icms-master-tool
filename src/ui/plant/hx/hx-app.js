@@ -167,7 +167,12 @@
         y = (pq('[data-hxy="' + name + '"]') || {}).textContent || '';
       return {
         st: t === 'RUNNING' ? 'run' : t === 'STOPPED' ? 'stop' : t === 'TRIP' ? 'trip' : null,
-        mode: md && md !== '-----' ? md : null,
+        /* a part the page of hmi-mock.js cannot tell (a machine without an AUTO selection) is left out */
+        mode:
+          md
+            .split(' · ')
+            .filter(x => x && x !== '-----')
+            .join(' · ') || null,
         perm: y === 'Y' ? true : y === 'N' ? false : null
       };
     },
