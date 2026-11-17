@@ -193,3 +193,21 @@ html body.sc #plfp.fpo-near:not(#scnone) :is(.fpm,.fpg){min-height:0!important}
 html body.sc #plfp.fpo-near:not(#scnone) .fpc{gap:4px!important}
 html body.sc #plfp.fpo-near:not(#scnone) .whyx:empty{display:none!important}
 html body.sc #plfp.fpo-near:not(#scnone) .fp.fpx{gap:4px!important}
+/* ---------- step 7 (user 2026-11-17: "Ang daming unnecessary, mga lumang features ... diba sabi ko reshell"): what the Operator does
+   not need is gone from the Operator view; the functions stay where they belong (Instructor console, Engineer view) ---------- */
+/* developer and view tools: CHECK, Reset, the TCS / Field menu (the Instructor console has its buttons), previous / next screen */
+html body.sc:not(.sceng) :is(#chkb,.crop .tb.g-run,.crop .tb.g-op .ddw,.plbar .plnav){display:none!important}
+/* a realistic plant page fits by itself: no Fit and no Full screen */
+html body.sc:not(.sceng):has(#plsvg .hx-app) .plbar > :is(button.b,button.scfs){display:none!important}
+/* the alarm line at the bottom shows the alarms: no second alarm button on top (both views) */
+html body.sc #scctx .scp > button.pill.alm{display:none!important}
+/* the Details column is an Engineer tool */
+html body.sc:not(.sceng) #scctx button.scdetb{display:none!important}
+/* the status line: the clock and the version only */
+html body.sc:not(.sceng) #sfoot :is(#stchip .view,.shint,.sinfo,#st){display:none!important}
+/* the faceplate: the links to the wiring, the logic and the events are for the Engineer */
+html body.sc:not(.sceng) .fpo-box .fpo-ln{display:none!important}
+/* Engineer: the zoom bar keeps the sheet steps, the zoom and Fit; no Width, Focus, Map; no Legend button */
+html body.sc #zbar :is(.lo-w,.lo-f,.scmapb){display:none!important}
+html body.sc .tbar .tb.g-view > .only.an-only{display:none!important}
+html body.sc:not(.sceng) #plantws:not(#scnone) .plbar:not(#scnone) :is(.tb.g-run,.tb.g-op .ddw,.tb.g-op,.plnav):not(#scnone):not(#scnone2){display:none!important}

@@ -23,7 +23,11 @@
   };
   /* Mina B96-1 (beta.96 retest): a row took the time of the newest event log line (2:57:51) while its own event line read the
      plant time 2:58:04; every row is now stamped with the plant time now, in the event log format (events.js lsTfmt) */
-  const plantClk = () => call(() => (window.lsTfmt && window.AN && AN.plantT ? lsTfmt(+AN.plantT()) : (lsEvents[0] && lsEvents[0].t) || ''), '');
+  const plantClk = () =>
+    call(
+      () => (window.lsTfmt && window.AN && AN.plantT ? lsTfmt(+AN.plantT()) : (lsEvents[0] && lsEvents[0].t) || ''),
+      ''
+    );
   const none = () => !!(window.AN && AN.plantOn && !AN.startState);
   const gv = k => call(() => (typeof k === 'function' ? +k() : +LS_LIVE.getV(k)), NaN);
   const fmt = (x, d) => (isFinite(x) ? x.toFixed(d).replace(/^-(0(?:\.0*)?)$/, '$1') : '—');
@@ -33,13 +37,79 @@
      is a block at its place in the flow of the unit (c = column, r = row of the flow grid). g = the pages of its group: their tripped
      machines and active alarms turn the block red. The grouping of the other pages (by their titles) is a layout choice of the shell */
   const TILES = [
-    { k: 'coal', t: 'Coal, limestone and sand', pg: 'MK12', c: 1, r: 1, g: ['MK12'], v: [['Total coal flow', 'coal', 't/h', 1]] },
-    { k: 'air', t: 'Air and flue gas', pg: 'MK09', c: 1, r: 2, g: ['MK09', 'AFG', 'APH'], v: [['Total air flow', 'AIR', 't/h', 1], ['Furnace pressure', 'FP', 'mmH₂O', 0], ['Flue gas oxygen', 'O2', '%', 1]] },
+    {
+      k: 'coal',
+      t: 'Coal, limestone and sand',
+      pg: 'MK12',
+      c: 1,
+      r: 1,
+      g: ['MK12'],
+      v: [['Total coal flow', 'coal', 't/h', 1]]
+    },
+    {
+      k: 'air',
+      t: 'Air and flue gas',
+      pg: 'MK09',
+      c: 1,
+      r: 2,
+      g: ['MK09', 'AFG', 'APH'],
+      v: [
+        ['Total air flow', 'AIR', 't/h', 1],
+        ['Furnace pressure', 'FP', 'mmH₂O', 0],
+        ['Flue gas oxygen', 'O2', '%', 1]
+      ]
+    },
     { k: 'ash', t: 'Ash and precipitator', pg: 'MK14', c: 1, r: 3, g: ['MK14'], v: [] },
-    { k: 'boil', t: 'Boiler and drum', pg: 'MK07', c: 2, r: '1 / span 2', g: ['MK07', 'MK10', 'MK11', 'MK15', 'BIAS'], v: [['Bed temperature', 'Tb', '°C', 0], ['Drum level', 'lvl', 'mm', 0], ['Drum pressure', 'Pd', 'kg/cm²', 1]] },
-    { k: 'fw', t: 'Feedwater', pg: 'MK06', c: 2, r: 3, g: ['MK06', 'MK16'], v: [['Feedwater flow', 'FW', 't/h', 1], ['Main steam flow', 'MSF', 't/h', 1]] },
-    { k: 'tb', t: 'Steam and turbine', pg: 'MK13', c: 3, r: '1 / span 2', g: ['MK13', 'MK08', 'MK04', 'TO', 'MK18'], v: [['Main steam temperature', 'MST', '°C', 0], ['Main steam pressure', 'MSP', 'kg/cm²', 1], ['Turbine speed', 'rpm', 'rpm', 0]] },
-    { k: 'cd', t: 'Condenser and condensate', pg: 'MK05', c: 3, r: 3, g: ['MK05'], v: [['Condenser pressure, absolute', () => U().cdP, 'kg/cm²', 3], ['Hotwell level', () => U().cdHw, 'mm', 0]] },
+    {
+      k: 'boil',
+      t: 'Boiler and drum',
+      pg: 'MK07',
+      c: 2,
+      r: '1 / span 2',
+      g: ['MK07', 'MK10', 'MK11', 'MK15', 'BIAS'],
+      v: [
+        ['Bed temperature', 'Tb', '°C', 0],
+        ['Drum level', 'lvl', 'mm', 0],
+        ['Drum pressure', 'Pd', 'kg/cm²', 1]
+      ]
+    },
+    {
+      k: 'fw',
+      t: 'Feedwater',
+      pg: 'MK06',
+      c: 2,
+      r: 3,
+      g: ['MK06', 'MK16'],
+      v: [
+        ['Feedwater flow', 'FW', 't/h', 1],
+        ['Main steam flow', 'MSF', 't/h', 1]
+      ]
+    },
+    {
+      k: 'tb',
+      t: 'Steam and turbine',
+      pg: 'MK13',
+      c: 3,
+      r: '1 / span 2',
+      g: ['MK13', 'MK08', 'MK04', 'TO', 'MK18'],
+      v: [
+        ['Main steam temperature', 'MST', '°C', 0],
+        ['Main steam pressure', 'MSP', 'kg/cm²', 1],
+        ['Turbine speed', 'rpm', 'rpm', 0]
+      ]
+    },
+    {
+      k: 'cd',
+      t: 'Condenser and condensate',
+      pg: 'MK05',
+      c: 3,
+      r: 3,
+      g: ['MK05'],
+      v: [
+        ['Condenser pressure, absolute', () => U().cdP, 'kg/cm²', 3],
+        ['Hotwell level', () => U().cdHw, 'mm', 0]
+      ]
+    },
     { k: 'gen', t: 'Generator', pg: 'MK17', c: 4, r: '1 / span 2', g: ['MK17'], v: [['Load', 'MW', 'MW', 1]] },
     { k: 'cw', t: 'Cooling and seawater', pg: 'CWN', c: 4, r: 3, g: ['CWN', 'SW', 'CW', 'MK02', 'MU'], v: [] }
   ];
@@ -66,7 +136,10 @@
     for (const id in d.mach) {
       const m = d.mach[id];
       if (m.ctl || !(m.ad || m.fld)) continue;
-      const s = call(() => (m.fld ? (AN.fieldState && AN.fieldState()[m.fld] ? 'RUN' : 'STOP') : LS_DOCK.mst(m.ad)), null);
+      const s = call(
+        () => (m.fld ? (AN.fieldState && AN.fieldState()[m.fld] ? 'RUN' : 'STOP') : LS_DOCK.mst(m.ad)),
+        null
+      );
       if (s == null) continue;
       n++;
       if (s === 'RUN') run++;
@@ -104,17 +177,20 @@
       tt = l && +l.S.rt.v[l.n] > 0.5 ? 1 : 0;
     } catch (e) {}
     try {
-      mft = +LS_LIVE.val("I.000F") > 0.5 ? 1 : 0;
+      mft = +LS_LIVE.val('I.000F') > 0.5 ? 1 : 0;
     } catch (e) {}
     const clk = plantClk;
-    for (const [k, on, nm] of [["U|TT", tt, "TURBINE TRIP (ABC-050 I.0400)"], ["U|MFT", mft, "MASTER FUEL TRIP (MFT, I.000F)"]]) {
+    for (const [k, on, nm] of [
+      ['U|TT', tt, 'TURBINE TRIP (ABC-050 I.0400)'],
+      ['U|MFT', mft, 'MASTER FUEL TRIP (MFT, I.000F)']
+    ]) {
       if (!on) {
         delete UACK[k];
         delete USEEN[k];
         continue;
       }
       if (!USEEN[k]) USEEN[k] = clk();
-      out.push({ k, nm, lv: "", t: USEEN[k], kind: "TRIP", ack: !!UACK[k], unit: 1 });
+      out.push({ k, nm, lv: '', t: USEEN[k], kind: 'TRIP', ack: !!UACK[k], unit: 1 });
     }
     return out;
   }
@@ -135,7 +211,10 @@
   ];
   let LA = null;
   function logicOuts() {
-    const sh = call(() => (typeof S !== 'undefined' && S.sheets ? S.sheets.concat((window.WORLD && WORLD.inst) || []) : []), []);
+    const sh = call(
+      () => (typeof S !== 'undefined' && S.sheets ? S.sheets.concat((window.WORLD && WORLD.inst) || []) : []),
+      []
+    );
     if (LA && LA.n === sh.length && LA.n) return LA.list;
     const list = [];
     for (const f of sh) {
@@ -145,7 +224,17 @@
       for (const o of call(() => DUI.outs(f), []) || []) {
         const p = String(o.name || '').split(' · ');
         if (/^CRT \(ANN\)$/.test(p[2] || '') && ru[1].test(p[1] || ''))
-          list.push({ f, sh: nm, row: o.row, k: 'L|' + nm + '|' + o.row, txt: p[1], nm: p[1] + ' (' + nm.replace(/ #.*/, '') + ')', kind: ru[2], pg: ru[3], ev: ru[4] });
+          list.push({
+            f,
+            sh: nm,
+            row: o.row,
+            k: 'L|' + nm + '|' + o.row,
+            txt: p[1],
+            nm: p[1] + ' (' + nm.replace(/ #.*/, '') + ')',
+            kind: ru[2],
+            pg: ru[3],
+            ev: ru[4]
+          });
       }
     }
     LA = { n: sh.length, list };
@@ -185,13 +274,29 @@
     const out = [];
     if (none() || !window.DUI) return out;
     call(logicScan);
-    for (const o of logicOuts()) if (USEEN[o.k] != null) out.push({ k: o.k, nm: o.nm, lv: LON[o.k] ? '' : '· back to normal', t: USEEN[o.k], kind: o.kind, ack: !!UACK[o.k], lg: 1, pg: o.pg });
+    for (const o of logicOuts())
+      if (USEEN[o.k] != null)
+        out.push({
+          k: o.k,
+          nm: o.nm,
+          lv: LON[o.k] ? '' : '· back to normal',
+          t: USEEN[o.k],
+          kind: o.kind,
+          ack: !!UACK[o.k],
+          lg: 1,
+          pg: o.pg
+        });
     return out;
   }
   function allAlarms() {
     /* Mina, live test of 269: the unit trips stayed on top of newer alarms: every list is in time order (the readers reverse it, newest first) */
-    const sec = a => String(a.t || '').split(':').reduce((n, x) => n * 60 + (+x || 0), 0);
-    return [...call(() => lsAlarms.list().filter(a => !a.rtn && !a.sd), []), ...unitTrips(), ...logicAlarms()].sort((a, b) => sec(a) - sec(b));
+    const sec = a =>
+      String(a.t || '')
+        .split(':')
+        .reduce((n, x) => n * 60 + (+x || 0), 0);
+    return [...call(() => lsAlarms.list().filter(a => !a.rtn && !a.sd), []), ...unitTrips(), ...logicAlarms()].sort(
+      (a, b) => sec(a) - sec(b)
+    );
   }
   const ackOne = a => (a.unit || a.lg ? ((UACK[a.k] = 1), call(logicScan)) : call(() => lsAlarms.ack(a.k)));
   const ackAllU = () => {
@@ -228,14 +333,26 @@
     const bar = E('div', 'scbar');
     bar.append(E('span', 'scbc', 'Plant'), E('span', 'scsep', '›'), E('b', '', 'Overview'));
     const grid = E('div', 'scflow');
-    grid.setAttribute('aria-label', 'The unit as one flow: fuel and air to the boiler, steam to the turbine, power to the grid, the water back to the boiler');
+    grid.setAttribute(
+      'aria-label',
+      'The unit as one flow: fuel and air to the boiler, steam to the turbine, power to the grid, the water back to the boiler'
+    );
     lines = document.createElementNS(NS, 'svg');
     lines.setAttribute('class', 'scflines');
     lines.setAttribute('aria-hidden', 'true');
     const defs = document.createElementNS(NS, 'defs'),
       mk = document.createElementNS(NS, 'marker'),
       ap = document.createElementNS(NS, 'path');
-    for (const [k, v] of [['id', 'scfarrow'], ['viewBox', '0 0 10 10'], ['refX', '9'], ['refY', '5'], ['markerWidth', '6'], ['markerHeight', '6'], ['orient', 'auto']]) mk.setAttribute(k, v);
+    for (const [k, v] of [
+      ['id', 'scfarrow'],
+      ['viewBox', '0 0 10 10'],
+      ['refX', '9'],
+      ['refY', '5'],
+      ['markerWidth', '6'],
+      ['markerHeight', '6'],
+      ['orient', 'auto']
+    ])
+      mk.setAttribute(k, v);
     ap.setAttribute('d', 'M0 0 L10 5 L0 10 z');
     mk.append(ap);
     defs.append(mk);
@@ -297,7 +414,10 @@
   /* the page of the sheet of an alarm point (cached; the same rule as the Engineer mode, shellc-eng.js pageOf): a digital sheet = the
      page whose machine is drawn on it; an analog sheet = the page with the most of its tags */
   const PGS = {};
-  const base = n => String(n || '').replace(/^\(\w+\)/, '').trim();
+  const base = n =>
+    String(n || '')
+      .replace(/^\(\w+\)/, '')
+      .trim();
   const nz = x =>
     String(x || '')
       .toUpperCase()
@@ -327,7 +447,9 @@
     const tg = nz(String(a.nm || '').split(/\s/)[0]);
     if (tg.length >= 5) {
       if (!(tg in TGP) && pageTags().length) {
-        const hit = pageTags().filter(p => p.T.has(tg)).map(p => p.id);
+        const hit = pageTags()
+          .filter(p => p.T.has(tg))
+          .map(p => p.id);
         /* a tag drawn on a page of the block's own group first (the first hit of the page list otherwise) */
         TGP[tg] = hit.find(id => TILES.some(T => T.pg === id)) || hit[0] || null;
       }
@@ -356,7 +478,13 @@
     for (const d of defs) {
       for (const id in d.mach || {}) {
         const m = d.mach[id],
-          L = [m.d, m.mov, m.sti && m.sti[0], m.sto && m.sto[0], m.ad && !/@/.test(m.ad) ? call(() => LS_DOCK.dName(LS_DOCK.dOf(m.ad)), null) : null];
+          L = [
+            m.d,
+            m.mov,
+            m.sti && m.sti[0],
+            m.sto && m.sto[0],
+            m.ad && !/@/.test(m.ad) ? call(() => LS_DOCK.dName(LS_DOCK.dOf(m.ad)), null) : null
+          ];
         if (L.some(x => x && base(x) === b)) {
           pg = d.id;
           break;
@@ -448,7 +576,8 @@
         t.textContent = name;
         lines.append(t);
         /* a name wider than the gap between two blocks is left out (the arrow says the direction, the block names say the rest) */
-        if (anc === 'middle' && call(() => t.getComputedTextLength(), 0) > (side === 'r' ? b.l - a.r : a.l - b.r) - 8) t.remove();
+        if (anc === 'middle' && call(() => t.getComputedTextLength(), 0) > (side === 'r' ? b.l - a.r : a.l - b.r) - 8)
+          t.remove();
       }
     }
   }
@@ -459,7 +588,7 @@
   function tickOv() {
     if (!ov) return;
     const ss = window.AN ? AN.startState : null;
-    if (ss !== lastSS) (lastSS = ss), (stale = true);
+    if (ss !== lastSS) ((lastSS = ss), (stale = true));
     if (window.AN && AN.run && !AN.view) stale = false;
     const n0 = none();
     /* the active alarms (not back to normal, not suppressed: the same rows as the alarm list) by the page of their sheet; the unit trips
@@ -471,41 +600,52 @@
         if (p) (byPg[p] = byPg[p] || []).push(a);
       }
     /* the blocks read about 20 pages of machines: only while the overview is on screen (light app) */
-    if (document.body.classList.contains('scov')) TILES.forEach((T, i) => {
-      const t = tiles[i];
-      T.v.forEach(([, k, u, d], j) => {
-        const x = n0 ? NaN : gv(k),
-          s = fmt(x, d) + (isFinite(x) ? ' ' + u : '');
-        if (t.vs[j].textContent !== s) t.vs[j].textContent = s;
+    if (document.body.classList.contains('scov'))
+      TILES.forEach((T, i) => {
+        const t = tiles[i];
+        T.v.forEach(([, k, u, d], j) => {
+          const x = n0 ? NaN : gv(k),
+            s = fmt(x, d) + (isFinite(x) ? ' ' + u : '');
+          if (t.vs[j].textContent !== s) t.vs[j].textContent = s;
+        });
+        const m = n0 ? null : machines(T.pg),
+          al = n0 ? [] : [].concat(...T.g.map(p => byPg[p] || [])),
+          trips = n0 ? 0 : T.g.reduce((a, p) => a + ((p === T.pg ? m : machines(p)) || { trip: 0 }).trip, 0),
+          hot = trips > 0 || al.length > 0;
+        /* Jennie's rule 2: red (border and this one line) only with a tripped machine or an active alarm of the group */
+        t.b.classList.toggle('hot', hot);
+        let line = null,
+          tip = 'Open the ' + T.t + ' page';
+        if (hot) {
+          const last = al[al.length - 1],
+            txt = trips
+              ? trips + ' tripped' + (al.length ? ' · ' + al.length + (al.length > 1 ? ' alarms' : ' alarm') : '')
+              : al.length > 1
+                ? al.length + ' alarms · ' + (last.nm || '')
+                : ((last.nm || '') + ' ' + (last.lv || '')).trim() || '1 alarm';
+          line = [E('span', 'scfwarn', txt)];
+          tip +=
+            '. ' +
+            (trips ? trips + ' tripped. ' : '') +
+            al.map(a => ((a.nm || '') + ' ' + (a.lv || '')).trim()).join('; ');
+        } else if (stale && m && m.n) {
+          /* Mina beta.210: after a start state loaded while paused the machine states of the drawings are not scanned yet */
+          line = [E('span', 'dot none'), E('span', '', 'press Run to read the machines')];
+        } else if (m && m.n) {
+          /* the dot: RUN = red, STOP = green (COMMANDMENT 5); the block stays neutral */
+          line = [
+            E('span', 'dot ' + (m.run ? 'run' : 'stop')),
+            E('span', '', m.run ? m.run + ' running' : 'all stopped')
+          ];
+        }
+        const sig = hot + '|' + (line ? line.map(x => x.className + x.textContent).join('|') : '');
+        if (t.lamp.dataset.sig !== sig) {
+          t.lamp.dataset.sig = sig;
+          t.lamp.textContent = '';
+          if (line) t.lamp.append(...line);
+        }
+        if (t.b.title !== tip) t.b.title = tip;
       });
-      const m = n0 ? null : machines(T.pg),
-        al = n0 ? [] : [].concat(...T.g.map(p => byPg[p] || [])),
-        trips = n0 ? 0 : T.g.reduce((a, p) => a + ((p === T.pg ? m : machines(p)) || { trip: 0 }).trip, 0),
-        hot = trips > 0 || al.length > 0;
-      /* Jennie's rule 2: red (border and this one line) only with a tripped machine or an active alarm of the group */
-      t.b.classList.toggle('hot', hot);
-      let line = null,
-        tip = 'Open the ' + T.t + ' page';
-      if (hot) {
-        const last = al[al.length - 1],
-          txt = trips ? trips + ' tripped' + (al.length ? ' · ' + al.length + (al.length > 1 ? ' alarms' : ' alarm') : '') : al.length > 1 ? al.length + ' alarms · ' + (last.nm || '') : ((last.nm || '') + ' ' + (last.lv || '')).trim() || '1 alarm';
-        line = [E('span', 'scfwarn', txt)];
-        tip += '. ' + (trips ? trips + ' tripped. ' : '') + al.map(a => ((a.nm || '') + ' ' + (a.lv || '')).trim()).join('; ');
-      } else if (stale && m && m.n) {
-        /* Mina beta.210: after a start state loaded while paused the machine states of the drawings are not scanned yet */
-        line = [E('span', 'dot none'), E('span', '', 'press Run to read the machines')];
-      } else if (m && m.n) {
-        /* the dot: RUN = red, STOP = green (COMMANDMENT 5); the block stays neutral */
-        line = [E('span', 'dot ' + (m.run ? 'run' : 'stop')), E('span', '', m.run ? m.run + ' running' : 'all stopped')];
-      }
-      const sig = hot + '|' + (line ? line.map(x => x.className + x.textContent).join('|') : '');
-      if (t.lamp.dataset.sig !== sig) {
-        t.lamp.dataset.sig = sig;
-        t.lamp.textContent = '';
-        if (line) t.lamp.append(...line);
-      }
-      if (t.b.title !== tip) t.b.title = tip;
-    });
     /* Mina B66-4: with 52L1 open (house load operation, src/analog/engine/elec.js) the end block said To the grid */
     if (ovEnd) {
       let el = null;
@@ -523,10 +663,17 @@
     if (!AL.length) almTile.append(E('p', 'scnone', 'No alarm'));
     for (const a of AL) {
       const r = E('div', 'scar' + (a.ack ? '' : ' new'));
-      r.append(E('span', 'sct', a.t || ''), E('span', 'scn', (a.nm || '') + ' ' + (a.lv || '')), E('span', 'scs', a.ack ? 'acknowledged' : '• new'));
+      r.append(
+        E('span', 'sct', a.t || ''),
+        E('span', 'scn', (a.nm || '') + ' ' + (a.lv || '')),
+        E('span', 'scs', a.ack ? 'acknowledged' : '• new')
+      );
       almTile.append(r);
     }
-    almTile.classList.toggle('on', AL.some(a => !a.ack));
+    almTile.classList.toggle(
+      'on',
+      AL.some(a => !a.ack)
+    );
     /* the breadcrumb of a system page: the page on screen (the picker of the Plant view) */
     const pk = document.querySelector('#plantws .plpick'),
       nm = pk && pk.selectedOptions[0] ? pk.selectedOptions[0].textContent.trim() : '';
@@ -560,14 +707,21 @@
     if (!al) return;
     if (tab) alTab = tab;
     al.hidden = tab ? false : !al.hidden;
-    alSig = "";
+    alSig = '';
     fillAl();
   }
   window.lsShellC = Object.assign(window.lsShellC || {}, { openAl });
   function fillAl() {
     if (!al || al.hidden) return;
     /* redrawn only when the list changed, so a button is never replaced under the mouse */
-    const sig = alTab + '|' + allAlarms().map(a => a.k + (a.ack ? 1 : 0)).join() + '|' + call(() => lsEvents.length, 0);
+    const sig =
+      alTab +
+      '|' +
+      allAlarms()
+        .map(a => a.k + (a.ack ? 1 : 0))
+        .join() +
+      '|' +
+      call(() => lsEvents.length, 0);
     if (sig === alSig) return;
     alSig = sig;
     al.textContent = '';
@@ -617,9 +771,16 @@
       if (!L.length) body.append(E('p', 'scnone', 'No event yet'));
       for (const e of L) {
         const r = E('div', 'scrow ev');
-        r.append(E('span', 'sct', e.t || ''), E('span', 'sck2', e.kind || ''), E('span', 'scn', (e.sh && e.sh !== 'DCS' ? e.sh + ': ' : '') + (e.text || '')));
+        r.append(
+          E('span', 'sct', e.t || ''),
+          E('span', 'sck2', e.kind || ''),
+          E('span', 'scn', (e.sh && e.sh !== 'DCS' ? e.sh + ': ' : '') + (e.text || ''))
+        );
         /* S148-3: the cause lines of a first-out / logic stop (an array of {txt}) as the tooltip, not "[object Object]" */
-        if (e.why) r.title = Array.isArray(e.why) ? e.why.map(l => '  '.repeat(Math.max(0, (l.d || 1) - 1)) + (l.txt || '')).join('\n') : String(e.why);
+        if (e.why)
+          r.title = Array.isArray(e.why)
+            ? e.why.map(l => '  '.repeat(Math.max(0, (l.d || 1) - 1)) + (l.txt || '')).join('\n')
+            : String(e.why);
         body.append(r);
       }
     }
@@ -667,7 +828,10 @@
     st.setAttribute('role', 'dialog');
     st.setAttribute('aria-label', 'Start');
     const box = E('div', 'scsbox');
-    box.append(E('h1', '', 'Unit 1 boiler and turbine simulator'), E('p', 'scsub', '460 t/h circulating fluidized bed boiler · 150 MW'));
+    box.append(
+      E('h1', '', 'Unit 1 boiler and turbine simulator'),
+      E('p', 'scsub', '460 t/h circulating fluidized bed boiler · 150 MW')
+    );
     let sel = 'load150';
     const chips = E('div', 'scchips');
     chips.setAttribute('role', 'radiogroup');
@@ -723,7 +887,9 @@
         .list()
         .then(L => {
           last = L && L.length ? L[L.length - 1] : null;
-          cont.lastChild.textContent = last ? 'last save point: ' + last.name : 'no save point yet (SAVE one from the Instructor)';
+          cont.lastChild.textContent = last
+            ? 'last save point: ' + last.name
+            : 'no save point yet (SAVE one from the Instructor)';
           cont.disabled = !last;
         })
         .catch(() => (cont.lastChild.textContent = 'no save point yet'))
@@ -773,7 +939,7 @@
     /* Mina beta.210: no version on the start screen (APP_VERSION is not a global): the version of the page title "Logic Sim v…" */
     const vm = /v(\d+\.\d+\.\d+(?:-beta\.\d+)?)/.exec(document.title || ''),
       ver = E('span', 'scver', vm ? 'Version ' + vm[1] : '');
-    foot.append(gear, skip, old, ver);
+    foot.append(gear, skip, ver); /* step 7: one shell, no "Old layout" button */
     box.append(cards, lab, chips, cont, foot);
     st.append(box);
     document.body.append(st);
