@@ -607,7 +607,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
   <div id="hx"></div>
 </div>
 <template id="doc"><div class="doc"><h2>HX plant pages: handoff for the next coder</h2>
-<p><b>IN THE APP since 2026-11-17 (user: "Ganyan ang HMI na gsto ko. Dapat iyan lang makita ko n mga itsura. Ung temporary at old hmi, aalisin na").</b> This folder moved from <code>docs/hmi/hx/</code> to <code>src/ui/plant/hx/</code>. <code>src/ui/hmi/inject.js</code> puts <code>hx.css</code>, <code>hx-real.js</code>, <code>hx-core.js</code>, <code>hx-registry.js</code>, every page file and <code>hx-app.js</code> into the app. <code>hx-app.js</code> is the real adapter of section 5 (read its head comment): each HX page is a page of the Plant view, values / controllers / valves come from the same resolvers as the temporary pages, clicks open the faceplates of the app. A new page file must be added to the list in <code>inject.js</code> (and to <code>ORDER</code> in <code>tools/build.mjs</code>). Pages in the app: <code>hx-page-reheat.js</code>, <code>hx-page-boiler-steam.js</code>, <code>hx-page-feedwater.js</code>, <code>hx-page-condensate.js</code>, <code>hx-page-furnace-gas.js</code>, <code>hx-page-combustion-air.js</code>, <code>hx-page-coal.js</code> (2026-11-17). A page id is the id of the page plan in <code>hx-pages.js</code> (drum-steam, feedwater, condensate ...), so the links between pages work. Machines: <code>hx-app.js</code> takes the description of a machine from the temporary page that binds it (<code>LS_MOCK.defs</code>); when a temporary page is removed, keep its <code>mach</code> and <code>unit</code> data. Not in the app: <code>hx-cards*.js</code>, <code>hx-sample.js</code>, <code>hx-pages.js</code>, <code>hx-sym.js</code>. The temporary page of a system is removed only when its HX page works in the app.</p>
+<p><b>IN THE APP since 2026-11-17 (user: "Ganyan ang HMI na gsto ko. Dapat iyan lang makita ko n mga itsura. Ung temporary at old hmi, aalisin na").</b> This folder moved from <code>docs/hmi/hx/</code> to <code>src/ui/plant/hx/</code>. <code>src/ui/hmi/inject.js</code> puts <code>hx.css</code>, <code>hx-real.js</code>, <code>hx-core.js</code>, <code>hx-registry.js</code>, every page file and <code>hx-app.js</code> into the app. <code>hx-app.js</code> is the real adapter of section 5 (read its head comment): each HX page is a page of the Plant view, values / controllers / valves come from the same resolvers as the temporary pages, clicks open the faceplates of the app. A new page file must be added to the list in <code>inject.js</code> (and to <code>ORDER</code> in <code>tools/build.mjs</code>). Pages in the app: <code>hx-page-reheat.js</code>, <code>hx-page-boiler-steam.js</code>, <code>hx-page-feedwater.js</code>, <code>hx-page-condensate.js</code>, <code>hx-page-furnace-gas.js</code>, <code>hx-page-combustion-air.js</code>, <code>hx-page-coal.js</code>, <code>hx-page-oil-burners.js</code> (2026-11-17). A page id is the id of the page plan in <code>hx-pages.js</code> (drum-steam, feedwater, condensate ...), so the links between pages work. Machines: <code>hx-app.js</code> takes the description of a machine from the temporary page that binds it (<code>LS_MOCK.defs</code>); when a temporary page is removed, keep its <code>mach</code> and <code>unit</code> data. Not in the app: <code>hx-cards*.js</code>, <code>hx-sample.js</code>, <code>hx-pages.js</code>, <code>hx-sym.js</code>. The temporary page of a system is removed only when its HX page works in the app.</p>
 <p>Made 2026-11-16 on the order of the user: "gawan ng mga HMI pages ... lahat ng planta macocover pati operator controls at trend", "BE ORIGINAL WALA KA DAPAT GAGAYAHIN", "hmi shell lang ... no need to integrate sa app, pero dapat retrofit ready", "babase ka lang sa available data".</p>
 <p><b>Where it stands (2026-11-17).</b> The user rejected the look twice: first the 23 summary pages ("nakahiwalay ang controls, valves"), then the full drawing of the reheat system because it looked like a P&amp;ID: <b>"wag yung parang P&amp;ID ha. realistic with animation ha. magaan din dapat sa app"</b>. The answer is the REALISTIC look of section 6d, first on ONE page, <code>hx-page-reheat.js</code>.</p>
 <p><b>The user accepted the look (2026-11-17): "ok na sige na. gawin mo na rin yung iba pang HMI page. dapat sa HMI pages, ayan yung nakikita, wala na ibang style."</b> So: (1) every page is drawn in the realistic look, one system after the other, by the method of 6d; (2) NO other style is shown: the mockup holds only realistic pages. The 23 earlier summary pages (<code>hx-pages.js</code>, line symbols <code>hx-sym.js</code>) are out of the mockup; they stay in the folder only as the list of what each system holds (machines, loops, values, trend pens) and their titles are listed grey in the rail as "to be drawn". Delete both files when the last system is drawn. (3) The placement follows the plant as the control room shows it (user: "i-align mo rin sa kung paano actual sa field ... yung pwestuhan ng mga equipment"): on the reheat page the boiler is on the left and the turbine on the right as on screen 005, and the turbine train is HP, ILP, generator from left to right as on screen 035.</p>
@@ -5305,7 +5305,188 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
   });
 })();
 
-HX.soon = [{"id":"overview","group":"Unit","title":"Plant overview"},{"id":"unit-control","group":"Unit","title":"Unit load control"},{"id":"purge-trip","group":"Unit","title":"Furnace purge and trips"},{"id":"oil-burners","group":"Fuel","title":"Start-up oil and burners"},{"id":"limestone-sand","group":"Fuel","title":"Limestone and sand"},{"id":"bottom-ash","group":"Air and flue gas","title":"Bottom ash"},{"id":"sootblowers","group":"Air and flue gas","title":"Sootblowers"},{"id":"extraction","group":"Water and steam","title":"Extraction steam"},{"id":"aux-steam","group":"Water and steam","title":"Auxiliary steam and gland seal"},{"id":"sampling","group":"Water and steam","title":"Sampling and chemical dosing"},{"id":"turbine","group":"Turbine and generator","title":"Turbine"},{"id":"turbine-oil","group":"Turbine and generator","title":"Turbine oil"},{"id":"generator","group":"Turbine and generator","title":"Generator"},{"id":"sea-water","group":"Cooling and utilities","title":"Circulating sea water"},{"id":"makeup-cooling","group":"Cooling and utilities","title":"Make-up and closed cooling water"},{"id":"compressed-air","group":"Cooling and utilities","title":"Instrument and plant air"}];
+/* HX page in the REALISTIC look: diesel oil and the four start-up burners (user 2026-11-17: "Ganyan ang HMI na gsto ko. Dapat
+   iyan lang makita ko n mga itsura").
+   THE PICTURE: the oil service tank cut open on the left with the two diesel oil pumps under it, the oil line to the four
+   burners one above the other on the right, each with its oil valve and its combustion air damper.
+   THE CONNECTIONS, as the temporary page 11 binds them (its sources: K1AU3-PD-022 diesel oil system, 5 sheets; ABC-003E,
+   ABC-028, ABC-029): oil service tank T-0701 (LT-DO0701, range 0 to 8.2 m), strainer STR-DO0001 (DPT-DO0001), diesel oil
+   pumps P-0702A / B, pump outlet PT-DO0005, the recirculation valve PCV-DO0002 (PIC-DO0005) back to the tank, the supply
+   valve to the burners FCV-DO1012 (HIC-DO1012); per burner A / B / C / D: FT-DO1043, oil valve FCV-DO1043-x3 (FIC-DO1043x),
+   the shut-off valves XV-DO1043-x1 / x2, PT-DO1043-x2, oil gun L-1043x with atomizing and purge air, flame detector
+   BT-DO1043-x, combustion air damper MCV-FA1043-x (FIC-FA1043x) from the hot secondary air; the oil return valve PCV-DO1009
+   (PIC-DO1008, PT-DO1008) back to the tank; oil master FIC-OM.
+   The 5 sheets of PD-022 were NOT re-read for this page: the tags, names and order are those of temporary page 11. Check the
+   page against the sheets before the temporary page is removed.
+   Drawn simpler: the strainer is not drawn (its differential pressure stands at the pump suction); the shut-off valves, the
+   atomizing air and purge air valves of a burner are not drawn: they are operated by the burner push buttons, which are the
+   faceplate of the burner itself (a click on the burner). The lines to and from Unit 2 are not drawn. */
+(function () {
+  const { V, E, M, C, L, page } = HX;
+  const K = 'kg/cm²';
+  const at = (it, x, y, o) => Object.assign(it, { x, y }, o || {});
+  const W_O = 5,
+    W_S = 3.4,
+    W_A = 8;
+  /* places (the drawing is 1760 x 1000) */
+  const TX = 215,
+    TY = 330,
+    TS = 2.4 /* tank */,
+    PAX = 330,
+    PBX = 520,
+    PY = 760,
+    PS = 1.6 /* pumps */,
+    DY = 600 /* pump discharge line */,
+    HX0 = 700 /* oil line up to the four burners */,
+    BUX = 1250,
+    ROW = [170, 370, 570, 770],
+    AIRX = 1560; /* hot secondary air down to the four burners */
+  const N = ['A', 'B', 'C', 'D'];
+  const OIL = 'm:DIESEL OIL PUMP A|m:DIESEL OIL PUMP B';
+  const burner = i => {
+    const n = N[i],
+      y = ROW[i],
+      fl = 'l:FICDO1043' + n,
+      ar = 'l:FICFA1043' + n;
+    return {
+      items: [
+        at(
+          C('FICDO1043' + n, 'Oil valve ' + n, { tag: 'FCV-DO1043-' + n + '3', cname: 'Burner ' + n + ' oil valve' }),
+          900,
+          y,
+          {
+            id: 'o' + i,
+            lab: 'b'
+          }
+        ),
+        at(
+          M('burner', 'Burner ' + n, 'Burner ' + n, [V('Flame', 'BT-DO1043-' + n, '%', 1)], {
+            on: 'v:BT-DO1043-' + n + '>5'
+          }),
+          BUX,
+          y,
+          {
+            id: 'b' + i,
+            sc: 2.6,
+            lab: 'r'
+          }
+        ),
+        at(
+          C('FICFA1043' + n, 'Air damper ' + n, { tag: 'MCV-FA1043-' + n, cname: 'Burner ' + n + ' air damper' }),
+          1420,
+          y + 86,
+          {
+            id: 'a' + i,
+            lab: 'b'
+          }
+        )
+      ],
+      pipes: [
+        { med: 'oil', w: W_O, pts: [[HX0, y], 'o' + i + '.l'], flow: fl, arrow: false },
+        { med: 'oil', w: W_O, pts: ['o' + i + '.r', 'b' + i + '.l'], flow: fl },
+        { med: 'hotair', w: W_A, pts: [[AIRX, y + 86], 'a' + i + '.r'], flow: ar, arrow: false },
+        { med: 'hotair', w: W_A, pts: ['a' + i + '.l', [BUX, y + 86], 'b' + i + '.b'], flow: ar }
+      ],
+      taps: [
+        { x: 780, y, side: 't', label: 'Oil flow', key: 'FT-DO1043-' + n, unit: 't/h', dp: 2, tag: 'FT-DO1043-' + n },
+        { x: 1050, y, side: 't', label: 'Pressure', key: 'PT-DO1043-' + n + '2', unit: K, tag: 'PT-DO1043-' + n + '2' }
+      ]
+    };
+  };
+  const B = [0, 1, 2, 3].map(burner);
+
+  page({
+    id: 'oil-burners',
+    group: 'Boiler',
+    title: 'Diesel oil and burners',
+    about:
+      'Oil service tank, diesel oil pumps and the four start-up burners. Tags and order as temporary page 11 binds them (flow diagram K1AU3-PD-022).',
+    plan: {
+      look: 'real',
+      w: 1760,
+      h: 1000,
+      items: [
+        at(
+          E('tank', 'Oil service tank', 'T-0701', [V('Level', 'LT-DO0701', 'm', 2)], {
+            id: 'do',
+            liquid: 'oil',
+            level: ['LT-DO0701', 0, 8.2]
+          }),
+          TX,
+          TY,
+          { id: 'tk', sc: TS, lab: 'l' }
+        ),
+        at(M('pump', 'DIESEL OIL PUMP A', 'Diesel oil pump A', [V('Current', 'IT-P0702A', 'A')]), PAX, PY, {
+          id: 'pa',
+          sc: PS,
+          lab: 'b'
+        }),
+        at(M('pump', 'DIESEL OIL PUMP B', 'Diesel oil pump B', [V('Current', 'IT-P0702B', 'A')]), PBX, PY, {
+          id: 'pb',
+          sc: PS,
+          lab: 'b'
+        }),
+        at(C('PICDO0005', 'Recirculation valve', { tag: 'PCV-DO0002', wrap: 14 }), 420, 440, {
+          id: 'rc',
+          rot: -90,
+          lab: 'r'
+        }),
+        at(C('HICDO1012', 'Supply valve to the burners', { tag: 'FCV-DO1012', wrap: 16 }), 620, DY, {
+          id: 'sup',
+          lab: 'b'
+        }),
+        at(C('PICDO1008', 'Oil return valve', { tag: 'PCV-DO1009' }), 430, 90, { id: 'ret', lab: 'b' }),
+        at(C('FIC-OM', 'Oil master', { sym: 'ctl', unit: 't/h', pvdp: 2 }), 900, 940, { id: 'om', lab: 't' }),
+        ...B.flatMap(b => b.items),
+        at(L('combustion-air', 'Hot secondary air', { back: true }), AIRX + 80, 90, { id: 'hsa' })
+      ],
+      pipes: [
+        /* tank to the two pumps */
+        { med: 'oil', w: W_O, pts: ['tk.b', [TX, 880], [250, 880]], flow: OIL },
+        { med: 'oil', w: W_O, pts: [[250, 880], [250, PY], 'pa.s'], flow: 'm:DIESEL OIL PUMP A', arrow: false },
+        {
+          med: 'oil',
+          w: W_O,
+          pts: [[250, 880], [440, 880], [440, PY], 'pb.s'],
+          flow: 'm:DIESEL OIL PUMP B',
+          arrow: false
+        },
+        /* discharge, recirculation back to the tank, supply to the burners */
+        { med: 'oil', w: W_O, pts: ['pa.d', [PAX - 2 * PS, DY], [420, DY]], flow: 'm:DIESEL OIL PUMP A', arrow: false },
+        { med: 'oil', w: W_O, pts: ['pb.d', [PBX - 2 * PS, DY], [420, DY]], flow: 'm:DIESEL OIL PUMP B', arrow: false },
+        { med: 'oil', w: W_S, pts: [[420, DY], 'rc.l'], flow: 'l:PICDO0005', arrow: false },
+        { med: 'oil', w: W_S, pts: ['rc.r', [420, 330], [TX + 34 * TS, 330]], flow: 'l:PICDO0005' },
+        { med: 'oil', w: W_O, pts: [[PBX - 2 * PS, DY], 'sup.l'], flow: OIL },
+        { med: 'oil', w: W_O, pts: ['sup.r', [HX0, DY]], flow: 'l:HICDO1012', arrow: false },
+        {
+          med: 'oil',
+          w: W_O,
+          pts: [
+            [HX0, ROW[3]],
+            [HX0, ROW[0]]
+          ],
+          flow: 'l:HICDO1012',
+          arrow: false
+        },
+        /* oil return to the tank */
+        { med: 'oil', w: W_S, pts: [[HX0, ROW[0]], [HX0, 90], 'ret.r'], flow: 'l:PICDO1008', arrow: false },
+        { med: 'oil', w: W_S, pts: ['ret.l', [TX, 90], 'tk.t'], flow: 'l:PICDO1008' },
+        /* hot secondary air to the four air dampers */
+        { med: 'hotair', w: W_A, pts: ['hsa.l', [AIRX, 90], [AIRX, ROW[3] + 86]], flow: 'm:SAF', arrow: false },
+        ...B.flatMap(b => b.pipes)
+      ],
+      taps: [
+        { x: 250, y: 830, side: 'l', label: 'Strainer', key: 'DPT-DO0001', unit: K, dp: 2, tag: 'DPT-DO0001' },
+        { x: 380, y: DY, side: 'b', label: 'Pump outlet', key: 'PT-DO0005', unit: K, tag: 'PT-DO0005' },
+        { x: 560, y: 90, side: 'b', label: 'Return pressure', key: 'PT-DO1008', unit: K, tag: 'PT-DO1008' },
+        ...B.flatMap(b => b.taps)
+      ],
+      texts: []
+    }
+  });
+})();
+
+HX.soon = [{"id":"overview","group":"Unit","title":"Plant overview"},{"id":"unit-control","group":"Unit","title":"Unit load control"},{"id":"purge-trip","group":"Unit","title":"Furnace purge and trips"},{"id":"limestone-sand","group":"Fuel","title":"Limestone and sand"},{"id":"bottom-ash","group":"Air and flue gas","title":"Bottom ash"},{"id":"sootblowers","group":"Air and flue gas","title":"Sootblowers"},{"id":"extraction","group":"Water and steam","title":"Extraction steam"},{"id":"aux-steam","group":"Water and steam","title":"Auxiliary steam and gland seal"},{"id":"sampling","group":"Water and steam","title":"Sampling and chemical dosing"},{"id":"turbine","group":"Turbine and generator","title":"Turbine"},{"id":"turbine-oil","group":"Turbine and generator","title":"Turbine oil"},{"id":"generator","group":"Turbine and generator","title":"Generator"},{"id":"sea-water","group":"Cooling and utilities","title":"Circulating sea water"},{"id":"makeup-cooling","group":"Cooling and utilities","title":"Make-up and closed cooling water"},{"id":"compressed-air","group":"Cooling and utilities","title":"Instrument and plant air"}];
 HX.shell(document.getElementById('hx'), {
   strip: [['Load', 'GCP-AI1001', 'MW'], ['Steam pressure', 'PT-MS1002', 'kg/cm²'], ['Steam temperature', 'pv:TICMS1004', '°C', 0], ['Steam flow', 'FT-MS1031', 't/h'], ['Reheat temperature', 'TT-HR1002-1', '°C', 0], ['Drum level', 'pv:LICBR1001B', 'mm', 0], ['Bed temperature', 'TT-FG1090', '°C', 0], ['Furnace pressure', 'PT-FG1085', 'mmH₂O', 0], ['Coal flow', 'pv:FIC-CM', 't/h'], ['Total air flow', 'ABC-002|SI0060', 't/h']],
   start: "reheat-steam",
