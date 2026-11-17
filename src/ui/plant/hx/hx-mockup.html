@@ -585,6 +585,18 @@
 .hxc-pens i { width: 10px; height: 3px; border-radius: 2px; }
 .hxc-pens b { font: 600 11px var(--hx-mono); color: var(--hx-ink); }
 
+/* push buttons and states that the page of hmi-mock.js gives (HX.B) */
+.hx-hook rect { fill: var(--hx-panel2); stroke: var(--hx-rule); stroke-width: 1.2; }
+.hx-hook .hx-hkl { font-size: 11.4px; font-weight: 600; fill: var(--hx-ink) !important; }
+.hx-hook .hx-hks { font-size: 10.6px; font-weight: 600; fill: var(--hx-ink2) !important; }
+.hx-hook.run .hx-hks { fill: var(--hx-run) !important; }
+.hx-hook.stop .hx-hks { fill: var(--hx-stop) !important; }
+.hx-hook.press { cursor: pointer; outline: none; }
+.hx-hook.press rect { stroke-width: 1.6; }
+.hx-hook.press:hover rect, .hx-hook.press:focus-visible rect { stroke: var(--hx-accent); }
+.hx-hook.press.on rect { fill: var(--hx-accent); stroke: var(--hx-accent); }
+.hx-hook.press.on .hx-hkl { fill: var(--hx-bg) !important; }
+
 body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-font); }
 .wrap { padding-block: 12px 28px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); max-width: 1760px; margin: 0 auto; }
 .top { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; margin: 0 2px 10px; }
@@ -1678,6 +1690,10 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
       o || {}
     );
   HX.L = (to, text, o) => Object.assign({ k: 'link', to, name: text }, o || {});
+  /* a push button or a state of the plant that is no machine, valve or controller: hook = the data attribute the page of
+     hmi-mock.js has for it (data-tpb="trip", data-apb="ABC-010|M.054F|M.0222=0", data-dy=..., data-fv=...), so the press and
+     the state are the ones of that page. press: true = a push button (a click presses it), else a state only */
+  HX.B = (text, hook, o) => Object.assign({ k: 'hook', name: text, hook }, o || {});
   HX.page = def => {
     def.no = HX.pages.length + 1;
     HX.pages.push(def);
@@ -1802,6 +1818,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
   /* room of one item above and below its centre: symbol + the words the core writes around it */
   function measure(it) {
     if (it.k === 'link') return { up: 15, dn: 15 };
+    if (it.k === 'hook') return { up: 18, dn: 18 };
     const box = SYM[it.sym](Object.assign({ id: 'm' }, it)).box,
       side = it.lab === 'r' || it.lab === 'l',
       lines = it.name ? wrap(it.name, it.wrap || (side ? 22 : 19)).length : 0,
@@ -1887,6 +1904,14 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
       it._box = [x - w / 2, y - 13, x + w / 2, y + 13];
       const ready = !!HX.byId[it.to];
       return `<g class="hx-link${ready ? '' : ' soon'}"${ready ? ` data-go="${esc(it.to)}" tabindex="0" role="link"` : ''} transform="translate(${n1(x)} ${n1(y)})">${ready ? '' : '<title>This page is not drawn yet</title>'}<rect x="${n1(-w / 2)}" y="-13" width="${n1(w)}" height="26" rx="13"/><text x="0" y="4" text-anchor="middle">${back ? '‹ ' : ''}${esc(t)}${back ? '' : ' ›'}</text></g>`;
+    }
+    if (it.k === 'hook') {
+      const t = it.name,
+        w = it.w || Math.max(96, t.length * 6.3 + 24),
+        h = it.press ? 30 : 36;
+      it._p = { l: [x - w / 2, y], r: [x + w / 2, y], t: [x, y - h / 2], b: [x, y + h / 2] };
+      it._box = [x - w / 2, y - h / 2, x + w / 2, y + h / 2];
+      return `<g class="hx-hook${it.press ? ' press' : ''}" data-hook="${esc(it.hook)}" data-label="${esc(t)}"${it.press ? ' data-press="1" tabindex="0" role="button"' : ''} transform="translate(${n1(x)} ${n1(y)})"><rect x="${n1(-w / 2)}" y="${-h / 2}" width="${n1(w)}" height="${h}" rx="5"/><text class="hx-hkl" x="0" y="${it.press ? 4 : -3}" text-anchor="middle">${esc(t)}</text>${it.press ? '' : '<text class="hx-hks" x="0" y="12" text-anchor="middle" data-hks="1">-----</text>'}</g>`;
     }
     const sy = ((real && REAL[it.sym]) || SYM[it.sym])(Object.assign({ id: pageId + '-' + it._id }, it)),
       rot = it.rot || 0,
@@ -2443,7 +2468,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
       tick(true);
     };
     page.addEventListener('click', e => {
-      const t = e.target.closest('[data-view],[data-yn],[data-open],[data-go],[data-span]');
+      const t = e.target.closest('[data-view],[data-yn],[data-open],[data-go],[data-span],[data-press]');
       if (!t) return;
       if (t.dataset.view) return show(t.dataset.view);
       if (t.dataset.span) {
@@ -2452,6 +2477,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
         return paintTrends(page, def, span);
       }
       if (t.dataset.go) return opts.go && opts.go(t.dataset.go);
+      if (t.dataset.press) return void (HX.data.press && HX.data.press(t.dataset.hook));
       if (!t.dataset.open && !t.dataset.yn) return;
       const anchor = t.closest('.hx-node') || t,
         go = (kind, id, second) =>
@@ -2467,7 +2493,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
       go(k, r.join(':'), false);
     });
     page.addEventListener('keydown', e => {
-      if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.hx-node[data-open],.hx-link')) {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.hx-node[data-open],.hx-link,.hx-hook.press')) {
         e.preventDefault();
         e.target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       }
@@ -2510,6 +2536,14 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
         Q('[data-hv]').forEach(e => {
           const t = fmt(penVal(e.dataset.hv), +e.dataset.dp);
           if (e.textContent !== t) e.textContent = t;
+        });
+        Q('[data-hook]').forEach(e => {
+          const h = (D.hook && D.hook(e.dataset.hook, e.dataset.label)) || {},
+            c = 'hx-hook' + (e.dataset.press ? ' press' : '') + (h.tone ? ' ' + h.tone : '');
+          if (e.getAttribute('class') !== c) e.setAttribute('class', c);
+          const st = e.querySelector('[data-hks]'),
+            tx = h.text || '-----';
+          if (st && st.textContent !== tx) st.textContent = tx;
         });
         Q('[data-flag]').forEach(e => {
           const f = D.flag ? D.flag(e.dataset.flag) : null;
@@ -4333,7 +4367,10 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         at(C('LICBR1001A', 'Drum level, one element', { sym: 'ctl', unit: 'mm', pvdp: 0, wrap: 30 }), 1270, 70, {
           id: 'lc1',
           lab: 't'
-        })
+        }),
+        /* the two push buttons of ABC-010 (drum level control): lit = the selection of M.0222 */
+        at(HX.B('3 ELEMENT', 'data-apb="ABC-010|M.054E|M.0222=0"', { press: true }), 1060, 130, { id: 'pb3' }),
+        at(HX.B('1 ELEMENT', 'data-apb="ABC-010|M.054F|M.0222=1"', { press: true }), 1270, 130, { id: 'pb1' })
       ],
       pipes: [
         /* into the deaerator */

@@ -580,3 +580,15 @@
 .hxc-pens span { display: inline-flex; align-items: center; gap: 5px; }
 .hxc-pens i { width: 10px; height: 3px; border-radius: 2px; }
 .hxc-pens b { font: 600 11px var(--hx-mono); color: var(--hx-ink); }
+
+/* push buttons and states that the page of hmi-mock.js gives (HX.B) */
+.hx-hook rect { fill: var(--hx-panel2); stroke: var(--hx-rule); stroke-width: 1.2; }
+.hx-hook .hx-hkl { font-size: 11.4px; font-weight: 600; fill: var(--hx-ink) !important; }
+.hx-hook .hx-hks { font-size: 10.6px; font-weight: 600; fill: var(--hx-ink2) !important; }
+.hx-hook.run .hx-hks { fill: var(--hx-run) !important; }
+.hx-hook.stop .hx-hks { fill: var(--hx-stop) !important; }
+.hx-hook.press { cursor: pointer; outline: none; }
+.hx-hook.press rect { stroke-width: 1.6; }
+.hx-hook.press:hover rect, .hx-hook.press:focus-visible rect { stroke: var(--hx-accent); }
+.hx-hook.press.on rect { fill: var(--hx-accent); stroke: var(--hx-accent); }
+.hx-hook.press.on .hx-hkl { fill: var(--hx-bg) !important; }

@@ -36,7 +36,19 @@
   let lastXY = [200, 200];
   document.addEventListener('pointerdown', e => (lastXY = [e.clientX, e.clientY]), true);
   function store(api, g) {
-    const st = { api, LOG: {}, PM: {}, CT: {}, vals: new Set(), loops: {}, valves: {}, machs: {}, px: null, pm: {} };
+    const st = {
+      api,
+      LOG: {},
+      PM: {},
+      CT: {},
+      vals: new Set(),
+      hooks: {},
+      loops: {},
+      valves: {},
+      machs: {},
+      px: null,
+      pm: {}
+    };
     /* hidden holder of the click targets of the controllers and of the page of hmi-mock.js that resolves the valves */
     st.px = document.createElementNS(NS, 'g');
     st.px.setAttribute('opacity', '0');
@@ -45,6 +57,8 @@
     return st;
   }
   const needVal = key => S && S.vals.add(key);
+  const needHook = (h, label) =>
+    S && !(h in S.hooks) && (S.hooks[h] = { i: Object.keys(S.hooks).length, label: label || '' });
   const needLoop = tag => {
     if (!S || S.loops[tag]) return;
     const st = S,
@@ -75,6 +89,16 @@
       if (u) unit[key] = u;
       art += '<text data-v="' + key + '" data-dp="6"></text>';
     }
+    /* push buttons and states (HX.B): the element the page of hmi-mock.js wires, with the same data attribute */
+    for (const h in S.hooks)
+      art +=
+        '<g data-hxk="' +
+        S.hooks[h].i +
+        '" ' +
+        h +
+        '><rect width="1" height="1" fill="none"/><text>' +
+        S.hooks[h].label.replace(/[<&]/g, '') +
+        '</text></g>';
     for (const tag in S.valves) {
       const b = S.valves[tag];
       if (!b) continue;
@@ -205,6 +229,28 @@
       };
     },
     flag: () => null,
+    hook(h, label) {
+      needHook(h, label);
+      const e = S && S.hooks[h] && pq('[data-hxk="' + S.hooks[h].i + '"]');
+      if (!e) return null;
+      let text = '';
+      for (const n of e.childNodes) if (n.nodeName !== 'title' && n.nodeName !== 'rect') text += n.textContent;
+      text = text.trim();
+      const r = e.querySelector('rect'),
+        lit = !!r && (r.getAttribute('fill') || 'none') !== 'none',
+        f = String(e.getAttribute('fill') || '').toLowerCase();
+      return {
+        text: text === S.hooks[h].label ? '' : text,
+        tone: lit ? 'on' : f === '#ff6b6b' ? 'run' : f === '#4fd06a' ? 'stop' : ''
+      };
+    },
+    press(h) {
+      const e = S && S.hooks[h] && pq('[data-hxk="' + S.hooks[h].i + '"]');
+      if (e)
+        e.dispatchEvent(
+          new MouseEvent('click', { bubbles: true, cancelable: true, clientX: lastXY[0], clientY: lastXY[1] })
+        );
+    },
     open(kind, id, second) {
       if (kind === 'loop') return click(S && S.loops[id]);
       click(pq(second ? '[data-yn="' + id + '"]' : '[data-hit="' + id + '"]'));
