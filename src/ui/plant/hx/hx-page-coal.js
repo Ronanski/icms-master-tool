@@ -10,11 +10,13 @@
    master FIC-CM and the total coal flow correction HS-COAL (ABC-004A); limestone silo T-1311 (LT-LM1800) with lock vessel
    (PT-LM1811) and dispensing vessel (PT-LM1812), eight injection points; sand silo T-1300 (LT-SD1800) with the dense phase
    vessel S-1300 (PT-SD1800), two injection points on the rear side.
-   The flow diagrams PD-061 / 062 / 063 were NOT re-read for this page: the tags, names and order are those of temporary
-   page 12. Check the page against the three sheets before the temporary page is removed.
+   The flow diagram PD-061 was NOT re-read for this page: the tags, names and order are those of temporary page 12. PD-062 and
+   PD-063 sheet 1 were read for the Limestone and sand page.
+   Per feeder three states of its logic (DITL-19 of feeder A / B / C, as page 12 reads them): inlet plugging alarm (output
+   13), belt tracking alarm (output 15), clean-out conveyor in AUTO (output 22).
    Drawn simpler: the two fuel ports of a feeder are one line; the limestone and sand trains (lock vessel, dispensing vessel,
    rotary feeder, valve sets) are one silo each, with their pressures as values; their single valves are in the faceplate of
-   "Limestone system" / "Sand system" and stay on temporary page 12 until the Limestone and sand page is drawn. */
+   "Limestone system" / "Sand system" and are drawn on the Limestone and sand page. */
 (function () {
   const { V, E, M, C, X, L, page } = HX;
   const K = 'kg/cm²';
@@ -34,6 +36,7 @@
     FY = 190,
     FS = 1.75; /* furnace: roof centre */
   const N = ['A', 'B', 'C'];
+  const INST = ['', ' #B', ' #C']; /* the drawing instance of feeder A / B / C */
   const run = i => 'm:COAL FEEDER ' + N[i];
   const train = i => {
     const bx = BX[i],
@@ -76,6 +79,21 @@
             rot: 90,
             lab: 'r'
           }
+        ),
+        /* states of the feeder logic, as temporary page 12 reads them (DITL-19 instance of feeder A / B / C) */
+        at(HX.B('Inlet plugging', 'data-do="DITL-19' + INST[i] + '|13|ALARM|NORMAL"', { w: 140 }), bx - 8, 600, {
+          id: 'ip' + i
+        }),
+        at(HX.B('Belt tracking', 'data-do="DITL-19' + INST[i] + '|15|ALARM|NORMAL"', { w: 140 }), bx - 8, 638, {
+          id: 'bt' + i
+        }),
+        at(
+          HX.B('Clean-out conveyor', 'data-dy="DITL-19' + INST[i] + '|o|22" data-on="AUTO" data-off="NOT AUTO"', {
+            w: 140
+          }),
+          bx - 8,
+          676,
+          { id: 'cc' + i }
         )
       ],
       pipes: [
@@ -125,7 +143,8 @@
           1600,
           700,
           { id: 'sd', sc: 2, lab: 'b' }
-        )
+        ),
+        at(L('limestone-sand', 'Limestone and sand trains'), 1600, 520, { id: 'lsl' })
       ],
       pipes: [
         ...T.flatMap(t => t.pipes),
@@ -149,7 +168,6 @@
       texts: [
         { x: FX + 6, y: FY + 200 * FS, s: 'Furnace', cls: 'hx-name', anchor: 'middle' },
         { x: 1130, y: CY + 30, s: 'six fuel ports, front wall', cls: 'hx-note', anchor: 'middle' },
-        { x: 1512, y: 440, s: 'eight injection points', cls: 'hx-note' },
         { x: 1532, y: 660, s: 'rear side', cls: 'hx-note' }
       ]
     }

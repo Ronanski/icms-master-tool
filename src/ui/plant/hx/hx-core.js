@@ -724,7 +724,21 @@
             : /AUT/i.test(m)
               ? 'Auto'
               : m;
-  const stTxt = s => (s === 'run' ? 'Running' : s === 'stop' ? 'Stopped' : s === 'trip' ? 'Tripped' : '-----');
+  /* the state in words; a machine that is a valve or a set of valves (its name is its tag: XV-..., MV-...) is open / closed */
+  const stTxt = (s, name) =>
+    /^(XV|MV)-/.test(name || '')
+      ? s === 'run'
+        ? 'Open'
+        : s === 'stop'
+          ? 'Closed'
+          : '-----'
+      : s === 'run'
+        ? 'Running'
+        : s === 'stop'
+          ? 'Stopped'
+          : s === 'trip'
+            ? 'Tripped'
+            : '-----';
 
   function drawControls(def, inv) {
     let h = '';
@@ -999,7 +1013,7 @@
         });
         Q('[data-st]').forEach(e => {
           const m = D.machine(e.dataset.st) || {},
-            t = stTxt(m.st) + (m.mode ? ' · ' + m.mode : '');
+            t = stTxt(m.st, e.dataset.st) + (m.mode ? ' · ' + m.mode : '');
           if (e.textContent !== t) e.textContent = t;
           e.setAttribute('class', 'hx-st ' + (m.st || 'none'));
         });
@@ -1080,7 +1094,7 @@
         Q('[data-card-mach]').forEach(c => {
           const m = D.machine(c.dataset.cardMach) || {},
             F = f => c.querySelector(`[data-f="${f}"]`);
-          F('st').textContent = stTxt(m.st);
+          F('st').textContent = stTxt(m.st, c.dataset.cardMach);
           F('st').className = 'hx-pill ' + (m.st || '');
           F('mode').textContent = m.mode || '';
           const y = c.querySelector('.hx-ynb');
