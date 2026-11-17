@@ -1265,6 +1265,8 @@
   /* 3.2.4 (JENNIE): the air heater plugged on the gas side (boiler.js AN_APL), the same set as TL */
   const AP = {
     'aph.plug': 'Air heater plugged, gas side (grows)',
+    /* beta.21: worn air heater seals (boiler.js AN_APK) */
+    'aph.leak': 'Air heater seal leak, air to gas (grows)',
     'cd.air': 'Condenser air in-leakage (grows)',
     /* 3.2.4 (JENNIE): a grid frequency dip (unit.js anGridHz): a big unit trips elsewhere on the grid */
     'grid.lo': 'Grid frequency falls to 59.5 Hz (a unit trips elsewhere)'
@@ -1274,7 +1276,7 @@
     else W.ft.delete(id);
     W.busy = true;
     const t = TL[id] || HL[id] || AP[id];
-    return on ? t : 'cleared: ' + t + (id === 'aph.plug' ? ' (washed)' : id === 'cd.air' ? ' (sealed)' : id === 'grid.lo' ? ' (grid back to 60 Hz)' : ' (tube repaired)');
+    return on ? t : 'cleared: ' + t + (id === 'aph.plug' ? ' (washed)' : id === 'aph.leak' ? ' (seals set)' : id === 'cd.air' ? ' (sealed)' : id === 'grid.lo' ? ' (grid back to 60 Hz)' : ' (tube repaired)');
   };
   /* 3.2.4-beta.13 (JENNIE, priority list item: coal quality): wet coal, a trainer fault (unit.js anCoalWet: the coal moisture 33.96 % of the
      performance coal, FHI P2S7 Tab 2, rises to 40 %, NO-SOURCE trainer setting: rain on the coal yard). No DITL contact: the DCS has no

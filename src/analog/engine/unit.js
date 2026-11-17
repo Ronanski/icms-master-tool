@@ -2043,7 +2043,10 @@ const AN_PA_FURN = 328.2 / 354.0;
    burp then a 60 s rest, and the CO, O2 and lower furnace temperature rise of each burp is checked inside that rest, so a batch that
    lights burns out in about 60 s; "wait 5 min if a batch does not burn" = coal left in the bed can still light later, which this
    carry-over gives. tau itself is NO-SOURCE inside that bound. At a hot bed (bf = 1) with no coal held, the burn is the fed coal, as
-   before. Module level (never a function on U: SAVE / LOAD). */
+   before. Module level (never a function on U: SAVE / LOAD).
+   3.2.4-beta.21 (JENNIE): a char split was tried (coal crusher spec K1AU3-D2-0-102 R0 p4: VM 30.56 %, FC 28.67 %, char 61 % of the LHV
+   burning over tau): at 75 MW the PIC-COBM swing grew to an MFT in 110 min (the plant runs there with coal 47 ~ 51 T/H, plant trend).
+   The burnout time of the char is NO-SOURCE; the bed / refractory lumps already give the lag the plant tuning stands on. Not used. */
 const AN_CBED = { tau: 60 };
 /* live Cold start 2026-11-14 (user: "Code ang gawin ... WALANG DAYAIN"): THE GAS THAT REACHES THE SUPERHEATER / REHEATER (Cold path).
    The furnace exit gas U.tgF comes from the bed heat balance (AN_BB below). It then crosses the refractory of the cyclone inlet ducts,
@@ -2153,6 +2156,8 @@ function anBedStep(U, dt, rpm, pa, fa) {
   if (!isFinite(U.bedI)) U.bedI = U.cold ? K.tCold : K.t0;
   const sol = K.kA * (U.coalR || 1) * (isFinite(U.cbn) ? U.cbn : (U.Fc || 0) * (U.burn || 0)) + K.kL * (U.lmQ || 0);
   U.bedIn = K.kB * sol + (U.sdQ || 0);
+  /* beta.21: the rest of the solids leaves the cyclones as fly ash (T/H), to the air heater hoppers and the ESP (boiler.js anAphStep) */
+  U.flyA = (1 - K.kB) * sol;
   U.bedOut = K.q * rpm;
   U.bedI = Math.max(0, U.bedI + ((U.bedIn - U.bedOut) * dt) / 3600);
   /* the solids held in the cyclone legs (t) */
@@ -2331,6 +2336,15 @@ function anFwStep(U, dt) {
     U['fwI' + i] = r ? Math.round((10 * K.I0 * swInterp(K.pQ, K.pP, q)) / P0) / 10 : 0;
     U['fwDp' + i] = r ? Math.round(1000 * K.dp0 * (q / K.q0) * (q / K.q0)) / 1000 : 0;
   });
+  /* 3.2.4-beta.21: PUMP HEAT. All the shaft power goes into the water: dh = P / m (KSB curve Q43446D shaft power pP and head qH at
+     the pump flow q). Of the useful part rho g Q H only (1 - T beta) warms the water (isentropic compression of a liquid:
+     dT_s = T beta v dp / cp); the losses (P - rho g Q H) warm it in full. dT = (P - (1 - T beta) rho g Q H) / (m cp), with
+     T beta = 0.45 and cp 4.33 kJ/kg K at 158.4 C (IAPWS-IF97 water properties). 150 MW (549 m3/h): about 2.8 C; at the ARC minimum
+     151 m3/h about 7.5 C. The water to No.1 HPH is the deaerator saturation + dT (anHphStep). */
+  const Ph = n ? swInterp(K.pQ, K.pP, q) : 0,
+    Hy = n ? (K.sg * 1000 * 9.81 * (q / 3600) * swInterp(K.qQ, K.qH, q)) / 1000 : 0,
+    mk = (K.sg * 1000 * q) / 3600;
+  U.fwDT = n && mk > 0 ? Math.max(0, (Ph - 0.55 * Hy) / (mk * 4.33)) : 0;
 }
 /* 3.2.1 (IRENE: HP HEATERS; docs/versions/v3.2.1/HP_HEATERS_PLANT_MODEL.md). Feedwater after the BFWP: deaerator -> No.1 HPH
    (extraction no. 2, MV-TS1002 DITL-95) -> No.2 HPH (extraction no. 1, MV-TS1001 DITL-94) -> economizer inlet (TT-FW1160 / PT-FW1160).
@@ -2432,6 +2446,10 @@ const AN_HP = {
   dca2: 201.3 - 195.7,
   tau: 120
 };
+/* the feedwater pumped now (T/H): pump heat only while water moves through the heaters */
+function ffwIn() {
+  return typeof AN_CYC !== 'undefined' && isFinite(AN_CYC.ffw) ? Math.max(0, AN_CYC.ffw) : 0;
+}
 function anHphStep(U, dt) {
   const K = AN_HP,
     ms = Math.max(0, +U.ms || 0),
@@ -2445,7 +2463,7 @@ function anHphStep(U, dt) {
     Ps1 = (K.P2 + 1.0332) * anHb('x5', ms) * thr(pos('DITL-95')) - 1.0332,
     /* deaerator pressure PT-CD1104 (ABC-056 AI0417): the water to the BFWP is at its saturation */
     Pda = U.xt && U.xt.dea ? anUnitVal(U.xt.dea) : NaN,
-    Tin = isFinite(Pda) && Pda > 0.05 ? steamTsat(Pda) : isFinite(U.Tamb) ? U.Tamb : 30,
+    Tin = (isFinite(Pda) && Pda > 0.05 ? steamTsat(Pda) : isFinite(U.Tamb) ? U.Tamb : 30) + (ffwIn(U) > 1 ? U.fwDT || 0 : 0),
     sat = P => (P > -0.9 ? steamTsat(P) : 0),
     w1 = anHtrPath(anFv('V-FW1009'), anFv('V-FW1010'), anFv('V-FW1011')),
     w2 = anHtrPath(anFv('V-FW1012'), anFv('V-FW1013'), anFv('V-FW1014')),
@@ -4965,7 +4983,9 @@ function anUnitStep0(dt) {
     /* the bed heat balance (AN_BB above): the bed, the furnace exit gas and the heat of the water walls, no fitted law */
     const B = AN_BB,
       ts = tsatOf(U.Pd),
-      av = U.tafS && U.taf.length === 3 ? U.taf.map(n => Math.max(0, +U.tafS.rt.v[n] || 0)) : [taf, 0, 0],
+      lkA = (U.aphLk || 0) * (typeof AN_APK !== 'undefined' ? [AN_APK.pa, AN_APK.sa, 0] : [0, 0, 0]),
+      /* beta.21: the air heater seal leak (boiler.js AN_APK) goes round the furnace: the bed gets the measured air less it */
+      av = (U.tafS && U.taf.length === 3 ? U.taf.map(n => Math.max(0, +U.tafS.rt.v[n] || 0)) : [taf, 0, 0]).map((x, i) => Math.max(0, x - (lkA[i] || 0))),
       tPa = isFinite(U.aphPa) ? U.aphPa : U.Tamb,
       tSa = isFinite(U.aphSa) ? U.aphSa : U.Tamb,
       dW = U.Tb - U.Tw /* bed over the wall water, both signs */,
@@ -4979,7 +4999,7 @@ function anUnitStep0(dt) {
       gcp = (mAir + fg) * anHxCp(U.Tb) /* kW/K, flue gas at the bed */,
       /* 3.2.4-beta.16 (user "Physics nga"): the gas that lifts the solids is the air AND the steam of a water wall tube leak, which boils in
          the bed: per kg 28.9 / 18 times the volume of air (ideal gas, same temperature and pressure) */
-      uRel = U.taf0 > 0 ? ((taf + ((U.tlW || 0) * 28.9) / 18) / U.taf0) * ((U.Tb + 273) / (U.Tb0 + 273)) : 0,
+      uRel = U.taf0 > 0 ? ((av[0] + av[1] + av[2] + ((U.tlW || 0) * 28.9) / 18) / U.taf0) * ((U.Tb + 273) / (U.Tb0 + 273)) : 0,
       phi = Math.min(1.2, Math.max(0, isFinite(U.bedI) ? U.bedI / AN_BI.t0 : 1)) * Math.pow(Math.min(1.2, uRel), AN_BB.nU),
       /* beta.263: the lower furnace refractory is its own lump. 25 mm castable k 1.5 W/m K over the tubes (13-thermal-masses), bed film
          300 W/m2 K (textbook), 359 m2: bed -> refractory centre 1 / (1/300 + 0.0125/1.5) = 85.7 W/m2 K = 30.8 kW/K, centre -> water
@@ -5286,7 +5306,7 @@ function anUnitStep0(dt) {
   /* O2 of the flue gas: 21 x (1 - stoichiometric air / total air), analyzer lag. Both analyzers read it: FHI gives one curve (Fig 7) and
      the 6.4 / 2.2 % of one snapshot has no source, it stood the B side on LOW-LOW at 150 MW */
   if (U.afs > 0) {
-    const taf = U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0),
+    const taf = Math.max(0, U.taf.reduce((a, n) => a + (+U.tafS.rt.v[n] || 0), 0) - (U.aphLk || 0) * (typeof AN_APK !== 'undefined' ? AN_APK.pa + AN_APK.sa : 0)) /* beta.21: less the air heater seal leak, which joins after the analyzer */,
       o2a = Math.max(0, Math.min(21, 21 * (1 - ((Fe - Fb * (1 - (U.coalR || 1))) * U.afs) / Math.max(1, taf)))),
       /* 3.2.4 (JENNIE): the analyzers sit at the air heater gas inlet (plant service reports "AT-FG3122 / 3123 GAH INLET O2
          ANALYZER", unit 3 of the same design) and read the gas as it is, wet (the stack design O2 of K1AU3-E2-0-005 sheet 2 is
