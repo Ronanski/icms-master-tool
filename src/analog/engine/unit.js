@@ -2114,7 +2114,7 @@ const AN_BB = {
   uaL: 18,
   uaBR: 30.8 /* kW/K, bed -> refractory centre (beta.263, see the bed balance) */,
   uaRW: 43.1 /* kW/K, refractory centre -> water */,
-  uag: 32,
+  uag: 32 /* kW/K, upper furnace gas to the bare upper walls, NO-SOURCE (see the bed balance, beta.24) */,
   kW: 554,
   nU: 3.5 /* wall law exponent, plant trend scenario 1 (see above) */
 };
@@ -5009,9 +5009,20 @@ function anUnitStep0(dt) {
       Trf = isFinite(U.Trf) ? U.Trf : (B.uaBR * U.Tb + B.uaRW * U.Tw) / (B.uaBR + B.uaRW),
       qBR = B.uaBR * (U.Tb - Trf) /* kW, bed -> refractory */,
       qRW = B.uaRW * (Trf - U.Tw) /* kW, refractory -> wall water */,
-      qSol = (B.ua0w - B.uag) * phi * dW + qRW /* kW, to the furnace walls: the circulating solids + through the refractory */,
+      /* 3.2.4-beta.24 (JENNIE, energy balance): the heat the upper furnace gas gives to the bare upper walls (qGas) went all to the
+         water, but the bed and the gas paid only the share 1 - phi (the gas exit temperature): the share phi came from nowhere,
+         about 15 MW at 150 MW. Now the suspension pays it: the circulating solids the share phi (the bed loses it), the gas alone the
+         share 1 - phi; the solids add the rest of the design wall conductance ua0w. Result (headless, scenario 1 of the plant DCS
+         trend): coal at 150 MW 85.9 -> 89.0 T/H (plant 89.7), 105 MW 64.6 (64.3), 90 MW 57.7 (55.4); 75 MW 2 h: no trip.
+         Open (not in this Beta): uag stays 32 kW/K (27 W/m2 K, NO-SOURCE). The WSGG gas radiation of hx.js at the upper furnace beam
+         length 3.6 V / A = 7.7 m (T2 15.507 x 7.684 m grate, 25.85 m upper walls) gives ~111 kW/K at 850 C and matches the plant
+         cyclone out TIFG1095 (scenario 2: 867 C at ~140 MW, 726 C at 90 MW; model 869 / 742) and FHI Fig 10 spray 0 at 60 %, but the
+         75 MW hold then swings into an MFT at ~107 min (also with 111 fixed): another low load lag of the model is missing first */
+      uag = B.uag /* kW/K */,
+      qGas = gcp > 0.01 ? gcp * dW * (1 - Math.exp(-uag / gcp)) : 0 /* kW, from the gas over the upper walls */,
+      qSolW = phi * (Math.sign(dW) * Math.max(0, Math.abs(B.ua0w * dW) - Math.abs(qGas))) /* kW, the solids beyond the gas radiation */,
+      qSol = qSolW + qRW /* kW, to the furnace walls: the circulating solids + through the refractory */,
       qPan = isFinite(U.hxQp) ? U.hxQp : 0 /* kW, to the in-furnace SH panels (hx.js, last scan) */,
-      qGas = gcp > 0.01 ? gcp * dW * (1 - Math.exp(-B.uag / gcp)) : 0 /* kW, from the gas over the upper walls */,
       qFuel = Fb * B.lhvC * (U.coalK || 1) * (1 - B.fUC) + oil * B.lhvO,
       qAirG =
         (mAir + fg) * (hFg(U.Tb) - hFg(U.Tamb)) -
@@ -5035,7 +5046,7 @@ function anUnitStep0(dt) {
     /* the water wall leak boils in the bed: saturated water at the drum (anHxHw) to steam at the bed (IF97, near the furnace pressure) */
     const qTl = U.tlW > 0 ? (U.tlW / 3.6) * Math.max(0, steamH(0, U.Tb) - anHxHw(ts)) : 0;
     U.qTl = qTl;
-    U.Tb = Math.max(U.Tamb, U.Tb + ((qFuel - qLm - qTl - qAirG - ((B.ua0w - B.uag) * phi * dW + qBR) - qPan) * dt) / Cb);
+    U.Tb = Math.max(U.Tamb, U.Tb + ((qFuel - qLm - qTl - qAirG - (qSolW + Math.min(1, phi) * qGas + qBR) - qPan) * dt) / Cb);
     U.Trf = Trf + ((qBR - qRW) * dt) / B.mRef;
     /* the furnace exit gas: the bed less the upper walls, held at the bed by the circulating solids in the share phi */
     U.tgF = gcp > 0.01 ? U.Tb - (1 - Math.min(1, phi)) * (qGas / gcp) : U.Tb;
