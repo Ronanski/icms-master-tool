@@ -58,21 +58,21 @@
       /* electric actuator: gear box, motor, hand wheel */
       top =
         BON +
-        '<path class="rxst" d="M0 -16.5V-21"/><rect class="rxd" x="-14.6" y="-31.4" width="7" height="8.4" rx="1.8"/>' +
+        '<path class="rxst" d="M0 -16.5V-21"/><rect class="rxix" data-stem="2.6" x="-2.6" y="-18.6" width="5.2" height="1.9" rx="0.6"/><rect class="rxd" x="-14.6" y="-31.4" width="7" height="8.4" rx="1.8"/>' +
         '<rect class="rx" x="-8.2" y="-33.4" width="14.6" height="12.6" rx="2.2"/><circle class="rxw" cx="10.8" cy="-27" r="4.7"/><circle class="rxk" cx="10.8" cy="-27" r="1.3"/>';
       ty = -34;
     } else if (k === 'shutoff') {
       /* air cylinder with its solenoid */
       top =
         BON +
-        '<path class="rxst" d="M0 -16.5V-21"/><rect class="rxv" x="-6" y="-35" width="12" height="15" rx="1.2"/>' +
+        '<path class="rxst" d="M0 -16.5V-21"/><rect class="rxix" data-stem="2.6" x="-2.6" y="-18.6" width="5.2" height="1.9" rx="0.6"/><rect class="rxv" x="-6" y="-35" width="12" height="15" rx="1.2"/>' +
         '<path class="rxd" d="M-7.4 -21.6h14.8v2.6h-14.8zM-7.4 -36.6h14.8v2.6h-14.8z"/><rect class="rxd" x="7.4" y="-31.4" width="4.8" height="6.2" rx="1"/>';
       ty = -37;
     } else if (k === 'manual') {
       top =
         BON +
-        '<path class="rxst" d="M0 -16.5V-25"/><ellipse class="rxw" cx="0" cy="-25.8" rx="10.6" ry="2.9"/><circle class="rxk" cx="0" cy="-25.8" r="1.3"/>';
-      ty = -29;
+        '<path class="rxst" d="M0 -16.5V-25"/><g class="rxix rx-hw" data-stem="4"><ellipse class="rxw" cx="0" cy="-23.8" rx="10.6" ry="2.9"/><circle class="rxk" cx="0" cy="-23.8" r="1.3"/></g>';
+      ty = -31;
     } else if (k === 'check') {
       top = '<path class="rxd" d="M-7.6 -16.4h15.2v4.6h-15.2z"/>';
     }
@@ -541,7 +541,7 @@
     };
   };
   /* generator with its exciter, closed (seen from the side). The shaft comes in at the left. The body takes the state colour
-     of the rule in "on". Ports: l (shaft end), t (terminals, on top), r (exciter end) */
+     of the rule in "on"; the fan behind the opening of the exciter end turns while it is on. Ports: l (shaft end), t (terminals, on top), r (exciter end) */
   R.generator = () => ({
     box: [-61, -34, 71, 37],
     ports: { l: [-60, 0], t: [0, -33], r: [70, 0], b: [0, 36] },
@@ -549,7 +549,9 @@
       '<path class="rxd" d="M-48 30h112v6h-112z"/><rect class="rx" x="-60" y="-4.5" width="130" height="9"/>' +
       '<path class="rx" d="M-52 30V-6Q-52 -14 -45 -14H-41Q-34 -14 -34 -6V30Z"/>' +
       '<rect class="rxs" x="-30" y="-27" width="62" height="54" rx="6"/><path class="rxhi" d="M-25 -22h52"/><path class="rxe" d="M-18 -27v54M-6 -27v54M6 -27v54M18 -27v54"/>' +
-      '<path class="rx" d="M-22 -33h46v7h-46zM-24 27h8v4h-8zM18 27h8v4h-8z"/><rect class="rx" x="42" y="-14" width="22" height="28" rx="3"/><path class="rxe" d="M49 -14v28M56 -14v28"/><path class="rxd" d="M40 14h26v16h-26z"/>'
+      '<path class="rx" d="M-22 -33h46v7h-46zM-24 27h8v4h-8zM18 27h8v4h-8z"/><rect class="rx" x="42" y="-14" width="22" height="28" rx="3"/><circle class="rxvoid" cx="53" cy="0" r="9"/>' +
+      wheel(53, 0, 8, 6) +
+      '<path class="rxd" d="M40 14h26v16h-26z"/>'
   });
   /* plate heat exchanger (a cooler): the pack of plates between two frames. Ports: a1 / a2 (one side, left), b1 / b2
      (the other side, right) */
@@ -838,17 +840,20 @@
   /* Shapes are a picture only (no outline drawing of the switchgear in document-references). The line runs from the top
      terminal to the bottom terminal. The position window of a breaker and the blade of a switch take the state colour of
      the rule in "on": red = closed, green = open. */
-  /* circuit breaker: a cubicle with its three poles behind the window and the position window below. Ports: t / b */
+  /* circuit breaker: a cubicle with its three poles behind the window and the position window below. The moving contacts
+     (rx-ct) sit on the fixed ones when the breaker is closed and lift when it opens. Ports: t / b */
   R.breaker = () => ({
     box: [-27, -36, 27, 36],
     ports: { t: [0, -35], b: [0, 35], l: [-26, 0], r: [26, 0] },
     svg:
       '<path class="rxv" d="M-4 -35h8v8h-8zM-4 27h8v8h-8z"/><rect class="rx" x="-26" y="-28" width="52" height="56" rx="3"/>' +
-      '<rect class="rxvoid" x="-20" y="-22" width="40" height="24" rx="2"/><path class="rxst" d="M-12 -18v16M0 -18v16M12 -18v16"/>' +
-      '<path class="rxk" d="M-14.5 -12h5v4h-5zM-2.5 -12h5v4h-5zM9.5 -12h5v4h-5z"/>' +
+      '<rect class="rxvoid" x="-20" y="-22" width="40" height="24" rx="2"/><path class="rxst" d="M-12 -7v6M0 -7v6M12 -7v6"/>' +
+      '<path class="rxk" d="M-14.5 -8.5h5v3h-5zM-2.5 -8.5h5v3h-5zM9.5 -8.5h5v3h-5z"/>' +
+      '<g class="rx-ct"><path class="rxst" d="M-12 -19v8M0 -19v8M12 -19v8"/><path class="rxk" d="M-14.5 -13h5v3h-5zM-2.5 -13h5v3h-5zM9.5 -13h5v3h-5z"/></g>' +
       '<rect class="rxs" x="-20" y="7" width="40" height="15" rx="2"/><path class="rxe" d="M-26 4.5h52"/><path class="rxhi" d="M-22 -25.5h44"/>'
   });
-  /* disconnect switch between two post insulators; earth: true = an earth switch (the lower side goes to earth).
+  /* disconnect switch between two post insulators; earth: true = an earth switch (the lower side goes to earth). The blade
+     (rx-sw) stands in line when closed and swings out when open.
      Ports: t / b (an earth switch has no line below) */
   R.dswitch = o => ({
     box: [-22, -31, 22, o.earth ? 40 : 31],
@@ -859,7 +864,7 @@
       (o.earth
         ? '<path class="rxst" d="M0 24v4M-11 28h22M-7 32h14M-3 36h6"/>'
         : '<path class="rx" d="M-4 24h8v6h-8z"/>') +
-      '<rect class="rxs" x="-3.2" y="-15" width="6.4" height="30" rx="2.2"/><path class="rxk" d="M-5 -16.5h10v3h-10zM-5 13.5h10v3h-10z"/>'
+      '<path class="rxk" d="M-5 -16.5h10v3h-10zM-5 13.5h10v3h-10z"/><rect class="rxs rx-sw" x="-3.2" y="-15" width="6.4" height="30" rx="2.2"/>'
   });
   /* oil filled power transformer seen from the front: tank, radiators on both sides, three bushings on top, the low
      voltage box below. Ports: t (high voltage), b (low voltage) */

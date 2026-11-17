@@ -596,3 +596,14 @@
 .hx-hook.plain .hx-hkl { font-size: 10.6px; font-weight: 500; }
 .hx-hook.plain.run rect { fill: var(--hx-run); }
 .hx-hook.plain.run .hx-hkl { fill: #fff !important; font-weight: 700; }
+
+/* movement of the switchgear: the contacts of a breaker and the blade of a switch go to their open place (eased, once) */
+.rx-ct { transition: transform 0.35s ease-out; }
+.hx-stop .rx-ct, .hx-none .rx-ct { transform: translateY(-5px); }
+.rx-sw { transform-box: fill-box; transform-origin: 50% 100%; transition: transform 0.45s ease-out; }
+.hx-stop .rx-sw, .hx-none .rx-sw { transform: rotate(-34deg); }
+/* a symbol that takes a press (a hand valve): the same hover as a symbol that opens a faceplate */
+.hx-node[data-hp] { cursor: pointer; }
+.hx-node[data-hp]:hover .rxs, .hx-node[data-hp]:focus-visible .rxs { stroke: var(--hx-accent); stroke-width: 1.6; }
+@media (prefers-reduced-motion: reduce) { .rx-ct, .rx-sw { transition: none; } }
+.rx-hw { fill: none; }

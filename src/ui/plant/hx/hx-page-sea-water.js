@@ -15,8 +15,9 @@
    Drawn simpler: the ball separators, ball vessels and V pieces of the tube cleaning are not drawn (the two tube cleaning
    systems are two machines under the condenser); the priming air ejectors Z-1131A / B are not drawn; the two paths of the
    condenser are one line with the values of path A / path B side by side.
-   The hand valves V-SW1002 ~ V-SW1020 (pump discharge, condenser inlet / outlet, booster discharge) are HX.H pieces: OPEN /
-   CLOSED of the plant model, a click opens the field faceplate. */
+   The hand valves V-SW1002 ~ V-SW1020 (pump discharge, condenser inlet / outlet of path A and path B, booster discharge)
+   are valve symbols on their lines (HX.HV): red = open, the hand wheel rises with the opening, a click opens the field
+   faceplate. */
 (function () {
   const { V, E, M, L, page } = HX;
   const K = 'kg/cm²';
@@ -35,6 +36,7 @@
     CY = 380,
     CS = 1.6 /* condenser */,
     TOP = 110 /* discharge to the sea */,
+    PATH = 26 /* the two paths of the condenser: path A above, path B below the centre line */,
     BX = [1230, 1410, 1590],
     BY = 850 /* booster pumps */,
     EX = [1360, 1500, 1640],
@@ -73,7 +75,7 @@
             { id: 'p' + i, sc: PS, lab: 'b' }
           )
         ),
-        at(M('strainer', 'S-1502', 'Debris filter', [], { tag: 'S-1502' }), 590, MY, { id: 'df1', sc: 1.6, lab: 'b' }),
+        at(M('strainer', 'S-1502', 'Debris filter', [], { tag: 'S-1502' }), 515, MY, { id: 'df1', sc: 1.6, lab: 'b' }),
         at(E('condenser', 'Condenser', 'H-1110', [], { id: 'cd', steam: 'v:SI-TB>50' }), CX, CY, {
           id: 'cd',
           sc: CS,
@@ -98,23 +100,27 @@
         ...N.map((n, i) => at(E('cooler', n, 'H-1107' + n, []), EX[i], EY, { id: 'e' + i, sc: 1.3, lab: 'r' })),
         at(L('makeup-cooling', 'Closed cooling water'), 1500, 290, { id: 'ccl' }),
         /* debris filters: in operation and common fail of DITL-39 (as temporary page 01) */
-        at(HX.B('Filter S-1502', 'data-do="DITL-39|3|IN OPERATION|NOT IN OPERATION|run"', { w: 150 }), 590, 650, {
+        at(HX.B('Filter S-1502', 'data-do="DITL-39|3|IN OPERATION|NOT IN OPERATION|run"', { w: 150 }), 575, 670, {
           id: 'f1s'
         }),
-        at(HX.B('Filter S-1502 fail', 'data-do="DITL-39|4|COMMON FAIL|NO|alarm"', { w: 150 }), 590, 694, { id: 'f1f' }),
-        at(HX.B('Filter S-1504', 'data-do="DITL-39|14|IN OPERATION|NOT IN OPERATION|run"', { w: 150 }), 1560, 640, {
+        at(HX.B('Filter S-1502 fail', 'data-do="DITL-39|4|COMMON FAIL|NO|alarm"', { w: 150 }), 575, 714, { id: 'f1f' }),
+        at(HX.B('Filter S-1504', 'data-do="DITL-39|14|IN OPERATION|NOT IN OPERATION|run"', { w: 150 }), 1500, 650, {
           id: 'f2s'
         }),
-        at(HX.B('Filter S-1504 fail', 'data-do="DITL-39|15|COMMON FAIL|NO|alarm"', { w: 150 }), 1560, 684, {
+        at(HX.B('Filter S-1504 fail', 'data-do="DITL-39|15|COMMON FAIL|NO|alarm"', { w: 150 }), 1500, 694, {
           id: 'f2f'
         }),
         /* hand valves of the plant model (K1AU3-PD-020): pump discharge, condenser inlet and outlet, booster pump discharge */
-        ...['V-SW1002', 'V-SW1004', 'V-SW1006'].map((t, i) => at(HX.H(t), 412, PY[i] - 16, { id: 'hv' + i })),
-        at(HX.H('V-SW1007', 'Inlet A V-SW1007', { w: 150 }), 720, MY - 150, { id: 'hi1' }),
-        at(HX.H('V-SW1008', 'Inlet B V-SW1008', { w: 150 }), 720, MY - 108, { id: 'hi2' }),
-        at(HX.H('V-SW1009', 'Outlet A V-SW1009', { w: 150 }), 1130, MY - 150, { id: 'ho1' }),
-        at(HX.H('V-SW1010', 'Outlet B V-SW1010', { w: 150 }), 1130, MY - 108, { id: 'ho2' }),
-        ...['V-SW1016', 'V-SW1018', 'V-SW1020'].map((t, i) => at(HX.H(t), BX[i] - 2, 792, { id: 'hb' + i })),
+        ...['V-SW1002', 'V-SW1004', 'V-SW1006'].map((t, i) =>
+          at(HX.HV(t), 412, PY[i] - 16, { id: 'hv' + i, lab: 'b' })
+        ),
+        at(HX.HV('V-SW1007'), 728, MY - PATH, { id: 'hi1', lab: 't' }),
+        at(HX.HV('V-SW1008'), 728, MY + PATH, { id: 'hi2', lab: 'b' }),
+        at(HX.HV('V-SW1009'), 1072, MY - PATH, { id: 'ho1', lab: 't' }),
+        at(HX.HV('V-SW1010'), 1072, MY + PATH, { id: 'ho2', lab: 'b' }),
+        ...['V-SW1016', 'V-SW1018', 'V-SW1020'].map((t, i) =>
+          at(HX.HV(t), BX[i] - 2, 792, { id: 'hb' + i, rot: -90, lab: 'r' })
+        ),
         at(M('pump', 'P-0762A', 'Hypochlorite dosing pump A', [], { tag: 'P-0762A', wrap: 12 }), 80, 740, {
           id: 'ha',
           sc: 0.9,
@@ -160,11 +166,24 @@
         },
         /* header, debris filter, condenser, discharge */
         { med: 'sea', w: W_M, pts: [[HX0, MY], 'df1.l'], flow: SW },
-        { med: 'sea', w: W_M, pts: ['df1.r', 'cd.l'], flow: SW },
+        { med: 'sea', w: W_M, pts: ['df1.r', [680, MY]], flow: SW, arrow: false },
+        { med: 'sea', w: 6, pts: [[680, MY], [680, MY - PATH], 'hi1.l'], flow: SW, arrow: false },
+        { med: 'sea', w: 6, pts: [[680, MY], [680, MY + PATH], 'hi2.l'], flow: SW, arrow: false },
+        { med: 'sea', w: 6, pts: ['hi1.r', [CX - 80 * CS, MY - PATH]], flow: SW + '&' + 'h:fv-V-SW1007' },
+        { med: 'sea', w: 6, pts: ['hi2.r', [CX - 80 * CS, MY + PATH]], flow: SW + '&' + 'h:fv-V-SW1008' },
+        { med: 'sea', w: 6, pts: [[CX + 80 * CS, MY - PATH], 'ho1.l'], flow: SW, arrow: false },
+        { med: 'sea', w: 6, pts: [[CX + 80 * CS, MY + PATH], 'ho2.l'], flow: SW, arrow: false },
+        { med: 'sea', w: 6, pts: ['ho1.r', [1112, MY - PATH], [1112, MY]], flow: SW, arrow: false },
+        { med: 'sea', w: 6, pts: ['ho2.r', [1112, MY + PATH], [1112, MY]], flow: SW, arrow: false },
         {
           med: 'sea',
           w: W_M,
-          pts: ['cd.r', [1240, MY], [1240, TOP], [1560, TOP]],
+          pts: [
+            [1112, MY],
+            [1240, MY],
+            [1240, TOP],
+            [1560, TOP]
+          ],
           to: 'sea water discharge channel',
           flow: SW
         },
@@ -211,7 +230,7 @@
       ],
       taps: [
         {
-          x: 720,
+          x: 628,
           y: MY,
           side: 't',
           label: 'Inlet pressure A / B',
@@ -222,7 +241,7 @@
           tag: 'PT-SW1110-A1 / -B1'
         },
         {
-          x: 720,
+          x: 628,
           y: MY,
           side: 'b',
           label: 'Inlet temperature A / B',
@@ -233,7 +252,7 @@
           tag: 'TT-SW1110-A1 / -B1'
         },
         {
-          x: 1130,
+          x: 1176,
           y: MY,
           side: 't',
           label: 'Outlet pressure A / B',
@@ -244,7 +263,7 @@
           tag: 'PT-SW1110-A2 / -B2'
         },
         {
-          x: 1130,
+          x: 1176,
           y: MY,
           side: 'b',
           label: 'Outlet temperature A / B',

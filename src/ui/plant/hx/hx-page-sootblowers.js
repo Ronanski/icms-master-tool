@@ -3,7 +3,7 @@
    THE PICTURE: the back pass of the boiler cut open in the middle, the same drawing as on the Reheat steam and the Furnace
    and flue gas pages, with a sootblower lance going into the pass at each of its seven levels: the reheater pass from the
    left, the superheater pass from the right. Each level has two sootblowers (left wall and right wall): their two tags
-   stand at the lance, red while that blower blows. The steam comes down the two risers beside the casing. Below on the left
+   stand at the lance, red while that blower blows (the lance carries its steam only then). The steam comes down the two risers beside the casing. Below on the left
    the rotary air heater with its two blowers; on the right the sequence, its permissives and alarms.
    THE ARRANGEMENT, read from K1AU3-PD-015 Rev D (steam soot blowing system):
    - steam from the outlet of superheater panel 1 (PD-019), steam supply valve MV-SB1001, pressure control valve PCV-SB1053
@@ -71,6 +71,9 @@
       })
     ]);
   const FL = 'l:PICSB1052';
+  /* a lance carries steam only while one of the two blowers of its level blows */
+  const hk = b => HX.hk('sb-' + b[0], op(b[1], b[2], b[0]));
+  const blow = r => hk(r[1]) + '|' + hk(r[2]);
   const ST = [
     ['All blowers', 'data-dy="DITL-80A|i|13" data-on="ALL RETRACTED" data-off="NOT ALL RETRACTED" data-s="1"'],
     ['Program', 'data-dy="DITL-80A|o|5" data-on="ON" data-off="OFF"'],
@@ -182,7 +185,7 @@
             [RISR, py(r[0])],
             [px(92), py(r[0])]
           ],
-          flow: FL,
+          flow: blow(r),
           arrow: false
         })),
         ...SH.map(r => ({
@@ -192,7 +195,7 @@
             [RISS, py(r[0])],
             [px(124), py(r[0])]
           ],
-          flow: FL,
+          flow: blow(r),
           arrow: false
         })),
         /* air heater blowers */
