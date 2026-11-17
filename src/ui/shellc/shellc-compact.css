@@ -211,3 +211,18 @@ html body.sc:not(.sceng) .fpo-box .fpo-ln{display:none!important}
 html body.sc #zbar :is(.lo-w,.lo-f,.scmapb){display:none!important}
 html body.sc .tbar .tb.g-view > .only.an-only{display:none!important}
 html body.sc:not(.sceng) #plantws:not(#scnone) .plbar:not(#scnone) :is(.tb.g-run,.tb.g-op .ddw,.tb.g-op,.plnav):not(#scnone):not(#scnone2){display:none!important}
+/* ---------- step 8 (user 2026-11-17: "Walang kalatoy latoy mga buttons, text ... Ang dami"): the overview and the start screen cleaned ---------- */
+/* the overview uses the whole width; no third bar that only says "Plant > Overview" */
+html body.sc #scov:not(#scnone) .scflow{max-width:none!important}
+html body.sc #scov:not(#scnone) .scfalm{max-width:none!important}
+html body.sc #scov:not(#scnone) > .scbar{display:none!important}
+/* no "press Run to read the machines" under six blocks (the status line says it once) */
+html body.sc #scov .sclamp:has(.dot.none){display:none!important}
+/* a value reads first: the number larger, its name small and quiet */
+html body.sc #scov:not(#scnone) .scfkv b{font:600 16px/1.25 var(--sc-num)!important;margin-top:0!important}
+html body.sc #scov:not(#scnone) .sctile h3{font:600 13px/1.3 var(--sc-ui)!important;letter-spacing:.01em;padding-bottom:5px!important;margin-bottom:6px!important;border-bottom:1px solid var(--sc-line)}
+html body.sc #scov:not(#scnone) .sctile{border-radius:3px!important}
+/* the start screen: no "Open without a start state" (the old home page), square chips as everywhere */
+html body.sc #scstart button.scskip{display:none!important}
+html body.sc #scstart .scchips button{border-radius:2px!important}
+html body.sc #scstart .sccont:disabled{display:none!important}
