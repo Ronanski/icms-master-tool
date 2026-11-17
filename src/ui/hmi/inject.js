@@ -109,7 +109,7 @@ const block =
   fs.readFileSync(__dirname + '/../plant/hmi-mock-ov.js', 'utf8') +
   '\n' +
   /* 3.2.4 (user 2026-11-17): HX, the realistic HMI pages (src/ui/plant/hx/README.md): symbols, engine, registry, pages, adapter */
-  ['hx-real.js', 'hx-core.js', 'hx-registry.js', 'hx-page-reheat.js', 'hx-page-boiler-steam.js', 'hx-page-feedwater.js', 'hx-page-condensate.js', 'hx-page-furnace-gas.js', 'hx-page-combustion-air.js', 'hx-page-coal.js', 'hx-page-limestone-sand.js', 'hx-page-oil-burners.js', 'hx-page-aux-steam.js', 'hx-page-extraction.js', 'hx-page-turbine-oil.js', 'hx-page-sea-water.js', 'hx-page-makeup-cooling.js', 'hx-page-turbine.js', 'hx-page-purge-trip.js', 'hx-page-generator.js', 'hx-page-sootblowers.js', 'hx-page-compressed-air.js', 'hx-app.js'].map(x => fs.readFileSync(__dirname + '/../plant/hx/' + x, 'utf8')).join('\n') +
+  ['hx-real.js', 'hx-core.js', 'hx-registry.js', 'hx-page-reheat.js', 'hx-page-boiler-steam.js', 'hx-page-feedwater.js', 'hx-page-condensate.js', 'hx-page-furnace-gas.js', 'hx-page-combustion-air.js', 'hx-page-coal.js', 'hx-page-limestone-sand.js', 'hx-page-ash.js', 'hx-page-oil-burners.js', 'hx-page-aux-steam.js', 'hx-page-extraction.js', 'hx-page-turbine-oil.js', 'hx-page-sea-water.js', 'hx-page-makeup-cooling.js', 'hx-page-turbine.js', 'hx-page-purge-trip.js', 'hx-page-generator.js', 'hx-page-sootblowers.js', 'hx-page-compressed-air.js', 'hx-app.js'].map(x => fs.readFileSync(__dirname + '/../plant/hx/' + x, 'utf8')).join('\n') +
   '\n' +
   /* 3.2.0-beta.74: the operator pop-out faceplate beside the clicked equipment (motor; the controllers of plant.js) */
   fs.readFileSync(__dirname + '/../plant/fp-pop.js', 'utf8') +

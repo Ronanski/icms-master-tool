@@ -854,6 +854,32 @@
       wheel(0, 0, 9.5, 6) +
       '<path class="rxd" d="M13 -2h5v4h-5z"/><rect class="rxs" x="17.5" y="-7" width="12" height="14" rx="2"/>'
   });
+  /* bucket elevator, cut open: the chain of buckets moves while it runs, the drive on the head takes the state colour.
+     h = height. Ports: in (the boot, at the left), out (the head, at the right), t, b */
+  R.elevator = o => {
+    const h = o.h || 200,
+      t = -h / 2,
+      b = h / 2;
+    return {
+      box: [-17, t - 13, 25, b + 5],
+      ports: { in: [-16, b - 10], out: [16, t + 12], t: [0, t - 12], b: [0, b + 4], l: [-16, b - 10], r: [16, t + 12] },
+      svg:
+        `<path class="rxd" d="M-14 ${b}h28v4h-28z"/><path class="rx" d="M-12 ${t + 4}H12V${b}H-12Z"/><path class="rxvoid" d="M-8 ${t + 8}H8V${b - 4}H-8Z"/>` +
+        `<path class="rx" d="M-14 ${t - 8}H14L18 ${t + 6}V${t + 18}H12V${t + 4}H-14Z"/><path class="rx" d="M-18 ${b - 16}h6v12h-6z"/>` +
+        `<path class="rx-belt" style="stroke-width:5" d="M-4 ${b - 8}V${t + 12}M4 ${t + 12}V${b - 8}"/><circle class="rxd" cx="0" cy="${t + 10}" r="5"/><circle class="rxd" cx="0" cy="${b - 8}" r="5"/>` +
+        `<rect class="rxs" x="12" y="${t - 12}" width="12" height="13" rx="2"/>`
+    };
+  };
+  /* vibrating screen, cut open: the sloped deck holds back the coarse ash, the fines fall through. The drive takes the state
+     colour. Ports: in (on top, at the left), out (the fines, below), over (the coarse, at the low end) */
+  R.screen = () => ({
+    box: [-37, -17, 45, 21],
+    ports: { in: [-22, -16], out: [0, 20], over: [36, 8], t: [-22, -16], b: [0, 20], r: [36, 8], l: [-36, -4] },
+    svg:
+      '<path class="rx" d="M-27 -16h10v6h-10zM-5 14h10v6h-10z"/><path class="rx" d="M-36 -11H30L36 2V12H12L4 16H-4L-12 12H-36Z"/>' +
+      '<path class="rxvoid" d="M-32 -7H28L32 2V8H-32Z"/><path class="rx-belt" d="M-30 -4L30 4"/><path class="rxe" d="M-30 -1L30 7"/>' +
+      '<path class="rxd" d="M-30 12v6h4v-6zM22 12v6h4v-6z"/><rect class="rxs" x="32" y="-12" width="12" height="12" rx="2"/>'
+  });
   /* circuit breaker: a cubicle with its three poles behind the window and the position window below. The moving contacts
      (rx-ct) sit on the fixed ones when the breaker is closed and lift when it opens. Ports: t / b */
   R.breaker = () => ({

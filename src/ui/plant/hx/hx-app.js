@@ -384,6 +384,7 @@
     MK05: 'HX-condensate' /* CONDENSATE: the heater valves and the polisher flow are on the new page */,
     MK06: 'HX-feedwater' /* FEEDWATER: the heater valves and the deaerator temperature are on the new page */,
     MK07: 'HX-drum-steam' /* BOILER WATER AND STEAM: spray valve positions and the ring header drains are on the new page */,
+    MK14: 'HX-ash' /* ESP AND ASH: the bottom ash train, the coolers and the precipitator panel are on the new page */,
     MK10: 'HX-purge-trip' /* PURGE AND TRIP: every row of DITL-01 / 02 / 03A it had */,
     /* an older page of a system whose temporary page is still needed (hand valves, states the new look has no piece for yet):
        it opens that temporary page until the new page is complete */
