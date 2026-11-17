@@ -399,7 +399,8 @@
 .rx-elem { fill: none; stroke: var(--rx-st2); stroke-width: 4.4; stroke-dasharray: 1.5 4.5; }
 .rx-plate { fill: none; stroke: var(--rx-st2); stroke-width: 1.3; }
 .hx-on > .rx-rise { opacity: 0.85; animation: rx-flow 1.2s steps(20) infinite; }
-.hx-on > .rx-bub circle { animation: rx-plume 1.8s ease-out infinite; }
+/* stepped (2026-11-18): a plume that moves every frame repaints the whole drawing 60 times a second; alone at 6x CPU the gas page went from 59 ~ 73 to 113 ~ 123 frames a second */
+.hx-on > .rx-bub circle { animation: rx-plume 1.8s steps(14) infinite; }
 .hx-on > .rx-bub circle:nth-child(2) { animation-delay: 0.6s; }
 .hx-on > .rx-bub circle:nth-child(3) { animation-delay: 1.2s; }
 .hx-on > .rx-swirl { opacity: 0.9; animation: rx-jet 0.8s steps(14) infinite; }
@@ -418,7 +419,7 @@
 .hx-on > .rx-gas { opacity: 0.85; animation: rx-flow 1.6s steps(20) infinite; }
 .hx-on > .rx-coilf { opacity: 0.9; animation: hx-flow 1.6s steps(32) infinite; }
 .hx-on > .rx-mist { opacity: 1; animation: rx-mist 0.5s steps(8) infinite; }
-.hx-on > .rx-plume circle { animation: rx-plume 2.4s ease-out infinite; }
+.hx-on > .rx-plume circle { animation: rx-plume 2.4s steps(18) infinite; }
 .hx-on > .rx-plume circle:nth-child(2) { animation-delay: 0.8s; }
 .hx-on > .rx-plume circle:nth-child(3) { animation-delay: 1.6s; }
 @keyframes rx-flow { to { stroke-dashoffset: -20; } }
