@@ -621,6 +621,14 @@
           e.textContent = v == null ? '-----' : v ? on : off;
           e.setAttribute('fill', v == null ? C.none : v ? C.run : kind === 'alarm' ? C.dim : C.stop);
         });
+        /* a DITL sheet that ends at an output ADDRESS without an output row (DITL-44: the air valve of the back-up air motor of
+           the air preheater, O.029F): [data-dpo="SHEET|ADDRESS|on text|off text"], the same read as the old page 038 */
+        qa('[data-dpo]').forEach(e => {
+          const [ad, addr, on, off] = e.dataset.dpo.split('|'),
+            v = call(() => window.LS_DOCK.pout(ad, addr), null);
+          e.textContent = v == null ? '-----' : v ? on : off;
+          e.setAttribute('fill', v == null ? C.none : v ? C.run : C.stop);
+        });
         /* 3.2.1 page 10 PURGE AND TRIP: the Y / N of a condition read from the drawing itself.
            [data-dy="SHEET|i or o|row+row|neg"] = input rows (DUI.rowVal) or output rows (DUI.outVal), all 1 (AND); neg = the
            condition is the NOT of the row (e.g. "total air above 25 %" = NOT row 12 TOTAL AIR FLOW < 25% MCR). Y red = made, N green
