@@ -48,6 +48,8 @@
      hmi-mock.js has for it (data-tpb="trip", data-apb="ABC-010|M.054F|M.0222=0", data-dy=..., data-fv=...), so the press and
      the state are the ones of that page. press: true = a push button (a click presses it), else a state only */
   HX.B = (text, hook, o) => Object.assign({ k: 'hook', name: text, hook }, o || {});
+  /* a hand valve of the plant model (a field valve the operator sets): OPEN / CLOSED, a click opens its field faceplate */
+  HX.H = (tag, text, o) => HX.B(text || tag, 'fv:' + tag, Object.assign({ press: true, state: true, w: 104 }, o || {}));
   HX.page = def => {
     def.no = HX.pages.length + 1;
     HX.pages.push(def);
@@ -262,10 +264,11 @@
     if (it.k === 'hook') {
       const t = it.name,
         w = it.w || Math.max(96, t.length * 6.3 + 24),
-        h = it.press ? 30 : it.plain ? 22 : 36;
+        line = !it.plain && (!it.press || it.state),
+        h = line ? 36 : it.plain ? 22 : 30;
       it._p = { l: [x - w / 2, y], r: [x + w / 2, y], t: [x, y - h / 2], b: [x, y + h / 2] };
       it._box = [x - w / 2, y - h / 2, x + w / 2, y + h / 2];
-      return `<g class="hx-hook${it.press ? ' press' : ''}${it.plain ? ' plain' : ''}"${it.plain ? ' data-plain="1"' : ''} data-hook="${esc(it.hook)}" data-label="${esc(t)}"${it.press ? ' data-press="1" tabindex="0" role="button"' : ''} transform="translate(${n1(x)} ${n1(y)})"><rect x="${n1(-w / 2)}" y="${-h / 2}" width="${n1(w)}" height="${h}" rx="5"/><text class="hx-hkl" x="0" y="${it.press || it.plain ? 4 : -3}" text-anchor="middle">${esc(t)}</text>${it.press || it.plain ? '' : '<text class="hx-hks" x="0" y="12" text-anchor="middle" data-hks="1">-----</text>'}</g>`;
+      return `<g class="hx-hook${it.press ? ' press' : ''}${it.plain ? ' plain' : ''}"${it.plain ? ' data-plain="1"' : ''} data-hook="${esc(it.hook)}" data-label="${esc(t)}"${it.press ? ' data-press="1" tabindex="0" role="button"' : ''} transform="translate(${n1(x)} ${n1(y)})"><rect x="${n1(-w / 2)}" y="${-h / 2}" width="${n1(w)}" height="${h}" rx="5"/><text class="hx-hkl" x="0" y="${line ? -3 : 4}" text-anchor="middle">${esc(t)}</text>${!line ? '' : '<text class="hx-hks" x="0" y="12" text-anchor="middle" data-hks="1">-----</text>'}</g>`;
     }
     const sy = ((real && REAL[it.sym]) || SYM[it.sym])(Object.assign({ id: pageId + '-' + it._id }, it)),
       rot = it.rot || 0,

@@ -90,7 +90,8 @@
       art += '<text data-v="' + key + '" data-dp="6"></text>';
     }
     /* push buttons and states (HX.B): the element the page of hmi-mock.js wires, with the same data attribute */
-    for (const h in S.hooks)
+    for (const h in S.hooks) {
+      if (h.slice(0, 3) === 'fv:') continue;
       art +=
         '<g data-hxk="' +
         S.hooks[h].i +
@@ -99,6 +100,7 @@
         '><rect width="1" height="1" fill="none"/><text>' +
         S.hooks[h].label.replace(/[<&]/g, '') +
         '</text></g>';
+    }
     for (const tag in S.valves) {
       const b = S.valves[tag];
       if (!b) continue;
@@ -241,6 +243,11 @@
     },
     flag: () => null,
     hook(h, label) {
+      /* a hand valve of the plant model: the state and the field faceplate of fp-pop.js */
+      if (h.slice(0, 3) === 'fv:') {
+        const o = call(() => LS_FPOP.valveOpen(h.slice(3)), null);
+        return { text: o == null ? '' : o ? 'OPEN' : 'CLOSED', tone: o == null ? '' : o ? 'run' : 'stop' };
+      }
       needHook(h, label);
       const e = S && S.hooks[h] && pq('[data-hxk="' + S.hooks[h].i + '"]');
       if (!e) return null;
@@ -256,6 +263,7 @@
       };
     },
     press(h) {
+      if (h.slice(0, 3) === 'fv:') return void call(() => LS_FPOP.valveTag(h.slice(3)));
       const e = S && S.hooks[h] && pq('[data-hxk="' + S.hooks[h].i + '"]');
       if (e)
         e.dispatchEvent(
@@ -323,10 +331,11 @@
     MK18: 'HX-extraction' /* EXTRACTION AND DRAINS */,
     MK17: 'HX-generator' /* GENERATOR: every state and value it had */,
     MK15: 'HX-sootblowers' /* SOOTBLOWERS: every blower, state and value it had */,
+    CWN: 'HX-sea-water' /* 030 CIRCULATING WATER: pumps, values, hand valves, filter states */,
     MK10: 'HX-purge-trip' /* PURGE AND TRIP: every row of DITL-01 / 02 / 03A it had */,
     /* an older page of a system whose temporary page is still needed (hand valves, states the new look has no piece for yet):
        it opens that temporary page until the new page is complete */
-    SW: 'CWN' /* 030 SEAWATER -> 030 CIRCULATING WATER */,
+    SW: 'HX-sea-water' /* 030 SEAWATER */,
     MU: 'MK02' /* MAKE-UP WATER -> MAKE-UP AND CLOSED COOLING WATER */,
     CW: 'MK02' /* 027 CLOSED COOLING WATER */,
     IA: 'MK03' /* INSTRUMENT & PLANT AIR -> INSTRUMENT AND PLANT AIR */,
