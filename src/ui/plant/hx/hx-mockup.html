@@ -2478,7 +2478,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
               : m;
   /* the state in words; a machine that is a valve or a set of valves (its name is its tag: XV-..., MV-...) is open / closed */
   const stTxt = (s, name) =>
-    /^(XV|MV)-/.test(name || '')
+    /^(XV|MV|V)-/.test(name || '')
       ? s === 'run'
         ? 'Open'
         : s === 'stop'
@@ -4189,7 +4189,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
    transmitters LT-BR1001-1 / -2 / -3 give a raw differential pressure, the drawing corrects it with the drum pressure), the sampling and chemical dosing lines, the soot blowing steam take-off, TT-MS1004 (its value is
    the measured value of the main steam temperature controller on the page). */
 (function () {
-  const { V, E, C, X, L, page } = HX;
+  const { V, E, M, C, X, L, page } = HX;
   const K = 'kg/cm²';
   const at = (it, x, y, o) => Object.assign(it, { x, y }, o || {});
   const W_ST = 6,
@@ -4279,6 +4279,10 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
           { id: 't11b', lab: 'b' }
         ),
         at(L('feedwater', 'Feedwater', { back: true }), 62, 250, { id: 'fw1' }),
+        at(M('valve', 'V-BD1005 ~ V-BD1021', 'Lower ring header drains', [], { kind: 'manual', wrap: 14 }), 240, 930, {
+          id: 'lhd',
+          lab: 't'
+        }),
         at(L('reheat-steam', 'To reheater'), 455, 436, { id: 'rhl' }),
         at(C('TICBR1140', 'Superheater 2 outlet temperature', { sym: 'ctl', unit: '°C', pvdp: 0, wrap: 34 }), 150, 96, {
           id: 'tm1',
@@ -4352,6 +4356,15 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         { med: 'drain', w: W_SM, pts: ['cbd.r', [926, 150]], to: 'flash tank', flow: 'x:MV-BD1002' },
         { med: 'drain', w: W_SM, pts: [[810, DY], [810, 196], 'mbd.l'], flow: 'x:MV-BD1001', arrow: false },
         { med: 'drain', w: W_SM, pts: ['mbd.r', [1130, 196]], to: 'blowdown tank', flow: 'x:MV-BD1001' },
+        /* lower ring header drains: manual valves at the bottom of the furnace to the blowdown tank (PD-019 Rev D) */
+        {
+          med: 'drain',
+          w: W_SM,
+          pts: [[FX - 40, FY + 316 * FS], [FX - 40, 930], [300, 930], 'lhd.r'],
+          flow: 'm:V-BD1005 ~ V-BD1021',
+          arrow: false
+        },
+        { med: 'drain', w: W_SM, pts: ['lhd.l', [150, 930]], to: 'blowdown tank', flow: 'm:V-BD1005 ~ V-BD1021' },
         /* spray 1 water */
         { med: 'water', w: W_WT, pts: ['fw1.b', [62, 356], 'x11a.l'], flow: SP1, arrow: false },
         { med: 'water', w: W_WT, pts: ['x11a.r', 't11a.l'], flow: SP1 },
@@ -4423,6 +4436,8 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         { x: 1600, y: MSY, side: 'b', label: 'Pressure', key: 'PT-MS1002', unit: K, tag: 'PT-MS1002' }
       ],
       texts: [
+        { x: 196, y: 406, s: 'Position', key: 'ZT-FW1110-1', unit: '%' },
+        { x: 1548, y: 766, s: 'Position', key: 'ZT-FW1120-1', unit: '%' },
         { x: DX, y: 262, s: 'Drum', cls: 'hx-name', anchor: 'middle' },
         { x: 474, y: 146, s: 'Pressure', key: 'PT-BR1001-1', unit: K, anchor: 'end' },
         { x: 474, y: 162, s: 'Level 1', key: 'ABC-010|LIBR10011.PV', unit: 'mm', dp: 0, anchor: 'end' },
@@ -4762,6 +4777,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         { x: 520, y: 246, s: 'Level 2', key: 'LT-CD1104-2', unit: 'mm', dp: 0 },
         { x: 520, y: 262, s: 'Level 3', key: 'LT-CD1104-3', unit: 'mm', dp: 0 },
         { x: 520, y: 278, s: 'Pressure', key: 'PT-CD1104', unit: K },
+        { x: 520, y: 294, s: 'Temperature', key: 'TTCD1104', unit: '°C', dp: 0 },
         { x: DRX + 12, y: H1Y + 64, s: 'High pressure heater 1', cls: 'hx-name' },
         { x: DRX + 12, y: H2Y + 64, s: 'High pressure heater 2', cls: 'hx-name' },
         { x: 1380, y: 660, s: 'Level 1', key: 'LT-HD1105-1', unit: 'mm', dp: 0 },
@@ -4798,8 +4814,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
      (XV-CD1123, XV-CD1125) belong to the Auxiliary steam page, the low pressure bypass spray to the Reheat page;
    - the extraction steam and the drains of the low pressure heaters are not drawn (Extraction steam page).
    Left out on purpose, all without a signal in hx-registry.js: the other hand valves, vents, drains, the strainers, the level switches
-   of the hotwell, the chemical dosing and sampling lines, the seal water lines. FT-CD1121 (polisher bypass flow) is the
-   measured value in the faceplate of its valve. */
+   of the hotwell, the chemical dosing and sampling lines, the seal water lines. */
 (function () {
   const { V, E, M, C, X, L, page } = HX;
   const K = 'kg/cm²';
@@ -5116,7 +5131,8 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         { x: HX1 + 14, y: HAY - 46, s: 'Low pressure heater 1', cls: 'hx-name', anchor: 'middle' },
         { x: HX1 + 14, y: HBY - 46, s: 'Low pressure heater 2', cls: 'hx-name', anchor: 'middle' },
         { x: HX1 + 14, y: HCY - 46, s: 'Low pressure heater 3', cls: 'hx-name', anchor: 'middle' },
-        { x: 1000, y: 478, s: 'from polisher', cls: 'hx-end', anchor: 'middle' }
+        { x: 1000, y: 478, s: 'from polisher', cls: 'hx-end', anchor: 'middle' },
+        { x: 900, y: 508, s: 'Polisher flow', key: 'FTCD1121', unit: 't/h', anchor: 'middle' }
       ]
     }
   });
@@ -5940,6 +5956,15 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
       ],
       taps: [],
       texts: [
+        /* DITL-776: with CLOSE selected the valves close 300 s after SYSTEM ON drops (TR328, line purge), 180 s after an
+           emergency stop or a master fuel trip (TR329) (Jennie 2026-11-18) */
+        {
+          x: 1736,
+          y: 58,
+          s: 'After CLOSE the sand valves close 5 minutes after the system stops (line purge).',
+          cls: 'hx-note',
+          anchor: 'end'
+        },
         {
           x: 24,
           y: 40,

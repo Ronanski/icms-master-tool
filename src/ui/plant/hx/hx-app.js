@@ -203,14 +203,16 @@
       const t = e.textContent || '',
         /* a system that has no motor state but a state row on its drawing (limestone filling cycle, sand system: registry
            bind.d + bind.df.st, the row its faceplate reads): 1 = on */
+        /* a field item without a logic row: the lower ring header drains are a state of the plant model (hmi-mock-ms.js LHD) */
+        FLD = name === 'V-BD1005 ~ V-BD1021' ? call(() => (AN.fieldState().lhd ? 1 : 0), null) : null,
         BD = R.machines[name] && R.machines[name].bind,
         DFV = BD && BD.df && BD.d && BD.df.st != null ? call(() => window.LS_DOCK.dout(BD.d, BD.df.st), null) : null,
         md = (pq('[data-hxd="' + name + '"]') || {}).textContent || '',
         y = (pq('[data-hxy="' + name + '"]') || {}).textContent || '';
       return {
         st:
-          DFV != null
-            ? DFV === 1
+          (FLD != null ? FLD : DFV) != null
+            ? (FLD != null ? FLD : DFV) === 1
               ? 'run'
               : 'stop'
             : t === 'RUNNING'
@@ -379,6 +381,9 @@
     MK13: 'HX-turbine' /* TURBINE START: valves, breakers, step cards with their check items, push buttons, first out */,
     MK11: 'HX-oil-burners' /* DIESEL OIL AND BURNERS: the six field valves, the burner states and all values are on the new page */,
     MK12: 'HX-coal' /* COAL, LIMESTONE AND SAND: feeders on the Coal page, the two trains on the Limestone and sand page */,
+    MK05: 'HX-condensate' /* CONDENSATE: the heater valves and the polisher flow are on the new page */,
+    MK06: 'HX-feedwater' /* FEEDWATER: the heater valves and the deaerator temperature are on the new page */,
+    MK07: 'HX-drum-steam' /* BOILER WATER AND STEAM: spray valve positions and the ring header drains are on the new page */,
     MK10: 'HX-purge-trip' /* PURGE AND TRIP: every row of DITL-01 / 02 / 03A it had */,
     /* an older page of a system whose temporary page is still needed (hand valves, states the new look has no piece for yet):
        it opens that temporary page until the new page is complete */

@@ -317,6 +317,7 @@
         { x: 520, y: 246, s: 'Level 2', key: 'LT-CD1104-2', unit: 'mm', dp: 0 },
         { x: 520, y: 262, s: 'Level 3', key: 'LT-CD1104-3', unit: 'mm', dp: 0 },
         { x: 520, y: 278, s: 'Pressure', key: 'PT-CD1104', unit: K },
+        { x: 520, y: 294, s: 'Temperature', key: 'TTCD1104', unit: '°C', dp: 0 },
         { x: DRX + 12, y: H1Y + 64, s: 'High pressure heater 1', cls: 'hx-name' },
         { x: DRX + 12, y: H2Y + 64, s: 'High pressure heater 2', cls: 'hx-name' },
         { x: 1380, y: 660, s: 'Level 1', key: 'LT-HD1105-1', unit: 'mm', dp: 0 },

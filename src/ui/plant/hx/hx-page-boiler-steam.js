@@ -31,7 +31,7 @@
    transmitters LT-BR1001-1 / -2 / -3 give a raw differential pressure, the drawing corrects it with the drum pressure), the sampling and chemical dosing lines, the soot blowing steam take-off, TT-MS1004 (its value is
    the measured value of the main steam temperature controller on the page). */
 (function () {
-  const { V, E, C, X, L, page } = HX;
+  const { V, E, M, C, X, L, page } = HX;
   const K = 'kg/cm²';
   const at = (it, x, y, o) => Object.assign(it, { x, y }, o || {});
   const W_ST = 6,
@@ -121,6 +121,10 @@
           { id: 't11b', lab: 'b' }
         ),
         at(L('feedwater', 'Feedwater', { back: true }), 62, 250, { id: 'fw1' }),
+        at(M('valve', 'V-BD1005 ~ V-BD1021', 'Lower ring header drains', [], { kind: 'manual', wrap: 14 }), 240, 930, {
+          id: 'lhd',
+          lab: 't'
+        }),
         at(L('reheat-steam', 'To reheater'), 455, 436, { id: 'rhl' }),
         at(C('TICBR1140', 'Superheater 2 outlet temperature', { sym: 'ctl', unit: '°C', pvdp: 0, wrap: 34 }), 150, 96, {
           id: 'tm1',
@@ -194,6 +198,15 @@
         { med: 'drain', w: W_SM, pts: ['cbd.r', [926, 150]], to: 'flash tank', flow: 'x:MV-BD1002' },
         { med: 'drain', w: W_SM, pts: [[810, DY], [810, 196], 'mbd.l'], flow: 'x:MV-BD1001', arrow: false },
         { med: 'drain', w: W_SM, pts: ['mbd.r', [1130, 196]], to: 'blowdown tank', flow: 'x:MV-BD1001' },
+        /* lower ring header drains: manual valves at the bottom of the furnace to the blowdown tank (PD-019 Rev D) */
+        {
+          med: 'drain',
+          w: W_SM,
+          pts: [[FX - 40, FY + 316 * FS], [FX - 40, 930], [300, 930], 'lhd.r'],
+          flow: 'm:V-BD1005 ~ V-BD1021',
+          arrow: false
+        },
+        { med: 'drain', w: W_SM, pts: ['lhd.l', [150, 930]], to: 'blowdown tank', flow: 'm:V-BD1005 ~ V-BD1021' },
         /* spray 1 water */
         { med: 'water', w: W_WT, pts: ['fw1.b', [62, 356], 'x11a.l'], flow: SP1, arrow: false },
         { med: 'water', w: W_WT, pts: ['x11a.r', 't11a.l'], flow: SP1 },
@@ -265,6 +278,8 @@
         { x: 1600, y: MSY, side: 'b', label: 'Pressure', key: 'PT-MS1002', unit: K, tag: 'PT-MS1002' }
       ],
       texts: [
+        { x: 196, y: 406, s: 'Position', key: 'ZT-FW1110-1', unit: '%' },
+        { x: 1548, y: 766, s: 'Position', key: 'ZT-FW1120-1', unit: '%' },
         { x: DX, y: 262, s: 'Drum', cls: 'hx-name', anchor: 'middle' },
         { x: 474, y: 146, s: 'Pressure', key: 'PT-BR1001-1', unit: K, anchor: 'end' },
         { x: 474, y: 162, s: 'Level 1', key: 'ABC-010|LIBR10011.PV', unit: 'mm', dp: 0, anchor: 'end' },
