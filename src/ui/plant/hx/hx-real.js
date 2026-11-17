@@ -280,6 +280,18 @@
       bank(18, 198, 452, 3);
     const fsh = bank(122, 198, 66, 4) + bank(122, 198, 110, 4) + bank(122, 198, 154, 4);
     const gas = xs => xs.map(x => `M${x} 10V344`).join('');
+    /* focus 'sh' (the superheater page): the finishing superheater as ONE tube from its inlet header (below) to its outlet header
+       (on top), both at the rear wall: lower, intermediate and upper assembly (K1AU3-PD-019); the reheater is then a bank */
+    const sh = o.focus === 'sh',
+      fcoil =
+        'M234 154' +
+        run(122, 198, 154, 4, false) +
+        'A7.75 7.75 0 0 0 198 110' +
+        run(122, 198, 110, 4, false) +
+        'A7.75 7.75 0 0 0 198 66' +
+        run(122, 198, 66, 4, false) +
+        'H234',
+      rbank = bank(18, 94, 78, 5) + bank(18, 94, 136, 5) + bank(18, 94, 202, 5) + bank(18, 94, 260, 5);
     const svg =
       /* casing: tube walls, roof with the gas inlet, hopper and outlet */
       '<path class="rx" d="M16 0V-50h6V0zM70 0V-50h6V0z"/><path class="rxv" d="M0 0H216V466L146 496V512H70V496L0 466Z"/>' +
@@ -294,12 +306,17 @@
         '<path class="rx-gas" d="M34 -48V6M46 -48V6M58 -48V6M60 366V470M108 366V508M156 366V470"/>'
       ) +
       /* the other banks of the pass: economizers (water) and finishing superheater (steam), as background */
-      `<path class="rx-bank" style="--m:var(--hx-m-water)" d="${eco}"/><path class="rx-bank" style="--m:var(--hx-m-steam)" d="${fsh}"/>` +
-      /* the reheater coils and their headers */
-      `<path class="rx-coile" d="${coil}"/><path class="rx-coil" d="${coil}"/>` +
-      live(o.steam, `<path class="rx-coilf" d="${coil}"/>`) +
-      '<circle class="rx" cx="-18" cy="260" r="8.6"/><circle class="rxm" cx="-18" cy="260" r="4.4"/><circle class="rx" cx="-18" cy="40" r="8.6"/><circle class="rxm" cx="-18" cy="40" r="4.4"/>' +
-      '';
+      `<path class="rx-bank" style="--m:var(--hx-m-water)" d="${eco}"/>` +
+      (sh
+        ? `<path class="rx-bank" style="--m:var(--hx-m-reheat)" d="${rbank}"/>` +
+          `<path class="rx-coile" d="${fcoil}"/><path class="rx-coil" d="${fcoil}"/>` +
+          live(o.steam, `<path class="rx-coilf" d="${fcoil}"/>`) +
+          '<circle class="rx" cx="234" cy="154" r="8.6"/><circle class="rxm" cx="234" cy="154" r="4.4"/><circle class="rx" cx="234" cy="37.5" r="8.6"/><circle class="rxm" cx="234" cy="37.5" r="4.4"/>'
+        : `<path class="rx-bank" style="--m:var(--hx-m-steam)" d="${fsh}"/>` +
+          /* the reheater coils and their headers */
+          `<path class="rx-coile" d="${coil}"/><path class="rx-coil" d="${coil}"/>` +
+          live(o.steam, `<path class="rx-coilf" d="${coil}"/>`) +
+          '<circle class="rx" cx="-18" cy="260" r="8.6"/><circle class="rxm" cx="-18" cy="260" r="4.4"/><circle class="rx" cx="-18" cy="40" r="8.6"/><circle class="rxm" cx="-18" cy="40" r="4.4"/>');
     /* names inside (the core writes them, so they stay readable when the piece is mirrored) */
     const words = [
       { x: 56, y: 24, s: 'Reheater pass', cls: 'rx-in', size: 8 },
@@ -313,8 +330,10 @@
       { x: 108, y: 446, s: 'Economizer 1', cls: 'rx-in2', size: 8.8 }
     ];
     return {
-      box: [-28, -50, 217, 512],
-      ports: { rin: [-26.6, 260], rout: [-26.6, 40], gin: [46, -50], gout: [108, 512], l: [0, 150], r: [216, 150] },
+      box: sh ? [-1, -50, 244, 512] : [-28, -50, 217, 512],
+      ports: sh
+        ? { shin: [242.6, 154], shout: [242.6, 37.5], gin: [46, -50], gout: [108, 512], l: [0, 150], r: [216, 150] }
+        : { rin: [-26.6, 260], rout: [-26.6, 40], gin: [46, -50], gout: [108, 512], l: [0, 150], r: [216, 150] },
       svg,
       words
     };
@@ -535,7 +554,8 @@
   /* the furnace, cut open; front wall on the left, the outlet to the cyclone on the upper right. fire = the rule that shows
      the fire (bed bubbling, solids rising). Ports: out (to the cyclone), ret (solids back from the seal pot), coal / lime
      (front wall, low), sa1 / sa2 (secondary air, front / rear), pa (primary air into the wind box), ash1 / ash2 (bed drains),
-     bur (start-up burner, front), roof */
+     bur (start-up burner, front), roof, sh1i / sh1o / sh2i / sh2o (headers of superheater panel No. 1 and
+     No. 2 at the front wall), dn1 / dn2 (downcomer and riser at the roof, under the drum) */
   R.furnace = o => {
     const inner = 'M-54 6H54V234L29 314H-29L-54 234Z';
     return {
@@ -552,6 +572,12 @@
         ash2: [20, 350],
         bur: [-56, 238],
         roof: [0, 0],
+        sh1i: [-63, 16],
+        sh1o: [-63, 40],
+        sh2i: [-63, 104],
+        sh2o: [-63, 150],
+        dn1: [-20, 0],
+        dn2: [20, 0],
         l: [-60, 120],
         r: [60, 120]
       },
@@ -567,7 +593,9 @@
           o.fire,
           '<g class="rx-bub"><circle cx="-18" cy="300" r="3.2"/><circle cx="2" cy="304" r="2.6"/><circle cx="19" cy="299" r="3"/></g>'
         ) +
-        '<path class="rx-bank" style="--m:var(--hx-m-steam)" d="M-46 6V86a4.5 4.5 0 0 0 9 0V6M-29 6V86a4.5 4.5 0 0 0 9 0V6M-12 6V86a4.5 4.5 0 0 0 9 0V6"/>' +
+        /* superheater panel No. 1 (above) and No. 2: each a loop from its inlet header to its outlet header at the front wall */
+        '<path class="rx-bank" style="--m:var(--hx-m-steam)" d="M-60 16H-16a12 12 0 0 1 0 24H-60M-60 104H-16a23 23 0 0 1 0 46H-60"/>' +
+        '<path class="rxd" d="M-63 12h5v8h-5zM-63 36h5v8h-5zM-63 100h5v8h-5zM-63 146h5v8h-5z"/>' +
         '<path class="rxtray" d="M-29 316.5H29"/><path class="rxe" d="M-51 12V230M51 76V230"/>'
     };
   };
