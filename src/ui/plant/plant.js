@@ -36,7 +36,15 @@
     ash: '#8a8f94',
     sig: '#6f8191'
   };
-  const HDR = { MSP: 'ABC-001C|AI0131', MST: 'pv:TICMS1004', MSF: 'ABC-001C|SI0230', RHP: 'pv:PICHR1003', RHT: 'pv:TICHR1002', COAL: 'pv:FIC-CM', PWR: 'ABC-001C|AI0419' };
+  const HDR = {
+    MSP: 'ABC-001C|AI0131',
+    MST: 'pv:TICMS1004',
+    MSF: 'ABC-001C|SI0230',
+    RHP: 'pv:PICHR1003',
+    RHT: 'pv:TICHR1002',
+    COAL: 'pv:FIC-CM',
+    PWR: 'ABC-001C|AI0419'
+  };
   const SYS = () => window.PLANT_SYS || [],
     VALS = () => window.PLANT_VALS || [];
   let ws = null,
@@ -58,7 +66,10 @@
      ctl   : the faceplate of the controller (PV, SV, MV, A / M / R);
      valve : the valve tag written on the drawing next to a control valve (its position demand), else the AO address of the I/O list.
      Not linked = the snapshot value, shown grey. ---- */
-  const N = t => String(t || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const N = t =>
+    String(t || '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '');
   let IX = null,
     liveOn = true,
     LV = [],
@@ -100,7 +111,8 @@
         const t = l && l.t ? l.t.trim() : '';
         if (!t) return;
         if (/\.PV$/.test(t) && !pv.has(N(t.slice(0, -3)))) pv.set(N(t.slice(0, -3)), { sh: sh.name, n });
-        if ((/^(AI|AO)\d{4}$/.test(t) || /^[IOMB]\.[0-9A-F]{4}$/.test(t)) && !lab.has(sh.stn + '|' + t)) lab.set(sh.stn + '|' + t, { sh: sh.name, n });
+        if ((/^(AI|AO)\d{4}$/.test(t) || /^[IOMB]\.[0-9A-F]{4}$/.test(t)) && !lab.has(sh.stn + '|' + t))
+          lab.set(sh.stn + '|' + t, { sh: sh.name, n });
       });
       try {
         for (const c of A.hmiCtrls(S) || []) if (!ctl.has(c.tag)) ctl.set(c.tag, { sh: sh.name, c });
@@ -162,7 +174,13 @@
             const k = N(m[1]);
             if (!run.has(k)) run.set(k, []);
             /* the equipment bit itself first ("(BC FROM S3)", remark "STATION WIRING"), not a pulse or a timer made from it (M.020E) */
-            run.get(k).push({ st: +st, a, p: /BC FROM|STATION WIRING/i.test(String(r.d || '') + ' ' + String(r.r || '')) ? 0 : 1 });
+            run
+              .get(k)
+              .push({
+                st: +st,
+                a,
+                p: /BC FROM|STATION WIRING/i.test(String(r.d || '') + ' ' + String(r.r || '')) ? 0 : 1
+              });
             run.get(k).sort((x, y) => x.p - y.p);
           }
         }
@@ -172,7 +190,9 @@
   }
   /* the transmitter tag of an indicator tag: TIBR11302 -> TTBR11302 / TEBR11302; FIQMS1031 -> FTMS1031 */
   const tx = k => {
-    const m = /^(D?P|T|F|L|A|S|E|Z|W|H|J|I)I(?:Q|C)?(.*)$/.exec(k), /* R9 #60: IIF1056 -> ITF1056 (IT-F1056, AI0453 IDF current) */
+    const m = /^(D?P|T|F|L|A|S|E|Z|W|H|J|I)I(?:Q|C)?(.*)$/.exec(
+        k
+      ) /* R9 #60: IIF1056 -> ITF1056 (IT-F1056, AI0453 IDF current) */,
       /* 3.2.0 (HMI 007, 2026-10-27): an area code that starts with C (PICR1006 = PT-CR1006, TICD1101) is not the C of a
          controller: also try with the C kept (before, PICR1006 found nothing) */
       n = /^(D?P|T|F|L|A|S|E|Z|W|H|J)I(C.*)$/.exec(k);
@@ -200,19 +220,28 @@
     /* R9 #87: 'ditl:SHEET' = the run state of the motor drawing of that DITL sheet (DITL-43 air preheater: its inverter panel, no
        memory bit or running DI in the lists) */
     if (/^ditl:DITL-\w+$/.test(ref)) return { k: 'ditl', d: ref.slice(5), how: 'run state of ' + ref.slice(5) };
-    if (/^unit:\w+$/.test(ref)) return { k: 'unit', f: ref.slice(5), how: 'plant model (unit.js ' + ref.slice(5) + ')' };
+    if (/^unit:\w+$/.test(ref))
+      return { k: 'unit', f: ref.slice(5), how: 'plant model (unit.js ' + ref.slice(5) + ')' };
     let m = /^(pv|mv|sv):(.+)$/.exec(ref);
     if (m) {
       const c = IX.ctl.get(m[2]),
         b = IX.man.get(m[2]);
       /* R9 #60: 'sv:TAG' = the set value of a controller (the R-SV of the SAF / PAF flow and of the O2 control on 007) */
-      if (c && m[1] === 'sv') return c.c.q && c.c.q.sv != null ? { k: 'net', how: 'SV of ' + m[2], sh: c.sh, n: c.c.q.sv } : null;
-      if (c) return { k: 'net', how: m[1].toUpperCase() + ' of ' + m[2], sh: c.sh, n: m[1] === 'pv' ? c.c.q.pv : c.c.out };
+      if (c && m[1] === 'sv')
+        return c.c.q && c.c.q.sv != null ? { k: 'net', how: 'SV of ' + m[2], sh: c.sh, n: c.c.q.sv } : null;
+      if (c)
+        return { k: 'net', how: m[1].toUpperCase() + ' of ' + m[2], sh: c.sh, n: m[1] === 'pv' ? c.c.q.pv : c.c.out };
       if (m[1] === 'sv') return null;
       if (b) {
         const S = shOf(b.sh).S,
           pvn = IX.pv.get(N(m[2]));
-        return m[1] === 'mv' ? { k: 'net', how: 'MV of ' + m[2], sh: b.sh, n: b.b.o[0] } : pvn ? { k: 'net', how: 'PV of ' + m[2], sh: pvn.sh, n: pvn.n } : b.b.svI >= 0 && S ? { k: 'net', how: 'set input of ' + m[2], sh: b.sh, n: b.b.i[b.b.svI] } : null;
+        return m[1] === 'mv'
+          ? { k: 'net', how: 'MV of ' + m[2], sh: b.sh, n: b.b.o[0] }
+          : pvn
+            ? { k: 'net', how: 'PV of ' + m[2], sh: pvn.sh, n: pvn.n }
+            : b.b.svI >= 0 && S
+              ? { k: 'net', how: 'set input of ' + m[2], sh: b.sh, n: b.b.i[b.b.svI] }
+              : null;
       }
       return null;
     }
@@ -223,8 +252,22 @@
     if (!S) return null;
     const want = m[2].trim();
     let n = S.lab.findIndex(x => x && String(x.t).trim() === want);
-    if (n < 0) for (let i = 0; i < S.rt.v.length; i++) if (((window.AN && AN.nm && AN.nm(S, i)) || '').trim() === want) { n = i; break; }
-    return n < 0 ? null : { k: 'net', how: want + ' ' + m[1], sh: m[1], n, a: /^[IOMB]\.[0-9A-F]{4}$|^A[IO]\d{4}$/.test(want) ? want : null, st: sh.stn };
+    if (n < 0)
+      for (let i = 0; i < S.rt.v.length; i++)
+        if (((window.AN && AN.nm && AN.nm(S, i)) || '').trim() === want) {
+          n = i;
+          break;
+        }
+    return n < 0
+      ? null
+      : {
+          k: 'net',
+          how: want + ' ' + m[1],
+          sh: m[1],
+          n,
+          a: /^[IOMB]\.[0-9A-F]{4}$|^A[IO]\d{4}$/.test(want) ? want : null,
+          st: sh.stn
+        };
   }
   function resolve(it) {
     if (!IX) return null;
@@ -251,44 +294,77 @@
          shows that transmitter as its PV */
       const S0 = shOf(b.sh) && shOf(b.sh).S,
         ain = S0 ? (b.b.i || []).find(n => (S0.drv[n] || []).some(x => x.k === 'AI')) : undefined;
-      return { k: 'man', sh: b.sh, b: b.b, how: 'MAN station', pv: IX.pv.get(k) || (ain != null ? { sh: b.sh, n: ain } : null) };
+      return {
+        k: 'man',
+        sh: b.sh,
+        b: b.b,
+        how: 'MAN station',
+        pv: IX.pv.get(k) || (ain != null ? { sh: b.sh, n: ain } : null)
+      };
     }
     if (it.t === 'val') {
       /* R9 #60: "TIFA1086/7 AVERAGE" = the average of the two transmitters (TIFA1086, TIFA1087), each linked as a value */
       if (/AVERAGE/i.test(it.v || '')) {
         const mm = /^([A-Z]+?)(\d+)\/(\d+)$/.exec(String(it.tag)),
-          L2 = mm ? [mm[1] + mm[2], mm[1] + mm[2].slice(0, mm[2].length - mm[3].length) + mm[3]].map(x => resolve({ t: 'val', tag: x })) : [];
-        return L2.length === 2 && L2.every(x => x && x.k === 'net') ? { k: 'avg', L: L2, how: 'average of ' + it.tag } : null;
+          L2 = mm
+            ? [mm[1] + mm[2], mm[1] + mm[2].slice(0, mm[2].length - mm[3].length) + mm[3]].map(x =>
+                resolve({ t: 'val', tag: x })
+              )
+            : [];
+        return L2.length === 2 && L2.every(x => x && x.k === 'net')
+          ? { k: 'avg', L: L2, how: 'average of ' + it.tag }
+          : null;
       }
       /* 2.2.0-beta.14: a state of the unit model that has no DCS transmitter (bed temperature, water temperature, oil of the burners) */
-      if (/^UNIT\./.test(String(it.tag))) return { k: 'unit', f: String(it.tag).slice(5), how: 'plant model (unit.js)' };
+      if (/^UNIT\./.test(String(it.tag)))
+        return { k: 'unit', f: String(it.tag).slice(5), how: 'plant model (unit.js)' };
       if (IX.pv.has(k)) return Object.assign({ k: 'net', how: it.tag + '.PV' }, IX.pv.get(k));
       for (const c of [k].concat(tx(k))) {
         if (IX.ai.has(c)) return Object.assign({ k: 'net', how: 'AI of ' + c }, IX.ai.get(c));
         const r = IX.io.get(c);
-        if (r && IX.lab.has(r.st + '|' + r.a)) return Object.assign({ k: 'net', how: r.a + ' STN10' + r.st, a: r.a, st: r.st }, IX.lab.get(r.st + '|' + r.a));
+        if (r && IX.lab.has(r.st + '|' + r.a))
+          return Object.assign(
+            { k: 'net', how: r.a + ' STN10' + r.st, a: r.a, st: r.st },
+            IX.lab.get(r.st + '|' + r.a)
+          );
       }
       return null;
     }
     if (it.t === 'pump' || it.t === 'fan' || it.t === 'motor') {
       /* the run state: the memory bit the ABC sheets use (memory list "... RUNNING"), else the running DI of the I/O list (MIR-P1115A) */
-      const words = String(it.tag).toUpperCase().split(/\s+/).filter(w => !/^[PF]-?\d{4}/.test(w)),
+      const words = String(it.tag)
+          .toUpperCase()
+          .split(/\s+/)
+          .filter(w => !/^[PF]-?\d{4}/.test(w)),
         full = words.join(' '),
         sw = /^(.+)-([A-Z])$/.exec(full),
         cands = [N(full)].concat(sw ? [N(sw[2] + '-' + sw[1])] : []);
       for (const c of cands)
-        for (const x of IX.run.get(c) || []) if (IX.lab.has(x.st + '|' + x.a)) return Object.assign({ k: 'dig', how: x.a + ' STN10' + x.st, a: x.a, st: x.st }, IX.lab.get(x.st + '|' + x.a));
+        for (const x of IX.run.get(c) || [])
+          if (IX.lab.has(x.st + '|' + x.a))
+            return Object.assign(
+              { k: 'dig', how: x.a + ' STN10' + x.st, a: x.a, st: x.st },
+              IX.lab.get(x.st + '|' + x.a)
+            );
       const eq = /([PF])-?(\d{4}[A-Z]?\d?)/.exec(String(it.tag).toUpperCase());
       const r = eq && IX.io.get('MIR' + eq[1] + eq[2]);
-      if (r && IX.lab.has(r.st + '|' + r.a)) return Object.assign({ k: 'dig', how: r.a + ' STN10' + r.st, a: r.a, st: r.st }, IX.lab.get(r.st + '|' + r.a));
+      if (r && IX.lab.has(r.st + '|' + r.a))
+        return Object.assign({ k: 'dig', how: r.a + ' STN10' + r.st, a: r.a, st: r.st }, IX.lab.get(r.st + '|' + r.a));
       return null;
     }
     if (it.t === 'mov') {
       /* open / close limit switches of the I/O list: ZSO-BR1391 / ZSC-BR1391 for MVBR1391 */
       const rest = k.slice(2);
-      for (const [pre, open] of [['ZSO', 1], ['ZSC', 0]]) {
+      for (const [pre, open] of [
+        ['ZSO', 1],
+        ['ZSC', 0]
+      ]) {
         const r = IX.io.get(pre + rest);
-        if (r && IX.lab.has(r.st + '|' + r.a)) return Object.assign({ k: 'dig', open, how: r.a + ' STN10' + r.st, a: r.a, st: r.st }, IX.lab.get(r.st + '|' + r.a));
+        if (r && IX.lab.has(r.st + '|' + r.a))
+          return Object.assign(
+            { k: 'dig', open, how: r.a + ' STN10' + r.st, a: r.a, st: r.st },
+            IX.lab.get(r.st + '|' + r.a)
+          );
       }
       return null;
     }
@@ -300,7 +376,8 @@
       if (IX.vt.has(k)) return Object.assign({ k: 'net', how: 'valve on the drawing', cc }, IX.vt.get(k));
       if (cc) return { k: 'mv', sh: cc.sh, c: cc.c, how: 'MV of ' + vc };
       const r = IX.io.get(k);
-      if (r && IX.lab.has(r.st + '|' + r.a)) return Object.assign({ k: 'net', how: r.a + ' STN10' + r.st, a: r.a, st: r.st }, IX.lab.get(r.st + '|' + r.a));
+      if (r && IX.lab.has(r.st + '|' + r.a))
+        return Object.assign({ k: 'net', how: r.a + ' STN10' + r.st, a: r.a, st: r.st }, IX.lab.get(r.st + '|' + r.a));
     }
     return null;
   }
@@ -352,11 +429,33 @@
           o.set({ pv, sv: si != null ? v[si] : NaN, mv: v[b.o[0]], m: auto ? 'A' : 'M' });
         } else if (r.k === 'flag') {
           const bits = r.L.map(x => netVal(x) > 0.5);
-          o.set({ v: r.op === 'nor' ? (bits.every(b => !b) ? 1 : 0) : r.op === 'and' ? (bits.every(b => b) ? 1 : 0) : bits.some(b => b) ? 1 : 0, r });
+          o.set({
+            v:
+              r.op === 'nor'
+                ? bits.every(b => !b)
+                  ? 1
+                  : 0
+                : r.op === 'and'
+                  ? bits.every(b => b)
+                    ? 1
+                    : 0
+                  : bits.some(b => b)
+                    ? 1
+                    : 0,
+            r
+          });
         } else if (r.k === 'ditl') {
           const ds = window.LS_DOCK && LS_DOCK.dOf ? LS_DOCK.dOf(r.d) : null,
             m = ds && window.lsAlarms ? lsAlarms.motState(ds) : null;
-          o.set(m ? { v: m === 'RUN' ? 1 : 0, r, tr: m === 'TRIP' || (m !== 'RUN' && !!(lsAlarms.ntTrip && lsAlarms.ntTrip(ds))) } : null);
+          o.set(
+            m
+              ? {
+                  v: m === 'RUN' ? 1 : 0,
+                  r,
+                  tr: m === 'TRIP' || (m !== 'RUN' && !!(lsAlarms.ntTrip && lsAlarms.ntTrip(ds)))
+                }
+              : null
+          );
         } else if (r.k === 'unit') {
           const U = window.AN && AN.unit;
           o.set(U && U.on && isFinite(U[r.f]) ? { v: +U[r.f], r } : null);
@@ -369,7 +468,8 @@
         } else if (r.cc) {
           let x = netVal(r);
           const mv = shOf(r.cc.sh).S.rt.v[r.cc.c.out];
-          if (isFinite(x) && isFinite(mv) && Math.abs(x - (100 - mv)) < 0.5 && Math.abs(x - mv) > 1) x = 100 - x; /* fail-open valve */
+          if (isFinite(x) && isFinite(mv) && Math.abs(x - (100 - mv)) < 0.5 && Math.abs(x - mv) > 1)
+            x = 100 - x; /* fail-open valve */
           o.set({ v: x, r });
         } else {
           /* 3.2.0 retest #34: a pump / fan / motor whose drawing is in TRIP (its "... TRIP · CRT (ANN)" output) flashes */
@@ -407,12 +507,16 @@
     const x = it.x,
       y = it.y,
       s = 9,
-      p = it.r === 90 ? `${x - s},${y - s} ${x + s},${y - s} ${x - s},${y + s} ${x + s},${y + s}` : `${x - s},${y - s} ${x - s},${y + s} ${x + s},${y - s} ${x + s},${y + s}`;
+      p =
+        it.r === 90
+          ? `${x - s},${y - s} ${x + s},${y - s} ${x - s},${y + s} ${x + s},${y + s}`
+          : `${x - s},${y - s} ${x - s},${y + s} ${x + s},${y - s} ${x + s},${y + s}`;
     g.append(S_('polygon', { points: p, fill: c, stroke: '#0b0f13', 'stroke-width': 1 }));
     g.append(S_('line', { x1: x, y1: y, x2: x, y2: y - 14, stroke: c, 'stroke-width': 2 }));
     g.append(S_('rect', { x: x - 6, y: y - 20, width: 12, height: 7, fill: c }));
   }
-  let itIx = -1; /* index of the item being drawn (data-it on its texts: the overlap check of the tests tells items apart) */
+  let itIx =
+    -1; /* index of the item being drawn (data-it on its texts: the overlap check of the tests tells items apart) */
   function txt(g, x, y, s, o) {
     o = o || {};
     const t = S_('text', {
@@ -447,8 +551,20 @@
       bold = sp.fr >= 0.36,
       sx = pitch / ((bold ? 0.556 : 0.6) * fz);
     const r = S_('rect', { x: b[0], y: b[1], width: b[2], height: b[3], fill: sp.bg, visibility: 'hidden' }),
-      gg = S_('g', { transform: `translate(${b[0] + b[2] - 2},${b[1] + b[3] - 2}) scale(${sx.toFixed(3)},1)`, visibility: 'hidden' }),
-      t = S_('text', { 'data-it': itIx, x: 0, y: 0, 'text-anchor': 'end', 'font-size': fz.toFixed(1), 'font-family': bold ? 'Arial, Helvetica, sans-serif' : 'var(--mf, monospace)', 'font-weight': bold ? 700 : 400, fill: sp.c || '#00ffff' });
+      gg = S_('g', {
+        transform: `translate(${b[0] + b[2] - 2},${b[1] + b[3] - 2}) scale(${sx.toFixed(3)},1)`,
+        visibility: 'hidden'
+      }),
+      t = S_('text', {
+        'data-it': itIx,
+        x: 0,
+        y: 0,
+        'text-anchor': 'end',
+        'font-size': fz.toFixed(1),
+        'font-family': bold ? 'Arial, Helvetica, sans-serif' : 'var(--mf, monospace)',
+        'font-weight': bold ? 700 : 400,
+        fill: sp.c || '#00ffff'
+      });
     gg.append(t);
     g.append(r, gg);
     const f = s => {
@@ -472,9 +588,27 @@
   function bgSym(g, sp, id) {
     const b = sp.b,
       mk = S_('mask', { id, maskUnits: 'userSpaceOnUse', x: b[0], y: b[1], width: b[2], height: b[3] });
-    mk.append(S_('image', { href: sp.m, x: b[0], y: b[1], width: b[2], height: b[3], preserveAspectRatio: 'none', 'image-rendering': 'pixelated' }));
+    mk.append(
+      S_('image', {
+        href: sp.m,
+        x: b[0],
+        y: b[1],
+        width: b[2],
+        height: b[3],
+        preserveAspectRatio: 'none',
+        'image-rendering': 'pixelated'
+      })
+    );
     defs.append(mk);
-    const r = S_('rect', { x: b[0], y: b[1], width: b[2], height: b[3], fill: HC.red, mask: `url(#${id})`, visibility: 'hidden' });
+    const r = S_('rect', {
+      x: b[0],
+      y: b[1],
+      width: b[2],
+      height: b[3],
+      fill: HC.red,
+      mask: `url(#${id})`,
+      visibility: 'hidden'
+    });
     g.append(r);
     return c => {
       if (!c && noLink) c = '#5b6570';
@@ -485,7 +619,16 @@
   }
   /* an invisible click area over the item (faceplate / info card, like the drawn screens) */
   function bgHit(g, it, b) {
-    const r = S_('rect', { x: b[0], y: b[1], width: b[2], height: b[3], fill: '#000', 'fill-opacity': 0, 'data-tag': it.tag || it.s || '', 'data-it': itIx });
+    const r = S_('rect', {
+      x: b[0],
+      y: b[1],
+      width: b[2],
+      height: b[3],
+      fill: '#000',
+      'fill-opacity': 0,
+      'data-tag': it.tag || it.s || '',
+      'data-it': itIx
+    });
     g.append(r);
     return r;
   }
@@ -499,8 +642,12 @@
   /* the HMI field shows the decimals of its snapshot number (TIFA1082 "31", O2 BIAS "0.00") */
   const fmtH = (x, ref) => {
     if (x == null || !isFinite(x)) return '—';
-    const d = String(ref == null ? '' : ref).trim().split('.')[1];
-    return ref == null || String(ref).trim() === '' ? fmtV(x, ref) : x.toFixed(d ? Math.min(3, d.length) : 0).replace(/^-(0(?:\.0+)?)$/, '$1');
+    const d = String(ref == null ? '' : ref)
+      .trim()
+      .split('.')[1];
+    return ref == null || String(ref).trim() === ''
+      ? fmtV(x, ref)
+      : x.toFixed(d ? Math.min(3, d.length) : 0).replace(/^-(0(?:\.0+)?)$/, '$1');
   };
   function bgItem(g, it, sp, sid) {
     const t = it.t;
@@ -534,7 +681,15 @@
         const b = sp.am[L],
           gb = S_('g', { visibility: 'hidden' }),
           r = S_('rect', { x: b[0], y: b[1], width: b[2], height: b[3], rx: 1 }),
-          tl = S_('text', { x: b[0] + b[2] / 2, y: b[1] + b[3] - 4, 'text-anchor': 'middle', 'font-size': 22, 'font-weight': 700, 'font-family': 'Arial, Helvetica, sans-serif', fill: '#050000' });
+          tl = S_('text', {
+            x: b[0] + b[2] / 2,
+            y: b[1] + b[3] - 4,
+            'text-anchor': 'middle',
+            'font-size': 22,
+            'font-weight': 700,
+            'font-family': 'Arial, Helvetica, sans-serif',
+            fill: '#050000'
+          });
         tl.textContent = L;
         gb.append(r, tl);
         g.append(gb);
@@ -562,46 +717,66 @@
           bars.push([k === 'bpv' ? 'pv' : 'sv', B, gb, bar]);
         }
       const fml = sp.ml ? bgNum(g, sp.ml, 'A') : null;
-      reg(it, x => {
-        if (fml) {
-          fml(x ? x.m : null);
-          if (x) fml.t.setAttribute('fill', x.m === 'M' ? '#ffd200' : '#00ffff'); /* HMI: A / R cyan, M yellow */
-        }
-        for (const [k, B, gb, bar] of bars) {
-          gb.setAttribute('visibility', x && isFinite(x[k]) ? 'visible' : 'hidden');
-          if (x && isFinite(x[k])) {
-            const hh = Math.max(0, Math.min(1, x[k] / B.max)) * B.b[3];
-            bar.setAttribute('y', B.b[1] + B.b[3] - hh);
-            bar.setAttribute('height', hh);
+      reg(
+        it,
+        x => {
+          if (fml) {
+            fml(x ? x.m : null);
+            if (x) fml.t.setAttribute('fill', x.m === 'M' ? '#ffd200' : '#00ffff'); /* HMI: A / R cyan, M yellow */
           }
-        }
-        for (const [L, gb, r] of am) {
-          gb.setAttribute('visibility', x ? 'visible' : 'hidden');
-          if (x) r.setAttribute('fill', x.m === L ? (L === 'R' ? 'url(#plgr)' : 'url(#plgl)') : 'url(#plgu)');
-        }
-        fp(x ? fmtH(x.pv, it.pv) : null);
-        fs(x ? fmtH(x.sv, it.sv) : null);
-        fm(x ? fmtH(x.mv, it.mv) : null);
-      }, bgHit(g, it, hull([sp.b, sp.pv && sp.pv.b, sp.sv && sp.sv.b, sp.mv && sp.mv.b])));
+          for (const [k, B, gb, bar] of bars) {
+            gb.setAttribute('visibility', x && isFinite(x[k]) ? 'visible' : 'hidden');
+            if (x && isFinite(x[k])) {
+              const hh = Math.max(0, Math.min(1, x[k] / B.max)) * B.b[3];
+              bar.setAttribute('y', B.b[1] + B.b[3] - hh);
+              bar.setAttribute('height', hh);
+            }
+          }
+          for (const [L, gb, r] of am) {
+            gb.setAttribute('visibility', x ? 'visible' : 'hidden');
+            if (x) r.setAttribute('fill', x.m === L ? (L === 'R' ? 'url(#plgr)' : 'url(#plgl)') : 'url(#plgu)');
+          }
+          fp(x ? fmtH(x.pv, it.pv) : null);
+          fs(x ? fmtH(x.sv, it.sv) : null);
+          fm(x ? fmtH(x.mv, it.mv) : null);
+        },
+        bgHit(g, it, hull([sp.b, sp.pv && sp.pv.b, sp.sv && sp.sv.b, sp.mv && sp.mv.b]))
+      );
     } else {
       const fs = sp.sym ? bgSym(g, sp.sym, id) : () => {},
         fn = sp.n ? bgNum(g, sp.n, it.v) : () => {};
-      reg(it, x => {
-        if (!x || x.v == null || !isFinite(x.v)) {
-          fs(null);
-          fn(null);
-          return;
-        }
-        let c = null;
-        if (t === 'valve' || t === 'damper') c = x.v < 3 ? HC.green : x.v > 97 ? HC.red : HC.white; /* HMI: closed green, open red, between white */
-        else if (t === 'mov') c = (x.r && x.r.open === 0 ? x.v < 0.5 : x.v > 0.5) ? HC.red : HC.green;
-        else if (t === 'lamp') {
-          const on = x.v > (it.gt != null ? it.gt : 0.5);
-          c = (it.inv ? !on : on) ? (/^#[0-7][89a-f]/i.test(it.lit || '') ? HC.green : HC.red) : '#050505'; /* lit = the HMI green / red, off = black */
-        } else c = x.tr ? (Math.floor(Date.now() / 1000) % 2 ? '#f59e0b' : HC.red) : x.v > 0.5 ? HC.red : HC.green; /* pump / fan / motor run = red; flag 1 = red check; TRIP flashes amber (retest #34) */
-        fs(c);
-        if (t === 'valve' || t === 'damper') fn(fmtH(x.v, it.v));
-      }, bgHit(g, it, hull([sp.sym && sp.sym.b, sp.n && sp.n.b]) || [it.x - 12, it.y - 12, 24, 24]));
+      reg(
+        it,
+        x => {
+          if (!x || x.v == null || !isFinite(x.v)) {
+            fs(null);
+            fn(null);
+            return;
+          }
+          let c = null;
+          if (t === 'valve' || t === 'damper')
+            c = x.v < 3 ? HC.green : x.v > 97 ? HC.red : HC.white; /* HMI: closed green, open red, between white */
+          else if (t === 'mov') c = (x.r && x.r.open === 0 ? x.v < 0.5 : x.v > 0.5) ? HC.red : HC.green;
+          else if (t === 'lamp') {
+            const on = x.v > (it.gt != null ? it.gt : 0.5);
+            c = (it.inv ? !on : on)
+              ? /^#[0-7][89a-f]/i.test(it.lit || '')
+                ? HC.green
+                : HC.red
+              : '#050505'; /* lit = the HMI green / red, off = black */
+          } else
+            c = x.tr
+              ? Math.floor(Date.now() / 1000) % 2
+                ? '#f59e0b'
+                : HC.red
+              : x.v > 0.5
+                ? HC.red
+                : HC.green; /* pump / fan / motor run = red; flag 1 = red check; TRIP flashes amber (retest #34) */
+          fs(c);
+          if (t === 'valve' || t === 'damper') fn(fmtH(x.v, it.v));
+        },
+        bgHit(g, it, hull([sp.sym && sp.sym.b, sp.n && sp.n.b]) || [it.x - 12, it.y - 12, 24, 24])
+      );
     }
   }
   function draw(sys) {
@@ -634,7 +809,15 @@
     /* HMI sample (2026-10-26): a screen of the NEW HMI (hmi2.js, own vector graphics) draws itself with the same live link and faceplate */
     if (sys.v2 && window.PLANT_V2)
       try {
-        PLANT_V2.draw(g, sys, { reg, fp: fpOpen, HDR, go: id => { const o = list().find(x => x.id === id); if (o) select(o); } });
+        PLANT_V2.draw(g, sys, {
+          reg,
+          fp: fpOpen,
+          HDR,
+          go: id => {
+            const o = list().find(x => x.id === id);
+            if (o) select(o);
+          }
+        });
       } catch (e) {
         console.error(e);
       }
@@ -649,10 +832,26 @@
           /* 2.2.0-beta.19: a filled duct / vessel body like the HMI (yellow flue gas duct, green air duct, tan furnace): polygon
              with the colour of its kind (k) or its own colour (c), translucent fill */
           const c = it.c || KC[it.k] || KC.sig;
-          g.append(S_('polygon', { points: it.p.map(q => q.join(',')).join(' '), fill: c, 'fill-opacity': it.o != null ? it.o : 0.3, stroke: c, 'stroke-width': 2 }));
+          g.append(
+            S_('polygon', {
+              points: it.p.map(q => q.join(',')).join(' '),
+              fill: c,
+              'fill-opacity': it.o != null ? it.o : 0.3,
+              stroke: c,
+              'stroke-width': 2
+            })
+          );
         } else if (it.t === 'line') {
           const c = it.c || KC[it.k] || KC.sig; /* beta.19: c = own colour (yellow seal pot loop) */
-          g.append(S_('polyline', { points: it.p.map(q => q.join(',')).join(' '), fill: 'none', stroke: c, 'stroke-width': it.k === 'sig' ? 1 : it.w || 3 /* beta.19: 3 px pipes (2.5), w: for a thicker duct */, 'stroke-dasharray': it.k === 'sig' ? '4 3' : '' }));
+          g.append(
+            S_('polyline', {
+              points: it.p.map(q => q.join(',')).join(' '),
+              fill: 'none',
+              stroke: c,
+              'stroke-width': it.k === 'sig' ? 1 : it.w || 3 /* beta.19: 3 px pipes (2.5), w: for a thicker duct */,
+              'stroke-dasharray': it.k === 'sig' ? '4 3' : ''
+            })
+          );
           if (it.a && it.p.length > 1) {
             const [a, b] = [it.p[it.p.length - 2], it.p[it.p.length - 1]],
               an = Math.atan2(b[1] - a[1], b[0] - a[0]),
@@ -668,8 +867,18 @@
           const open = parseFloat(it.v) > 1;
           valve(g, it, open ? '#e05555' : '#3fbf6a');
           txt(g, it.x + 14, it.y - 10, it.tag || '', { z: 12, b: 1 });
-          const vt = txt(g, it.x + 14, it.y + 6, (it.v != null ? it.v : '—') + ' ' + (it.u || '%'), { z: 13, mono: 1, c: '#5cd6ff' });
-          if (it.m) txt(g, it.x - 14, it.y + 6, it.m, { z: 11, c: it.m === 'M' ? '#ffd27a' : '#9ff0c4', a: 'end', b: 1 }); /* beta.19: on the value line, clear of the tag of the damper beside it (008) */
+          const vt = txt(g, it.x + 14, it.y + 6, (it.v != null ? it.v : '—') + ' ' + (it.u || '%'), {
+            z: 13,
+            mono: 1,
+            c: '#5cd6ff'
+          });
+          if (it.m)
+            txt(g, it.x - 14, it.y + 6, it.m, {
+              z: 11,
+              c: it.m === 'M' ? '#ffd27a' : '#9ff0c4',
+              a: 'end',
+              b: 1
+            }); /* beta.19: on the value line, clear of the tag of the damper beside it (008) */
           reg(it, x => {
             vt.textContent = x
               ? fmtV(x.v, it.v) + ' ' + (it.u || '%')
@@ -680,11 +889,15 @@
           valve(g, it, it.st === 'open' ? '#e05555' : '#3fbf6a');
           {
             const parts = [...g.childNodes].slice(-3);
-            reg(it, x => {
-              const on = x && x.v != null ? (x.r && x.r.open === 0 ? x.v < 0.5 : x.v > 0.5) : it.st === 'open';
-              const c = on ? '#e05555' : '#3fbf6a';
-              for (const e of parts) e.setAttribute(e.tagName === 'line' ? 'stroke' : 'fill', c);
-            }, parts[0]);
+            reg(
+              it,
+              x => {
+                const on = x && x.v != null ? (x.r && x.r.open === 0 ? x.v < 0.5 : x.v > 0.5) : it.st === 'open';
+                const c = on ? '#e05555' : '#3fbf6a';
+                for (const e of parts) e.setAttribute(e.tagName === 'line' ? 'stroke' : 'fill', c);
+              },
+              parts[0]
+            );
           }
           if (it.tag) txt(g, it.x + 14, it.y - 10, it.tag, { z: 11 });
           if (it.v != null) txt(g, it.x + 14, it.y + 6, it.v + ' ' + (it.u || '%'), { z: 12, mono: 1, c: '#5cd6ff' });
@@ -695,33 +908,82 @@
           const ring = g.lastChild;
           /* 2.5.0-beta.6: a motor of the HMI (the "M" of the coal feeders, 11.png) */
           if (it.t === 'motor') {
-            const m = S_('text', { x: it.x, y: it.y + 6, 'text-anchor': 'middle', 'font-size': 17, 'font-weight': 700, fill: c });
+            const m = S_('text', {
+              x: it.x,
+              y: it.y + 6,
+              'text-anchor': 'middle',
+              'font-size': 17,
+              'font-weight': 700,
+              fill: c
+            });
             m.textContent = 'M';
             g.append(m);
-          } else if (it.t === 'pump') g.append(S_('polygon', { points: `${it.x - 8},${it.y + 8} ${it.x + 8},${it.y} ${it.x - 8},${it.y - 8}`, fill: c }));
-          else g.append(S_('path', { d: `M${it.x - 9},${it.y} L${it.x + 9},${it.y} M${it.x},${it.y - 9} L${it.x},${it.y + 9}`, stroke: c, 'stroke-width': 2.5 }));
+          } else if (it.t === 'pump')
+            g.append(
+              S_('polygon', { points: `${it.x - 8},${it.y + 8} ${it.x + 8},${it.y} ${it.x - 8},${it.y - 8}`, fill: c })
+            );
+          else
+            g.append(
+              S_('path', {
+                d: `M${it.x - 9},${it.y} L${it.x + 9},${it.y} M${it.x},${it.y - 9} L${it.x},${it.y + 9}`,
+                stroke: c,
+                'stroke-width': 2.5
+              })
+            );
           {
             const sym = g.lastChild;
-            reg(it, x => {
-              const on = x && x.v != null ? x.v > 0.5 : it.st === 'run';
-              const c2 = x && x.tr ? (Math.floor(Date.now() / 1000) % 2 ? '#f59e0b' : '#e05555') : on ? '#e05555' : '#3fbf6a'; /* TRIP flashes (retest #34) */
-              ring.setAttribute('stroke', c2);
-              sym.setAttribute(it.t === 'fan' ? 'stroke' : 'fill', c2);
-            }, ring);
+            reg(
+              it,
+              x => {
+                const on = x && x.v != null ? x.v > 0.5 : it.st === 'run';
+                const c2 =
+                  x && x.tr
+                    ? Math.floor(Date.now() / 1000) % 2
+                      ? '#f59e0b'
+                      : '#e05555'
+                    : on
+                      ? '#e05555'
+                      : '#3fbf6a'; /* TRIP flashes (retest #34) */
+                ring.setAttribute('stroke', c2);
+                sym.setAttribute(it.t === 'fan' ? 'stroke' : 'fill', c2);
+              },
+              ring
+            );
           }
           if (it.tag && !it.nolab) txt(g, it.x, it.y + 30, it.tag, { z: 11, a: 'middle' });
           if (it.m) txt(g, it.x + 18, it.y - 12, it.m, { z: 10, c: '#9ff0c4', b: 1 });
         } else if (it.t === 'vessel') {
-          const rx = it.shape === 'drum' || it.shape === 'tank' ? Math.min(it.w, it.h) / 2 : it.shape === 'turbine' ? 4 : 6;
+          const rx =
+            it.shape === 'drum' || it.shape === 'tank' ? Math.min(it.w, it.h) / 2 : it.shape === 'turbine' ? 4 : 6;
           if (it.shape === 'turbine')
-            g.append(S_('polygon', { points: `${it.x},${it.y + it.h * 0.3} ${it.x + it.w},${it.y} ${it.x + it.w},${it.y + it.h} ${it.x},${it.y + it.h * 0.7}`, fill: '#1b2530', stroke: '#8b9aa8', 'stroke-width': 2 }));
-          else g.append(S_('rect', { x: it.x, y: it.y, width: it.w, height: it.h, rx, fill: it.f || '#121a22', stroke: it.f ? '#a9b7c4' : '#8b9aa8', 'stroke-width': 2 })); /* beta.19: f = own fill (plenum, wall, APH) */
+            g.append(
+              S_('polygon', {
+                points: `${it.x},${it.y + it.h * 0.3} ${it.x + it.w},${it.y} ${it.x + it.w},${it.y + it.h} ${it.x},${it.y + it.h * 0.7}`,
+                fill: '#1b2530',
+                stroke: '#8b9aa8',
+                'stroke-width': 2
+              })
+            );
+          else
+            g.append(
+              S_('rect', {
+                x: it.x,
+                y: it.y,
+                width: it.w,
+                height: it.h,
+                rx,
+                fill: it.f || '#121a22',
+                stroke: it.f ? '#a9b7c4' : '#8b9aa8',
+                'stroke-width': 2
+              })
+            ); /* beta.19: f = own fill (plenum, wall, APH) */
           if (it.label) {
             const t = txt(g, it.x + it.w / 2, it.y + it.h / 2 + 5, it.label, { z: 13, a: 'middle', b: 1 });
             /* 2.4.1-beta.1: a label wider than its box gets a smaller font (006 BURNER-A/B OIL FLOW ran into the next box) */
             try {
               const L = t.getComputedTextLength();
-              if (L > it.w - 8) t.setAttribute('font-size', Math.max(9, Math.floor((+t.getAttribute('font-size') * (it.w - 8)) / L)));
+              if (L > it.w - 8)
+                t.setAttribute('font-size', Math.max(9, Math.floor((+t.getAttribute('font-size') * (it.w - 8)) / L)));
             } catch (e) {}
           }
         } else if (it.t === 'text') {
@@ -733,7 +995,8 @@
               per = Math.max(8, Math.floor(it.wrap / (fz * 0.5))),
               lines = [];
             for (const wd of String(it.s).split(' ')) {
-              if (lines.length && (lines[lines.length - 1] + ' ' + wd).length <= per) lines[lines.length - 1] += ' ' + wd;
+              if (lines.length && (lines[lines.length - 1] + ' ' + wd).length <= per)
+                lines[lines.length - 1] += ' ' + wd;
               else lines.push(wd);
             }
             t.textContent = '';
@@ -746,19 +1009,31 @@
         } else if (it.t === 'lamp') {
           /* 2.5.0-beta.6: a lamp of the HMI (BURNER ON / OFF): lit when the value is above `gt` (`inv`: when not); snapshot colour when not linked */
           const lt = txt(g, it.x, it.y, '●', { z: 30, c: it.c });
-          reg(it, x => {
-            if (!x || !isFinite(x.v)) return lt.setAttribute('fill', it.c);
-            const on = x.v > (it.gt != null ? it.gt : 0.5);
-            lt.setAttribute('fill', (it.inv ? !on : on) ? it.lit : '#1b2530');
-          }, lt);
+          reg(
+            it,
+            x => {
+              if (!x || !isFinite(x.v)) return lt.setAttribute('fill', it.c);
+              const on = x.v > (it.gt != null ? it.gt : 0.5);
+              lt.setAttribute('fill', (it.inv ? !on : on) ? it.lit : '#1b2530');
+            },
+            lt
+          );
         } else if (it.t === 'flag') {
           /* 2.2.0-beta.19: ☑ red = 1, ☒ green = 0 (HMI convention of the 033 screen); grey = not linked (snapshot) */
-          const ft = txt(g, it.x, it.y, (it.on ? '☑ ' : '☒ ') + it.s, { z: it.z || 13, b: it.b, c: it.on ? '#e05555' : '#3fbf6a' });
-          reg(it, x => {
-            const on = x ? x.v > 0.5 : !!it.on;
-            ft.textContent = (on ? '☑ ' : '☒ ') + it.s;
-            ft.setAttribute('fill', !x ? '#7f90a0' : on ? '#e05555' : '#3fbf6a');
-          }, ft);
+          const ft = txt(g, it.x, it.y, (it.on ? '☑ ' : '☒ ') + it.s, {
+            z: it.z || 13,
+            b: it.b,
+            c: it.on ? '#e05555' : '#3fbf6a'
+          });
+          reg(
+            it,
+            x => {
+              const on = x ? x.v > 0.5 : !!it.on;
+              ft.textContent = (on ? '☑ ' : '☒ ') + it.s;
+              ft.setAttribute('fill', !x ? '#7f90a0' : on ? '#e05555' : '#3fbf6a');
+            },
+            ft
+          );
         } else if (it.t === 'val') {
           if (it.tag) txt(g, it.x, it.y - 15, it.tag, { z: 11, c: '#a9b7c4' });
           const vt = txt(g, it.x, it.y, (it.v != null ? it.v : '—') + (it.u ? ' ' + it.u : ''), {
@@ -777,7 +1052,16 @@
         } else if (it.t === 'ctl') {
           const bw = 168,
             bh = 70;
-          const box = S_('rect', { x: it.x, y: it.y, width: bw, height: bh, rx: 3, fill: '#0d1319', stroke: '#2a6a98', 'stroke-width': 1.5 });
+          const box = S_('rect', {
+            x: it.x,
+            y: it.y,
+            width: bw,
+            height: bh,
+            rx: 3,
+            fill: '#0d1319',
+            stroke: '#2a6a98',
+            'stroke-width': 1.5
+          });
           g.append(box);
           txt(g, it.x + 6, it.y + 15, (it.label || it.tag || '').slice(0, 28), { k: 2, z: 11, c: '#a9b7c4' });
           txt(g, it.x + 6, it.y + 31, it.tag || '', { k: 2, z: 12, b: 1, mono: 1 });
@@ -845,18 +1129,40 @@
             txt(g, x0, bh / 2 + 7, k, { k: 2, z: 19, c: '#f0b0d8', b: 1 });
             const lw = 10 + k.length * 12,
               bw = Math.max(86, (String(v).length + 1) * 13);
-            g.append(S_('rect', { x: x0 + lw, y: 8, width: bw, height: bh - 16, rx: 3, fill: '#05080b', stroke: '#2a6a98', 'stroke-width': 1 }));
-            const t = txt(g, x0 + lw + bw / 2, bh / 2 + 8, v, { k: 2, z: 22, mono: 1, c: '#5cd6ff', b: 1, a: 'middle' });
+            g.append(
+              S_('rect', {
+                x: x0 + lw,
+                y: 8,
+                width: bw,
+                height: bh - 16,
+                rx: 3,
+                fill: '#05080b',
+                stroke: '#2a6a98',
+                'stroke-width': 1
+              })
+            );
+            const t = txt(g, x0 + lw + bw / 2, bh / 2 + 8, v, {
+              k: 2,
+              z: 22,
+              mono: 1,
+              c: '#5cd6ff',
+              b: 1,
+              a: 'middle'
+            });
             txt(g, x0 + lw + bw + 8, bh / 2 + 7, u || '', { k: 2, z: 17, c: '#f0b0d8', b: 1 });
             /* the header bar of every screen (MSP, MST, MSF, RHP, RHT, COAL, PWR) reads the simulation: the same
                signals as the HMI header (ABC-001C AI0131 PT-MS1002, TICMS1004, SI0230 compensated main steam flow, AI0419 GCP-AI1001
                generator MW; ABC-052 PICHR1003 reheat pressure, ABC-019 TICHR1002 reheat temperature, ABC-002 coal master PV) */
             const hi = { t: 'val', tag: k, ref: HDR[k], v, u };
             if (HDR[k])
-              reg(hi, y => {
-                t.textContent = y ? fmtV(y.v, v) : v;
-                t.setAttribute('fill', y ? '#5cd6ff' : '#7f90a0');
-              }, t);
+              reg(
+                hi,
+                y => {
+                  t.textContent = y ? fmtV(y.v, v) : v;
+                  t.setAttribute('fill', y ? '#5cd6ff' : '#7f90a0');
+                },
+                t
+              );
           });
         }
       } catch (e) {}
@@ -893,7 +1199,9 @@
                    sheet writes it its own way); before, "<tag>.PV" found nothing for 31 of the 51 UNIT items and the click did nothing */
                 const sh = o.r.sh && shOf(o.r.sh),
                   l = sh && sh.S && o.r.n != null ? sh.S.lab[o.r.n] : null,
-                  nm = (l && l.t && String(l.t).trim()) || (sh && sh.S && o.r.n != null && window.AN && AN.nm ? AN.nm(sh.S, o.r.n) : '');
+                  nm =
+                    (l && l.t && String(l.t).trim()) ||
+                    (sh && sh.S && o.r.n != null && window.AN && AN.nm ? AN.nm(sh.S, o.r.n) : '');
                 if (!(nm && window.lsInfo(nm)) && !window.lsInfo(o.it.tag + '.PV')) window.lsInfo(o.it.tag);
               }
             } catch (x) {}
@@ -995,7 +1303,8 @@
   window.lsPlantFp = fpOpen; /* for the tests */
   /* the logic signal of an HMI value, the same link the page shows (loop check split view: an instrument batch); undefined = the links are not read yet */
   window.lsPlantResolve = it => (IX ? resolve(it) || null : undefined);
-  window.lsPlantLinks = () => LV.map(o => ({ tag: o.it.tag || o.it.ref || '', t: o.it.t, on: !!o.r })); /* for the tests (retest #60) */
+  window.lsPlantLinks = () =>
+    LV.map(o => ({ tag: o.it.tag || o.it.ref || '', t: o.it.t, on: !!o.r })); /* for the tests (retest #60) */
   function reg(it, set, hit) {
     LV.push({ it, set, hit, r: null });
   }
@@ -1023,7 +1332,12 @@
       /* Mina, live test of 279: in layout C Fit is the whole page (shellc-zoom.js); Readable size zooms in */
       all = all0 || (!fw && document.body.classList.contains('sc')),
       s = fw ? sw : all ? Math.max(sh, sw) : tall ? sh : sh <= sw ? Math.max(sh, sw * 0.7) : sh;
-    vb = [box0[0] + (fw || (tall && !all) ? 0 : (w - r.width * s) / 2), box0[1] - (all ? Math.max(0, (r.height * s - h) / 2) : 0), r.width * s, r.height * s];
+    vb = [
+      box0[0] + (fw || (tall && !all) ? 0 : (w - r.width * s) / 2),
+      box0[1] - (all ? Math.max(0, (r.height * s - h) / 2) : 0),
+      r.width * s,
+      r.height * s
+    ];
     svg.setAttribute('viewBox', vb.join(' '));
     svSz = [r.width, r.height];
   }
@@ -1061,12 +1375,21 @@
       const q = f.value.trim().toUpperCase();
       for (const [tag, val, u, m, k] of v.items) {
         if (q && !String(tag).toUpperCase().includes(q)) continue;
-        tb.append(E('div', { cls: 'plr k-' + k }, [E('b', { txt: tag }), E('span', { cls: 'v', txt: val + (u && !String(val).includes(u) ? ' ' + u : '') }), E('span', { cls: 'm', txt: m || '' })]));
+        tb.append(
+          E('div', { cls: 'plr k-' + k }, [
+            E('b', { txt: tag }),
+            E('span', { cls: 'v', txt: val + (u && !String(val).includes(u) ? ' ' + u : '') }),
+            E('span', { cls: 'm', txt: m || '' })
+          ])
+        );
       }
     };
     f.oninput = fill;
     box.append(
-      E('div', { cls: 'plh' }, [E('b', { txt: 'Snapshot values' }), E('span', { txt: v.items.length + ' · ' + (v.time || v.src) })]),
+      E('div', { cls: 'plh' }, [
+        E('b', { txt: 'Snapshot values' }),
+        E('span', { txt: v.items.length + ' · ' + (v.time || v.src) })
+      ]),
       v.note ? E('div', { cls: 'sub', txt: v.note }) : null,
       f,
       tb
@@ -1074,6 +1397,9 @@
     fill();
   }
   function select(o) {
+    /* a page that has been replaced (hx-app.js: its PLANT_SYS entry carries gone = the id of the new page): every way that
+       still names the old page (a link, a tile, the alarm list) lands on the new one */
+    if (o && o.g && o.g.gone) o = list().find(x => x.id === o.g.gone) || o;
     /* Mina 2026-11-08 (findings 11-08 #4): a faceplate opened on one page (LICBR1001 on the UNIT page) stayed over the next pages until
        its ✕: another page closes it, the controller faceplate and the motor / valve pop-out of fp-pop.js alike */
     if (cur && o && cur.id !== o.id) {
@@ -1085,13 +1411,18 @@
       } catch (e) {}
     }
     cur = o;
-    for (const b of D.querySelectorAll('#pllist button,#plantws .plchip')) b.classList.toggle('on', b.dataset.id === o.id);
+    for (const b of D.querySelectorAll('#pllist button,#plantws .plchip'))
+      b.classList.toggle('on', b.dataset.id === o.id);
     $('pltitle').textContent = o.title;
     const pk = ws && ws.querySelector('.plpick');
     if (pk) {
       if (pk.options.length !== list().length) {
         pk.innerHTML = '';
-        for (const x of list()) pk.append(E('option', { value: x.id, txt: x.title }));
+        for (const x of list()) {
+          const op = E('option', { value: x.id, txt: x.title });
+          if (x.g && x.g.gone) op.hidden = true;
+          pk.append(op);
+        }
       }
       pk.value = o.id;
     }
@@ -1102,7 +1433,12 @@
       svg.append(g);
       vb = [0, 0, 960, 500];
       txt(g, 480, 230, o.title, { k: 2, z: 22, a: 'middle', b: 1 });
-      txt(g, 480, 262, 'Graphic not drawn yet: the snapshot values are in the list on the right.', { k: 2, z: 14, a: 'middle', c: '#7f90a0' });
+      txt(g, 480, 262, 'Graphic not drawn yet: the snapshot values are in the list on the right.', {
+        k: 2,
+        z: 14,
+        a: 'middle',
+        c: '#7f90a0'
+      });
       fit();
     }
     showVals(o.src);
@@ -1122,20 +1458,28 @@
       const q = fl.value.trim().toUpperCase();
       for (const o of list()) {
         if (q && !o.title.toUpperCase().includes(q)) continue;
-        const b = E('button', { cls: o.g ? '' : 'novg', 'data-id': o.id, on: () => select(o) }, [E('b', { txt: o.title }), E('small', { txt: o.g ? 'graphic + values' : 'values only' })]);
+        if (o.g && o.g.gone) continue;
+        const b = E('button', { cls: o.g ? '' : 'novg', 'data-id': o.id, on: () => select(o) }, [
+          E('b', { txt: o.title }),
+          E('small', { txt: o.g ? 'graphic + values' : 'values only' })
+        ]);
         ul.append(b);
       }
     };
     fl.oninput = fillList;
     left.append(E('div', { cls: 'plh' }, [E('b', { txt: 'PLANT HMI · systems' })]), fl, ul);
-    svg = S_('svg', { id: 'plsvg', preserveAspectRatio: 'xMinYMin meet' }); /* 3.2.0 P3: the graphic stays put at the left when the panel at the right opens or closes */
+    svg = S_('svg', {
+      id: 'plsvg',
+      preserveAspectRatio: 'xMinYMin meet'
+    }); /* 3.2.0 P3: the graphic stays put at the left when the panel at the right opens or closes */
     const bar = E('div', { cls: 'plbar' }, [
       E('b', { id: 'pltitle', txt: '' }),
       E('button', {
         id: 'pllive',
         cls: 'b pllive on',
         txt: 'LIVE',
-        title: 'LIVE: values from the simulation (tag.PV, I/O list address, valve on the drawing); grey = not linked, snapshot value. Click: show the snapshot values.',
+        title:
+          'LIVE: values from the simulation (tag.PV, I/O list address, valve on the drawing); grey = not linked, snapshot value. Click: show the snapshot values.',
         on: () => {
           liveOn = !liveOn;
           liveCount();
@@ -1143,18 +1487,22 @@
         }
       }),
       E('button', { cls: 'b', txt: 'Fit', on: () => (cur && cur.g ? draw(cur.g) : fit()) }),
-      E('button', { cls: 'b plvb', txt: 'Values', on: e => {
+      E('button', {
+        cls: 'b plvb',
+        txt: 'Values',
+        on: e => {
           /* 2.4.1-beta.1: the values slide out over the graphic on every screen (app.css) */
           e.stopPropagation();
           ws.classList.toggle('vals');
           ws.classList.remove('lsopen');
-        } })
+        }
+      })
     ]);
     /* 3.2.0 P3 (Control Room, after-plant mockup): the screen picker in the bar: ◀ / the list of screens / ▶, the main
        screens as chips, full screen. Same select() as the system list; the list stays (☰ Systems drawer). */
     const pick = E('select', { cls: 'plpick', title: 'Plant screen', 'aria-label': 'Plant screen' }),
       step = d => {
-        const L = list(),
+        const L = list().filter(o => !(o.g && o.g.gone)),
           i = L.findIndex(o => cur && o.id === cur.id);
         select(L[(i + d + L.length) % L.length]);
       };
@@ -1163,7 +1511,10 @@
       if (o) select(o);
     };
     const chips = E('div', { cls: 'plchips' });
-    for (const [id, t] of [['AFG', '007 Air & Flue Gas'], ['UNIT', 'UNIT · controllers']])
+    for (const [id, t] of [
+      ['HX-furnace-gas', 'Furnace and flue gas'],
+      ['UNIT', 'UNIT · controllers']
+    ])
       chips.append(
         E('button', {
           cls: 'plchip',
@@ -1176,7 +1527,13 @@
         })
       );
     const nav = E('div', { cls: 'plnav' }, [
-      E('button', { cls: 'b plstep', txt: '◀', title: 'Previous screen', 'aria-label': 'Previous screen', on: () => step(-1) }),
+      E('button', {
+        cls: 'b plstep',
+        txt: '◀',
+        title: 'Previous screen',
+        'aria-label': 'Previous screen',
+        on: () => step(-1)
+      }),
       pick,
       E('button', { cls: 'b plstep', txt: '▶', title: 'Next screen', 'aria-label': 'Next screen', on: () => step(1) })
     ]);
@@ -1324,13 +1681,40 @@
     const r = svg.getBoundingClientRect();
     if (r.width < 1 || (x0 >= r.left + 8 && x1 <= r.right - 8)) return;
     const k = vb[2] / r.width,
-      c = vb[0] + (((x0 + x1) / 2 - r.left) * k),
+      c = vb[0] + ((x0 + x1) / 2 - r.left) * k,
       lo = box0[0],
       hi = box0[0] + box0[2] - vb[2];
     vb = [hi < lo ? (lo + hi) / 2 : Math.min(Math.max(c - vb[2] / 2, lo), hi), vb[1], vb[2], vb[3]];
     svg.setAttribute('viewBox', vb.join(' '));
   };
-  window.lsPlantLive = () => LV.map(o => ({ tag: o.it.tag, t: o.it.t, snap: o.it.t === 'ctl' ? o.it.pv + '/' + o.it.sv + '/' + o.it.mv + ' ' + o.it.m : o.it.v, how: o.r ? o.r.how || o.r.k : null, sh: o.r ? o.r.sh : null, live: o.r && o.r.k === 'mv' ? shOf(o.r.sh).S.rt.v[o.r.c.out] : o.r && o.r.cc ? (() => { const x = netVal(o.r), mv = shOf(o.r.cc.sh).S.rt.v[o.r.cc.c.out]; return Math.abs(x - (100 - mv)) < 0.5 && Math.abs(x - mv) > 1 ? 100 - x : x; })() : o.r && (o.r.k === 'net' || o.r.k === 'dig') ? netVal(o.r) : o.r && o.r.k === 'ctl' ? (() => { const S = shOf(o.r.sh).S, c = o.r.c; return [S.rt.v[c.q.pv], S.rt.v[c.q.sv], S.rt.v[c.out]].map(x => +(+x).toFixed(1)).join('/'); })() : o.r && o.r.k === 'man' ? +(+shOf(o.r.sh).S.rt.v[o.r.b.o[0]]).toFixed(1) : null })); /* for the tests */
+  window.lsPlantLive = () =>
+    LV.map(o => ({
+      tag: o.it.tag,
+      t: o.it.t,
+      snap: o.it.t === 'ctl' ? o.it.pv + '/' + o.it.sv + '/' + o.it.mv + ' ' + o.it.m : o.it.v,
+      how: o.r ? o.r.how || o.r.k : null,
+      sh: o.r ? o.r.sh : null,
+      live:
+        o.r && o.r.k === 'mv'
+          ? shOf(o.r.sh).S.rt.v[o.r.c.out]
+          : o.r && o.r.cc
+            ? (() => {
+                const x = netVal(o.r),
+                  mv = shOf(o.r.cc.sh).S.rt.v[o.r.cc.c.out];
+                return Math.abs(x - (100 - mv)) < 0.5 && Math.abs(x - mv) > 1 ? 100 - x : x;
+              })()
+            : o.r && (o.r.k === 'net' || o.r.k === 'dig')
+              ? netVal(o.r)
+              : o.r && o.r.k === 'ctl'
+                ? (() => {
+                    const S = shOf(o.r.sh).S,
+                      c = o.r.c;
+                    return [S.rt.v[c.q.pv], S.rt.v[c.q.sv], S.rt.v[c.out]].map(x => +(+x).toFixed(1)).join('/');
+                  })()
+                : o.r && o.r.k === 'man'
+                  ? +(+shOf(o.r.sh).S.rt.v[o.r.b.o[0]]).toFixed(1)
+                  : null
+    })); /* for the tests */
   addEventListener('resize', () => {
     if (ws && ws.style.display === 'grid') {
       place();
@@ -1343,7 +1727,11 @@
     if (!cats.length) return;
     cats.forEach(cat => {
       if (cat.querySelector('.plbtn')) return;
-      const b = E('button', { cls: 'plbtn', txt: 'PLANT', title: 'Plant HMI workspace (draft): plant graphics per system with the control-room snapshot values' });
+      const b = E('button', {
+        cls: 'plbtn',
+        txt: 'PLANT',
+        title: 'Plant HMI workspace (draft): plant graphics per system with the control-room snapshot values'
+      });
       b.onclick = e => {
         e.stopPropagation();
         open(!(ws && ws.style.display === 'grid'));

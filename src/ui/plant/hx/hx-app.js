@@ -253,5 +253,14 @@
       hx: true
     });
   });
-  window.LS_HX = { pages: () => HX.pages.map(p => p.id), store: () => S };
+  /* THE OLD PAGES THAT ARE GONE (user 2026-11-17: "Ung temporary at old hmi, aalisin na"): an old page leaves the page list when
+     the new page shows everything it had. Its entry stays (the description of its machines is still read by the new page, and
+     old links still name it) with gone = the new page, which plant.js opens instead. One line per old page, added only after
+     the new page was checked against it. */
+  const GONE = {
+    MK09: 'HX-furnace-gas' /* AIR AND FLUE GAS: Furnace and flue gas + Combustion air */,
+    AFG: 'HX-furnace-gas' /* 007 AIR & FLUE GAS, the page before MK09 */
+  };
+  for (const e of L) if (GONE[e.id] && PLANT_V2.screens[GONE[e.id]]) e.gone = GONE[e.id];
+  window.LS_HX = { pages: () => HX.pages.map(p => p.id), store: () => S, gone: GONE };
 })();
