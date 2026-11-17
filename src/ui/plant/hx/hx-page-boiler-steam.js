@@ -27,7 +27,8 @@
    - feedwater reaches the drum through economizer 1, 2 and 3 in the back pass: drawn as a link at the drum (the Feedwater
      page), the three economizer temperatures stand beside the back pass.
    Left out on purpose, all without a signal in hx-registry.js: hand valves, vents and drains of the headers, the level gauges
-   and switches of the drum, the sampling and chemical dosing lines, the soot blowing steam take-off, TT-MS1004 (its value is
+   and switches of the drum (the three drum levels on the page are the COMPENSATED levels LIBR10011 / 2 / 3.PV of ABC-010: the
+   transmitters LT-BR1001-1 / -2 / -3 give a raw differential pressure, the drawing corrects it with the drum pressure), the sampling and chemical dosing lines, the soot blowing steam take-off, TT-MS1004 (its value is
    the measured value of the main steam temperature controller on the page). */
 (function () {
   const { V, E, C, X, L, page } = HX;
@@ -65,7 +66,7 @@
     SP2B = 'v:ZT-FW1120-2>1';
 
   page({
-    id: 'boiler-steam',
+    id: 'drum-steam',
     group: 'Boiler',
     title: 'Drum and superheaters',
     about:
@@ -266,9 +267,9 @@
       texts: [
         { x: DX, y: 262, s: 'Drum', cls: 'hx-name', anchor: 'middle' },
         { x: 474, y: 146, s: 'Pressure', key: 'PT-BR1001-1', unit: K, anchor: 'end' },
-        { x: 474, y: 162, s: 'Level 1', key: 'LT-BR1001-1', unit: 'mm', dp: 0, anchor: 'end' },
-        { x: 474, y: 178, s: 'Level 2', key: 'LT-BR1001-2', unit: 'mm', dp: 0, anchor: 'end' },
-        { x: 474, y: 194, s: 'Level 3', key: 'LT-BR1001-3', unit: 'mm', dp: 0, anchor: 'end' },
+        { x: 474, y: 162, s: 'Level 1', key: 'ABC-010|LIBR10011.PV', unit: 'mm', dp: 0, anchor: 'end' },
+        { x: 474, y: 178, s: 'Level 2', key: 'ABC-010|LIBR10012.PV', unit: 'mm', dp: 0, anchor: 'end' },
+        { x: 474, y: 194, s: 'Level 3', key: 'ABC-010|LIBR10013.PV', unit: 'mm', dp: 0, anchor: 'end' },
         { x: 450, y: 100, s: 'through the walls of the back pass', cls: 'hx-note', anchor: 'middle' },
         { x: FX + 6, y: fy(200), s: 'Furnace', cls: 'hx-name', anchor: 'middle' },
         { x: FX - 30, y: fy(31), s: 'Panel 1', cls: 'hx-note', anchor: 'middle' },

@@ -376,6 +376,37 @@
       '<path class="rxst" d="M0 -6V30"/><path class="rxd" d="M-4 6h8l-1.5 5h-5zM-4 17h8l-1.5 5h-5z"/><path class="rx-lift" d="M-2.6 30V0M2.6 30V0"/>' +
       '<path class="rx" d="M-11 -18h22v12h-22z"/><rect class="rxs" x="-9.5" y="-42" width="19" height="24" rx="3"/><path class="rxe" d="M-9.5 -36h19M-9.5 -30h19M-9.5 -24h19"/><path class="rxd" d="M-6 -44.5h12v3h-12z"/>'
   });
+  /* the condenser by itself (the condensate page), cut open: the exhaust neck, the shell with its two tube bundles seen from
+     the end, the hotwell below with its level. Origin = the middle of the top of the neck. Same shapes as in the turbine set
+     (a picture only: document-references has no section drawing of the condenser). steam = the rule that shows the exhaust
+     steam coming down. Ports: st (exhaust steam, top), hw (hotwell outlet, below), mu (left side), rc / sp (right side) */
+  R.condenser = o => {
+    const id = o.id || 'cd',
+      well = 'M-38 165H38V184.5H-38Z';
+    return {
+      box: [-81, -1, 81, 189],
+      ports: {
+        st: [0, 0],
+        hw: [0, 188],
+        mu: [-80, 64],
+        rc: [80, 64],
+        sp: [80, 104],
+        l: [-80, 100],
+        r: [80, 100],
+        t: [0, 0],
+        b: [0, 188]
+      },
+      svg:
+        '<path class="rx" d="M-34 0L-68 40H68L34 0Z"/><rect class="rx" x="-80" y="38" width="160" height="124" rx="8"/>' +
+        '<path class="rxvoid" d="M-28.5 0L-58 42H-74Q-75 42 -75 44V154Q-75 157 -72 157H72Q75 157 75 154V44Q75 42 74 42H58L28.5 0Z"/>' +
+        '<ellipse class="rxtb" cx="-32" cy="104" rx="28" ry="40"/><ellipse class="rxtb" cx="32" cy="104" rx="28" ry="40"/>' +
+        live(o.steam, '<path class="rx-fall" style="--m:var(--hx-m-reheat)" d="M-20 2V36M0 6V40M20 2V36"/>') +
+        '<rect class="rx" x="-42" y="160" width="84" height="28" rx="3"/>' +
+        `<path class="rxvoid" d="${well}"/>` +
+        lvl(id, well, -38, 165, 38, 184.5, 0.7) +
+        '<path class="rx" d="M-4 181h8v7h-8zM-83 58h6v12h-6zM77 58h6v12h-6zM77 98h6v12h-6z"/>'
+    };
+  };
   /* feedwater heater, lying, cut open: the feedwater goes through the U tubes, the steam condenses on them. w = length.
      Ports: in / out (feedwater at the channel head: below / on top), st (steam in, on top), dr (drain, below).
      flow = the rule that moves the water in the tubes; level: [key, low, high] moves the condensate level */
