@@ -121,7 +121,9 @@
             { id: 'c' + i, mir: true, lab: 'b' }
           )
         ),
-        ...N.map((n, i) => at(E('cooler', n, 'H-1107' + n, []), EXX, EY[i], { id: 'e' + i, sc: 1.3, lab: 't' })),
+        ...N.map((n, i) =>
+          at(E('cooler', n, 'H-1107' + n, [], { flow: CW }), EXX, EY[i], { id: 'e' + i, sc: 1.3, lab: 't' })
+        ),
         at(L('sea-water', 'Sea water side'), EXX, 510, { id: 'swl' }),
         /* hand valves of the plant model (temporary page 02; K1AU3-PD-021 for the V-CW valves) */
         at(HX.H('V-MU0001'), 120, 380, { id: 'hm1' }),

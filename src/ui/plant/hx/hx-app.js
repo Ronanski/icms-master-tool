@@ -187,6 +187,7 @@
     el.dispatchEvent(
       new MouseEvent('click', { bubbles: true, cancelable: true, clientX: lastXY[0], clientY: lastXY[1] })
     );
+  const ALC = { t: 0, m: {} };
   HX.data = {
     time: () => call(() => (window.AN && AN.unit && isFinite(AN.unit.t) ? AN.unit.t : null), Date.now() / 1000),
     value(key) {
@@ -242,6 +243,30 @@
       };
     },
     flag: () => null,
+    /* the standing alarms of the app by transmitter: the first word of an alarm is its DCS tag (PIST10013, LIHD11022); the
+       value on a page may be named by the indicator (PI..., TI..., LI..., FI...) or by its transmitter (PT, TT / TE, LT, FT),
+       so both spellings are given. Value: true = acknowledged */
+    alarms() {
+      const now = Date.now();
+      if (ALC.t && now - ALC.t < 1000) return ALC.m;
+      const m = {};
+      for (const a of call(() => lsActiveAlarms().list, []) || []) {
+        const tag = String((a && a.text) || '')
+          .split(' ')[0]
+          .replace(/[^A-Za-z0-9]/g, '')
+          .toUpperCase();
+        if (tag.length < 5) continue;
+        const ack = !!a.ack;
+        m[tag] = ack;
+        if (tag[1] === 'I') {
+          m[tag[0] + 'T' + tag.slice(2)] = ack;
+          m[tag[0] + 'E' + tag.slice(2)] = ack;
+        }
+      }
+      ALC.t = now;
+      ALC.m = m;
+      return m;
+    },
     hook(h, label) {
       /* a hand valve of the plant model: the state and the field faceplate of fp-pop.js */
       if (h.slice(0, 3) === 'fv:') {

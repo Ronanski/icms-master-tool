@@ -107,11 +107,11 @@
           sc: PS,
           lab: 'r'
         }),
-        at(E('cooler', 'Lube oil cooler A', '', []), CX, AY, { id: 'ca', sc: CS, lab: 'b' }),
-        at(E('cooler', 'Lube oil cooler B', '', []), CX, BY, { id: 'cb', sc: CS, lab: 'b' }),
+        at(E('cooler', 'Lube oil cooler A', '', [], { flow: MOP }), CX, AY, { id: 'ca', sc: CS, lab: 'b' }),
+        at(E('cooler', 'Lube oil cooler B', '', [], { flow: MOP }), CX, BY, { id: 'cb', sc: CS, lab: 'b' }),
         at(C('TICLO1002', 'Oil temperature valve', { tag: 'TCV-CW1201', wrap: 14 }), 710, 575, { id: 'tv', lab: 't' }),
         at(L('makeup-cooling', 'Cooling water', { back: true }), 575, 575, { id: 'cwl' }),
-        at(E('strainer', 'Oil filter', '', []), RX, 520, { id: 'of', rot: -90, lab: 'r' }),
+        at(E('strainer', 'Oil filter', '', [], { flow: MOP }), RX, 520, { id: 'of', rot: -90, lab: 'r' }),
         at(M('pump', 'COP-A', 'Control oil pump A', [V('Discharge', 'PTLO1931A', K, 1)], { tag: 'P-1931A' }), QX, AY, {
           id: 'qa',
           sc: PS,
@@ -122,7 +122,7 @@
           sc: PS,
           lab: 'r'
         }),
-        at(E('strainer', 'Control oil filter', '', []), HX2, 500, { id: 'cf', rot: -90, lab: 'r' }),
+        at(E('strainer', 'Control oil filter', '', [], { flow: COP }), HX2, 500, { id: 'cf', rot: -90, lab: 'r' }),
         ...A.map(a => a.item),
         at(E('valve', 'Master trip solenoid', '', [], { kind: 'control', wrap: 12 }), 1660, CH, {
           id: 'mts',

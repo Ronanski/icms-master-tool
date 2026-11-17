@@ -920,9 +920,21 @@
         sh = st.join('');
       if (sb.innerHTML !== sh) sb.innerHTML = sh;
       if (view === 'process' || force) {
+        /* alarms of the app (HX.data.alarms: tag without signs -> acknowledged): the value of that transmitter on the picture
+           blinks until the alarm is acknowledged, then stays in the alarm colour while it stands */
+        const AL = D.alarms ? D.alarms() : null;
         Q('[data-hv]').forEach(e => {
           const t = fmt(penVal(e.dataset.hv), +e.dataset.dp);
           if (e.textContent !== t) e.textContent = t;
+          if (AL) {
+            const k = e.dataset.hv
+                .replace(/^(pv|sv|mv):/, '')
+                .replace(/[^A-Za-z0-9]/g, '')
+                .toUpperCase(),
+              a = AL[k];
+            e.classList.toggle('hx-alm', a != null);
+            e.classList.toggle('ack', a === true);
+          }
         });
         Q('[data-hook]').forEach(e => {
           const h = (D.hook && D.hook(e.dataset.hook, e.dataset.label)) || {},
