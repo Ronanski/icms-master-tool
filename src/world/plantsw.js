@@ -406,7 +406,11 @@
        annunciator COOLING WATER PRESSURE ABNORMAL) and DITL-21A rows 13 / 14 TT-CW1060-A2 / A1 (machine instances #B ~ #D) = the
        supply header and the ash cooler outlets of the plant model (unit.js AN_ACW acP6 / acTb) */
     [/(?:^|[^A-Z])PT-CW1156\b/, 'acP6'],
-    [/(?:^|[^A-Z])TT-CW1060-[A-D][12]\b/, 'acTb'],
+    /* 3.2.4-beta.71 (JENNIE): each cooler its own water in / out (unit.js AN_BAC); the rows of machine #B ~ #D read the tag of A */
+    [
+      /(?:^|[^A-Z])TT-CW1060-[A-D][12]\b/,
+      (t, a, s) => 'bw' + (/#\s*([BCD])\b/.exec((s && s.name) || '') || /TT-CW1060-([A-D])/.exec(t))[1] + /TT-CW1060-[A-D]([12])/.exec(t)[1]
+    ],
     /* 3.2.1 (IRENE: CONDENSATE): DITL-61B row 19 PT-CD1117 (< 14.0 kg/cm2 = M.3217, the standby condensate pump starts) and DITL-61A
        rows 24 / 27 the strainer DP DPT-CD1001 / 1002 of pump A / B = the plant model's (unit.js AN_CD) */
     [/(?:^|[^A-Z])PT-CD1117\b/, 'cdPd'],

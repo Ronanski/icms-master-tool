@@ -746,7 +746,22 @@
          and its REMOTE / LOCAL press set the selectors of A and C too. One address = one signal (CLAUDE.md 1): the selector of this motor
          is the address of its first REMOTE row; the rows of other addresses belong to other motors */
       const t0 = R.rem.length ? rowInfo(s, R.rem[0]).tag : '';
-      if (/^[IM]\.[0-9A-F]{4}$/.test(t0 || '')) R.rem = R.rem.filter(r => rowInfo(s, r).tag === t0);
+      /* 3.2.4-beta.71 (JENNIE, live Cold start 2026-11-17: SWP-A START not taken, "the drawing holds the motor stopped", since beta.242):
+         DITL-29A row 22 "SEAWATER PUMP A REMOTE MODE SELECTED" has no address (the local panel row) and the filter above dropped it, so
+         REMOTE set rows 5 / 18 only. A row with no address stays when its text names the same motor as the first row */
+      /* 3.2.4-beta.72 (JENNIE, live Cold start on Stable 3.2.4: CEP-A START not taken): DITL-61A row 5 reads "MIL-P1116A CONDENSATE PUMP A
+         I.0082 REMOTE SELECTED" and the local panel row 20 "CONDENSATE PUMP A REMOTE SELECTED": the text is compared without the equipment
+         tag (MIL-P1116A) and the address (I.0082 / M.1183), wherever they stand */
+      const txN = r =>
+        String(rowInfo(s, r).svc || '')
+          .replace(/\b[IMB]\.[0-9A-F]{4}(\/\d+)?/g, ' ')
+          .replace(/\b[A-Z]{2,4}-[A-Z]{0,3}\d{3,5}[A-Z0-9]*\b/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      if (/^[IM]\.[0-9A-F]{4}$/.test(t0 || '')) {
+        const x0 = txN(R.rem[0]);
+        R.rem = R.rem.filter(r => rowInfo(s, r).tag === t0 || (!rowInfo(s, r).tag && txN(r) === x0));
+      }
       if (R.au.length > 1) {
         const a0 = rowInfo(s, R.au[0]).tag;
         if (/^[IM]\.[0-9A-F]{4}$/.test(a0 || '')) R.au = R.au.filter(r => rowInfo(s, r).tag === a0);

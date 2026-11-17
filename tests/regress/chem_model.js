@@ -1,6 +1,6 @@
 // 3.2.3 (SOHEE : PLANT MODEL HELPER: SAMPLING AND CHEMICAL DOSING plant model, unit.js AN_CHEM / anChemStep;
 // docs/versions/v3.2.1/SAMPLING_DOSING_PLANT_MODEL.md). The one world ON, plant model ON. Checks:
-//  150 MW: dosing pumps A running, B stopped; feedwater / main steam pH 9.0 (PR-OPE-5002), drum pH 9.5 at PO4 5 ppm (FHI Fig. 3,
+//  150 MW: dosing pumps A running, B stopped; feedwater / main steam pH 9.0 (PR-OPE-5002), drum pH 9.08 at PO4 2 ppm (FHI Fig. 3,
 //    Na/PO4 2.6), deaerator outlet O2 10 ppb (FHI: < 0.01 ppm while pressurized), economizer inlet O2 0 (carbohydrazide), pure water
 //    cation conductivity 0.055 uS/cm;
 //  carbohydrazide pump A stopped at its local panel: the economizer inlet O2 rises above its H alarm 4.2 ppb (alarm list) within about
@@ -92,8 +92,8 @@ const html =
     `150 MW: feedwater / main steam pH ${l.sp1001} (target 9.0)`
   );
   ck(
-    Math.abs(l.sp1011 - 9.5) < 0.05 && Math.abs(l.chPO4 - 5) < 0.3,
-    `150 MW: drum pH ${l.sp1011} at PO4 ${l.chPO4} ppm (FHI Fig. 3: 9.5 at 5 ppm)`
+    Math.abs(l.sp1011 - 9.08) < 0.05 && Math.abs(l.chPO4 - 2) < 0.2 && l.sp1012 < 10 && l.spAL2 === 0,
+    `150 MW: drum pH ${l.sp1011}, ${l.sp1012} uS/cm at PO4 ${l.chPO4} ppm (FHI Fig. 3: 9.08 at 2 ppm; inside the alarm list), common alarm ${l.spAL2}`
   );
   ck(
     l.sp1004 === 10 && l.sp1010 === 0,
