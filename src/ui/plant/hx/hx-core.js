@@ -262,10 +262,10 @@
     if (it.k === 'hook') {
       const t = it.name,
         w = it.w || Math.max(96, t.length * 6.3 + 24),
-        h = it.press ? 30 : 36;
+        h = it.press ? 30 : it.plain ? 22 : 36;
       it._p = { l: [x - w / 2, y], r: [x + w / 2, y], t: [x, y - h / 2], b: [x, y + h / 2] };
       it._box = [x - w / 2, y - h / 2, x + w / 2, y + h / 2];
-      return `<g class="hx-hook${it.press ? ' press' : ''}" data-hook="${esc(it.hook)}" data-label="${esc(t)}"${it.press ? ' data-press="1" tabindex="0" role="button"' : ''} transform="translate(${n1(x)} ${n1(y)})"><rect x="${n1(-w / 2)}" y="${-h / 2}" width="${n1(w)}" height="${h}" rx="5"/><text class="hx-hkl" x="0" y="${it.press ? 4 : -3}" text-anchor="middle">${esc(t)}</text>${it.press ? '' : '<text class="hx-hks" x="0" y="12" text-anchor="middle" data-hks="1">-----</text>'}</g>`;
+      return `<g class="hx-hook${it.press ? ' press' : ''}${it.plain ? ' plain' : ''}"${it.plain ? ' data-plain="1"' : ''} data-hook="${esc(it.hook)}" data-label="${esc(t)}"${it.press ? ' data-press="1" tabindex="0" role="button"' : ''} transform="translate(${n1(x)} ${n1(y)})"><rect x="${n1(-w / 2)}" y="${-h / 2}" width="${n1(w)}" height="${h}" rx="5"/><text class="hx-hkl" x="0" y="${it.press || it.plain ? 4 : -3}" text-anchor="middle">${esc(t)}</text>${it.press || it.plain ? '' : '<text class="hx-hks" x="0" y="12" text-anchor="middle" data-hks="1">-----</text>'}</g>`;
     }
     const sy = ((real && REAL[it.sym]) || SYM[it.sym])(Object.assign({ id: pageId + '-' + it._id }, it)),
       rot = it.rot || 0,
@@ -893,7 +893,11 @@
         });
         Q('[data-hook]').forEach(e => {
           const h = (D.hook && D.hook(e.dataset.hook, e.dataset.label)) || {},
-            c = 'hx-hook' + (e.dataset.press ? ' press' : '') + (h.tone ? ' ' + h.tone : '');
+            c =
+              'hx-hook' +
+              (e.dataset.press ? ' press' : '') +
+              (e.dataset.plain ? ' plain' : '') +
+              (h.tone ? ' ' + h.tone : '');
           if (e.getAttribute('class') !== c) e.setAttribute('class', c);
           const st = e.querySelector('[data-hks]'),
             tx = h.text || '-----';
