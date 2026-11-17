@@ -1512,8 +1512,8 @@
     };
     const chips = E('div', { cls: 'plchips' });
     for (const [id, t] of [
-      ['HX-furnace-gas', 'Furnace and flue gas'],
-      ['UNIT', 'UNIT · controllers']
+      ['HX-overview', 'Unit overview'],
+      ['HX-furnace-gas', 'Furnace and flue gas']
     ])
       chips.append(
         E('button', {

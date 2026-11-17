@@ -150,7 +150,7 @@
           lab: 'r'
         }),
         at(L('generator', 'Generator page'), GX, 470, { id: 'gnl' }),
-        at(L('turbine-oil', 'Turbine oil'), VX + 60, 720, { id: 'tol' }),
+        at(L('turbine-oil', 'Turbine oil'), VX + 200, 640, { id: 'tol' }),
         /* automatic turbine start-up */
         at(B('Start-up mode', 'data-ut="tcs.mode"', { w: 150 }), 330, 784, { id: 'mode' }),
         ...STEP.map((s, i) => at(HX.S(i, s[0], s[1], { w: 184 }), 104 + i * 194, SY, { id: 'st' + i })),
@@ -222,7 +222,9 @@
         val(3, 'Thrust bearing front / rear', 'TIST-THF', '°C', 0, 'TIST-THR', 'TIST1011 / 1012'),
         val(4, 'Bearing oil pressure', 'PT-BRG', K, 1, null, 'PTLO10031 ~ 33'),
         val(5, 'Control oil / trip oil', 'PT-CTL', K, 0, 'PT-TRIP', 'PTLO10061 / 10071'),
-        val(6, 'Lube oil after cooler', 'TT-LOCOOL', '°C', 0, null, 'TILO10021 / 22')
+        val(6, 'Lube oil after cooler', 'TT-LOCOOL', '°C', 0, null, 'TILO10021 / 22'),
+        /* the target load of the turbine control system (the old UNIT page: TCS target MW) */
+        val(7, 'Target load', 'TCS-AI1001', 'MW', 1, null, 'TCS-AI1001')
       ],
       texts: [
         { x: GX + 14, y: 34, s: 'to the grid', cls: 'hx-note' },
