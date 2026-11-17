@@ -614,3 +614,16 @@
 .hx-alm { fill: var(--hx-run) !important; animation: hx-blink 1s steps(2) infinite; }
 .hx-alm.ack { animation: none; }
 @media (prefers-reduced-motion: reduce) { .hx-alm { animation: none; } }
+
+/* step cards of the automatic turbine start-up (HX.S): done = reached, act = running now (lit), next = waits for its push button */
+.hx-atc { fill: var(--hx-panel2); stroke: var(--hx-rule); stroke-width: 1.3; }
+.hx-ats.done .hx-atc { stroke: var(--hx-ink2); }
+.hx-ats.act .hx-atc { stroke: var(--hx-run); stroke-width: 2.4; fill: color-mix(in srgb, var(--hx-run) 14%, var(--hx-panel2)); }
+.hx-ats.next .hx-atc { stroke: var(--hx-run); stroke-dasharray: 6 4; }
+.hx-atn { font-size: 11.8px; font-weight: 700; fill: var(--hx-ink) !important; }
+.hx-att { font-size: 10.8px; fill: var(--hx-ink2) !important; }
+.hx-ats.act .hx-att { fill: var(--hx-ink) !important; }
+.hx-atv { font: 600 10.8px var(--hx-mono); fill: var(--hx-ink) !important; }
+.hx-atb { fill: none; stroke: var(--hx-none); stroke-width: 1.2; }
+.hx-atb.y { fill: var(--hx-run); stroke: var(--hx-run); }
+.hx-atb.n { stroke: var(--hx-stop); }

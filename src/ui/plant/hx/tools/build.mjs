@@ -86,7 +86,7 @@ for (const p of HX.pages) {
   for (const t of (p.plan && p.plan.taps) || []) for (const k of [t.key, t.key2]) if (k) key(p.id + ' tap', k);
   for (const t of (p.plan && p.plan.texts) || []) if (t.key) key(p.id + ' text', t.key);
   for (const it of items) {
-    if (!win.HXSYM[it.sym] && !(win.HXREAL && win.HXREAL[it.sym]) && it.k !== 'link' && it.k !== 'hook')
+    if (!win.HXSYM[it.sym] && !(win.HXREAL && win.HXREAL[it.sym]) && it.k !== 'link' && it.k !== 'hook' && it.k !== 'ats')
       bad.push(`${p.id}: symbol ${it.sym}`);
     if (it.k === 'link' && !HX.byId[it.to] && !soonIds.has(it.to)) bad.push(`${p.id}: link to ${it.to}`);
     if (it.go && !HX.byId[it.go]) bad.push(`${p.id}: go ${it.go}`);

@@ -243,6 +243,8 @@
       };
     },
     flag: () => null,
+    /* the step cards of the automatic turbine start-up: the check list of hmi-mock.js (page 13) */
+    ats: () => call(() => (window.LS_ATS ? LS_ATS() : null), null),
     /* the standing alarms of the app by transmitter: the first word of an alarm is its DCS tag (PIST10013, LIHD11022); the
        value on a page may be named by the indicator (PI..., TI..., LI..., FI...) or by its transmitter (PT, TT / TE, LT, FT),
        so both spellings are given. Value: true = acknowledged */
@@ -359,6 +361,7 @@
     CWN: 'HX-sea-water' /* 030 CIRCULATING WATER: pumps, values, hand valves, filter states */,
     MK02: 'HX-makeup-cooling' /* MAKE-UP AND CLOSED COOLING WATER: pumps, values, hand valves, fill valve */,
     MK03: 'HX-compressed-air' /* INSTRUMENT AND PLANT AIR: machines, values, the one model valve */,
+    MK13: 'HX-turbine' /* TURBINE START: valves, breakers, step cards with their check items, push buttons, first out */,
     MK10: 'HX-purge-trip' /* PURGE AND TRIP: every row of DITL-01 / 02 / 03A it had */,
     /* an older page of a system whose temporary page is still needed (hand valves, states the new look has no piece for yet):
        it opens that temporary page until the new page is complete */
@@ -373,7 +376,7 @@
     TPG: 'HX-purge-trip',
     TBR: 'MK11',
     TTA: 'HX-turbine-oil',
-    TTS: 'MK13',
+    TTS: 'HX-turbine',
     TCC: 'MK12'
   };
   for (const e of L) if (GONE[e.id] && L.some(x => x.id === GONE[e.id])) e.gone = GONE[e.id];
