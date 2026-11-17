@@ -15,8 +15,8 @@
    Drawn simpler: the ball separators, ball vessels and V pieces of the tube cleaning are not drawn (the two tube cleaning
    systems are two machines under the condenser); the priming air ejectors Z-1131A / B are not drawn; the two paths of the
    condenser are one line with the values of path A / path B side by side.
-   NOT on this page yet: the hand valves V-SW1002 ~ V-SW1020 (pump discharge, condenser inlet / outlet, booster discharge)
-   that the temporary page lets the operator set: the new look has no hand valve piece yet. */
+   The hand valves V-SW1002 ~ V-SW1020 (pump discharge, condenser inlet / outlet, booster discharge) are HX.H pieces: OPEN /
+   CLOSED of the plant model, a click opens the field faceplate. */
 (function () {
   const { V, E, M, L, page } = HX;
   const K = 'kg/cm²';
@@ -97,6 +97,24 @@
         }),
         ...N.map((n, i) => at(E('cooler', n, 'H-1107' + n, []), EX[i], EY, { id: 'e' + i, sc: 1.3, lab: 'r' })),
         at(L('makeup-cooling', 'Closed cooling water'), 1500, 290, { id: 'ccl' }),
+        /* debris filters: in operation and common fail of DITL-39 (as temporary page 01) */
+        at(HX.B('Filter S-1502', 'data-do="DITL-39|3|IN OPERATION|NOT IN OPERATION|run"', { w: 150 }), 590, 650, {
+          id: 'f1s'
+        }),
+        at(HX.B('Filter S-1502 fail', 'data-do="DITL-39|4|COMMON FAIL|NO|alarm"', { w: 150 }), 590, 694, { id: 'f1f' }),
+        at(HX.B('Filter S-1504', 'data-do="DITL-39|14|IN OPERATION|NOT IN OPERATION|run"', { w: 150 }), 1560, 640, {
+          id: 'f2s'
+        }),
+        at(HX.B('Filter S-1504 fail', 'data-do="DITL-39|15|COMMON FAIL|NO|alarm"', { w: 150 }), 1560, 684, {
+          id: 'f2f'
+        }),
+        /* hand valves of the plant model (K1AU3-PD-020): pump discharge, condenser inlet and outlet, booster pump discharge */
+        ...['V-SW1002', 'V-SW1004', 'V-SW1006'].map((t, i) => at(HX.H(t), 412, PY[i] - 16, { id: 'hv' + i })),
+        at(HX.H('V-SW1007', 'Inlet A V-SW1007', { w: 150 }), 720, MY - 150, { id: 'hi1' }),
+        at(HX.H('V-SW1008', 'Inlet B V-SW1008', { w: 150 }), 720, MY - 108, { id: 'hi2' }),
+        at(HX.H('V-SW1009', 'Outlet A V-SW1009', { w: 150 }), 1130, MY - 150, { id: 'ho1' }),
+        at(HX.H('V-SW1010', 'Outlet B V-SW1010', { w: 150 }), 1130, MY - 108, { id: 'ho2' }),
+        ...['V-SW1016', 'V-SW1018', 'V-SW1020'].map((t, i) => at(HX.H(t), BX[i] - 2, 792, { id: 'hb' + i })),
         at(M('pump', 'P-0762A', 'Hypochlorite dosing pump A', [], { tag: 'P-0762A', wrap: 12 }), 80, 740, {
           id: 'ha',
           sc: 0.9,
