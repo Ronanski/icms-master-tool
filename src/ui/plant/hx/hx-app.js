@@ -310,6 +310,7 @@
     TO: 'HX-turbine-oil' /* 036 TURBINE OIL, the page before MK04 */,
     MK08: 'HX-aux-steam' /* AUX STEAM AND VACUUM */,
     MK18: 'HX-extraction' /* EXTRACTION AND DRAINS */,
+    MK10: 'HX-purge-trip' /* PURGE AND TRIP: every row of DITL-01 / 02 / 03A it had */,
     /* an older page of a system whose temporary page is still needed (hand valves, states the new look has no piece for yet):
        it opens that temporary page until the new page is complete */
     SW: 'CWN' /* 030 SEAWATER -> 030 CIRCULATING WATER */,
@@ -320,7 +321,7 @@
     TCF: 'HX-condensate',
     TDO: 'MK11',
     TFN: 'HX-combustion-air',
-    TPG: 'MK10',
+    TPG: 'HX-purge-trip',
     TBR: 'MK11',
     TTA: 'HX-turbine-oil',
     TTS: 'MK13',
