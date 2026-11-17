@@ -2896,6 +2896,12 @@ function anCdTagStep(U, ld) {
    How it works:
      PT-TS1013 / 1017   the snapshot pressure x main steam / 472.7 (absolute, a turbine stage, as AN_HP);
      TT-TS1011          the cold reheat temperature of the unit model (anUnitStepX X.T.cr);
+     PT-TS1026          (beta.33) the same stage law from 0.25 kg/cm2 g (4.PNG PITS1026, STN102 AI0563, range -1 ~ 5);
+     TT-TS1014 / 1018 / 1023 / 1027  (beta.33) 4.PNG 426 / 314 / 188 / 91 C: with the stage pressure ratios fixed (Stodola), the
+                        absolute temperature of an extraction keeps its ratio to the hot reheat (TT-HR1004, X.hr against TIHR1004 540 C of the snapshot);
+                        below 5 % main steam it goes to the ambient (NO-SOURCE, no flow through the turbine);
+     PICR19011 / 12 / 13 (beta.33) HP turbine exhaust steam pressure A / B / C (DCS loop list STN2 SI1700-1702, 0 ~ 50): the hot
+                        reheat pressure x 36.6 / 35.1, the Pcr of the bypass model (snapshots 35.4 ~ 36.1 at 150 MW);
      PT-FW1115-A / B    the suction header (plantsw.js sucP) minus the loss of a running pump's branch = its strainer DP (AN_FW fwDp)
                         x 0.4 / 0.29 (03.png: running A 6.7 = idle B 7.1 - 0.4 at strainer DP 0.29; low load check: DP 0.07 -> 4.0 - 0.1
                         = 3.9, PIFW1115A 3.9);
@@ -3321,6 +3327,10 @@ const AN_FWT = {
   ms0: 472.7,
   ts13: 14.07,
   ts17: 5.3,
+  ts26: 0.25 /* PT-TS1026 No.5 extraction, 4.PNG */,
+  ext: { "TT-TS1014": 426, "TT-TS1018": 314, "TT-TS1023": 188, "TT-TS1027": 91 } /* 4.PNG at 148.8 MW, C */,
+  hr0: 540 /* TIHR1004 hot reheat of the same snapshots (OPERATING_POINTS.md), the anchor of the extraction temperatures */,
+  crP: 36.6 / 35.1 /* HP exhaust PICR1901x over the hot reheat pressure, as Pcr of the bypass model */,
   K: 35000 / (9.49 * Math.sqrt(165.3 - 142.2)) / 1000,
   cv: {
     a1: [
@@ -3435,7 +3445,16 @@ function anFwTagStep(U) {
       ((67 * held('TICMS1022', mvOf('ABC-051', 'TICMS1022'))) / 100) *
       pos('DITL-79') *
       dr /* 67 T/H at 100 %, Cv 10.3, dp 61, L21 */,
-    cr = U.xt && U.xt.T ? U.xt.T.cr : NaN;
+    cr = U.xt && U.xt.T ? U.xt.T.cr : NaN,
+    Xt = U.xt || {},
+    thr = Xt.hr ? anUnitVal(Xt.hr) : NaN,
+    Ta = isFinite(U.Tamb) ? U.Tamb : 30,
+    fx5 = Math.max(0, Math.min(1, ms / (0.05 * K.ms0))),
+    extT = T0 =>
+      isFinite(thr)
+        ? Ta + ((thr + 273.15) * ((T0 + 273.15) / (K.hr0 + 273.15)) - 273.15 - Ta) * fx5
+        : NaN,
+    pcr = Prh * K.crP;
   /* beta.258: the spray water, the feedwater and the flue gas biasing dampers (ABC-020 HICHR1002A RH / HICHR1002B SH) for the heat
      transfer chain (hx.js); numbers only on U */
   U.w1s = isFinite(w1) ? Math.max(0, w1) : 0;
@@ -3451,6 +3470,14 @@ function anFwTagStep(U) {
     'PT-TS1013': ms > 0 ? r2(Math.max(-1, stage(K.ts13))) : r2(0),
     'PT-TS1017': ms > 0 ? r2(Math.max(-1, stage(K.ts17))) : r2(0),
     'TT-TS1011': r1(cr),
+    'PT-TS1026': ms > 0 ? r2(Math.max(-1, stage(K.ts26))) : r2(0),
+    'TT-TS1014': r1(extT(K.ext['TT-TS1014'])),
+    'TT-TS1018': r1(extT(K.ext['TT-TS1018'])),
+    'TT-TS1023': r1(extT(K.ext['TT-TS1023'])),
+    'TT-TS1027': r1(extT(K.ext['TT-TS1027'])),
+    PICR19011: r2(pcr),
+    PICR19012: r2(pcr),
+    PICR19013: r2(pcr),
     'PT-FW1115-A': isFinite(ps) ? r1(ps - ((U.fwDp0 || 0) * 0.4) / 0.29) : null,
     'PT-FW1115-B': isFinite(ps) ? r1(ps - ((U.fwDp1 || 0) * 0.4) / 0.29) : null,
     'TT-FW1011': isFinite(Pda) ? r1(Pda > 0.05 ? steamTsat(Pda) : isFinite(U.Tamb) ? U.Tamb : 30) : null,

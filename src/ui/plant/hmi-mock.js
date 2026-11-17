@@ -430,6 +430,11 @@
           if (m.tcs) {
             const U = AN.unit;
             /* F36 (live Cold start 2026-11-14): the gland steam seal of the TCS (tcs.js 'gland'), in service = RUN */
+            /* beta.34: Start at 150 MW has no ATS program (U.tc null, tcs-trip.js): the gland seal is the gland steam pressure of the model
+               (U.gsP >= 0.1, as unit.js aux steam), the hood spray is in AUTO with the turbine running (PR-OPE-5002 6307 is done before the roll) */
+            const noTc = U && U.on && !U.tc;
+            if (m.tcs === 'gland' && noTc) return (isFinite(U.gsP) ? U.gsP >= 0.1 : !!(U.tb && U.tb.st !== 'off')) ? 'RUN' : 'STOP';
+            if (m.tcs === 'hood' && noTc) return U.tb && U.tb.st !== 'off' ? 'RUN' : 'STOP';
             if (m.tcs === 'gland') return U && U.on && U.tc ? (U.tc.gland ? 'RUN' : 'STOP') : null;
             /* live Cold start 2026-11-14 (3.2.3-beta.234): the LP exhaust hood spray FV-CD1904 of the TCS (tcs.js 'hood', PR-OPE-5002 6307), in AUTO = RUN */
             if (m.tcs === 'hood') return U && U.on && U.tc ? (U.tc.hsp ? 'RUN' : 'STOP') : null;

@@ -38,6 +38,14 @@
       'PT-TS1013': 'tt:PT-TS1013',
       'PT-TS1017': 'tt:PT-TS1017',
       'TT-TS1011': 'tt:TT-TS1011',
+      'PT-TS1026': 'tt:PT-TS1026',
+      'TT-TS1014': 'tt:TT-TS1014',
+      'TT-TS1018': 'tt:TT-TS1018',
+      'TT-TS1023': 'tt:TT-TS1023',
+      'TT-TS1027': 'tt:TT-TS1027',
+      'PICR19011': 'tt:PICR19011',
+      'PICR19012': 'tt:PICR19012',
+      'PICR19013': 'tt:PICR19013',
       'PT-CD1110': 'cdP'
     }
   });
