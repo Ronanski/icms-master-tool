@@ -42,7 +42,8 @@
     if (!document.fullscreenElement && document.body.classList.contains('scfull')) full(false);
   });
   addEventListener('keydown', e => {
-    if (e.key === 'Escape' && document.body.classList.contains('scfull') && !document.querySelector('.fpo-box,#plfp')) full(false);
+    if (e.key === 'Escape' && document.body.classList.contains('scfull') && !document.querySelector('.fpo-box,#plfp'))
+      full(false);
   });
   function buildBar() {
     const ws = $('plantws'),
@@ -96,7 +97,12 @@
       const t = e.target && e.target.closest ? e.target : null,
         m = $('plmid');
       if (!t || !m || !m.contains(t) || t.closest('.fpo-box,#plfp,#sctsp,.plbar')) return;
-      const a = t.closest('[data-yn],[data-hit],[data-mdh],[data-fan],[data-dmp],[data-eqb],[data-vth],[data-fvh]') || t.closest('g') || t;
+      /* a realistic plant page: the whole equipment with its name is the anchor, so the faceplate does not cover the name */
+      const a =
+        t.closest('.hx-node') ||
+        t.closest('[data-yn],[data-hit],[data-mdh],[data-fan],[data-dmp],[data-eqb],[data-vth],[data-fvh]') ||
+        t.closest('g') ||
+        t;
       /* Mina beta.213 (Y/N of seawater pump A covered the pumps): the Y/N square stands for its equipment, so the faceplate keeps clear of
          the square AND the machine it belongs to (data-yn = the id of its data-hit) */
       const yn = a.dataset && a.dataset.yn,
@@ -152,16 +158,27 @@
     return P;
   }
   function placeC(el) {
-    if (!el.isConnected || !anchor || Date.now() - anchor.at > 4000 || document.body.classList.contains('scnarrow')) return;
+    if (!el.isConnected || !anchor || Date.now() - anchor.at > 4000 || document.body.classList.contains('scnarrow'))
+      return;
     const { R, a } = area(),
       w = el.offsetWidth,
       h = el.offsetHeight,
       r0 = anchor.el.isConnected ? anchor.el.getBoundingClientRect() : anchor.r,
       q = anchor.mh && anchor.mh.isConnected ? anchor.mh.getBoundingClientRect() : null,
-      r = q && q.width ? { left: Math.min(r0.left, q.left), top: Math.min(r0.top, q.top), right: Math.max(r0.right, q.right), bottom: Math.max(r0.bottom, q.bottom) } : r0;
+      r =
+        q && q.width
+          ? {
+              left: Math.min(r0.left, q.left),
+              top: Math.min(r0.top, q.top),
+              right: Math.max(r0.right, q.right),
+              bottom: Math.max(r0.bottom, q.bottom)
+            }
+          : r0;
     if (!w || !h) return;
     const P = pipePts(r),
-      other = [...document.querySelectorAll('.fpo-box,#plfp.fpo-near')].filter(x => x !== el && x.offsetParent).map(x => x.getBoundingClientRect()),
+      other = [...document.querySelectorAll('.fpo-box,#plfp.fpo-near')]
+        .filter(x => x !== el && x.offsetParent)
+        .map(x => x.getBoundingClientRect()),
       g = 10,
       cx = (r.left + r.right) / 2,
       cy = (r.top + r.bottom) / 2,
@@ -189,7 +206,12 @@
       const q = { left: x, top: y, right: x + w, bottom: y + h };
       let s = hitR(q, { left: r.left - 4, top: r.top - 4, right: r.right + 4, bottom: r.bottom + 4 }) ? 1e6 : 0;
       for (const o of other) if (hitR(q, o)) s += 1e5;
-      for (const [px, py] of P) if (px > q.left && px < q.right && py > q.top && py < q.bottom) s += 10;
+      /* compact shell step 4 (approved mockup): the small faceplate stays BESIDE its equipment. A line under it counts a little
+         (capped), the far corners of the page are the last choice (the big faceplate always landed at the top right) */
+      let np = 0;
+      for (const [px, py] of P) if (px > q.left && px < q.right && py > q.top && py < q.bottom) np++;
+      s += Math.min(60, np * 2);
+      if (i >= C.length - 2) s += 500;
       s += i; /* the earlier side wins a tie */
       if (s < bs) ((bs = s), (best = [x, y]));
     });
@@ -215,10 +237,22 @@
   }
   /* Mina beta.213 (COMMANDMENT 5, no acronyms as labels): in the C layout the faceplate shows full English words; the name of the
      equipment on top and its tag under it. Only the text on screen changes (fp-pop.js builds and drives the faceplate as before) */
-  const LBL = { DCS: 'Control room', LCP: 'Local panel', 'E-STOP': 'Emergency stop', VCB: 'Breaker', RELAY: 'Protection relay', STATUS: 'Status', SELECTOR: 'Selector', MODE: 'Mode', POSITION: 'Position', AUXILIARY: 'Auxiliary' };
+  const LBL = {
+    DCS: 'Control room',
+    LCP: 'Local panel',
+    'E-STOP': 'Emergency stop',
+    VCB: 'Breaker',
+    RELAY: 'Protection relay',
+    STATUS: 'Status',
+    SELECTOR: 'Selector',
+    MODE: 'Mode',
+    POSITION: 'Position',
+    AUXILIARY: 'Auxiliary'
+  };
   function words(box) {
     const fix = () => {
-      for (const l of box.querySelectorAll('.fpo-l')) if (LBL[l.textContent.trim()]) l.textContent = LBL[l.textContent.trim()];
+      for (const l of box.querySelectorAll('.fpo-l'))
+        if (LBL[l.textContent.trim()]) l.textContent = LBL[l.textContent.trim()];
       for (const p of box.querySelectorAll('.fpo-lp')) {
         const tn = [...p.childNodes].find(x => x.nodeType === 3 && x.nodeValue.trim() === 'VCB');
         if (tn) tn.nodeValue = 'Breaker';
@@ -316,10 +350,24 @@
     const v = (13.8 * (g.V || 0)).toFixed(2) + ' kV, ' + (+tb.rpm / 60 || 0).toFixed(2) + ' Hz';
     if (g.x25)
       return (
-        v + ' · grid ' + (+g.fgr || 60).toFixed(2) + ' Hz · slip ' + ((g.slip || 0) >= 0 ? '+' : '') + (g.slip || 0).toFixed(3) + ' Hz · phase ' +
-        Math.round(g.th || 0) + '° · auto synchronizing' + (g.cmd ? ', CLOSE command' : '')
+        v +
+        ' · grid ' +
+        (+g.fgr || 60).toFixed(2) +
+        ' Hz · slip ' +
+        ((g.slip || 0) >= 0 ? '+' : '') +
+        (g.slip || 0).toFixed(3) +
+        ' Hz · phase ' +
+        Math.round(g.th || 0) +
+        '° · auto synchronizing' +
+        (g.cmd ? ', CLOSE command' : '')
       );
-    if (g.f41) return v + (Math.abs((g.V || 0) - 1) > 0.02 ? ', field breaker closed, voltage building up' : ', excited, ready to synchronize');
+    if (g.f41)
+      return (
+        v +
+        (Math.abs((g.V || 0) - 1) > 0.02
+          ? ', field breaker closed, voltage building up'
+          : ', excited, ready to synchronize')
+      );
     return 'not excited (field breaker open)';
   }
   /* beta.237 (live Cold start, user: "nasaan ang synchroscope?", "ipakita niyo"): the 24 px dial in the status line was too small. A sync panel
@@ -340,8 +388,17 @@
       const r = (a * Math.PI) / 180,
         r1 = a === 0 ? 40 : 46;
       tk +=
-        '<line x1="' + (60 + r1 * Math.sin(r)).toFixed(1) + '" y1="' + (60 - r1 * Math.cos(r)).toFixed(1) + '" x2="' + (60 + 52 * Math.sin(r)).toFixed(1) +
-        '" y2="' + (60 - 52 * Math.cos(r)).toFixed(1) + '" stroke-width="' + (a === 0 ? 2.5 : 1) + '"/>';
+        '<line x1="' +
+        (60 + r1 * Math.sin(r)).toFixed(1) +
+        '" y1="' +
+        (60 - r1 * Math.cos(r)).toFixed(1) +
+        '" x2="' +
+        (60 + 52 * Math.sin(r)).toFixed(1) +
+        '" y2="' +
+        (60 - 52 * Math.cos(r)).toFixed(1) +
+        '" stroke-width="' +
+        (a === 0 ? 2.5 : 1) +
+        '"/>';
     }
     const w = (SYN.dTh * Math.PI) / 180,
       ax = (52 * Math.sin(w)).toFixed(2),
@@ -349,8 +406,18 @@
     syp.innerHTML =
       '<svg class="scdial" width="80" height="80" viewBox="0 0 120 120" role="img" aria-label="synchroscope">' +
       '<circle cx="60" cy="60" r="56" class="rim"/>' +
-      '<path class="win" d="M' + (60 - ax) + ' ' + ay + ' A52 52 0 0 1 ' + (60 + +ax) + ' ' + ay + '"/>' +
-      '<g class="tk">' + tk + '</g>' +
+      '<path class="win" d="M' +
+      (60 - ax) +
+      ' ' +
+      ay +
+      ' A52 52 0 0 1 ' +
+      (60 + +ax) +
+      ' ' +
+      ay +
+      '"/>' +
+      '<g class="tk">' +
+      tk +
+      '</g>' +
       '<text x="24" y="98" class="lb">SLOW</text><text x="96" y="98" class="lb">FAST</text>' +
       '<g class="ptr"><line x1="60" y1="66" x2="60" y2="12"/><circle cx="60" cy="60" r="4"/></g></svg>' +
       '<div class="scsv"></div><div class="scsl"></div>';
@@ -384,15 +451,20 @@
     v.replaceChildren(
       kv('Generator', (13.8 * (+g.V || 0)).toFixed(2) + ' kV · ' + ((+tb.rpm || 0) / 60).toFixed(3) + ' Hz'),
       kv('Grid', '13.80 kV · ' + (+g.fgr || 60).toFixed(3) + ' Hz'),
-      kv('Slip', sg(slip, 3) + ' Hz' + (Math.abs(slip) < 1e-3 ? '' : slip > 0 ? ' (generator fast)' : ' (generator slow)')),
+      kv(
+        'Slip',
+        sg(slip, 3) + ' Hz' + (Math.abs(slip) < 1e-3 ? '' : slip > 0 ? ' (generator fast)' : ' (generator slow)')
+      ),
       kv('Voltage difference', sg(dv * 100, 1) + ' %'),
       kv('Phase angle', sg(th, 0) + '°')
     );
-    syp.querySelector('.scsl').replaceChildren(
-      lamp('Auto synchronizing', !!g.x25),
-      lamp('Sync check permit', p25),
-      lamp('Breaker close command', !!(g.cmd || g.close))
-    );
+    syp
+      .querySelector('.scsl')
+      .replaceChildren(
+        lamp('Auto synchronizing', !!g.x25),
+        lamp('Sync check permit', p25),
+        lamp('Breaker close command', !!(g.cmd || g.close))
+      );
   }
   function tickTsp() {
     if (!tsp) return;
@@ -411,7 +483,7 @@
     tsv.replaceChildren(
       kv('Speed', rpm == null ? '—' : rpm + ' rpm'),
       kv('Generator breaker', tb.st ? (gcb ? 'closed' : 'open') : '—'),
-      kv('Target', dcs ? 'DCS unit load demand' : aim == null ? '—' : (Math.round(aim * 10) / 10) + ' MW'),
+      kv('Target', dcs ? 'DCS unit load demand' : aim == null ? '—' : Math.round(aim * 10) / 10 + ' MW'),
       E('span', 'sctsn', dcs ? '' : 'at 7.5 MW/min'),
       kv('Hold', S ? (S.hold ? 'on' : 'off') : '—'),
       kv('Generator', genTxt(U, tb, gcb))

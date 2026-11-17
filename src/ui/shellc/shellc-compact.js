@@ -136,6 +136,27 @@
       ? L.length + ' standing alarm' + (L.length === 1 ? '' : 's') + (fresh.length ? ' · ' + fresh.length + ' new' : '')
       : '';
   }
+  /* step 4, the small faceplate: its field panel and its long explanation open on a press (the choice stays for the next faceplate) */
+  const fpKey = e => {
+    const t = e.target && e.target.closest ? e.target.closest('.fpo-box .fpo-sh.fld, .fpo-box .fpo-why') : null;
+    if (!t || !B.classList.contains('sc')) return;
+    if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+    if (e.type === 'keydown') e.preventDefault();
+    const on = B.classList.toggle(t.classList.contains('fpo-why') ? 'sc-fpwhy' : 'sc-fpfld');
+    t.setAttribute('aria-expanded', on ? 'true' : 'false');
+  };
+  document.addEventListener('click', fpKey);
+  document.addEventListener('keydown', fpKey);
+  function fpAttrs() {
+    for (const t of document.querySelectorAll('.fpo-box .fpo-sh.fld:not([role]), .fpo-box .fpo-why:not([role])')) {
+      const why = t.classList.contains('fpo-why');
+      t.setAttribute('role', 'button');
+      t.tabIndex = 0;
+      t.setAttribute('aria-expanded', B.classList.contains(why ? 'sc-fpwhy' : 'sc-fpfld') ? 'true' : 'false');
+      t.title = why ? 'Press to read the whole explanation' : 'Press to show or hide the field panel';
+    }
+  }
+  setInterval(fpAttrs, 500);
   setInterval(tick, 1000);
   addEventListener('load', tick);
 })();
