@@ -10,7 +10,7 @@
   try {
     const q = new URLSearchParams(location.search).get('shell');
     if (q === 'old') localStorage.setItem('ls-shell', 'old');
-    else if (q === 'c' || localStorage.getItem('ls-shell') !== 'old') localStorage.setItem('ls-shell', 'c');
+    else localStorage.setItem('ls-shell', 'c'); /* step 7 (user 2026-11-17): one shell; a stored "old" does not stay */
   } catch (e) {}
 })();
 /* Proportional shell (user 2026-11-09 "Bakit dependent sa resolution? ... Scalable? Proportional?"): --scs = the screen against a

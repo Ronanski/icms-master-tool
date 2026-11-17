@@ -45,7 +45,7 @@
     alm: ['Alarms', 'The standing alarms and the last event']
   };
   /* 3.2.3-beta.270: no Training section (the Training is off, guide.js LS_TRAINING_OFF) */
-  const ENG = ['why', 'insp', 'fp', 'alm'],
+  const ENG = ['why', 'insp', 'fp'],
     OP = ['alm'];
   const wide = () => innerWidth >= 1280;
   let col = null,
@@ -209,7 +209,7 @@
     const ok = B.classList.contains('sc') && (B.dataset.tab === 'operate' || eng());
     /* the full Training panel (dock.js #gdock) is open: it has the right side; the column comes back when it is folded */
     const dockOn = dockOpen();
-    const on = ok && !dockOn && (open == null ? eng() && wide() : open);
+    const on = ok && !dockOn && eng() && (open == null ? wide() : open); /* step 7: the column is an Engineer tool */
     B.classList.toggle('scdet', on);
     /* Giselle beta.266 (Jennie, Mina's live check of 263: at 1024 the column lay over the overview cards, the plant drawing and the
        sheet buttons): the page gives the column its width at every size (no overlay). Below 1280 px the column still starts closed */
