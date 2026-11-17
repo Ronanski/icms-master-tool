@@ -331,7 +331,18 @@
       host.className = 'hx-app';
       fo.append(host);
       g.append(fo);
-      const h = HX.mount(host, def.id, { noTimer: true, go: id => call(() => window.lsPlant && lsPlant('HX-' + id)) });
+      /* a link to another page: the page list of the Plant view opens it, as a link of an old page does (hmi-mock.js data-go).
+               Found 2026-11-17 on the new overview: lsPlant(id) only SHOWS the Plant view (it takes true / false), so no link of a
+               realistic page ever changed the page */
+      const goPage = id => {
+        const pk = document.querySelector('#plantws .plpick'),
+          v = 'HX-' + id;
+        if (pk && [...pk.options].some(o => o.value === v)) {
+          pk.value = v;
+          pk.dispatchEvent(new Event('change', { bubbles: true }));
+        } else call(() => api.go && api.go(v));
+      };
+      const h = HX.mount(host, def.id, { noTimer: true, go: goPage });
       /* every view once, so each key the page reads is linked before plant.js resolves the links of the page */
       for (const v of ['controls', 'trends', 'process']) call(() => h.show(v));
       proxy();
@@ -367,6 +378,7 @@
      old links still name it) with gone = the new page, which plant.js opens instead. One line per old page, added only after
      the new page was checked against it. */
   const GONE = {
+    MK00: 'HX-overview' /* OVERVIEW: its values, the five controllers, a link to every page */,
     APH: 'HX-combustion-air' /* 038 AIR PREHEATER: main drive, back-up air motor valve, air and gas values */,
     BIAS: 'HX-reheat-steam' /* 039 RH / SH BIASING DAMPER: pass dampers, spray, gas temperatures */,
     MK16: 'HX-sampling' /* SAMPLING AND DOSING: every analyzer, alarm, pump and level switch it had */,
