@@ -70,6 +70,9 @@ HX.pages.length = 0;
 HX.pages.push(...realPages);
 for (const k of Object.keys(HX.byId)) if (!done.has(k)) delete HX.byId[k];
 const soonIds = new Set(soon.map(p => p.id));
+/* value keys the app binds that no temporary page showed, so tools/make-registry.py does not list them (each one checked in
+   the running app): TCS-AI1001 = the target load of the turbine control system, 151.0 MW at 150 MW (old UNIT page) */
+const EXTRA = new Set(['TCS-AI1001']);
 const bad = [],
   used = { m: new Set(), l: new Set(), v: new Set(), k: new Set() };
 const key = (p, k) => {
@@ -79,7 +82,7 @@ const key = (p, k) => {
     return;
   }
   used.k.add(k);
-  if (!(k in R.sample.values)) bad.push(`${p}: value key ${k}`);
+  if (!(k in R.sample.values) && !EXTRA.has(k)) bad.push(`${p}: value key ${k}`);
 };
 for (const p of HX.pages) {
   const items = p.plan ? p.plan.items : p.lanes.flatMap(l => l.items.flatMap(i => (Array.isArray(i) ? i : [i])));
