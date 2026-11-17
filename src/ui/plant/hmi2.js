@@ -330,8 +330,11 @@
     /* dust and opacity: with the ESP in service 7.PNG; with it out the inlet dust of the design basis, 31,000 mg/Nm3 (L19-1) passes.
        3.2.3-beta.106: the reading stops at the top of the transmitter, AT-FG1057-5 0 ~ 100 mg/m3 (I/O list STN101 AI0464). Before it
        showed 31,000 mg/m3, a value the instrument cannot give */
-    AIFG10575: E => Math.min(100, (AN.fieldState && AN.fieldState().esp === false ? 31000 : 2.9) * clamp(E.g, 0, 1.3)),
-    AIFG10576: E => (AN.fieldState && AN.fieldState().esp === false ? 100 : 12.5 * clamp(E.g, 0, 1.3)),
+    /* beta.21: the dust from the plant model (boiler.js AN_ESP: fly ash in, Deutsch collection); the ESP out of service passes it all */
+    AIFG10575: E => Math.min(100, uv('dustIn', null, () => 31000 * clamp(E.g, 0, 1.3)) * (AN.fieldState && AN.fieldState().esp === false ? 1 : 1 - uv('espEta', null, () => 1 - 2.9 / 31000))),
+    /* opacity with the dust by Beer-Lambert, 1 - exp(-b x dust): b from the one plant reading 12.5 % at 2.9 mg/m3 (7.PNG), the stack
+       path and the particle size are not in the docs */
+    AIFG10576: E => 100 * (1 - Math.exp((Math.log(1 - 0.125) / 2.9) * EST.AIFG10575(E))),
     FIFG10577: E => 21.5 * E.g,
     TIFG10578: E => E.T(50, 0)
   };

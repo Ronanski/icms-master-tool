@@ -373,11 +373,31 @@ function anFanStart(U) {
    reaches the furnace pressure is the square root of the old over the new system loss (fan law at one speed, unit.js pr.uf).
    U.aphPl = the added loss in units of dp; clearing the fault (water wash) puts it back to 0 */
 const AN_APL = { dp: 110, t: 1800, max: 3 };
+/* 3.2.4 (JENNIE, list item: air heater leak): the radial / axial seals of the tri-sector air heater wear and pass more air to the gas side
+   (trainer fault aph.leak, world.js). L20 Howden APH OMM sheet 16, duty 1 (performance coal): PA to gas 33,993 kg/h, SA to gas 19,036
+   kg/h, total air to gas 7.82 % of the gas inlet. Check of the mixing rule: the same sheet gives the gas out 132.8 C undiluted and
+   126.2 C diluted with the air in at 46 C: (132.8 + 0.0782 x 46) / 1.0782 = 126.5 C (CALC). The design leak is inside the plant
+   values the model already stands on (fan flows of the snapshot); the fault adds +1 x the design leak every 30 min (NO-SOURCE trainer
+   rate) up to +2 x. The air flow transmitters are at the fan inlets (FT-FA1071 / FA1081, alarm list FT sheet), so they read the leak
+   too: the furnace gets less air than they read, the O2 at the air heater gas inlet falls, the O2 trim raises the fans, the ID fan
+   takes the leak on top of the furnace gas and the gas leaving the air heater is cooled by the cold air (anAphStep).
+   U.aphLk = the added leak in units of the design leak; clearing the fault (seals set again) puts it back to 0 */
+const AN_APK = { pa: 33.993, sa: 19.036, t: 1800, max: 2 };
+/* 3.2.4 (JENNIE, list item: stack dust): THE ELECTROSTATIC PRECIPITATOR. Dust in: the fly ash of the bed balance (unit.js U.flyA, coal ash
+   6.82 % + the limestone solids, the 80 % that does not go to the bed drain) in the flue gas, Nm3/h = gas T/H / 1.338 kg/Nm3 (CALC:
+   681 T/H of gas, AN_GAS.gm, at 509,000 Nm3/h wet, FHI Tab 3, boiler.js anSOx). Collection: the Deutsch equation (textbook),
+   eta = 1 - exp(-wA / Q), wA from the ESP design: inlet 31,000 mg/Nm3 at 602,000 Nm3/h (L19-1 design basis) to 50 mg/Nm3 (FHI P2S4
+   p2-4-14 guarantee): wA = 602,000 x ln(31,000 / 50) = 3.87e6 Nm3/h (CALC). Less gas = longer in the fields = cleaner. Check: at 150 MW
+   the model gives a few mg/Nm3, the plant read 2.9 mg/m3 (7.PNG). The 6 % O2 dry correction of the guarantee is not applied (the
+   transmitter AT-FG1057-5 reads the gas as it is). U.dustIn mg/Nm3 at the ESP inlet, U.espEta the collection share */
+const AN_ESP = { wA: 602000 * Math.log(31000 / 50), rhoN: 1.338 };
 function anFanStep(U, dt) {
   {
     const W = typeof window !== 'undefined' ? window.WORLD : null,
       on = !!(W && W.ft && W.ft.has('aph.plug'));
     U.aphPl = on ? Math.min(AN_APL.max, (U.aphPl > 0 ? U.aphPl : 0) + (dt > 0 ? dt : 0) / AN_APL.t) : 0;
+    const lk = !!(W && W.ft && W.ft.has('aph.leak'));
+    U.aphLk = lk ? Math.min(AN_APK.max, (U.aphLk > 0 ? U.aphLk : 0) + (dt > 0 ? dt : 0) / AN_APK.t) : 0;
   }
   const F = U.fn,
     K = AN_FN;
@@ -534,7 +554,18 @@ function anAphStep(U, dt) {
   /* hot PA / SA into the furnace, read by the bed heat balance of unit.js (anUnitStep0, Cold path) */
   U.aphPa = pa;
   U.aphSa = sa;
-  U.aphGo = anAphOut(z.gi, v[0], tpa, pa, v[1], tsa, sa, v[2]);
+  {
+    /* the extra seal leak (AN_APK): it bypasses the heating and joins the gas at the air inlet temperature (OMM sheet 16 dilution) */
+    const lp = Math.min(v[0], (U.aphLk || 0) * AN_APK.pa),
+      ls = Math.min(v[1], (U.aphLk || 0) * AN_APK.sa),
+      go = anAphOut(z.gi, v[0] - lp, tpa, pa, v[1] - ls, tsa, sa, v[2]),
+      gg = (v[0] - lp + v[1] - ls + v[2]) * K.gm;
+    U.aphGo = lp + ls > 0.01 && gg > 1 ? (gg * go + lp * tpa + ls * tsa) / (gg + lp + ls) : go;
+    /* the ESP (AN_ESP): all the air ends in the flue gas, the leak too */
+    const qN = ((v[0] + v[1] + v[2]) * K.gm * 1000) / AN_ESP.rhoN;
+    U.dustIn = qN > 1000 ? ((U.flyA || 0) * 1e9) / qN : 0;
+    U.espEta = qN > 1000 ? 1 - Math.exp(-AN_ESP.wA / qN) : 1;
+  }
   /* 3.2.3-beta.212 (live Cold sweep F16: TT-FG1110 / 1113, TT-FG1124 / 1125, TT-FG1132 / 1133, TT-FG1152 '-----'): no sheet of the logic
      reads these transmitters, the page now reads the gas path here.
      U.ecoGo  gas leaving the No.2 economizer (TT-FG1110 R / 1113 S, ahead of the No.1 economizer): the No.1 economizer takes eco = 43 / 120
