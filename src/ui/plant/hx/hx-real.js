@@ -553,9 +553,9 @@
       wheel(53, 0, 8, 6) +
       '<path class="rxd" d="M40 14h26v16h-26z"/>'
   });
-  /* plate heat exchanger (a cooler): the pack of plates between two frames. Ports: a1 / a2 (one side, left), b1 / b2
-     (the other side, right) */
-  R.cooler = () => ({
+  /* plate heat exchanger (a cooler): the pack of plates between two frames. flow = the rule that shows the liquid moving
+     between the plates. Ports: a1 / a2 (one side, left), b1 / b2 (the other side, right) */
+  R.cooler = o => ({
     box: [-27, -25, 27, 26],
     ports: {
       a1: [-26, -14],
@@ -570,13 +570,16 @@
     svg:
       '<path class="rx" d="M-26 -17h7v6h-7zM-26 11h7v6h-7zM19 -17h7v6h-7zM19 11h7v6h-7z"/><path class="rxd" d="M-18 21h36v4h-36z"/>' +
       '<rect class="rx" x="-19" y="-24" width="6" height="46" rx="1.5"/><rect class="rx" x="13" y="-24" width="6" height="46" rx="1.5"/>' +
-      '<rect class="rxv" x="-13" y="-21" width="26" height="40"/><path class="rxe" d="M-9.7 -21v40M-6.5 -21v40M-3.2 -21v40M0 -21v40M3.2 -21v40M6.5 -21v40M9.7 -21v40"/><path class="rxd" d="M-21 -21.5h42v2.6h-42zM-21 15.5h42v2.6h-42z"/>'
+      '<rect class="rxv" x="-13" y="-21" width="26" height="40"/><path class="rxe" d="M-9.7 -21v40M-6.5 -21v40M-3.2 -21v40M0 -21v40M3.2 -21v40M6.5 -21v40M9.7 -21v40"/><path class="rxd" d="M-21 -21.5h42v2.6h-42zM-21 15.5h42v2.6h-42z"/>' +
+      live(o.flow, '<path class="rx-tubef" d="M-9.7 -19v36M-3.2 17v-36M3.2 -19v36M9.7 17v-36"/>')
   });
-  /* strainer on a line: a pot with its basket. Ports: l / r */
-  R.strainer = () => ({
+  /* strainer on a line: a pot with its basket. flow = the rule that shows the liquid going through the basket. Ports: l / r */
+  R.strainer = o => ({
     box: [-14, -15, 14, 17],
     ports: { l: [-13, 0], r: [13, 0], t: [0, -14], b: [0, 16] },
-    svg: '<path class="rxd" d="M-13 -8h3v16h-3zM10 -8h3v16h-3z"/><path class="rx" d="M-10 -6H10V6H6L3 16H-3L-6 6H-10Z"/><path class="rxe" d="M-5 -2L0 12L5 -2"/><path class="rxd" d="M-6 -11h12v5h-12z"/>'
+    svg:
+      '<path class="rxd" d="M-13 -8h3v16h-3zM10 -8h3v16h-3z"/><path class="rx" d="M-10 -6H10V6H6L3 16H-3L-6 6H-10Z"/><path class="rxe" d="M-5 -2L0 12L5 -2"/><path class="rxd" d="M-6 -11h12v5h-12z"/>' +
+      live(o.flow, '<path class="rx-tubef" d="M-9 0H-3.5L0 8.5L3.5 0H9"/>')
   });
 
   /* ---------------- the boiler: furnace, cyclone, seal pot, air heater, precipitator, stack ---------------- */
@@ -790,7 +793,7 @@
   R.dryer = () => ({
     box: [-22, -29, 22, 29],
     ports: { l: [-21, 18], r: [21, 18], t: [0, -28], b: [0, 28] },
-    svg: `<path class="rxd" d="M-18 22h36v5h-36z"/><path class="rxv" transform="translate(-9.5 -2)" d="${vcap(15, 46)}"/><path class="rxv" transform="translate(9.5 -2)" d="${vcap(15, 46)}"/><path class="rxe" d="M-9.5 -25V-28H9.5V-25M-17 18h-4M17 18h4"/>`
+    svg: `<path class="rxd" d="M-18 22h36v5h-36z"/><path class="rxv" transform="translate(-9.5 -2)" d="${vcap(15, 46)}"/><path class="rxv" transform="translate(9.5 -2)" d="${vcap(15, 46)}"/><path class="rxe" d="M-9.5 -25V-28H9.5V-25M-17 18h-4M17 18h4"/><path class="rx-elem rx-dry" d="M-9.5 16V-20M9.5 -20V16"/>`
   });
   /* tall silo with its cone, cut open, with what it holds (limestone, sand, ash). level: [key, low, high]. Ports: t, b */
   R.silo = o => {

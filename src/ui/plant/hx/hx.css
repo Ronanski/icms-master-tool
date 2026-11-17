@@ -607,3 +607,10 @@
 .hx-node[data-hp]:hover .rxs, .hx-node[data-hp]:focus-visible .rxs { stroke: var(--hx-accent); stroke-width: 1.6; }
 @media (prefers-reduced-motion: reduce) { .rx-ct, .rx-sw { transition: none; } }
 .rx-hw { fill: none; }
+/* the two towers of an air dryer: the bed marks move only while the dryer runs */
+.rx-dry { stroke-width: 2.2; opacity: 0.35; }
+.hx-run .rx-dry { opacity: 0.9; }
+/* a value whose transmitter has a standing alarm: blinking until acknowledged, then steady in the alarm colour */
+.hx-alm { fill: var(--hx-run) !important; animation: hx-blink 1s steps(2) infinite; }
+.hx-alm.ack { animation: none; }
+@media (prefers-reduced-motion: reduce) { .hx-alm { animation: none; } }

@@ -75,7 +75,11 @@
             { id: 'p' + i, sc: PS, lab: 'b' }
           )
         ),
-        at(M('strainer', 'S-1502', 'Debris filter', [], { tag: 'S-1502' }), 515, MY, { id: 'df1', sc: 1.6, lab: 'b' }),
+        at(M('strainer', 'S-1502', 'Debris filter', [], { tag: 'S-1502', flow: SW }), 515, MY, {
+          id: 'df1',
+          sc: 1.6,
+          lab: 'b'
+        }),
         at(E('condenser', 'Condenser', 'H-1110', [], { id: 'cd', steam: 'v:SI-TB>50' }), CX, CY, {
           id: 'cd',
           sc: CS,
@@ -91,13 +95,15 @@
             { id: 'b' + i, lab: 'b' }
           )
         ),
-        at(M('strainer', 'S-1504', 'Debris filter', [], { tag: 'S-1504' }), 1710, 670, {
+        at(M('strainer', 'S-1504', 'Debris filter', [], { tag: 'S-1504', flow: BP }), 1710, 670, {
           id: 'df2',
           sc: 1.3,
           rot: -90,
           lab: 'l'
         }),
-        ...N.map((n, i) => at(E('cooler', n, 'H-1107' + n, []), EX[i], EY, { id: 'e' + i, sc: 1.3, lab: 'r' })),
+        ...N.map((n, i) =>
+          at(E('cooler', n, 'H-1107' + n, [], { flow: BP }), EX[i], EY, { id: 'e' + i, sc: 1.3, lab: 'r' })
+        ),
         at(L('makeup-cooling', 'Closed cooling water'), 1500, 290, { id: 'ccl' }),
         /* debris filters: in operation and common fail of DITL-39 (as temporary page 01) */
         at(HX.B('Filter S-1502', 'data-do="DITL-39|3|IN OPERATION|NOT IN OPERATION|run"', { w: 150 }), 575, 670, {
