@@ -6,8 +6,11 @@
    THE CONNECTIONS: K1AU3-PD-017 Rev D, feedwater system: deaerator storage tank T-1104; one suction line that splits to the
    two pumps P-1115A / B (suction valve, strainer with DPT-FW1115-A / -B); each pump with its automatic recirculation valve
    back to the deaerator, its discharge valve MV-FW1001 / 1002 and the bypass MV-FW1391 / 1392 around it; the common discharge
-   line (PT-FW1011, TT-FW1011) with the take-off of the spray water; No. 1 high pressure heater H-1105 (TT-FW1105 after it),
-   No. 2 high pressure heater H-1106 (TT-FW1106 after it); flow element FE-FW1007 (FT-FW1007-1 / -2); the main valve
+   line (PT-FW1011, TT-FW1011) with the take-off of the spray water; No. 1 high pressure heater H-1105 (TT-FW1105 after it)
+   with its inlet valve V-FW1009, outlet valve V-FW1010 and bypass valve V-FW1011, No. 2 high pressure heater H-1106
+   (TT-FW1106 after it) with V-FW1012 / 1013 / bypass 1014: gear operated hand valves without a DCS signal (PD-017;
+   team-files/plant-study/11-heater-valves.md), valve symbols of the plant model here (a click opens the field faceplate;
+   unit.js reads the same six valves); flow element FE-FW1007 (FT-FW1007-1 / -2); the main valve
    FCV-FW1130-1 and the start-up valve FCV-FW1130-2 side by side; on to the boiler economizer (PD-019).
    The extraction steam valves: MV-TS1001 to No. 2 heater (from the cold reheat line, PD-011 "TO #2 HIGH PRESSURE HEATER"),
    MV-TS1002 to No. 1 heater, MV-TS1003 to the deaerator (order and transmitters PT-TS1017 / PT-TS1013 / TT-TS1011 as the
@@ -17,7 +20,7 @@
    - the drain of No. 2 heater goes to No. 1 heater, the drain of No. 1 heater to the deaerator (words at its end);
    - the suction valves V-FW1001 / 1002 (hand valves with a limit switch) and the strainers are not drawn; the strainer
      differential pressure stands at the suction of each pump.
-   Left out on purpose, all without a signal in hx-registry.js: hand valves, vents, drains, the heater bypass valves, the lube
+   Left out on purpose, all without a signal in hx-registry.js: the other hand valves, vents, drains, the lube
    oil systems Z-1115A / B (the lube oil pumps are in the faceplate of their feed pump), the bearing and winding temperatures
    and vibrations of the pumps, the initial fill line from the make-up water.
    NOT on this page yet: the 1 ELEMENT / 3 ELEMENT push buttons of the drum level control (temporary page 06). */
@@ -40,17 +43,47 @@
     SUX = 110,
     SUY = 950 /* suction line: down at the left, along the bottom */,
     DHY = 520 /* common discharge line */,
-    HX1 = 1000,
-    H1Y = 640,
-    H2Y = 380,
+    HX1 = 1150,
+    H1Y = 660,
+    H2Y = 400,
     HS = 1.7 /* heaters (drawn mirrored: water box on the left) */,
-    WX = HX1 - 53 * HS /* feedwater through the two heaters */,
+    WX = HX1 - 53 * HS /* the water box nozzles of the heaters */,
+    RX = 985 /* the feedwater line up past the two heaters */,
+    VX = 1023 /* inlet and outlet valves */,
+    BO = 70 /* a heater branch leaves the line this far below and comes back this far above the heater */,
     STX = HX1 + 17.4 * HS /* steam into a heater */,
     DRX = HX1 + 34.7 * HS /* drain out of a heater */,
     FY = 210; /* line to the control valves */
   const A = 'm:BFWP-A',
     B = 'm:BFWP-B',
     FW = A + '|' + B;
+
+  /* one high pressure heater on the feedwater line: inlet valve, heater, outlet valve (gear operated hand valves), and the
+     bypass valve in the line. The feedwater goes up. */
+  const fv = t => 'h:fv-' + t;
+  const heater = (n, y, vi, vo, vb) => {
+    const h = 'h' + n,
+      through = FW + '&' + fv(vi) + '&' + fv(vo),
+      past = FW + '&' + fv(vb);
+    return {
+      items: [
+        at(E('heater', '', '', [], { id: h, flow: through }), HX1, y, { id: h, under: true, sc: HS, mir: true }),
+        at(HX.HV(vi), VX, y + BO, { id: h + 'i', lab: 'b' }),
+        at(HX.HV(vo), VX, y - BO, { id: h + 'o', lab: 't' }),
+        at(HX.HV(vb), RX, y, { id: h + 'b', rot: -90, lab: 'l' })
+      ],
+      pipes: [
+        { med: 'water', w: W_FW, pts: [[RX, y + BO], h + 'i.l'], flow: FW + '&' + fv(vi), arrow: false },
+        { med: 'water', w: W_FW, pts: [h + 'i.r', [WX, y + BO], h + '.in'], flow: through },
+        { med: 'water', w: W_FW, pts: [h + '.out', [WX, y - BO], h + 'o.r'], flow: through, arrow: false },
+        { med: 'water', w: W_FW, pts: [h + 'o.l', [RX, y - BO]], flow: through },
+        { med: 'water', w: W_SM, pts: [[RX, y + BO], h + 'b.l'], flow: past, arrow: false },
+        { med: 'water', w: W_SM, pts: [h + 'b.r', [RX, y - BO]], flow: past, arrow: false }
+      ]
+    };
+  };
+  const HP1 = heater(1, H1Y, 'V-FW1009', 'V-FW1010', 'V-FW1011'),
+    HP2 = heater(2, H2Y, 'V-FW1012', 'V-FW1013', 'V-FW1014');
 
   page({
     id: 'feedwater',
@@ -119,14 +152,14 @@
         at(L('drum-steam', 'Spray water to the superheaters'), 520, 430, { id: 'spl' }),
 
         /* ---- the two high pressure heaters ---- */
-        at(E('heater', '', '', [], { id: 'h1', flow: FW }), HX1, H1Y, { id: 'h1', under: true, sc: HS, mir: true }),
-        at(E('heater', '', '', [], { id: 'h2', flow: FW }), HX1, H2Y, { id: 'h2', under: true, sc: HS, mir: true }),
-        at(X('MV-TS1002', 'Extraction 2 valve'), 1310, 560, { id: 'ts2', lab: 'b' }),
-        at(L('extraction', 'Extraction steam', { back: true }), 1470, 560, { id: 'exl2' }),
-        at(X('MV-TS1001', 'Extraction 1 valve'), 1180, 318, { id: 'ts1', lab: 'b' }),
-        at(L('reheat-steam', 'Cold reheat steam', { back: true }), 1300, 318, { id: 'exl1' }),
-        at(C('LICHD11061', 'Heater 2 drain valve', { tag: 'LCV-HD1106-1' }), DRX, 510, { id: 'd2', rot: 90, lab: 'r' }),
-        at(C('LICHD11051', 'Heater 1 drain valve', { tag: 'LCV-HD1105-1' }), DRX, 770, { id: 'd1', rot: 90, lab: 'r' }),
+        ...HP1.items,
+        ...HP2.items,
+        at(X('MV-TS1002', 'Extraction 2 valve'), 1460, 580, { id: 'ts2', lab: 'b' }),
+        at(L('extraction', 'Extraction steam', { back: true }), 1620, 580, { id: 'exl2' }),
+        at(X('MV-TS1001', 'Extraction 1 valve'), 1330, 338, { id: 'ts1', lab: 'b' }),
+        at(L('reheat-steam', 'Cold reheat steam', { back: true }), 1460, 338, { id: 'exl1' }),
+        at(C('LICHD11061', 'Heater 2 drain valve', { tag: 'LCV-HD1106-1' }), DRX, 530, { id: 'd2', rot: 90, lab: 'r' }),
+        at(C('LICHD11051', 'Heater 1 drain valve', { tag: 'LCV-HD1105-1' }), DRX, 790, { id: 'd1', rot: 90, lab: 'r' }),
 
         /* ---- feedwater control valves, to the economizers ---- */
         at(C('FICFW1007', 'Main feedwater valve', { tag: 'FCV-FW1130-1' }), 1450, 170, { id: 'fcm', lab: 't' }),
@@ -194,10 +227,41 @@
           flow: 'x:MV-FW1001|x:MV-FW1391',
           arrow: false
         },
-        { med: 'water', w: W_FW, pts: [[PBX - 3, DHY], [870, DHY], [870, 740], [WX, 740], 'h1.in'], flow: FW },
+        {
+          med: 'water',
+          w: W_FW,
+          pts: [
+            [PBX - 3, DHY],
+            [870, DHY],
+            [870, 800],
+            [RX, 800],
+            [RX, H1Y + BO]
+          ],
+          flow: FW
+        },
+        /* the two heaters, each with its inlet valve, its outlet valve and its bypass valve in the line */
+        ...HP1.pipes,
+        {
+          med: 'water',
+          w: W_FW,
+          pts: [
+            [RX, H1Y - BO],
+            [RX, H2Y + BO]
+          ],
+          flow: FW
+        },
+        ...HP2.pipes,
         { med: 'water', w: W_SM, pts: [[520, DHY], 'spl.b'], flow: FW, arrow: false },
-        { med: 'water', w: W_FW, pts: ['h1.out', 'h2.in'], flow: FW },
-        { med: 'water', w: W_FW, pts: ['h2.out', [WX, FY], [1370, FY]], flow: FW },
+        {
+          med: 'water',
+          w: W_FW,
+          pts: [
+            [RX, H2Y - BO],
+            [RX, FY],
+            [1370, FY]
+          ],
+          flow: FW
+        },
         /* the two control valves side by side */
         { med: 'water', w: W_FW, pts: [[1370, FY], [1370, 170], 'fcm.l'], flow: 'l:FICFW1007', arrow: false },
         { med: 'water', w: W_FW, pts: ['fcm.r', [1530, 170], [1530, FY]], flow: 'l:FICFW1007', arrow: false },
@@ -206,14 +270,14 @@
         { med: 'water', w: W_FW, pts: [[1530, FY], [1730, FY], [1730, 110], 'ecl.r'], flow: FW },
         /* extraction steam into the heaters */
         { med: 'steam', w: W_ST, pts: ['exl2.l', 'ts2.r'], flow: 'x:MV-TS1002', arrow: false },
-        { med: 'steam', w: W_ST, pts: ['ts2.l', [STX, 560], 'h1.st'], flow: 'x:MV-TS1002' },
+        { med: 'steam', w: W_ST, pts: ['ts2.l', [STX, 580], 'h1.st'], flow: 'x:MV-TS1002' },
         { med: 'reheat', w: W_ST, pts: ['exl1.l', 'ts1.r'], flow: 'x:MV-TS1001', arrow: false },
-        { med: 'reheat', w: W_ST, pts: ['ts1.l', [STX, 318], 'h2.st'], flow: 'x:MV-TS1001' },
+        { med: 'reheat', w: W_ST, pts: ['ts1.l', [STX, 338], 'h2.st'], flow: 'x:MV-TS1001' },
         /* heater drains: No. 2 to No. 1, No. 1 to the deaerator */
         { med: 'drain', w: W_DR, pts: ['h2.dr', 'd2.l'], flow: 'l:LICHD11061', arrow: false },
         { med: 'drain', w: W_DR, pts: ['d2.r', [DRX, H1Y - 21 * HS]], flow: 'l:LICHD11061' },
         { med: 'drain', w: W_DR, pts: ['h1.dr', 'd1.l'], flow: 'l:LICHD11051', arrow: false },
-        { med: 'drain', w: W_DR, pts: ['d1.r', [DRX, 830]], to: 'to deaerator', flow: 'l:LICHD11051' }
+        { med: 'drain', w: W_DR, pts: ['d1.r', [DRX, 850]], to: 'to deaerator', flow: 'l:LICHD11051' }
       ],
       taps: [
         { x: 405, y: DAY - 12 * DAS, side: 't', label: 'Pressure', key: 'PT-TS1017', unit: K, tag: 'PT-TS1017' },
@@ -221,10 +285,19 @@
         { x: 620, y: 880, side: 'l', label: 'Suction', key: 'PT-FW1115-B', unit: K, tag: 'PT-FW1115-B' },
         { x: 410, y: DHY, side: 't', label: 'Pressure', key: 'PT-FW1011', unit: K, tag: 'PT-FW1011' },
         { x: 610, y: DHY, side: 't', label: 'Temperature', key: 'TT-FW1011', unit: '°C', dp: 0, tag: 'TT-FW1011' },
-        { x: WX, y: 468, side: 'l', label: 'After heater 1', key: 'TT-FW1105', unit: '°C', dp: 0, tag: 'TT-FW1105' },
-        { x: WX, y: 290, side: 'l', label: 'After heater 2', key: 'TT-FW1106', unit: '°C', dp: 0, tag: 'TT-FW1106' },
         {
-          x: 1010,
+          x: RX,
+          y: (H1Y + H2Y) / 2,
+          side: 'l',
+          label: 'After heater 1',
+          key: 'TT-FW1105',
+          unit: '°C',
+          dp: 0,
+          tag: 'TT-FW1105'
+        },
+        { x: RX, y: 270, side: 'l', label: 'After heater 2', key: 'TT-FW1106', unit: '°C', dp: 0, tag: 'TT-FW1106' },
+        {
+          x: 1130,
           y: FY,
           side: 't',
           label: 'Feedwater flow',
@@ -235,8 +308,8 @@
         },
         { x: 1590, y: FY, side: 'b', label: 'Pressure', key: 'PT-FW1160', unit: K, tag: 'PT-FW1160' },
         { x: 1680, y: FY, side: 'b', label: 'Temperature', key: 'TT-FW1160', unit: '°C', dp: 0, tag: 'TT-FW1160' },
-        { x: 1262, y: 560, side: 't', label: 'Pressure', key: 'PT-TS1013', unit: K, tag: 'PT-TS1013' },
-        { x: 1100, y: 318, side: 't', label: 'Temperature', key: 'TT-TS1011', unit: '°C', dp: 0, tag: 'TT-TS1011' }
+        { x: 1400, y: 580, side: 't', label: 'Pressure', key: 'PT-TS1013', unit: K, tag: 'PT-TS1013' },
+        { x: 1270, y: 338, side: 't', label: 'Temperature', key: 'TT-TS1011', unit: '°C', dp: 0, tag: 'TT-TS1011' }
       ],
       texts: [
         { x: DAX, y: DAY + 74 * DAS - 22, s: 'Deaerator', cls: 'hx-name', anchor: 'middle' },
@@ -244,12 +317,12 @@
         { x: 520, y: 246, s: 'Level 2', key: 'LT-CD1104-2', unit: 'mm', dp: 0 },
         { x: 520, y: 262, s: 'Level 3', key: 'LT-CD1104-3', unit: 'mm', dp: 0 },
         { x: 520, y: 278, s: 'Pressure', key: 'PT-CD1104', unit: K },
-        { x: 926, y: H1Y + 66, s: 'High pressure heater 1', cls: 'hx-name' },
-        { x: 926, y: H2Y + 66, s: 'High pressure heater 2', cls: 'hx-name' },
-        { x: 1230, y: 640, s: 'Level 1', key: 'LT-HD1105-1', unit: 'mm', dp: 0 },
-        { x: 1230, y: 656, s: 'Level 2', key: 'LT-HD1105-2', unit: 'mm', dp: 0 },
-        { x: 1230, y: 390, s: 'Level 1', key: 'LT-HD1106-1', unit: 'mm', dp: 0 },
-        { x: 1230, y: 406, s: 'Level 2', key: 'LT-HD1106-2', unit: 'mm', dp: 0 }
+        { x: DRX + 12, y: H1Y + 64, s: 'High pressure heater 1', cls: 'hx-name' },
+        { x: DRX + 12, y: H2Y + 64, s: 'High pressure heater 2', cls: 'hx-name' },
+        { x: 1380, y: 660, s: 'Level 1', key: 'LT-HD1105-1', unit: 'mm', dp: 0 },
+        { x: 1380, y: 676, s: 'Level 2', key: 'LT-HD1105-2', unit: 'mm', dp: 0 },
+        { x: 1380, y: 410, s: 'Level 1', key: 'LT-HD1106-1', unit: 'mm', dp: 0 },
+        { x: 1380, y: 426, s: 'Level 2', key: 'LT-HD1106-2', unit: 'mm', dp: 0 }
       ]
     }
   });
