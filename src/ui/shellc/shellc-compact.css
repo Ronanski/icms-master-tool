@@ -29,3 +29,36 @@ html body.sc,html[data-theme=dark] body.sc,html[data-theme] body.sc{
 html body.sc:not(.sc-dgdark) #plmid{background:var(--sc-page)!important}
 /* a realistic plant page is drawn inside the plant svg: the svg takes the dark ground too, so no white field stands around it */
 html body.sc #plsvg:has(.hx-app){background:var(--sc-page)!important}
+
+/* ===== Step 2: two thin bars, one control size, one corner (approved mockup: 22 px controls, 12 px text, 2 px corners) ===== */
+/* the values on top: one line, name then value then unit (was a 48 px band with the name above the value) */
+html body.sc.scbars #gsbar:not(#scnone) #scstrip .scv{height:auto!important;min-height:24px!important;flex-wrap:wrap!important;align-items:stretch!important}
+html body.sc #gsbar:not(#scnone) #scstrip .sck{display:flex!important;flex-direction:row!important;align-items:baseline!important;align-content:normal!important;justify-content:flex-start!important;gap:5px!important;row-gap:0!important;flex:0 0 auto!important;min-width:0!important;max-width:none!important;width:auto!important;height:24px!important;padding:0 10px!important;line-height:24px!important;grid-template-rows:none!important}
+html body.sc #gsbar:not(#scnone) #scstrip .sck i{font:400 11.5px/24px var(--sc-ui)!important;white-space:nowrap!important;align-self:auto!important;color:var(--sc-ink2)!important}
+html body.sc #gsbar:not(#scnone) #scstrip .sck b{font:500 12.5px/24px var(--sc-num)!important;color:var(--sc-ink)!important}
+html body.sc #gsbar:not(#scnone) #scstrip .sck small{font:400 10.5px/24px var(--sc-ui)!important;flex:none!important;width:auto!important;color:var(--sc-ink2)!important}
+/* the tool bar: 28 px, every control 22 px high with a 2 px corner */
+html body.sc #gsbar:not(#scnone) #scstrip #scctx{min-height:28px!important;height:auto!important;align-items:center!important}
+html body.sc #gsbar:not(#scnone) #scstrip #scctx :is(button,select,.seg,.spd,.plchip,.pill){min-height:22px!important;height:22px!important;border-radius:2px!important;font-size:12px!important;line-height:20px!important}
+html body.sc #gsbar:not(#scnone) #scstrip #scctx .seg{padding:0!important;gap:0!important;overflow:hidden}
+html body.sc #gsbar:not(#scnone) #scstrip #scctx .seg button{height:20px!important;min-height:20px!important;border-radius:0!important}
+html body.sc #gsbar:not(#scnone) #scstrip #scctx .pill{padding:0 8px!important;gap:5px!important}
+html body.sc #gsbar:not(#scnone) #scstrip #scctx .pill .dot{width:7px!important;height:7px!important}
+html body.sc #gsbar:not(#scnone) #scstrip #scctx :is(.scsrp,.scgearb,.scdetb){width:22px!important;min-width:22px!important;padding:0!important}
+/* the status line at the bottom: 20 px */
+html body.sc #sfoot{height:20px!important;min-height:20px!important;font-size:11px!important;line-height:20px!important}
+/* the values: name, value and unit sit on one centre line */
+html body.sc #gsbar:not(#scnone) #scstrip .sck{align-items:center!important}
+html body.sc #gsbar:not(#scnone) #scstrip .sck :is(i,b,small){line-height:1!important}
+/* the page bar of the Plant view and of the sheets sits inside the tool bar: its controls take the same 22 px and 2 px */
+html body.sc :is(.plbar,.tbar):not(#scnone) :is(button,select,.ddw > *){min-height:22px!important;height:22px!important;border-radius:2px!important;font-size:12px!important;line-height:20px!important}
+html body.sc .plbar:not(#scnone) :is(.crop,.tb,.ddw,.plnav){height:22px!important;min-height:22px!important;align-items:center!important}
+html body.sc .plbar:not(#scnone) .plstep,html body.sc .plbar:not(#scnone) .scfs{width:22px!important;min-width:22px!important;padding:0!important}
+/* the status line: its parts keep inside the 20 px */
+html body.sc #sfoot:not(#scnone) > *{height:20px!important;min-height:20px!important;line-height:20px!important;font-size:11px!important;padding-top:0!important;padding-bottom:0!important;top:auto!important}
+html body.sc #sfoot:not(#scnone) #stchip span{height:16px!important;line-height:16px!important;padding:0 6px!important;font-size:11px!important;border-radius:2px!important}
+body.sc{--foot:20px}
+html body.sc #gsbar:not(#scnone) #scstrip .sck :is(i,b,small){align-self:center!important;margin:0!important;position:static!important;transform:none!important}
+/* the plant chip: its two words on one line */
+html body.sc #gsbar:not(#scnone) #scstrip #scctx #plchip{display:inline-flex!important;flex-direction:row!important;align-items:center!important;gap:6px!important;white-space:nowrap!important;padding:0 8px!important}
+html body.sc #gsbar:not(#scnone) #scstrip #scctx #plchip *{line-height:1!important;font-size:12px!important;margin:0!important;position:static!important}
