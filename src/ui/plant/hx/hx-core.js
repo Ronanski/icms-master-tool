@@ -48,6 +48,10 @@
      hmi-mock.js has for it (data-tpb="trip", data-apb="ABC-010|M.054F|M.0222=0", data-dy=..., data-fv=...), so the press and
      the state are the ones of that page. press: true = a push button (a click presses it), else a state only */
   HX.B = (text, hook, o) => Object.assign({ k: 'hook', name: text, hook }, o || {});
+  /* a step card of the automatic turbine start-up: step = 0 .. 7, text = its title, items = the names of its three check
+     items (310SC90-775). The card is lit while its step runs, its items show Y / N and the live value of the running step
+     (HX.data.ats, the check list of hmi-mock.js) */
+  HX.S = (step, text, items, o) => Object.assign({ k: 'ats', step, name: text, items: items || [] }, o || {});
   /* a named state for a rule: HX.hk('g52', 'data-dy=...') gives 'h:g52', true while that state of the hmi-mock.js page is
      its red one (a breaker closed, a valve open, a Y) */
   HX.HK = {};
@@ -199,6 +203,7 @@
   function measure(it) {
     if (it.k === 'link') return { up: 15, dn: 15 };
     if (it.k === 'hook') return { up: 18, dn: 18 };
+    if (it.k === 'ats') return { up: 52, dn: 52 };
     const box = SYM[it.sym](Object.assign({ id: 'm' }, it)).box,
       side = it.lab === 'r' || it.lab === 'l',
       lines = it.name ? wrap(it.name, it.wrap || (side ? 22 : 19)).length : 0,
@@ -284,6 +289,19 @@
       it._box = [x - w / 2, y - 13, x + w / 2, y + 13];
       const ready = !!HX.byId[it.to];
       return `<g class="hx-link${ready ? '' : ' soon'}"${ready ? ` data-go="${esc(it.to)}" tabindex="0" role="link"` : ''} transform="translate(${n1(x)} ${n1(y)})">${ready ? '' : '<title>This page is not drawn yet</title>'}<rect x="${n1(-w / 2)}" y="-13" width="${n1(w)}" height="26" rx="13"/><text x="0" y="4" text-anchor="middle">${back ? '‹ ' : ''}${esc(t)}${back ? '' : ' ›'}</text></g>`;
+    }
+    if (it.k === 'ats') {
+      const w = it.w || 180,
+        h = 100;
+      it._p = { l: [x - w / 2, y], r: [x + w / 2, y], t: [x, y - h / 2], b: [x, y + h / 2] };
+      it._box = [x - w / 2, y - h / 2, x + w / 2, y + h / 2];
+      const rows = [0, 1, 2]
+        .map(
+          i =>
+            `<g transform="translate(${n1(-w / 2 + 10)} ${-8 + i * 20})"><rect class="hx-atb" data-atb="${i}" x="0" y="-9" width="10" height="10" rx="2"/><text class="hx-att" x="16" y="0" data-att="${i}">${esc(it.items[i] || '')}</text><text class="hx-atv" x="${n1(w - 20)}" y="0" text-anchor="end" data-atv="${i}"></text></g>`
+        )
+        .join('');
+      return `<g class="hx-ats" data-ats="${it.step}" transform="translate(${n1(x)} ${n1(y)})"><rect class="hx-atc" x="${n1(-w / 2)}" y="${-h / 2}" width="${n1(w)}" height="${h}" rx="6"/><text class="hx-atn" x="${n1(-w / 2 + 10)}" y="${-h / 2 + 18}">${esc(it.name)}</text>${rows}</g>`;
     }
     if (it.k === 'hook') {
       const t = it.name,
@@ -934,6 +952,32 @@
               a = AL[k];
             e.classList.toggle('hx-alm', a != null);
             e.classList.toggle('ack', a === true);
+          }
+        });
+        const AT = D.ats ? D.ats() : null;
+        Q('[data-ats]').forEach(e => {
+          const k = +e.dataset.ats,
+            st =
+              !AT || !AT.on
+                ? ''
+                : AT.cur === k
+                  ? ' act'
+                  : AT.step >= k
+                    ? ' done'
+                    : AT.cur < 0 && k === AT.step + 1
+                      ? ' next'
+                      : '',
+            c = 'hx-ats' + st,
+            R = AT && AT.rows ? AT.rows[k] : null;
+          if (e.getAttribute('class') !== c) e.setAttribute('class', c);
+          for (let i = 0; i < 3; i++) {
+            const b = e.querySelector('[data-atb="' + i + '"]'),
+              v = e.querySelector('[data-atv="' + i + '"]'),
+              ok = R ? !!(R[i] && R[i][1]) : AT && AT.on ? AT.step >= k : null,
+              bc = 'hx-atb' + (ok == null ? '' : ok ? ' y' : ' n'),
+              tx = (R && R[i] && R[i][2]) || '';
+            if (b.getAttribute('class') !== bc) b.setAttribute('class', bc);
+            if (v.textContent !== tx) v.textContent = tx;
           }
         });
         Q('[data-hook]').forEach(e => {
