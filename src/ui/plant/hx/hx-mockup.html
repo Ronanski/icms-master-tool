@@ -5432,6 +5432,19 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
       items: [
         /* ---- air heater ---- */
         at(M('airheater', 'AIR PREHEATER', 'Air heater', []), AX, AY, { id: 'ah', sc: AS, lab: 'b' }),
+        /* the back-up drive of the air heater: an air motor, its air valve SV-PA1052 is the output O.029F of DITL-44 (old page 038) */
+        at(
+          HX.HV('SVPA1052', 'Back-up air motor valve', {
+            kind: 'shutoff',
+            wrap: 14,
+            tag: 'SV-PA1052',
+            on: HX.hk('aph-airmotor', 'data-dpo="DITL-44|O.029F|OPEN|CLOSED"'),
+            hp: ''
+          }),
+          AX + 350,
+          AY + 30,
+          { id: 'amv', lab: 'b' }
+        ),
         at(L('furnace-gas', 'Flue gas from the back pass', { back: true }), 1230, 440, { id: 'gin' }),
         at(L('furnace-gas', 'Flue gas to the precipitator'), 1230, 690, { id: 'gout' }),
 
@@ -5590,7 +5603,10 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         { x: 1180, y: 350, side: 't', label: 'Pressure', key: 'PT-FA1088', unit: MM, dp: 0, tag: 'PT-FA1088' },
         { x: 1120, y: HY, side: 'b', label: 'Flow', key: 'FT-FA1055', unit: 't/h', tag: 'FT-FA1055' }
       ],
-      texts: [{ x: 1500, y: 150, s: 'Total air flow', key: 'ABC-002|SI0060', unit: 't/h', cls: 'hx-name' }]
+      texts: [
+        { x: AX + 350, y: AY - 20, s: 'Back-up drive of the air heater', cls: 'hx-note', anchor: 'middle' },
+        { x: 1500, y: 150, s: 'Total air flow', key: 'ABC-002|SI0060', unit: 't/h', cls: 'hx-name' }
+      ]
     }
   });
 })();

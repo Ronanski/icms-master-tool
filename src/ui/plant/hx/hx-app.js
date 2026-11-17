@@ -367,6 +367,8 @@
      old links still name it) with gone = the new page, which plant.js opens instead. One line per old page, added only after
      the new page was checked against it. */
   const GONE = {
+    APH: 'HX-combustion-air' /* 038 AIR PREHEATER: main drive, back-up air motor valve, air and gas values */,
+    BIAS: 'HX-reheat-steam' /* 039 RH / SH BIASING DAMPER: pass dampers, spray, gas temperatures */,
     MK16: 'HX-sampling' /* SAMPLING AND DOSING: every analyzer, alarm, pump and level switch it had */,
     MK09: 'HX-furnace-gas' /* AIR AND FLUE GAS: Furnace and flue gas + Combustion air */,
     AFG: 'HX-furnace-gas' /* 007 AIR & FLUE GAS, the page before MK09 */,
