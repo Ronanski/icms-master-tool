@@ -25,6 +25,26 @@
          station): field equipment of the plant model AN.field('esp') (dust and opacity follow it), as the Training ESP step */
       ESP: { n: 'ESP', t: 'Electrostatic precipitator', d: 'EP PLC panel', fld: 'esp', fieldOp: true, why: 'Field equipment: the precipitator (transformer-rectifiers U-1201 ~ U-1205, purge air heater H-1201 and fan F-1201) is started at the EP PLC panel. No DCS command; dust and opacity follow it.' }
     },
-    unit: {}
+    unit: {
+      'PT-CW1156': 'acP6',
+      'TT-CW1156': 'acT6',
+      'LT-BH1750': 'bhSilo',
+      'TT-BH1060-A1': 'bhA1',
+      'TT-BH1060-A2': 'bhA2',
+      'TT-CW1060-A1': 'bwA1',
+      'TT-CW1060-A2': 'bwA2',
+      'TT-BH1060-B1': 'bhB1',
+      'TT-BH1060-B2': 'bhB2',
+      'TT-CW1060-B1': 'bwB1',
+      'TT-CW1060-B2': 'bwB2',
+      'TT-BH1060-C1': 'bhC1',
+      'TT-BH1060-C2': 'bhC2',
+      'TT-CW1060-C1': 'bwC1',
+      'TT-CW1060-C2': 'bwC2',
+      'TT-BH1060-D1': 'bhD1',
+      'TT-BH1060-D2': 'bhD2',
+      'TT-CW1060-D1': 'bwD1',
+      'TT-CW1060-D2': 'bwD2'
+    }
   });
 })();
