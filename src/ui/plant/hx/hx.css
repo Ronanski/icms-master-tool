@@ -592,3 +592,7 @@
 .hx-hook.press:hover rect, .hx-hook.press:focus-visible rect { stroke: var(--hx-accent); }
 .hx-hook.press.on rect { fill: var(--hx-accent); stroke: var(--hx-accent); }
 .hx-hook.press.on .hx-hkl { fill: var(--hx-bg) !important; }
+.hx-hook.run rect { stroke: var(--hx-run); }
+.hx-hook.plain .hx-hkl { font-size: 10.6px; font-weight: 500; }
+.hx-hook.plain.run rect { fill: var(--hx-run); }
+.hx-hook.plain.run .hx-hkl { fill: #fff !important; font-weight: 700; }
