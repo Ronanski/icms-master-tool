@@ -156,6 +156,8 @@ const block =
   fs.readFileSync(__dirname + '/../shellc/shellc-details.js', 'utf8') /* the Details column */ +
   '\n' +
   fs.readFileSync(__dirname + '/../shellc/shellc-zoom.js', 'utf8') /* readable page size and the locator */ +
+  '\n' +
+  fs.readFileSync(__dirname + '/../shellc/shellc-compact.js', 'utf8') /* compact shell: alarm line, grouped values, page view selector */ +
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');
