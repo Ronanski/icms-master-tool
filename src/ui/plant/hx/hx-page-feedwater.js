@@ -116,7 +116,7 @@
           rot: -90,
           lab: 'r'
         }),
-        at(L('boiler-steam', 'Spray water to the superheaters'), 520, 430, { id: 'spl' }),
+        at(L('drum-steam', 'Spray water to the superheaters'), 520, 430, { id: 'spl' }),
 
         /* ---- the two high pressure heaters ---- */
         at(E('heater', '', '', [], { id: 'h1', flow: FW }), HX1, H1Y, { id: 'h1', under: true, sc: HS, mir: true }),
@@ -131,7 +131,7 @@
         /* ---- feedwater control valves, to the economizers ---- */
         at(C('FICFW1007', 'Main feedwater valve', { tag: 'FCV-FW1130-1' }), 1450, 170, { id: 'fcm', lab: 't' }),
         at(C('LICBR1001B', 'Start-up feedwater valve', { tag: 'FCV-FW1130-2' }), 1450, 250, { id: 'fcs', lab: 'b' }),
-        at(L('boiler-steam', 'To the economizers and the drum'), 1640, 110, { id: 'ecl' }),
+        at(L('drum-steam', 'To the economizers and the drum'), 1640, 110, { id: 'ecl' }),
         at(C('LICBR1001', 'Drum level, three element', { sym: 'ctl', unit: 'mm', pvdp: 0, wrap: 30 }), 1060, 70, {
           id: 'lc3',
           lab: 't'
