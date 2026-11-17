@@ -4434,8 +4434,12 @@ function anGenInt(dt) {
      pH        target 9.0 (PR-OPE-5002 3929 "PH level = 9.0"; FHI 2-8-TAB_3 p 2 amines 8.8 ~ 9.2). A weak base: [OH-] grows with the
                square root of its concentration, pH = 9.0 + 0.5 log10(c), not below the make-up water pH 7.5 (alarm list AT-SP1006
                normal). Feedwater AT-SP1001 / 1003 / 1009 and main steam AT-SP1016 (the amine goes with the steam).
-     phosphate stays in the boiler water: dP/dt = (dose - P x Fbd) / Mb, Mb = the boiler 252 m3 above. The dose holds 5 ppm PO4 at the
-               design CBD 15 T/H: the low end of the coordinated phosphate band (FHI Figure 2-8-TAB_3-2: PO4 5 ~ 10 ppm, pH 9.1 ~ 9.8).
+     phosphate stays in the boiler water: dP/dt = (dose - P x Fbd) / Mb, Mb = the boiler 252 m3 above. The dose holds 2 ppm PO4 at the
+               design CBD 15 T/H. 3.2.4-beta.50 (JENNIE, Rosé: AL2-SP01 stood in ALARM at 150 MW): was 5 ppm, the low end of the FHI band
+               (Figure 2-8-TAB_3-2: PO4 5 ~ 10 ppm, pH 9.1 ~ 9.8), but there the drum water of this curve is pH 9.50 and 19.1 uS/cm,
+               over the plant alarm list (AT-SP1011 H 9.5, AT-SP1012 H 10 uS/cm; snapshot AISP1012 4.6 uS/cm). The plant runs its
+               phosphate inside its own alarm limits: 2 ppm = pH 9.08, 7.6 uS/cm (NO-SOURCE: the plant PO4 is not in a snapshot; the
+               snapshot pair pH 9.5 / 4.6 uS/cm cannot be one water: OH- alone at pH 9.5 and 25 C is 6.3 uS/cm).
      drum pH   AT-SP1011: FHI Figure 2-8-TAB_3-3, curve Na/PO4 = 2.6 (FHI: maintain Na/PO4 <= 2.6), read at 1 / 2.5 / 5 / 7.5 / 10 / 15 /
                20 ppm (the curve is the phosphate water; no phosphate = the feedwater pH, never below it).
      drum cond AT-SP1012 specific conductivity of the phosphate water at 25 C: Na+ = 2.6 PO4, HPO4-- / PO4--- from the charge balance,
@@ -4467,7 +4471,7 @@ const AN_CHEM = {
   Fbd0: 15,
   pH0: 9.0,
   pHmu: 7.5,
-  P0: 5,
+  P0: 2,
   hw: 61.9,
   fwt: 100.4,
   da: 3.54,
