@@ -48,6 +48,10 @@
      hmi-mock.js has for it (data-tpb="trip", data-apb="ABC-010|M.054F|M.0222=0", data-dy=..., data-fv=...), so the press and
      the state are the ones of that page. press: true = a push button (a click presses it), else a state only */
   HX.B = (text, hook, o) => Object.assign({ k: 'hook', name: text, hook }, o || {});
+  /* a named state for a rule: HX.hk('g52', 'data-dy=...') gives 'h:g52', true while that state of the hmi-mock.js page is
+     its red one (a breaker closed, a valve open, a Y) */
+  HX.HK = {};
+  HX.hk = (name, hook) => ((HX.HK[name] = hook), 'h:' + name);
   /* a hand valve of the plant model (a field valve the operator sets): OPEN / CLOSED, a click opens its field faceplate */
   HX.H = (tag, text, o) => HX.B(text || tag, 'fv:' + tag, Object.assign({ press: true, state: true, w: 104 }, o || {}));
   HX.page = def => {
@@ -83,7 +87,8 @@
     return regName(it);
   };
 
-  /* ---------- flow of a line: 'm:NAME' running, 'x:VALVE' open, 'l:LOOP' output > 1 %, 'v:KEY>n'; a | b = any ---------- */
+  /* ---------- flow of a line: 'm:NAME' running, 'x:VALVE' open, 'l:LOOP' output > 1 %, 'v:KEY>n', 'h:NAME' a named state
+     (HX.hk); a | b = any ---------- */
   const flowing = spec => {
     if (!spec) return null;
     const D = HX.data;
@@ -98,6 +103,7 @@
           return v.open === true || v.pct > 1;
         }
         if (k === 'l:') return ((D.loop(a) || {}).mv || 0) > 1;
+        if (k === 'h:') return ((D.hook && HX.HK[a] && D.hook(HX.HK[a], a)) || {}).tone === 'run';
         if (k === 'v:') {
           const m = a.split('>');
           return (D.value(m[0]) || 0) > +(m[1] || 0);

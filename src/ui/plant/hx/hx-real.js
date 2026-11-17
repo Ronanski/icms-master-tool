@@ -834,6 +834,58 @@
     };
   };
 
+  /* ---------------- electrical: breaker, switch, transformer, control cubicle ---------------- */
+  /* Shapes are a picture only (no outline drawing of the switchgear in document-references). The line runs from the top
+     terminal to the bottom terminal. The position window of a breaker and the blade of a switch take the state colour of
+     the rule in "on": red = closed, green = open. */
+  /* circuit breaker: a cubicle with its three poles behind the window and the position window below. Ports: t / b */
+  R.breaker = () => ({
+    box: [-27, -36, 27, 36],
+    ports: { t: [0, -35], b: [0, 35], l: [-26, 0], r: [26, 0] },
+    svg:
+      '<path class="rxv" d="M-4 -35h8v8h-8zM-4 27h8v8h-8z"/><rect class="rx" x="-26" y="-28" width="52" height="56" rx="3"/>' +
+      '<rect class="rxvoid" x="-20" y="-22" width="40" height="24" rx="2"/><path class="rxst" d="M-12 -18v16M0 -18v16M12 -18v16"/>' +
+      '<path class="rxk" d="M-14.5 -12h5v4h-5zM-2.5 -12h5v4h-5zM9.5 -12h5v4h-5z"/>' +
+      '<rect class="rxs" x="-20" y="7" width="40" height="15" rx="2"/><path class="rxe" d="M-26 4.5h52"/><path class="rxhi" d="M-22 -25.5h44"/>'
+  });
+  /* disconnect switch between two post insulators; earth: true = an earth switch (the lower side goes to earth).
+     Ports: t / b (an earth switch has no line below) */
+  R.dswitch = o => ({
+    box: [-22, -31, 22, o.earth ? 40 : 31],
+    ports: { t: [0, -30], b: [0, o.earth ? 26 : 30], l: [-21, 0], r: [21, 0] },
+    svg:
+      '<path class="rxv" d="M-8 -24h16v9h-16zM-8 15h16v9h-16z"/><path class="rxe" d="M-8 -21h16M-8 -18h16M-8 18h16M-8 21h16"/>' +
+      '<path class="rx" d="M-4 -30h8v6h-8z"/>' +
+      (o.earth
+        ? '<path class="rxst" d="M0 24v4M-11 28h22M-7 32h14M-3 36h6"/>'
+        : '<path class="rx" d="M-4 24h8v6h-8z"/>') +
+      '<rect class="rxs" x="-3.2" y="-15" width="6.4" height="30" rx="2.2"/><path class="rxk" d="M-5 -16.5h10v3h-10zM-5 13.5h10v3h-10z"/>'
+  });
+  /* oil filled power transformer seen from the front: tank, radiators on both sides, three bushings on top, the low
+     voltage box below. Ports: t (high voltage), b (low voltage) */
+  R.transformer = () => {
+    let fin = '';
+    for (let x = 0; x < 5; x++) fin += `M${-43 + x * 3.2} -16v40M${31 + x * 3.2} -16v40`;
+    return {
+      box: [-47, -50, 47, 41],
+      ports: { t: [0, -49], b: [0, 40], l: [-46, 4], r: [46, 4] },
+      svg:
+        '<path class="rxd" d="M-22 30h44v5h-44z"/><path class="rxd" d="M-45 -18h16v44h-16zM29 -18h16v44h-16z"/>' +
+        `<path class="rxe" d="${fin}"/>` +
+        '<path class="rxv" d="M-17 -49h7v15h-7zM-3.5 -49h7v15h-7zM10 -49h7v15h-7z"/><path class="rxe" d="M-17 -45h7M-17 -41h7M-3.5 -45h7M-3.5 -41h7M10 -45h7M10 -41h7"/>' +
+        '<rect class="rx" x="-27" y="-34" width="54" height="64" rx="3"/><path class="rxhi" d="M-23 -31h46"/>' +
+        '<path class="rxe" d="M-27 -22h54M-19 -10a9 9 0 1 0 0.1 0M9 -10a9 9 0 1 0 0.1 0"/><path class="rx" d="M-7 30h14v10h-14z"/>'
+    };
+  };
+  /* control cubicle (voltage regulator): a panel with a small screen and its door. Ports: t / b / l / r */
+  R.cubicle = () => ({
+    box: [-21, -29, 21, 29],
+    ports: { t: [0, -28], b: [0, 28], l: [-20, 0], r: [20, 0] },
+    svg:
+      '<path class="rxd" d="M-18 24h36v4h-36z"/><rect class="rx" x="-20" y="-28" width="40" height="52" rx="2.5"/>' +
+      '<rect class="rxscr" x="-13" y="-21" width="26" height="14" rx="1.5"/><path class="rxe" d="M-13 0h26M-13 7h26M-13 14h18"/><path class="rxhi" d="M-16 -25.5h32"/>'
+  });
+
   /* ---------------- scenery ---------------- */
   /* the basement floor: o.w wide from (0, 0) */
   R.floor = o => ({
