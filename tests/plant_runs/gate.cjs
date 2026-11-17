@@ -9,7 +9,12 @@
    FAIL = an MFT (I.000F MFT FROM IRP goes 0 -> 1) before the step where the procedure itself makes one (shutdown: "30 MW: turbine
    SHUT-DOWN (MFT follows)"), a step that does not move for 300 plant minutes, the engine not in the worker, a page error, or the
    wall-clock limit. Usage: npm run build; node tests/plant_runs/gate.cjs [cold,hot,warm,shutdown] [--x 300] [--mins 60]
-   (PLAYWRIGHT_MODULE / CHROMIUM env as the other tools; on GitHub the playwright of npm and its chromium). Exit 0 = all pass. */
+   (PLAYWRIGHT_MODULE / CHROMIUM env as the other tools; on GitHub the playwright of npm and its chromium). Exit 0 = all pass.
+   Faster repeat (CHAEWON beta.200, user 2026-11-13 "Bkt kelangan ang test ay lagi nagstart sa full cold run?"): a fix is tried from a
+   save point a few steps before the trouble; the full run stays the proof before a merge.
+     --save-at <step> --save <file.json>   save the whole plant (the SAVE of the app: engine, DITL, Training step) when the run first
+                                           reaches that step, then go on
+     --from <file.json>                    start the ONE run named from that save point instead of its starting state */
 const fs = require('fs'),
   path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
@@ -27,6 +32,9 @@ const RUNS = {
 const pick = (process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'cold,hot,warm,shutdown').split(',');
 const SPD = '×' + (arg('x') || '300'),
   MINS = +arg('mins') || 60,
+  SAVE_AT = arg('save-at') != null ? +arg('save-at') : null,
+  SAVE_F = arg('save'),
+  FROM = arg('from'),
   TRACE = arg('trace') != null ? +arg('trace') : null;
 const V = fs.readFileSync(path.join(ROOT, 'src', 'version.txt'), 'utf8').trim();
 const HTML = require('url').pathToFileURL(path.join(ROOT, 'dist', 'logic-sim-v' + V + '.html')).href;
@@ -68,6 +76,19 @@ async function one(b, name) {
     await p.waitForTimeout(3000);
     await p.evaluate(st => LS_GUIDE.openStage(st), R.stage);
     await p.waitForTimeout(4000);
+    if (FROM) {
+      const sv = JSON.parse(fs.readFileSync(FROM, 'utf8'));
+      const at = await p.evaluate(async sv => {
+        await DITL150.savePut({ kf: sv.kf, kd: sv.kd, ver: sv.ver || '' });
+        if (sv.rk != null) AN.restartKind = sv.rk;
+        if (sv.tr && sv.tr.lat && LS_LIVE.load) LS_LIVE.load(sv.tr.lat);
+        if (sv.tr && sv.tr.cur != null) LS_GUIDE.open(sv.tr.cur);
+        if (AN.runOn) AN.runOn();
+        return LS_GUIDE.cur;
+      }, sv);
+      say('from save ' + path.basename(FROM) + ' (step ' + at + ')');
+      await p.waitForTimeout(3000);
+    }
     await p.evaluate(spd => {
       const b = [...document.querySelectorAll('#gdock .gd-seg button')].find(x => x.textContent === spd);
       if (b) b.click();
@@ -105,6 +126,15 @@ async function one(b, name) {
       });
       if (r.eng !== 'mirror' || r.err) return fail('engine left the Worker: ' + r.eng + ' ' + r.err);
       if (errs.length) return fail('page error: ' + errs[0]);
+      if (SAVE_AT != null && SAVE_F && r.cur >= SAVE_AT && !one.saved) {
+        one.saved = 1;
+        const sv = await p.evaluate(async () => {
+          const m = ENG.peek ? await ENG.peek() : null;
+          return JSON.stringify({ kf: m && m.kf, kd: m && m.kd, ver: '', rk: AN.restartKind == null ? null : AN.restartKind, tr: { lat: LS_LIVE.done ? JSON.parse(JSON.stringify(LS_LIVE.done())) : null, cur: LS_GUIDE.cur } });
+        });
+        fs.writeFileSync(SAVE_F, sv);
+        say('saved at step ' + r.cur + ' -> ' + SAVE_F + ' (' + (sv.length / 1e6).toFixed(1) + ' MB)');
+      }
       if (r.cur !== last) {
         say('T ' + (r.T / 60).toFixed(0) + ' min, step ' + r.cur + ' ' + String(r.t).slice(0, 70) + ' | MW ' + r.MW.toFixed(1) + ' MSP ' + r.MSP.toFixed(1) + ' drum ' + r.lvl.toFixed(0) + ' mm FW ' + r.fw.toFixed(0) + ' steam ' + r.msf.toFixed(0));
         last = r.cur;
