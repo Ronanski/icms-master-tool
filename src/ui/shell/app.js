@@ -1706,6 +1706,7 @@
           sv.name = nm;
           /* Mina F151-1: APP_VERSION never existed, so every save had no version; the build writes it here (tools/build/build.js) */
           sv.ver = '@@VERSION@@';
+          sv.flt = svFlt();
           return svDo('readwrite', st => st.put(sv)).then(() => msg('Saved: ' + nm + '. LOAD a save point puts the plant back here.'));
         })
         .catch(e => msg('Could not save: ' + e.message));
@@ -1719,12 +1720,27 @@
       name: () => svName(),
       del: e => svDo('readwrite', st => st.delete(e.id)).then(() => msg('Deleted: ' + e.name))
     };
+    /* 3.2.4-beta.50 (JENNIE, live test 2026-11-17): a save point keeps the trainer faults that were on (AN.fault of engine/faults.js and
+       WORLD.ftrip of world.js), and LOAD puts them back as saved. Before, LOAD left the faults of the running plant on: the black-out
+       stayed on after LOAD of a 150 MW save, so Run tripped the plant again. A save made before this one has no list: no fault is on */
+    const svFlt = () => ({
+      an: (AN.fault ? AN.fault() : []).filter(q => q.on).map(q => q.id),
+      w: (window.WORLD && WORLD.ftrip ? WORLD.ftrip() : []).filter(q => q.on).map(q => q.id)
+    });
+    const svFltPut = f => {
+      const want = f || { an: [], w: [] };
+      for (const q of AN.fault ? AN.fault() : []) if (!!q.on !== want.an.includes(q.id)) AN.fault(q.id, !q.on);
+      for (const q of window.WORLD && WORLD.ftrip ? WORLD.ftrip() : []) if (!!q.on !== want.w.includes(q.id)) WORLD.ftrip(q.id, !q.on);
+    };
     const svLoad = e => {
       if (AN.pauseOn && AN.run) AN.pauseOn();
       msg('Loading save point ' + e.name + '...');
       return Promise.resolve(DITL150.savePut({ kf: e.kf, kd: e.kd, ver: e.ver || '' })).then(() => {
         const G = window.LS_GUIDE,
           Lv = window.LS_LIVE;
+        try {
+          svFltPut(e.flt);
+        } catch (er) {}
         if (e.tr && e.tr.lat && Lv && Lv.load) Lv.load(e.tr.lat);
         if (e.tr && e.tr.cur != null && G && G.on && G.open) G.open(e.tr.cur);
         if (AN.pauseOn && AN.run) AN.pauseOn();
