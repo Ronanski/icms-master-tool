@@ -208,10 +208,17 @@
         BD = R.machines[name] && R.machines[name].bind,
         DFV = BD && BD.df && BD.d && BD.df.st != null ? call(() => window.LS_DOCK.dout(BD.d, BD.df.st), null) : null,
         md = (pq('[data-hxd="' + name + '"]') || {}).textContent || '',
-        y = (pq('[data-hxy="' + name + '"]') || {}).textContent || '';
+        y = (pq('[data-hxy="' + name + '"]') || {}).textContent || '',
+        /* 3.2.5-beta.1 (JENNIE live Cold 2026-11-18, F-L): a state row that is not a running state (DITL-09 row 26 REMOTE of the
+           burner panels) showed as Running in red on the oil page, a burner without flame looked fired: the words of the row, grey */
+        ON = DFV != null && BD.df.on ? String(BD.df.on) : '',
+        word = ON && !/^(OPERATING|RUNNING|SYSTEM ON|FILL CYCLE ON|OPEN)$/.test(ON) ? (DFV === 1 ? ON : BD.df.off || '') : null;
       return {
+        word,
         st:
-          (FLD != null ? FLD : DFV) != null
+          /REMOTE/.test(ON)
+            ? null
+            : (FLD != null ? FLD : DFV) != null
             ? (FLD != null ? FLD : DFV) === 1
               ? 'run'
               : 'stop'

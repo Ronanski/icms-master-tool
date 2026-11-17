@@ -172,7 +172,10 @@
         at(C('PICDO1008', 'Oil return valve', { tag: 'PCV-DO1009' }), 430, 90, { id: 'ret', lab: 'b' }),
         at(C('FIC-OM', 'Oil master', { sym: 'ctl', unit: 't/h', pvdp: 2 }), 900, 940, { id: 'om', lab: 't' }),
         ...B.flatMap(b => b.items),
-        at(L('combustion-air', 'Hot secondary air', { back: true }), AIRX + 80, 90, { id: 'hsa' })
+        at(L('combustion-air', 'Hot secondary air', { back: true }), AIRX + 80, 90, { id: 'hsa' }),
+        /* 3.2.5-beta.1 (JENNIE live Cold 2026-11-18, F-M): the atomizing air of the burners is plant air (DITL-07 row 11
+           PSL-PA1043-x1): the burners stayed not ready with no plant air compressor running, and no page of the burners led to it */
+        at(L('compressed-air', 'Plant air (atomizing air)'), 1350, 960, { id: 'pal' })
       ],
       pipes: [
         /* tank outlet, strainer, the suction header and the suction valve of each pump */

@@ -296,6 +296,10 @@
 .hx-link { outline: none; }
 .hx-link:focus-visible rect { stroke: var(--hx-accent); stroke-width: 2.4; }
 .hx-node[data-open] { cursor: pointer; }
+/* 3.2.5-beta.1 (JENNIE live Cold 2026-11-18, F-K): a drawing with nothing to open (the backpass of the purge page) is drawn over
+   the dampers in it, so its glow took the click in the middle of the RH / SH biasing damper: it lets the click through */
+.hx-node:not([data-open]):not([data-hp]) { pointer-events: none; }
+.hx-node:not([data-open]):not([data-hp]) :is([data-open], [data-yn], [data-hp], [data-press], [data-go]) { pointer-events: auto; }
 .hx-node[data-open]:hover .hxo, .hx-node[data-open]:focus-visible .hxo { stroke: var(--hx-accent); stroke-width: 2.4; }
 .hx-hit { fill: transparent; }
 .hx-yn rect { stroke: var(--hx-ink); stroke-width: 1; }

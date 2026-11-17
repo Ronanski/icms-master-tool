@@ -112,7 +112,11 @@
           id: 'o2c',
           lab: 't'
         }),
-        at(L('combustion-air', 'Combustion air'), 540, 810, { id: 'cal' })
+        at(L('combustion-air', 'Combustion air'), 540, 810, { id: 'cal' }),
+        /* 3.2.5-beta.1 (JENNIE live Cold 2026-11-18, F-G): no page linked to Purge and trip, the operator could not reach the purge */
+        at(L('purge-trip', 'Purge and trip'), 760, 810, { id: 'ptl' }),
+        /* 3.2.5-beta.1 (F-M): the diesel oil and burners page was reached only through Purge and trip */
+        at(L('oil-burners', 'Burners'), 320, 810, { id: 'obl' })
       ],
       pipes: [
         { med: 'gas', w: W_G, pts: ['fu.out', 'cy.in'], flow: GAS, arrow: false },

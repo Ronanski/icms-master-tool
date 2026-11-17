@@ -164,6 +164,12 @@
         ...SEQ.map((p, i) => at(B(p[0], dy(p[1]), { w: CW }), QX, QY + (i + 1) * QD, { id: 'sq' + i })),
         at(B('Furnace purge', 'data-do="DITL-02|15|OK|NOT OK"', { w: CW }), QX, QY + 7 * QD + 10, { id: 'fp' }),
         at(B('Purge ready', 'data-do="DITL-02|9|YES|NO"', { w: CW }), QX, QY + 8 * QD + 10, { id: 'pr' }),
+        /* 3.2.5-beta.1 (JENNIE live Cold 2026-11-18, F-H): the FURNACE PURGE START push button (DITL-02 input row 6, M.0500) was on
+           temporary page 10 only, so the HX page had no way to start the purge: the same machine of page 10 (its faceplate START) */
+        at(M('cubicle', 'Furnace purge', 'Furnace purge start', [], { tag: 'screen push button · DITL-02' }), QX - 100, QY + 9 * QD + 22, {
+          id: 'pbp',
+          lab: 'b'
+        }),
 
         /* ---- master fuel trip (DITL-03A) ---- */
         ...MFT.map((t, i) =>
