@@ -31,7 +31,7 @@ html body.sc #scdet .scdlink{justify-self:start;min-height:32px!important;height
 #scdet .scdar .scdn{grid-area:n;overflow-wrap:anywhere}
 #scdet .scdar .scds{grid-area:s;font-size:12px;color:var(--sc-ink2)}
 #scdet .scdar.new .scdn{font-weight:600}
-#scdet .scdar.new .scds{color:#5c3f0b}
+#scdet .scdar.new .scds{color:var(--sc-amink)}
 #scdet .scdar.trip .scdn,#scdet .scdar.trip .scds{color:var(--sc-run)}
 
 /* ---- the Why box (shellc-eng.js) inside the Why section: no longer a box over the sheet ---- */
@@ -84,7 +84,7 @@ html body.sc.scbars #gsbar #scstrip #scctx .seg button{padding:0 10px!important}
 html body.sc #gsbar #scstrip #scctx:not(#scnone) .scp > .scdetb{font-size:0!important}
 /* Jennie's finding on the b250 / b255 pictures: in its "on" state the Details button was a solid steel circle with its steel icon lost
    in it. On = a light steel fill, a steel border and a steel icon, like a pressed tool button */
-html body.sc #gsbar #scstrip #scctx:not(#scnone) .scp > .scdetb.on,html body.sc #gsbar #scstrip #scctx:not(#scnone) .scmore2m > .scdetb.on{background:#e9eff5!important;border-color:var(--sc-steel)!important;color:var(--sc-steel)!important}
+html body.sc #gsbar #scstrip #scctx:not(#scnone) .scp > .scdetb.on,html body.sc #gsbar #scstrip #scctx:not(#scnone) .scmore2m > .scdetb.on{background:var(--sc-selbg)!important;border-color:var(--sc-steel)!important;color:var(--sc-steel)!important}
 /* Giselle beta.266 (Mina's live check of 263 at 1024: the column covered Width / Focus / Map of the sheet): the zoom bar of the sheet
    stays inside the sheet pane, between the plant pane and the column, and wraps to a second row when the pane is narrow */
 html body.sc.scdet.sceng #zbar{max-width:calc(100vw - var(--scex,0px) - var(--scdw) - 32px)!important;flex-wrap:wrap!important;height:auto!important;row-gap:4px}

@@ -30,7 +30,7 @@ body.sc.scfull[data-tab="operate"] .scfsout:not([hidden]){display:inline-flex!im
 /* ---------- (b) the two faceplates in the C look (fp-pop.js .fpo-box and the controller faceplate #plfp) ---------- */
 body.sc .fpo-box,body.sc #plfp.fpo-near{background:var(--sc-white)!important;border:1px solid var(--sc-steel)!important;border-radius:8px!important;box-shadow:0 12px 32px rgba(34,46,57,.22)!important;color:var(--sc-ink)!important;font:400 14px/1.4 var(--sc-ui)!important}
 body.sc .fpo-box::before{display:none}
-body.sc .fpo-box .fpo-h,body.sc #plfp .plfph{background:#e9eff5!important;border-bottom:1px solid var(--sc-line)!important;border-radius:8px 8px 0 0}
+body.sc .fpo-box .fpo-h,body.sc #plfp .plfph{background:var(--sc-selbg)!important;border-bottom:1px solid var(--sc-line)!important;border-radius:8px 8px 0 0}
 body.sc .fpo-box .fpo-tt b,body.sc #plfp .plfph b{font:600 16px var(--sc-ui)!important;color:var(--sc-ink)!important}
 body.sc .fpo-box .fpo-tt small{font:400 12px var(--sc-num);color:var(--sc-ink2)}
 body.sc .fpo-box .fpo-hv{font:600 14px var(--sc-num);color:var(--sc-ink)}
@@ -40,8 +40,8 @@ body.sc .fpo-box .fpo-lamp.stop{background:var(--sc-stop);box-shadow:none}
 body.sc .fpo-box .fpo-x,body.sc #plfp .plfph .b{background:transparent!important;border:1px solid transparent!important;color:var(--sc-ink2)!important;box-shadow:none!important}
 body.sc .fpo-box .fpo-x:hover,body.sc #plfp .plfph .b:hover{border-color:var(--sc-line2)!important}
 body.sc .fpo-box :is(.fpo-chip,.fpo-k,.fpo-fld){background:var(--sc-white);border-color:var(--sc-line2);color:var(--sc-ink2)}
-body.sc .fpo-box .fpo-chip.ilk{background:#f6e7cf;border-color:var(--sc-amber);color:#5c3f0b}
-body.sc .fpo-box .fpo-chip.trip{background:#f8e3e2;border-color:var(--sc-run);color:var(--sc-run)}
+body.sc .fpo-box .fpo-chip.ilk{background:var(--sc-ambg);border-color:var(--sc-amber);color:var(--sc-amink)}
+body.sc .fpo-box .fpo-chip.trip{background:var(--sc-runbg);border-color:var(--sc-run);color:var(--sc-run)}
 body.sc .fpo-box :is(.fpo-l,.fpo-sh,.fpo-sh.fld,.fpo-dim,.fpo-nd){color:var(--sc-ink2)}
 body.sc .fpo-box .fpo-lp{color:var(--sc-ink2)}
 body.sc .fpo-box .fpo-lp i{background:var(--sc-band);border-color:var(--sc-line2)}
@@ -57,20 +57,20 @@ body.sc .fpo-box .fpo-seg button{border:0!important;border-radius:0!important}
 body.sc .fpo-box .fpo-seg button+button{border-left:1px solid var(--sc-line2)!important}
 body.sc .fpo-box .fpo-seg button.on{background:var(--sc-steel)!important;color:var(--sc-white)!important}
 /* the command buttons: RUN red, STOP green (COMMANDMENT 5), lit = the state now */
-body.sc .fpo-box .fpo-cmd.lit-run{background:#f8e3e2!important;border-color:var(--sc-run)!important;color:var(--sc-run)!important}
-body.sc .fpo-box .fpo-cmd.lit-stop{background:#e3f1e9!important;border-color:var(--sc-stop)!important;color:var(--sc-stop)!important}
+body.sc .fpo-box .fpo-cmd.lit-run{background:var(--sc-runbg)!important;border-color:var(--sc-run)!important;color:var(--sc-run)!important}
+body.sc .fpo-box .fpo-cmd.lit-stop{background:var(--sc-stopbg)!important;border-color:var(--sc-stop)!important;color:var(--sc-stop)!important}
 body.sc .fpo-box .fpo-cmd.es:not(:disabled){border-color:var(--sc-run)!important;color:var(--sc-run)!important}
 body.sc .fpo-box .fpo-why{background:var(--sc-paper);border-left-color:var(--sc-line2);color:var(--sc-ink2)}
-body.sc .fpo-box .fpo-ex{background:#e9eff5;border-color:var(--sc-steel)}
+body.sc .fpo-box .fpo-ex{background:var(--sc-selbg);border-color:var(--sc-steel)}
 body.sc .fpo-box .fpo-go{background:var(--sc-steel)!important;border-color:var(--sc-steel)!important;color:var(--sc-white)!important}
-body.sc .fpo-box .fpo-ex.fld{background:#f6e7cf;border-color:var(--sc-amber)}
+body.sc .fpo-box .fpo-ex.fld{background:var(--sc-ambg);border-color:var(--sc-amber)}
 body.sc .fpo-box .fpo-ex.fld .fpo-go{background:var(--sc-amber)!important;border-color:var(--sc-amber)!important}
 body.sc .fpo-box .fpo-vb{background:var(--sc-paper);border-color:var(--sc-line);color:var(--sc-ink);font-family:var(--sc-num)}
-body.sc .fpo-box .fpo-vb.hi{border-color:var(--sc-amber);color:#5c3f0b}
+body.sc .fpo-box .fpo-vb.hi{border-color:var(--sc-amber);color:var(--sc-amink)}
 body.sc .fpo-box .fpo-tr{background:var(--sc-paper);border-color:var(--sc-line)}
-body.sc .fpo-box .fpo-tr rect{fill:#dfe6ec}
+body.sc .fpo-box .fpo-tr rect{fill:var(--sc-selbg)}
 body.sc .fpo-box .fpo-il li.ok{color:var(--sc-ink)}
-body.sc .fpo-box .fpo-il li.bad{color:#5c3f0b}
+body.sc .fpo-box .fpo-il li.bad{color:var(--sc-amink)}
 body.sc .fpo-box .fpo-il li em{color:var(--sc-ink2)}
 body.sc .fpo-box .fpo-ln{border-top-color:var(--sc-line)}
 body.sc .fpo-box .fpo-a{color:var(--sc-steel)!important}

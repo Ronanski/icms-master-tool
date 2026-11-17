@@ -56,12 +56,22 @@ const block =
   fs.readFileSync(__dirname + '/../shellc/shellc.css', 'utf8') +
   fs.readFileSync(__dirname + '/../shellc/shellc-pages.css', 'utf8') +
   fs.readFileSync(__dirname + '/../shellc/shellc-ui.css', 'utf8') +
-  fs.readFileSync(__dirname + '/../shellc/shellc-eng.css', 'utf8') + /* step 4: Engineer mode */
-  fs.readFileSync(__dirname + '/../shellc/shellc-bars.css', 'utf8') + /* the two bars (user 2026-11-09 "Gawin na") */
-  fs.readFileSync(__dirname + '/../shellc/shellc-details.css', 'utf8') + /* the Details column */
-  fs.readFileSync(__dirname + '/../shellc/shellc-zoom.css', 'utf8') + /* one control per task, readable page size */
-  fs.readFileSync(__dirname + '/../shellc/shellc-content.css', 'utf8') + /* content look on the shell tokens (colour, font, line width only; user 2026-11-09) */
-  fs.readFileSync(__dirname + '/../shellc/shellc-dense.css', 'utf8') + /* one compact density, loaded last (user 2026-11-09 'Nalalakihan ako s mga cards at fonts') */
+  fs.readFileSync(__dirname + '/../shellc/shellc-eng.css', 'utf8') /* step 4: Engineer mode */ +
+  fs.readFileSync(__dirname + '/../shellc/shellc-bars.css', 'utf8') /* the two bars (user 2026-11-09 "Gawin na") */ +
+  fs.readFileSync(__dirname + '/../shellc/shellc-details.css', 'utf8') /* the Details column */ +
+  fs.readFileSync(__dirname + '/../shellc/shellc-zoom.css', 'utf8') /* one control per task, readable page size */ +
+  fs.readFileSync(
+    __dirname + '/../shellc/shellc-content.css',
+    'utf8'
+  ) /* content look on the shell tokens (colour, font, line width only; user 2026-11-09) */ +
+  fs.readFileSync(
+    __dirname + '/../shellc/shellc-dense.css',
+    'utf8'
+  ) /* one compact density, loaded last (user 2026-11-09 'Nalalakihan ako s mga cards at fonts') */ +
+  fs.readFileSync(
+    __dirname + '/../shellc/shellc-compact.css',
+    'utf8'
+  ) /* compact dark shell, loaded last (user 2026-11-17, approved mockup) */ +
   '</style><script id="shelljs">' +
   fs.readFileSync(__dirname + '/ditl.js', 'utf8') +
   '\n' +
@@ -125,7 +135,8 @@ const block =
   fs.readFileSync(__dirname + '/../ladder/ladder.js', 'utf8') +
   '\n' +
   /* 3.2.1 re-shell layout C, step 1: the new status strip, only with ?shell=c */
-  fs.readFileSync(__dirname + '/../shellc/shellc-ask.js', 'utf8') + '\n' + /* one confirmation dialog (user 2026-11-09) */
+  fs.readFileSync(__dirname + '/../shellc/shellc-ask.js', 'utf8') +
+  '\n' /* one confirmation dialog (user 2026-11-09) */ +
   fs.readFileSync(__dirname + '/../shellc/shellc.js', 'utf8') +
   '\n' +
   /* step 2: start screen, overview, alarm list with Events */
@@ -137,10 +148,14 @@ const block =
   fs.readFileSync(__dirname + '/../shellc/shellc-ins.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/../shellc/shellc-ui.js', 'utf8') +
-  '\n' + fs.readFileSync(__dirname + '/../shellc/shellc-eng.js', 'utf8') + /* step 4: Engineer mode */
-  '\n' + fs.readFileSync(__dirname + '/../shellc/shellc-bars.js', 'utf8') + /* the two bars (user 2026-11-09 "Gawin na") */
-  '\n' + fs.readFileSync(__dirname + '/../shellc/shellc-details.js', 'utf8') + /* the Details column */
-  '\n' + fs.readFileSync(__dirname + '/../shellc/shellc-zoom.js', 'utf8') + /* readable page size and the locator */
+  '\n' +
+  fs.readFileSync(__dirname + '/../shellc/shellc-eng.js', 'utf8') /* step 4: Engineer mode */ +
+  '\n' +
+  fs.readFileSync(__dirname + '/../shellc/shellc-bars.js', 'utf8') /* the two bars (user 2026-11-09 "Gawin na") */ +
+  '\n' +
+  fs.readFileSync(__dirname + '/../shellc/shellc-details.js', 'utf8') /* the Details column */ +
+  '\n' +
+  fs.readFileSync(__dirname + '/../shellc/shellc-zoom.js', 'utf8') /* readable page size and the locator */ +
   '</script>' +
   B;
 const k = s.lastIndexOf('</body>');

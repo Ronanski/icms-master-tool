@@ -85,7 +85,8 @@
     frc.type = 'button';
     const frcT = E('span', '', '');
     frc.append(E('span', 'dot'), frcT);
-    frc.title = 'Signals you forced (FORCE in the Inspector), on every ABC sheet: they stay until you release them. Click: the list with Go and Release';
+    frc.title =
+      'Signals you forced (FORCE in the Inspector), on every ABC sheet: they stay until you release them. Click: the list with Go and Release';
     frc.hidden = true;
     frc.onclick = e => {
       e.stopPropagation();
@@ -127,7 +128,8 @@
       bEn = E('button', '', 'Engineer');
     bOp.type = bEn.type = 'button';
     /* step 2: Operator opens the overview of the unit (shellc-home.js) */
-    bOp.onclick = () => (window.lsShellC && lsShellC.showOv ? lsShellC.showOv() : window.lsSetTab && lsSetTab('operate'));
+    bOp.onclick = () =>
+      window.lsShellC && lsShellC.showOv ? lsShellC.showOv() : window.lsSetTab && lsSetTab('operate');
     bEn.onclick = () => {
       if (window.lsShellC && lsShellC.hideOv) lsShellC.hideOv();
       if (window.lsSetTab) lsSetTab('logic');
@@ -200,7 +202,12 @@
     let AL = [];
     try {
       /* the same rows as the alarm list, the unit trips included (shellc-home.js lsShellC.alarms) */
-      AL = window.lsShellC && lsShellC.alarms ? lsShellC.alarms() : window.lsAlarms ? lsAlarms.list().filter(a => !a.rtn && !a.sd) : [];
+      AL =
+        window.lsShellC && lsShellC.alarms
+          ? lsShellC.alarms()
+          : window.lsAlarms
+            ? lsAlarms.list().filter(a => !a.rtn && !a.sd)
+            : [];
     } catch (e) {}
     const eqT = AL.filter(a => a.kind === 'TRIP');
     S.trip.classList.toggle('trip', !!(tt || mft || eqT.length));
@@ -214,7 +221,10 @@
             : eqT.length
               ? eqT.length + (eqT.length === 1 ? ' equipment trip' : ' equipment trips')
               : 'No trip';
-    S.trip.title = (tt || mft ? 'Unit trip: turbine trip ABC-050 I.0400, master fuel trip I.000F. ' : '') + (eqT.length ? 'Equipment trips: ' + eqT.map(a => a.nm).join(', ') + '. ' : '') + 'Click: the alarm list';
+    S.trip.title =
+      (tt || mft ? 'Unit trip: turbine trip ABC-050 I.0400, master fuel trip I.000F. ' : '') +
+      (eqT.length ? 'Equipment trips: ' + eqT.map(a => a.nm).join(', ') + '. ' : '') +
+      'Click: the alarm list';
     const un = AL.filter(a => !a.ack).length;
     const n = AL.length;
     S.alm.classList.toggle('alm', n > 0);
@@ -236,8 +246,12 @@
         /* the content of the strip (its rows), not the strip itself: the strip is as tall as the bar */
         tops = [...st.children].map(c => c.getBoundingClientRect()).filter(r => r.height > 0),
         /* the two bars (shellc-bars.js, user 2026-11-09 "Gawin na"): values 60 px + context 48 px, no margin around them */
-        need = Math.ceil(Math.max(...tops.map(r => r.bottom)) - Math.min(...tops.map(r => r.top))) + (document.getElementById('scctx') ? 0 : 12),
-        cur = parseFloat(getComputedStyle(document.body).getPropertyValue('--top')) * (/rem/.test(getComputedStyle(document.body).getPropertyValue('--top')) ? 16 : 1);
+        need =
+          Math.ceil(Math.max(...tops.map(r => r.bottom)) - Math.min(...tops.map(r => r.top))) +
+          (document.getElementById('scctx') ? 0 : 12),
+        cur =
+          parseFloat(getComputedStyle(document.body).getPropertyValue('--top')) *
+          (/rem/.test(getComputedStyle(document.body).getPropertyValue('--top')) ? 16 : 1);
       if (need > 40 && Math.abs(need - cur) > 2) {
         document.body.style.setProperty('--top', need + 'px');
         dispatchEvent(new Event('resize'));
@@ -251,7 +265,13 @@
         band = document.getElementById('crband'),
         br = band.getBoundingClientRect(),
         /* Mina beta.220: the rail and the dock are position: fixed, whose offsetParent is always null: seen by their boxes instead */
-        vis = el => !!(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden' && getComputedStyle(el).display !== 'none'),
+        vis = el =>
+          !!(
+            el &&
+            el.getClientRects().length &&
+            getComputedStyle(el).visibility !== 'hidden' &&
+            getComputedStyle(el).display !== 'none'
+          ),
         rail = document.getElementById('crrail'),
         dock = document.getElementById('gdock');
       let ml = 0,
@@ -270,15 +290,18 @@
       const mls = Math.max(8, ml) + 'px',
         mrs = Math.max(8, mr) + 'px';
       if (band.style.getPropertyValue('padding-left') !== mls) band.style.setProperty('padding-left', mls, 'important');
-      if (band.style.getPropertyValue('padding-right') !== mrs) band.style.setProperty('padding-right', mrs, 'important');
+      if (band.style.getPropertyValue('padding-right') !== mrs)
+        band.style.setProperty('padding-right', mrs, 'important');
       void st;
       /* the overview starts right of the rail as it is drawn (with the dock open --railW is 14 px while the rail stays wide) */
       const rls = rl + 'px';
-      if (document.documentElement.style.getPropertyValue('--scl') !== rls) document.documentElement.style.setProperty('--scl', rls);
+      if (document.documentElement.style.getPropertyValue('--scl') !== rls)
+        document.documentElement.style.setProperty('--scl', rls);
       /* the lowest of the bar and the strip's rows (a row that outgrows the bar is never covered) */
       const rows = [...st.children].map(c => c.getBoundingClientRect()).filter(r => r.height > 0),
         b = Math.ceil(Math.max(band.getBoundingClientRect().bottom, ...rows.map(r => r.bottom + 4))) + 'px';
-      if (document.documentElement.style.getPropertyValue('--scb') !== b) document.documentElement.style.setProperty('--scb', b);
+      if (document.documentElement.style.getPropertyValue('--scb') !== b)
+        document.documentElement.style.setProperty('--scb', b);
       /* live check beta.233: a faceplate placed beside the clicked equipment ran 23 px under the footer (its last buttons hidden);
          it moves up inside the page area, same faceplate, same size */
       for (const id of ['fpop', 'fpop2']) {
@@ -305,14 +328,16 @@
           /* user 2026-11-09: the old header (values) and the alarm line at the top of the page repeat the strip and its alarm pill: hidden too (frame, not drawing) */
           for (const r of ps.querySelectorAll('rect[height="34"][y="0"]:not([data-schd])')) {
             if (+r.getAttribute('width') < 900 || r.getAttribute('x') !== '0') continue;
-            for (let e = r; e && !(e.tagName === 'rect' && e.getAttribute('height') === '32'); e = e.nextElementSibling) e.setAttribute('data-schd', '');
+            for (let e = r; e && !(e.tagName === 'rect' && e.getAttribute('height') === '32'); e = e.nextElementSibling)
+              e.setAttribute('data-schd', '');
           }
         };
         hide();
         new MutationObserver(hide).observe(ps, { childList: true, subtree: true });
       }
       /* the footer hint is one line now (shellc.css): its full text in the tooltip */
-      for (const el of document.querySelectorAll('#sfoot #st, #sfoot .sinfo, #sfoot .smsg')) if (el.title !== el.textContent) el.title = el.textContent;
+      for (const el of document.querySelectorAll('#sfoot #st, #sfoot .sinfo, #sfoot .smsg'))
+        if (el.title !== el.textContent) el.title = el.textContent;
     } catch (e) {}
     /* Mina beta.236: the pill said Paused while the plant ran on a DITL page; the same test as the plant clock (world.js 1438) */
     let on = false;
@@ -350,7 +375,10 @@
       note = E('div');
       note.id = 'scnarrow';
       note.setAttribute('role', 'status');
-      note.append(E('b', '', 'Make the window wider'), E('span', '', 'The app needs a window at least 900 px wide (PC or tablet in landscape).'));
+      note.append(
+        E('b', '', 'Make the window wider'),
+        E('span', '', 'The app needs a window at least 900 px wide (PC or tablet in landscape).')
+      );
       document.body.append(note);
     }
     if (note) note.hidden = !narrow;

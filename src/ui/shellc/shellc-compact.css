@@ -1,0 +1,31 @@
+/* ===== COMPACT SHELL (user 2026-11-17: "Ang lalaki ng buttons, text, cards. Di scaled lahat ... Di naman need na bongga ...
+   Hindi lang HMI ang babagay dito kundi buong app"; mockup "Compact App Shell" approved "Ge approve" 2026-11-17 8:10 PM PHT).
+   Loaded last. Shell only: colours and sizes of the bars, lists, panels and faceplates. Never a drawing, a tag, a value, the
+   logic, the plant model or the engine.
+   Step 1: ONE dark look for the whole app, taken from the plant pictures: the shell tokens of shellc.css get their dark
+   values; the logic sheets keep their light paper as the approved mockup shows. The sizes no longer grow with
+   the screen (--scs is 1 up to a 1920 px wide screen, shellc-ask.js). ===== */
+body.sc{
+  --sc-page:#0f1318; --sc-paper:#12161c; --sc-white:#181d24; --sc-band:#181d24;
+  --sc-ink:#d5dbe3; --sc-ink2:#8792a1; --sc-line:#2e3742; --sc-line2:#3a4552;
+  --sc-steel:#5b9bd9; --sc-run:#e5565a; --sc-stop:#45b06d; --sc-amber:#dba23a; --sc-violet:#a48ae0;
+  --sc-ambg:#33280f; --sc-amink:#f0c06a; --sc-selbg:#1f2b3a; --sc-runbg:#3a1c1e; --sc-stopbg:#16301f;
+  color-scheme:dark;
+}
+/* the old panels of the frame read the app's own tokens (--c-*): shellc.css gave them light values; here the same dark set */
+html body.sc,html[data-theme=dark] body.sc,html[data-theme] body.sc{
+  --c-bg:#0f1318;--c-pane:#181d24;--c-strip:#181d24;--c-ribbon:#12161c;--c-ctl:#222933;--c-ctlh:#2a323d;--c-well:#12161c;--c-plate:#181d24;
+  --c-line:#2e3742;--c-line2:#3a4552;--c-lineh:#8792a1;--c-tx:#d5dbe3;--c-tx2:#aab3bf;--c-dim:#8792a1;--c-white:#ffffff;
+  --c-shadow:rgba(0,0,0,.5);--c-shadow2:rgba(0,0,0,.3);
+  --c-acc:#5b9bd9;--c-accbg:#1f2b3a;--c-accbd:#35557a;--c-acctx:#b5d0f0;--c-accon:#5b9bd9;
+  --c-run:#45b06d;--c-runbg:#1f6a3c;--c-runbd:#2b8a4f;--c-runtx:#ffffff;--c-runon:#17502d;
+  --c-man:#dba23a;--c-mantx:#1a1200;--c-alm:#e5565a;
+  --c-runsoft:#16301f;--c-runtx2:#7fdca3;--c-mansoft:#33280f;--c-mantx2:#f0c06a;--c-almsoft:#3a1c1e;--c-almtx:#ff9b9b;
+  --c-status:#0b0e12;--c-statustx:#8792a1;--c-statusdim:#8792a1;--c-desk:#0f1318;
+  color-scheme:dark;
+}
+/* the pane around a plant page is the dark page ground (shellc-content.css made it paper white: a dark plant picture then
+   stood in a white field in the Engineer view) */
+html body.sc:not(.sc-dgdark) #plmid{background:var(--sc-page)!important}
+/* a realistic plant page is drawn inside the plant svg: the svg takes the dark ground too, so no white field stands around it */
+html body.sc #plsvg:has(.hx-app){background:var(--sc-page)!important}

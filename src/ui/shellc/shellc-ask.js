@@ -18,7 +18,9 @@
    the bars, buttons and text look the same on a tablet, a laptop, a large monitor or a TV. The drawings already scale with Fit. */
 (function () {
   const set = () => {
-    const s = Math.min(1.5, Math.max(0.9, Math.min(innerWidth / 1366, innerHeight / 640)));
+    /* user 2026-11-17 ("Ang lalaki ng buttons ... Di scaled lahat"): the factor made a 12 px text 17 px on a 1920 px monitor. One size
+       up to a 1920 px wide screen; only a wider screen (a TV, 4K) grows, up to 1.5 */
+    const s = Math.min(1.5, Math.max(1, Math.min(innerWidth / 1920, innerHeight / 1080)));
     document.documentElement.style.setProperty('--scs', s.toFixed(3));
   };
   set();
@@ -78,15 +80,19 @@
       if (e.key === 'Enter') (e.preventDefault(), done(true));
     });
     /* Mina beta.244: Esc never reached the dialog (a page handler stops it first); the dialog listens first, on the window, while open */
-    addEventListener('keydown', e => {
-      if (box.hidden) return;
-      if (e.key === 'Escape') (e.preventDefault(), e.stopImmediatePropagation(), done(false));
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        const L = (inp.hidden ? [] : [inp]).concat(no, go);
-        L[(L.indexOf(document.activeElement) + (e.shiftKey ? L.length - 1 : 1)) % L.length].focus();
-      }
-    }, true);
+    addEventListener(
+      'keydown',
+      e => {
+        if (box.hidden) return;
+        if (e.key === 'Escape') (e.preventDefault(), e.stopImmediatePropagation(), done(false));
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const L = (inp.hidden ? [] : [inp]).concat(no, go);
+          L[(L.indexOf(document.activeElement) + (e.shiftKey ? L.length - 1 : 1)) % L.length].focus();
+        }
+      },
+      true
+    );
     box._q = q;
     box._t = t;
     box._go = go;
@@ -133,25 +139,72 @@
       if (viewLocked()) return null;
       if (el.closest('.plseg')) {
         if (t === 'OFF' && !el.classList.contains('on'))
-          return { q: 'Turn the plant model OFF?', t: 'The plant physics stops. The transmitters become free inputs and only the drawn logic runs.', ok: 'Turn OFF' };
+          return {
+            q: 'Turn the plant model OFF?',
+            t: 'The plant physics stops. The transmitters become free inputs and only the drawn logic runs.',
+            ok: 'Turn OFF'
+          };
         if (STATES[t]) return { q: 'Load the ' + t + ' start state?', t: LOSE, ok: 'Load ' + t };
         return null;
       }
-      if (t === 'Turbine trip') return { q: 'Trip the turbine?', t: 'TURBINE TRIP (TA-1): the turbine trips now and the plant reacts to it.', ok: 'Trip turbine', danger: true };
+      if (t === 'Turbine trip')
+        return {
+          q: 'Trip the turbine?',
+          t: 'TURBINE TRIP (TA-1): the turbine trips now and the plant reacts to it.',
+          ok: 'Trip turbine',
+          danger: true
+        };
       if (t === 'Open 52L1 (house load)')
-        return { q: 'Open the line breaker 52L1?', t: 'House load operation: the unit leaves the 230 kV grid and the generator carries the house load only.', ok: 'Open 52L1', danger: true };
-      if (t === 'Close 52L1') return { q: 'Close the line breaker 52L1?', t: 'The unit goes back on the 230 kV grid and the generator carries its load again.', ok: 'Close 52L1' };
-      if (t === 'Turbine reset') return { q: 'Reset the turbine trip?', t: 'TURBINE RESET (TA-1): the trip is reset when its causes are clear.', ok: 'Reset' };
+        return {
+          q: 'Open the line breaker 52L1?',
+          t: 'House load operation: the unit leaves the 230 kV grid and the generator carries the house load only.',
+          ok: 'Open 52L1',
+          danger: true
+        };
+      if (t === 'Close 52L1')
+        return {
+          q: 'Close the line breaker 52L1?',
+          t: 'The unit goes back on the 230 kV grid and the generator carries its load again.',
+          ok: 'Close 52L1'
+        };
+      if (t === 'Turbine reset')
+        return {
+          q: 'Reset the turbine trip?',
+          t: 'TURBINE RESET (TA-1): the trip is reset when its causes are clear.',
+          ok: 'Reset'
+        };
       return null;
     }
     /* the DITL tool bar Reset (ditl.js) and the F(X) table resets (fx.js) */
     if (t === 'Reset' && /^Start again/.test(el.title || ''))
-      return { q: 'Reset this logic sheet?', t: 'All inputs go OFF; timers, latches, valves and motors go back to the start.', ok: 'Reset', danger: true };
+      return {
+        q: 'Reset this logic sheet?',
+        t: 'All inputs go OFF; timers, latches, valves and motors go back to the start.',
+        ok: 'Reset',
+        danger: true
+      };
     /* the ABC / plant page Reset (analog/ui/main.js), Mina beta.244 */
     if (t === 'Reset' && /^Reset this sheet to the start/.test(el.title || ''))
-      return { q: 'Reset this sheet?', t: 'Forced signals, switches and sliders are cleared. PID tuning and parameters are kept.', ok: 'Reset', danger: true };
-    if (t === 'Reset all edits') return { q: 'Reset all edits?', t: 'Every changed F(X) table goes back to the drawing values.', ok: 'Reset all', danger: true };
-    if (t === 'Reset this table') return { q: 'Reset this table?', t: 'This F(X) table goes back to the drawing values.', ok: 'Reset table', danger: true };
+      return {
+        q: 'Reset this sheet?',
+        t: 'Forced signals, switches and sliders are cleared. PID tuning and parameters are kept.',
+        ok: 'Reset',
+        danger: true
+      };
+    if (t === 'Reset all edits')
+      return {
+        q: 'Reset all edits?',
+        t: 'Every changed F(X) table goes back to the drawing values.',
+        ok: 'Reset all',
+        danger: true
+      };
+    if (t === 'Reset this table')
+      return {
+        q: 'Reset this table?',
+        t: 'This F(X) table goes back to the drawing values.',
+        ok: 'Reset table',
+        danger: true
+      };
     return null;
   }
   document.addEventListener(
