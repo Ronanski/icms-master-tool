@@ -362,6 +362,7 @@
     MK02: 'HX-makeup-cooling' /* MAKE-UP AND CLOSED COOLING WATER: pumps, values, hand valves, fill valve */,
     MK03: 'HX-compressed-air' /* INSTRUMENT AND PLANT AIR: machines, values, the one model valve */,
     MK13: 'HX-turbine' /* TURBINE START: valves, breakers, step cards with their check items, push buttons, first out */,
+    MK11: 'HX-oil-burners' /* DIESEL OIL AND BURNERS: the six field valves, the burner states and all values are on the new page */,
     MK10: 'HX-purge-trip' /* PURGE AND TRIP: every row of DITL-01 / 02 / 03A it had */,
     /* an older page of a system whose temporary page is still needed (hand valves, states the new look has no piece for yet):
        it opens that temporary page until the new page is complete */

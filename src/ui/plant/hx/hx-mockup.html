@@ -5689,7 +5689,12 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
    (PIC-DO1008, PT-DO1008) back to the tank; oil master FIC-OM.
    The 5 sheets of PD-022 were NOT re-read for this page: the tags, names and order are those of temporary page 11. Check the
    page against the sheets before the temporary page is removed.
-   Drawn simpler: the strainer is not drawn (its differential pressure stands at the pump suction); the shut-off valves, the
+   The six field valves of the diesel oil line-up (boiler.js fv0; PD-022 1/5 Rev D, SOP 20): tank outlet V-DO0003, strainer
+   inlet V-DO0004, pump A suction V-DO0015 / discharge V-DO0007, pump B suction V-DO0016 / discharge V-DO0009, as valve
+   symbols of the plant model (a click opens the field faceplate). Per burner four states read from the drawings as page 11
+   reads them: oil shut-off valves (DITL-16 outputs 20 + 22), atomizing air valve XV-PA1043-x2 (DITL-07 input 20), burner in
+   service (DITL-10 input 18), igniter (DITL-10 output 15).
+   Drawn simpler: the shut-off valves, the
    atomizing air and purge air valves of a burner are not drawn: they are operated by the burner push buttons, which are the
    faceplate of the burner itself (a click on the burner). The lines to and from Unit 2 are not drawn. */
 (function () {
@@ -5703,17 +5708,26 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
   const TX = 215,
     TY = 330,
     TS = 2.4 /* tank */,
-    PAX = 330,
-    PBX = 520,
+    PAX = 400,
+    PBX = 590,
+    SAX = 320,
+    SBX = 510 /* suction risers */,
+    SUY = 940 /* suction header */,
     PY = 760,
     PS = 1.6 /* pumps */,
     DY = 600 /* pump discharge line */,
-    HX0 = 700 /* oil line up to the four burners */,
+    HX0 = 770 /* oil line up to the four burners */,
     BUX = 1250,
     ROW = [170, 370, 570, 770],
     AIRX = 1560; /* hot secondary air down to the four burners */
   const N = ['A', 'B', 'C', 'D'];
+  const fv = t => 'h:fv-' + t;
+  const TKO = fv('V-DO0003') + '&' + fv('V-DO0004') /* the tank outlet and the strainer inlet open */,
+    PA = 'm:DIESEL OIL PUMP A&' + fv('V-DO0015') + '&' + fv('V-DO0007') + '&' + TKO,
+    PB = 'm:DIESEL OIL PUMP B&' + fv('V-DO0016') + '&' + fv('V-DO0009') + '&' + TKO;
   const OIL = 'm:DIESEL OIL PUMP A|m:DIESEL OIL PUMP B';
+  const dy = (k, on, off) => 'data-dy="' + k + '" data-on="' + on + '" data-off="' + off + '"';
+  const INST = ['', ' #B', ' #C', ' #D']; /* the drawing instance of burner A ~ D */
   const burner = i => {
     const n = N[i],
       y = ROW[i],
@@ -5723,7 +5737,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
       items: [
         at(
           C('FICDO1043' + n, 'Oil valve ' + n, { tag: 'FCV-DO1043-' + n + '3', cname: 'Burner ' + n + ' oil valve' }),
-          900,
+          940,
           y,
           {
             id: 'o' + i,
@@ -5750,7 +5764,22 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
             id: 'a' + i,
             lab: 'b'
           }
-        )
+        ),
+        at(
+          HX.B('Oil shut-off valves', dy('DITL-16' + INST[i] + '|o|20+22|neg', 'OPEN', 'CLOSED'), { w: 150 }),
+          1140,
+          y + 36,
+          {
+            id: 'so' + i
+          }
+        ),
+        at(HX.B('Atomizing air valve', dy('DITL-07' + INST[i] + '|i|20', 'OPEN', 'CLOSED'), { w: 150 }), 1140, y + 74, {
+          id: 'aa' + i
+        }),
+        at(HX.B('Burner', dy('DITL-10' + INST[i] + '|i|18', 'IN SERVICE', 'OFF'), { w: 130 }), 1660, y - 22, {
+          id: 'sv' + i
+        }),
+        at(HX.B('Igniter', dy('DITL-10' + INST[i] + '|o|15', 'ON', 'OFF'), { w: 130 }), 1660, y + 18, { id: 'ig' + i })
       ],
       pipes: [
         { med: 'oil', w: W_O, pts: [[HX0, y], 'o' + i + '.l'], flow: fl, arrow: false },
@@ -5759,8 +5788,8 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         { med: 'hotair', w: W_A, pts: ['a' + i + '.l', [BUX, y + 86], 'b' + i + '.b'], flow: ar }
       ],
       taps: [
-        { x: 780, y, side: 't', label: 'Oil flow', key: 'FT-DO1043-' + n, unit: 't/h', dp: 2, tag: 'FT-DO1043-' + n },
-        { x: 1050, y, side: 't', label: 'Pressure', key: 'PT-DO1043-' + n + '2', unit: K, tag: 'PT-DO1043-' + n + '2' }
+        { x: 850, y, side: 't', label: 'Oil flow', key: 'FT-DO1043-' + n, unit: 't/h', dp: 2, tag: 'FT-DO1043-' + n },
+        { x: 1080, y, side: 't', label: 'Pressure', key: 'PT-DO1043-' + n + '2', unit: K, tag: 'PT-DO1043-' + n + '2' }
       ]
     };
   };
@@ -5797,12 +5826,24 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
           sc: PS,
           lab: 'b'
         }),
-        at(C('PICDO0005', 'Recirculation valve', { tag: 'PCV-DO0002', wrap: 14 }), 420, 440, {
+        at(HX.HV('V-DO0003'), TX, 520, { id: 'v03', rot: 90, lab: 'l' }),
+        at(HX.HV('V-DO0004'), TX, 620, { id: 'v04', rot: 90, lab: 'l' }),
+        at(E('strainer', 'Strainer', 'STR-DO0001', [], { flow: OIL + '&' + TKO }), TX, 740, {
+          id: 'str',
+          rot: 90,
+          lab: 'r',
+          sc: 1.3
+        }),
+        at(HX.HV('V-DO0015'), SAX, 895, { id: 'v15', rot: -90, lab: 'r' }),
+        at(HX.HV('V-DO0016'), SBX, 895, { id: 'v16', rot: -90, lab: 'r' }),
+        at(HX.HV('V-DO0007'), PAX - 2 * PS, 645, { id: 'v07', rot: -90, lab: 'r' }),
+        at(HX.HV('V-DO0009'), PBX - 2 * PS, 685, { id: 'v09', rot: -90, lab: 'l' }),
+        at(C('PICDO0005', 'Recirculation valve', { tag: 'PCV-DO0002', wrap: 14 }), 490, 440, {
           id: 'rc',
           rot: -90,
           lab: 'r'
         }),
-        at(C('HICDO1012', 'Supply valve to the burners', { tag: 'FCV-DO1012', wrap: 16 }), 620, DY, {
+        at(C('HICDO1012', 'Supply valve to the burners', { tag: 'FCV-DO1012', wrap: 16 }), 690, DY, {
           id: 'sup',
           lab: 'b'
         }),
@@ -5812,21 +5853,22 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         at(L('combustion-air', 'Hot secondary air', { back: true }), AIRX + 80, 90, { id: 'hsa' })
       ],
       pipes: [
-        /* tank to the two pumps */
-        { med: 'oil', w: W_O, pts: ['tk.b', [TX, 880], [250, 880]], flow: OIL },
-        { med: 'oil', w: W_O, pts: [[250, 880], [250, PY], 'pa.s'], flow: 'm:DIESEL OIL PUMP A', arrow: false },
-        {
-          med: 'oil',
-          w: W_O,
-          pts: [[250, 880], [440, 880], [440, PY], 'pb.s'],
-          flow: 'm:DIESEL OIL PUMP B',
-          arrow: false
-        },
-        /* discharge, recirculation back to the tank, supply to the burners */
-        { med: 'oil', w: W_O, pts: ['pa.d', [PAX - 2 * PS, DY], [420, DY]], flow: 'm:DIESEL OIL PUMP A', arrow: false },
-        { med: 'oil', w: W_O, pts: ['pb.d', [PBX - 2 * PS, DY], [420, DY]], flow: 'm:DIESEL OIL PUMP B', arrow: false },
-        { med: 'oil', w: W_S, pts: [[420, DY], 'rc.l'], flow: 'l:PICDO0005', arrow: false },
-        { med: 'oil', w: W_S, pts: ['rc.r', [420, 330], [TX + 34 * TS, 330]], flow: 'l:PICDO0005' },
+        /* tank outlet, strainer, the suction header and the suction valve of each pump */
+        { med: 'oil', w: W_O, pts: ['tk.b', 'v03.l'], flow: OIL + '&' + fv('V-DO0003'), arrow: false },
+        { med: 'oil', w: W_O, pts: ['v03.r', 'v04.l'], flow: OIL + '&' + TKO, arrow: false },
+        { med: 'oil', w: W_O, pts: ['v04.r', 'str.l'], flow: OIL + '&' + TKO, arrow: false },
+        { med: 'oil', w: W_O, pts: ['str.r', [TX, SUY], [SAX, SUY]], flow: OIL + '&' + TKO },
+        { med: 'oil', w: W_O, pts: [[SAX, SUY], 'v15.l'], flow: PA, arrow: false },
+        { med: 'oil', w: W_O, pts: ['v15.r', [SAX, PY], 'pa.s'], flow: PA, arrow: false },
+        { med: 'oil', w: W_O, pts: [[SAX, SUY], [SBX, SUY], 'v16.l'], flow: PB, arrow: false },
+        { med: 'oil', w: W_O, pts: ['v16.r', [SBX, PY], 'pb.s'], flow: PB, arrow: false },
+        /* discharge valve of each pump, recirculation back to the tank, supply to the burners */
+        { med: 'oil', w: W_O, pts: ['pa.d', 'v07.l'], flow: PA, arrow: false },
+        { med: 'oil', w: W_O, pts: ['v07.r', [PAX - 2 * PS, DY], [490, DY]], flow: PA, arrow: false },
+        { med: 'oil', w: W_O, pts: ['pb.d', 'v09.l'], flow: PB, arrow: false },
+        { med: 'oil', w: W_O, pts: ['v09.r', [PBX - 2 * PS, DY], [490, DY]], flow: PB, arrow: false },
+        { med: 'oil', w: W_S, pts: [[490, DY], 'rc.l'], flow: 'l:PICDO0005', arrow: false },
+        { med: 'oil', w: W_S, pts: ['rc.r', [490, 330], [TX + 34 * TS, 330]], flow: 'l:PICDO0005' },
         { med: 'oil', w: W_O, pts: [[PBX - 2 * PS, DY], 'sup.l'], flow: OIL },
         { med: 'oil', w: W_O, pts: ['sup.r', [HX0, DY]], flow: 'l:HICDO1012', arrow: false },
         {
@@ -5847,8 +5889,8 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         ...B.flatMap(b => b.pipes)
       ],
       taps: [
-        { x: 250, y: 830, side: 'l', label: 'Strainer', key: 'DPT-DO0001', unit: K, dp: 2, tag: 'DPT-DO0001' },
-        { x: 380, y: DY, side: 'b', label: 'Pump outlet', key: 'PT-DO0005', unit: K, tag: 'PT-DO0005' },
+        { x: TX, y: 800, side: 'l', label: 'Strainer', key: 'DPT-DO0001', unit: K, dp: 2, tag: 'DPT-DO0001' },
+        { x: 440, y: DY, side: 't', label: 'Pump outlet', key: 'PT-DO0005', unit: K, tag: 'PT-DO0005' },
         { x: 560, y: 90, side: 'b', label: 'Return pressure', key: 'PT-DO1008', unit: K, tag: 'PT-DO1008' },
         ...B.flatMap(b => b.taps)
       ],
