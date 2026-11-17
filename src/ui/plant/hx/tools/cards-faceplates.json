@@ -1,0 +1,448 @@
+{
+ "MK07/MS1": {
+  "pops": [
+   {
+    "id": "fpop",
+    "cls": "fpo-box",
+    "w": 330,
+    "h": 388,
+    "text": "Main steam stop\nMV-MS1391 · DITL-38 #MV-MS1391\nDITL-38 #MV-MS1391\nOPEN\n✕\nPosition\n100.0 %\nStatus\nOPEN\nCLOSED\nMode\nREMOTE\nFIELD SELECTOR\nREMOTE\nLOCAL\nCOMMAND\nOPEN\nSTOP\nCLOSE\nPush buttons of the DCS screen (CRT), read from the DITL sheet DITL-38 #MV-MS1391.\nEvents",
+    "btn": [
+     "✕",
+     "REMOTE",
+     "LOCAL",
+     "OPEN",
+     "STOP",
+     "CLOSE",
+     "EXECUTE",
+     "CANCEL",
+     "Events"
+    ]
+   }
+  ]
+ },
+ "MK07/MS2": {
+  "pops": [
+   {
+    "id": "fpop",
+    "cls": "fpo-box",
+    "w": 330,
+    "h": 388,
+    "text": "Main steam stop bypass\nMV-MS1392 · DITL-38 #MV-MS1392\nDITL-38 #MV-MS1392\nCLOSED\n✕\nPosition\n0.0 %\nStatus\nOPEN\nCLOSED\nMode\nREMOTE\nFIELD SELECTOR\nREMOTE\nLOCAL\nCOMMAND\nOPEN\nSTOP\nCLOSE\nPush buttons of the DCS screen (CRT), read from the DITL sheet DITL-38 #MV-MS1392.\nEvents",
+    "btn": [
+     "✕",
+     "REMOTE",
+     "LOCAL",
+     "OPEN",
+     "STOP",
+     "CLOSE",
+     "EXECUTE",
+     "CANCEL",
+     "Events"
+    ]
+   }
+  ]
+ },
+ "MK07/D88": {
+  "pops": [
+   {
+    "id": "fpop",
+    "cls": "fpo-box",
+    "w": 330,
+    "h": 354,
+    "text": "Main steam drain pot DP-MS01\nXV-MS1011 · DITL-88\nDITL-88\nCLOSED\n✕\nPosition\n0.0 %\nStatus\nOPEN\nCLOSED\nMode\nMANUAL\nAUTO / MANUAL\nAUTO\nMANUAL\nCOMMAND\nOPEN\nCLOSE\nPush buttons of the DCS screen (CRT), read from the DITL sheet DITL-88.\nEvents",
+    "btn": [
+     "✕",
+     "AUTO",
+     "MANUAL",
+     "OPEN",
+     "CLOSE",
+     "EXECUTE",
+     "CANCEL",
+     "Events"
+    ]
+   }
+  ]
+ },
+ "MK07/D73": {
+  "pops": [
+   {
+    "id": "fpop",
+    "cls": "fpo-box",
+    "w": 330,
+    "h": 354,
+    "text": "Cold reheat drain pot DP-CR01\nXV-CR1011 · DITL-73\nDITL-73\nCLOSED\n✕\nPosition\n0.0 %\nStatus\nOPEN\nCLOSED\nMode\nMANUAL\nAUTO / MANUAL\nAUTO\nMANUAL\nCOMMAND\nOPEN\nCLOSE\nPush buttons of the DCS screen (CRT), read from the DITL sheet DITL-73.\nEvents",
+    "btn": [
+     "✕",
+     "AUTO",
+     "MANUAL",
+     "OPEN",
+     "CLOSE",
+     "EXECUTE",
+     "CANCEL",
+     "Events"
+    ]
+   }
+  ]
+ },
+ "MK07/TS1": {
+  "pops": [
+   {
+    "id": "fpop",
+    "cls": "fpo-box",
+    "w": 330,
+    "h": 432,
+    "text": "Extraction steam No.1 shut-off\nMV-TS1001 · DITL-94\nDITL-94\nOPEN\n✕\nPosition\n100.0 %\nStatus\nOPEN\nCLOSED\nMode\nREMOTE · AUTO\nFIELD SELECTOR\nREMOTE\nLOCAL\nAUTO / MANUAL\nAUTO\nMANUAL\nCOMMAND\nOPEN\nSTOP\nCLOSE\nPush buttons of the DCS screen (CRT), read from the DITL sheet DITL-94.\nEvents",
+    "btn": [
+     "✕",
+     "REMOTE",
+     "LOCAL",
+     "AUTO",
+     "MANUAL",
+     "OPEN",
+     "STOP",
+     "CLOSE",
+     "EXECUTE",
+     "CANCEL",
+     "Events"
+    ]
+   }
+  ]
+ },
+ "MK07/D80": {
+  "pops": [
+   {
+    "id": "fpop",
+    "cls": "fpo-box",
+    "w": 330,
+    "h": 354,
+    "text": "Hot reheat drain pot DP-HR01\nXV-HR1021 · DITL-80\nDITL-80\nCLOSED\n✕\nPosition\n0.0 %\nStatus\nOPEN\nCLOSED\nMode\nMANUAL\nAUTO / MANUAL\nAUTO\nMANUAL\nCOMMAND\nOPEN\nCLOSE\nPush buttons of the DCS screen (CRT), read from the DITL sheet DITL-80.\nEvents",
+    "btn": [
+     "✕",
+     "AUTO",
+     "MANUAL",
+     "OPEN",
+     "CLOSE",
+     "EXECUTE",
+     "CANCEL",
+     "Events"
+    ]
+   }
+  ]
+ },
+ "MK07/PMS6": {
+  "pops": [
+   {
+    "id": "",
+    "cls": "fp fpx",
+    "w": 342,
+    "h": 416,
+    "text": "#1 Turbine main steam pressure(1)\n150.0\n0.000\nPV\nkg/cm2\n121.9\nSV\nkg/cm2\nREMOTE: AUTO, SV from the logic path\nR\nA\nM\nMV\n%\nPICMS1006\n[0.000 ~ 150.0 kg/cm2]\nEngineering: drawing signals, SV / MV buttons, trend",
+    "btn": [
+     "R",
+     "A",
+     "M",
+     "▲▲",
+     "▲",
+     "▼",
+     "▼▼",
+     "Why?",
+     "Why?",
+     ".LOC",
+     "−",
+     "+",
+     "0",
+     "50",
+     "100"
+    ]
+   }
+  ]
+ },
+ "MK07/TMS22": {
+  "pops": [
+   {
+    "id": "",
+    "cls": "fp fpx",
+    "w": 342,
+    "h": 443,
+    "text": "#1 HP turbine bypass outlet temperature (1)\n600.0\n0.000\nPV\n°C\n357.5\nSV\n°C\nSV: operator (COS)\nA\nM\nMV\n%\nMV\n▲▲\n▲\n▼\n▼▼\nTICMS1022\n[0.000 ~ 600.0 °C]\nEngineering: drawing signals, SV / MV buttons, trend",
+    "btn": [
+     "A",
+     "M",
+     "▲▲",
+     "▲",
+     "▼",
+     "▼▼",
+     "Why?",
+     "Why?",
+     "SV: LOGIC",
+     "SV: OPERATOR",
+     "−",
+     "+",
+     "0",
+     "50",
+     "100"
+    ]
+   }
+  ]
+ },
+ "MK07/THR2": {
+  "pops": [
+   {
+    "id": "",
+    "cls": "fp fpx",
+    "w": 342,
+    "h": 445,
+    "text": "#1 Reheater outlet header temperature (1)\n600.0\n0.000\nPV\n°C\n538.4\nSV\n°C\nLOCAL: operator SV (COS)\nR\nA\nM\nMV\n%\nSV\n▲▲\n▲\n▼\n▼▼\nTICHR1002\n[0.000 ~ 600.0 °C]\nEngineering: drawing signals, SV / MV buttons, trend",
+    "btn": [
+     "R",
+     "A",
+     "M",
+     "▲▲",
+     "▲",
+     "▼",
+     "▼▼",
+     "Why?",
+     "Why?",
+     ".LOC",
+     "−",
+     "+",
+     "0",
+     "50",
+     "100"
+    ]
+   }
+  ]
+ },
+ "MK07/PHR391": {
+  "pops": [
+   {
+    "id": "",
+    "cls": "fp fpx",
+    "w": 342,
+    "h": 431,
+    "text": "#1 Hot reheat steam blow-off motor valve position\n50.00\n0.000\nPV\nkg/cm2\n33.89\nSV\nkg/cm2\nA\nM\nMV\n%\nSV\n▲▲\n▲\n▼\n▼▼\nPICHR1391\n[0.000 ~ 50.00 kg/cm2]\nEngineering: drawing signals, SV / MV buttons, trend",
+    "btn": [
+     "A",
+     "M",
+     "▲▲",
+     "▲",
+     "▼",
+     "▼▼",
+     "Why?",
+     "Why?",
+     "−",
+     "+",
+     "0",
+     "50",
+     "100"
+    ]
+   }
+  ]
+ },
+ "MK07/PHR3": {
+  "pops": [
+   {
+    "id": "",
+    "cls": "fp fpx",
+    "w": 342,
+    "h": 416,
+    "text": "#1 HP turbine first stage steam pressure (A)\n50.00\n0.000\nPV\nkg/cm2\n33.89\nSV\nkg/cm2\nREMOTE: AUTO, SV from the logic path\nR\nA\nM\nMV\n%\nPICHR1003\n[0.000 ~ 50.00 kg/cm2]\nEngineering: drawing signals, SV / MV buttons, trend",
+    "btn": [
+     "R",
+     "A",
+     "M",
+     "▲▲",
+     "▲",
+     "▼",
+     "▼▼",
+     "Why?",
+     "Why?",
+     ".REM",
+     ".LOC",
+     ".MAN",
+     "−",
+     "+",
+     "0",
+     "50",
+     "100"
+    ]
+   }
+  ]
+ },
+ "MK07/THR12": {
+  "pops": [
+   {
+    "id": "",
+    "cls": "fp fpx",
+    "w": 342,
+    "h": 431,
+    "text": "#1 LP turbine bypass outlet temperature (1)\n300.0\n0.000\nPV\n°C\n136.0\nSV\n°C\nA\nM\nMV\n%\nMV\n▲▲\n▲\n▼\n▼▼\nTICHR1012\n[0.000 ~ 300.0 °C]\nEngineering: drawing signals, SV / MV buttons, trend",
+    "btn": [
+     "A",
+     "M",
+     "▲▲",
+     "▲",
+     "▼",
+     "▼▼",
+     "Why?",
+     "Why?",
+     "−",
+     "+",
+     "0",
+     "50",
+     "100"
+    ]
+   }
+  ]
+ },
+ "MK07/BR": {
+  "pops": [
+   {
+    "id": "",
+    "cls": "fp fpx",
+    "w": 342,
+    "h": 447,
+    "text": "#1 S/H NO.1 outlet header to reheater motor valve position\n100.0\n0.000\nPV\n%\n0.000\nSV\n%\nA\nM\nMV\n%\nSV\n▲▲\n▲\n▼\n▼▼\nHICBR1391\n[0.000 ~ 100.0 %]\nEngineering: drawing signals, SV / MV buttons, trend",
+    "btn": [
+     "A",
+     "M",
+     "▲▲",
+     "▲",
+     "▼",
+     "▼▼",
+     "Why?",
+     "Why?",
+     "−",
+     "+",
+     "0",
+     "50",
+     "100"
+    ]
+   }
+  ]
+ },
+ "MK07/PMS2": {
+  "pops": [
+   {
+    "id": "",
+    "cls": "fp fpx",
+    "w": 342,
+    "h": 431,
+    "text": "MAIN STEAM PRESSURE CONTROL (BLOW-OFF)\n150.0\n0.000\nPV\nkg/cm2\n122.4\nSV\nkg/cm2\nA\nM\nMV\n%\nSV\n▲▲\n▲\n▼\n▼▼\nPICMS1002\n[0.000 ~ 150.0 kg/cm2]\nEngineering: drawing signals, SV / MV buttons, trend",
+    "btn": [
+     "A",
+     "M",
+     "▲▲",
+     "▲",
+     "▼",
+     "▼▼",
+     "Why?",
+     "Why?",
+     "−",
+     "+",
+     "0",
+     "50",
+     "100"
+    ]
+   }
+  ]
+ },
+ "MK08/M75": {
+  "pops": [
+   {
+    "id": "fpop",
+    "cls": "fpo-box",
+    "w": 330,
+    "h": 432,
+    "text": "Turbine warming line drain\nMV-AS1394 · DITL-75\nDITL-75\nCLOSED\n✕\nPosition\n0.0 %\nStatus\nOPEN\nCLOSED\nMode\nREMOTE · MANUAL\nFIELD SELECTOR\nREMOTE\nLOCAL\nAUTO / MANUAL\nAUTO\nMANUAL\nCOMMAND\nOPEN\nSTOP\nCLOSE\nPush buttons of the DCS screen (CRT), read from the DITL sheet DITL-75.\nEvents",
+    "btn": [
+     "✕",
+     "REMOTE",
+     "LOCAL",
+     "AUTO",
+     "MANUAL",
+     "OPEN",
+     "STOP",
+     "CLOSE",
+     "EXECUTE",
+     "CANCEL",
+     "Events"
+    ]
+   }
+  ]
+ },
+ "MK08/PAS5": {
+  "pops": [
+   {
+    "id": "",
+    "cls": "fp fpx",
+    "w": 342,
+    "h": 431,
+    "text": "#1 Cold reheat to aux. steam supply pressure\n15.00\n0.000\nPV\nkg/cm2\n10.20\nSV\nkg/cm2\nA\nM\nMV\n%\nSV\n▲▲\n▲\n▼\n▼▼\nPICAS1005\n[0.000 ~ 15.00 kg/cm2]\nEngineering: drawing signals, SV / MV buttons, trend",
+    "btn": [
+     "A",
+     "M",
+     "▲▲",
+     "▲",
+     "▼",
+     "▼▼",
+     "Why?",
+     "Why?",
+     "−",
+     "+",
+     "0",
+     "50",
+     "100"
+    ]
+   }
+  ]
+ },
+ "MK09/RHD": {
+  "pops": [
+   {
+    "id": "",
+    "cls": "fp fpx fpman",
+    "w": 342,
+    "h": 234,
+    "text": "REHEATER/SUPERHEATER FLUE GAS DAMPER CONTROL\nMV\n%\n▲▲\n▲\n▼\n▼▼\n▲ 1 · ▲▲ 5 % per press; hold to ramp\nHICHR1002A\n[10.00 ~ 100.0 %] S2-MDL031\nMAN",
+    "btn": [
+     "▲▲",
+     "▲",
+     "▼",
+     "▼▼",
+     "MAN"
+    ]
+   }
+  ]
+ },
+ "MK09/RHT": {
+  "pops": [
+   {
+    "id": "",
+    "cls": "fp fpx",
+    "w": 342,
+    "h": 460,
+    "text": "REHEATER/SUPERHEATER FLUE GAS DAMPER CONTROL\n600.0\n0.000\nPV\n°C\n538.4\nSV\n°C\nSV: from the logic path\nA\nM\nMV\n%\nSV\n▲▲\n▲\n▼\n▼▼\nTICHR1002A\n[0.000 ~ 600.0 °C]\nEngineering: drawing signals, SV / MV buttons, trend",
+    "btn": [
+     "A",
+     "M",
+     "▲▲",
+     "▲",
+     "▼",
+     "▼▼",
+     "Why?",
+     "Why?",
+     ".LOC",
+     "SV: LOGIC",
+     "SV: OPERATOR",
+     "−",
+     "+",
+     "0",
+     "50",
+     "100"
+    ]
+   }
+  ]
+ }
+}

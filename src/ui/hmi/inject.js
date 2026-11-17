@@ -28,6 +28,10 @@ const block =
   fs.readFileSync(__dirname + '/../plant/plant.css', 'utf8') +
   /* 3.2.0-beta.74: the operator pop-out faceplate */
   fs.readFileSync(__dirname + '/../plant/fp-pop.css', 'utf8') +
+  /* 3.2.4 (user 2026-11-17): HX, the realistic HMI pages. In the app they are always in the dark set of their colours: the dark
+     block of hx.css also on .hx-app */
+  fs.readFileSync(__dirname + '/../plant/hx/hx.css', 'utf8').split(":root[data-theme='dark']").join(":root[data-theme='dark'],.hx-app") +
+  '.hx-app{width:100%;height:100%;overflow:hidden;background:var(--hx-bg);color:var(--hx-ink)}.hx-app .hx-page{border:0;border-radius:0}.hx-app .hx-head{padding:6px 14px;flex-wrap:nowrap}.hx-app .hx-head p{display:none}.hx-app .hx-legend{display:none}' +
   '</style><script id="plantjs">' +
   (fs.existsSync(__dirname + '/../plant/systems.js') ? fs.readFileSync(__dirname + '/../plant/systems.js', 'utf8') : '') +
   '\n' +
@@ -103,6 +107,9 @@ const block =
   fs.readFileSync(__dirname + '/../plant/hmi-mock-ex.js', 'utf8') +
   '\n' +
   fs.readFileSync(__dirname + '/../plant/hmi-mock-ov.js', 'utf8') +
+  '\n' +
+  /* 3.2.4 (user 2026-11-17): HX, the realistic HMI pages (src/ui/plant/hx/README.md): symbols, engine, registry, pages, adapter */
+  ['hx-real.js', 'hx-core.js', 'hx-registry.js', 'hx-page-reheat.js', 'hx-app.js'].map(x => fs.readFileSync(__dirname + '/../plant/hx/' + x, 'utf8')).join('\n') +
   '\n' +
   /* 3.2.0-beta.74: the operator pop-out faceplate beside the clicked equipment (motor; the controllers of plant.js) */
   fs.readFileSync(__dirname + '/../plant/fp-pop.js', 'utf8') +

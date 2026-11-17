@@ -1,0 +1,3771 @@
+[
+ {
+  "file": "hmi-mock-as.js",
+  "id": "MK08",
+  "title": "AUX STEAM AND VACUUM",
+  "num": "",
+  "name": "AUX STEAM AND VACUUM",
+  "before": "SW",
+  "w": 1600,
+  "h": 920,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file"
+  ],
+  "machN": 16,
+  "machNpre": 16,
+  "artLen": 20154,
+  "artLenPre": 20154,
+  "dv": 22,
+  "dvUniq": 22,
+  "ctlTags": [
+   "PICAS1004",
+   "TICAS1001",
+   "PICAS1005",
+   "PICCD1104",
+   "TICAS1017"
+  ],
+  "unitN": 17,
+  "machKeys": [
+   "n",
+   "t",
+   "mov",
+   "tg",
+   "ctl",
+   "io",
+   "d",
+   "tcs",
+   "why"
+  ],
+  "attrCounts": {
+   "v": 22,
+   "u": 22,
+   "dp": 22,
+   "go": 6,
+   "mov": 12,
+   "ctl": 13,
+   "hit": 16
+  },
+  "mach": {
+   "M51": {
+    "n": "MV-AS1391",
+    "t": "Main steam to aux steam header",
+    "mov": "DITL-51",
+    "tg": "MV-AS1391"
+   },
+   "PAS4": {
+    "n": "PICAS1004",
+    "t": "Aux steam PCV-AS1010",
+    "ctl": "PICAS1004",
+    "io": "PICAS1004"
+   },
+   "TAS1": {
+    "n": "TICAS1001",
+    "t": "Aux steam spray TCV-CD1124",
+    "ctl": "TICAS1001",
+    "io": "TICAS1001"
+   },
+   "X67": {
+    "n": "XV-CD1123",
+    "t": "Aux steam spray block",
+    "mov": "DITL-67",
+    "tg": "XV-CD1123"
+   },
+   "PAS5": {
+    "n": "PICAS1005",
+    "t": "Cold reheat to aux steam PCV-AS1020-1 / -2",
+    "ctl": "PICAS1005",
+    "io": "PICAS1005"
+   },
+   "M52": {
+    "n": "MV-AS1392",
+    "t": "Aux steam header drain",
+    "mov": "DITL-52",
+    "tg": "MV-AS1392"
+   },
+   "PCD4": {
+    "n": "PICCD1104",
+    "t": "Deaerator pegging steam PCV-AS1030",
+    "ctl": "PICCD1104",
+    "io": "PICCD1104"
+   },
+   "M54": {
+    "n": "MV-AS1395",
+    "t": "Aux steam to start-up ejector",
+    "mov": "DITL-54",
+    "tg": "MV-AS1395"
+   },
+   "M55": {
+    "n": "MV-AS1396",
+    "t": "Aux steam to air ejectors",
+    "mov": "DITL-55",
+    "tg": "MV-AS1396"
+   },
+   "M56": {
+    "n": "MV-AV1391",
+    "t": "Condenser vacuum breaker",
+    "mov": "DITL-56",
+    "tg": "MV-AV1391"
+   },
+   "TAS17": {
+    "n": "TICAS1017",
+    "t": "Gland steam spray TCV-CD1126",
+    "ctl": "TICAS1017",
+    "io": "TICAS1017"
+   },
+   "X68": {
+    "n": "XV-CD1125",
+    "t": "Gland steam spray block",
+    "mov": "DITL-68",
+    "tg": "XV-CD1125"
+   },
+   "M53": {
+    "n": "MV-AS1393",
+    "t": "Gland steam drain separator drain",
+    "mov": "DITL-53",
+    "tg": "MV-AS1393"
+   },
+   "GS": {
+    "n": "GLAND STEAM SEAL",
+    "t": "PV-GS1031",
+    "d": "STEAM SEAL FEED · TCS",
+    "tcs": "gland",
+    "why": "Gland steam seal of the TCS: the steam seal feed valve PV-GS1031 (TCS PLC, AI0886 TCS to DCS) holds the gland steam header. START = put in service: aux steam over 7 kg/cm2, the turbine on the turning gear, the vacuum breaker MV-AV1391 open (TCS ATS 1.10 GLAND STEAM SEAL HEADER PRESS. NOT LOW). STOP = out of service."
+   },
+   "HSP": {
+    "n": "LP EXHAUST HOOD SPRAY",
+    "t": "FV-CD1904",
+    "d": "HOOD SPRAY · TCS",
+    "tcs": "hood",
+    "why": "LP exhaust hood water spray of the TCS: FV-CD1904 opens fully below 15 % load (IBD TC-28 / TC-35) and cools the hood (TEST11101 ~ 3) against the windage of the blades at speed. START = put the spray in AUTO (PR-OPE-5002 6307, with the vacuum up). STOP = out of service. ATS 1.12: hood below 80 C, below 52 C before load up."
+   },
+   "M75": {
+    "n": "MV-AS1394",
+    "t": "Turbine warming line drain",
+    "mov": "DITL-75",
+    "tg": "MV-AS1394"
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-cd.js",
+  "id": "MK05",
+  "title": "028 CONDENSATE",
+  "num": "028",
+  "name": "CONDENSATE",
+  "before": "SW",
+  "w": 1600,
+  "h": 1080,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file"
+  ],
+  "machN": 19,
+  "machNpre": 19,
+  "artLen": 28461,
+  "artLenPre": 28461,
+  "dv": 29,
+  "dvUniq": 29,
+  "ctlTags": [
+   "LICCD1110A",
+   "FICCD1121",
+   "FICCD1120",
+   "LICCD1110B",
+   "LICCD1104"
+  ],
+  "unitN": 23,
+  "machKeys": [
+   "n",
+   "t",
+   "ad",
+   "d",
+   "io",
+   "ctl",
+   "mov",
+   "tg"
+  ],
+  "attrCounts": {
+   "ynr": 2,
+   "v": 29,
+   "u": 29,
+   "dp": 29,
+   "go": 2,
+   "ctl": 10,
+   "mov": 12,
+   "st": 2,
+   "ynt": 2,
+   "vt": 6,
+   "hit": 21,
+   "yn": 2
+  },
+  "mach": {
+   "CA": {
+    "n": "CEP-A",
+    "t": "P-1116A",
+    "ad": "M.3350",
+    "d": "DITL-61A",
+    "io": "MIR-P1116A"
+   },
+   "CB": {
+    "n": "CEP-B",
+    "t": "P-1116B",
+    "ad": "M.3351",
+    "d": "DITL-61A #B",
+    "io": "MIR-P1116B"
+   },
+   "LA": {
+    "n": "LICCD1110A",
+    "t": "Hotwell make-up LCV-MU1110",
+    "ctl": "LICCD1110A",
+    "io": "LICCD1110A"
+   },
+   "LB": {
+    "n": "LICCD1110B",
+    "t": "Hotwell dump LCV-CD1110",
+    "ctl": "LICCD1110B",
+    "io": "LICCD1110B"
+   },
+   "LD": {
+    "n": "LICCD1104",
+    "t": "Deaerator level LCV-CD1104",
+    "ctl": "LICCD1104",
+    "io": "LICCD1104"
+   },
+   "FR": {
+    "n": "FICCD1120",
+    "t": "Minimum flow FCV-CD1120",
+    "ctl": "FICCD1120",
+    "io": "FICCD1120"
+   },
+   "FP": {
+    "n": "FICCD1121",
+    "t": "Polisher bypass FCV-CD1121",
+    "ctl": "FICCD1121",
+    "io": "FICCD1121"
+   },
+   "V60": {
+    "n": "MV-MU1001",
+    "t": "Make-up to the hotwell",
+    "mov": "DITL-60",
+    "tg": "MV-MU1001"
+   },
+   "V63A": {
+    "n": "XV-CD1004",
+    "t": "Flash chamber spray (normal)",
+    "mov": "DITL-63",
+    "tg": "XV-CD1004"
+   },
+   "V63B": {
+    "n": "XV-CD1005",
+    "t": "Flash chamber spray",
+    "mov": "DITL-63",
+    "tg": "XV-CD1005"
+   },
+   "V64": {
+    "n": "MV-CD1007",
+    "t": "Polisher inlet",
+    "mov": "DITL-64",
+    "tg": "MV-CD1007"
+   },
+   "V65": {
+    "n": "MV-CD1008",
+    "t": "Polisher outlet",
+    "mov": "DITL-65",
+    "tg": "MV-CD1008"
+   },
+   "V62": {
+    "n": "XV-CD1006",
+    "t": "Curtain spray",
+    "mov": "DITL-62",
+    "tg": "XV-CD1006"
+   },
+   "V67": {
+    "n": "XV-CD1123",
+    "t": "Spray TCV-CD1124",
+    "mov": "DITL-67",
+    "tg": "XV-CD1123"
+   },
+   "V68": {
+    "n": "XV-CD1125",
+    "t": "Spray TCV-CD1126",
+    "mov": "DITL-68",
+    "tg": "XV-CD1125"
+   },
+   "V66": {
+    "n": "XV-CD1114",
+    "t": "LP bypass spray TCV-CD1115",
+    "mov": "DITL-66",
+    "tg": "XV-CD1114"
+   },
+   "V71": {
+    "n": "MV-CD1003",
+    "t": "LP heater bypass",
+    "mov": "DITL-71",
+    "tg": "MV-CD1003"
+   },
+   "V69": {
+    "n": "MV-CD1001",
+    "t": "LP heater inlet",
+    "mov": "DITL-69",
+    "tg": "MV-CD1001"
+   },
+   "V70": {
+    "n": "MV-CD1002",
+    "t": "LP heater outlet",
+    "mov": "DITL-70",
+    "tg": "MV-CD1002"
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-cls.js",
+  "id": "MK12",
+  "title": "COAL, LIMESTONE AND SAND",
+  "num": "",
+  "name": "COAL, LIMESTONE AND SAND",
+  "before": "SW",
+  "w": 1600,
+  "h": 1110,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file",
+   "_pb"
+  ],
+  "machN": 16,
+  "machNpre": 11,
+  "artLen": 32354,
+  "artLenPre": 31835,
+  "dv": 11,
+  "dvUniq": 11,
+  "ctlTags": [
+   "FICCL1061A",
+   "FICCL1061B",
+   "FICCL1061C",
+   "FIC-CM",
+   "HS-COAL"
+  ],
+  "unitN": 5,
+  "machKeys": [
+   "n",
+   "t",
+   "ad",
+   "d",
+   "io",
+   "mov",
+   "tg",
+   "ctl",
+   "df"
+  ],
+  "attrCounts": {
+   "v": 11,
+   "u": 11,
+   "dp": 11,
+   "st": 3,
+   "ctl": 21,
+   "do": 4,
+   "dy": 30,
+   "on": 30,
+   "off": 30,
+   "ns": 5,
+   "hit": 24
+  },
+  "mach": {
+   "CFA": {
+    "n": "COAL FEEDER A",
+    "t": "L-1061A",
+    "ad": "DITL-19",
+    "d": "DITL-19",
+    "io": "I.0130"
+   },
+   "CFB": {
+    "n": "COAL FEEDER B",
+    "t": "L-1061B",
+    "ad": "DITL-19 #B",
+    "d": "DITL-19 #B",
+    "io": "I.0450"
+   },
+   "CFC": {
+    "n": "COAL FEEDER C",
+    "t": "L-1061C",
+    "ad": "DITL-19 #C",
+    "d": "DITL-19 #C",
+    "io": "I.0490"
+   },
+   "XVA": {
+    "n": "XV-CL1061-A",
+    "t": "Coal feeder A outlet discharge valve",
+    "mov": "DITL-20",
+    "tg": "XV-CL1061-A"
+   },
+   "XVB": {
+    "n": "XV-CL1061-B",
+    "t": "Coal feeder B outlet discharge valve",
+    "mov": "DITL-20 #B",
+    "tg": "XV-CL1061-B"
+   },
+   "XVC": {
+    "n": "XV-CL1061-C",
+    "t": "Coal feeder C outlet discharge valve",
+    "mov": "DITL-20 #C",
+    "tg": "XV-CL1061-C"
+   },
+   "FCA": {
+    "n": "FICCL1061A",
+    "t": "Coal feeder A feed rate",
+    "ctl": "FICCL1061A",
+    "io": "FICCL1061A"
+   },
+   "FCB": {
+    "n": "FICCL1061B",
+    "t": "Coal feeder B feed rate",
+    "ctl": "FICCL1061B",
+    "io": "FICCL1061B"
+   },
+   "FCC": {
+    "n": "FICCL1061C",
+    "t": "Coal feeder C feed rate",
+    "ctl": "FICCL1061C",
+    "io": "FICCL1061C"
+   },
+   "CM": {
+    "n": "FIC-CM",
+    "t": "Coal master",
+    "ctl": "FIC-CM",
+    "io": "FIC-CM"
+   },
+   "HSC": {
+    "n": "HS-COAL",
+    "t": "Total coal flow correction",
+    "ctl": "HS-COAL",
+    "io": "HS-COAL"
+   },
+   "SDSYS": {
+    "n": "Sand system",
+    "t": "Sand injection system",
+    "d": "DITL-771",
+    "df": {
+     "st": 14,
+     "on": "SYSTEM ON",
+     "off": "SYSTEM OFF",
+     "pbs": [
+      [
+       "START",
+       2,
+       "",
+       null,
+       null
+      ],
+      [
+       "STOP",
+       3,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SDISO": {
+    "n": "XV-SD1802A / B",
+    "t": "Sand isolating valves",
+    "d": "DITL-776",
+    "df": {
+     "st": 13,
+     "on": "ROUTE OK",
+     "off": "ROUTE NOT OK",
+     "pbs": [
+      [
+       "OPEN",
+       2,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "LMSYS": {
+    "n": "Limestone system",
+    "t": "Limestone injection, filling cycle",
+    "d": "DITL-LS10",
+    "df": {
+     "st": 3,
+     "on": "FILL CYCLE ON",
+     "off": "FILL CYCLE OFF",
+     "pbs": [
+      [
+       "START",
+       2,
+       "",
+       null,
+       null
+      ],
+      [
+       "STOP",
+       4,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "LMISO": {
+    "n": "XV-LM1811A ~ H",
+    "t": "Limestone isolating valves",
+    "d": "DITL-LS212",
+    "df": {
+     "st": 19,
+     "on": "OPEN",
+     "off": "CLOSED",
+     "pbs": [
+      [
+       "OPEN",
+       9,
+       "",
+       "set",
+       1
+      ],
+      [
+       "CLOSE",
+       9,
+       "",
+       "set",
+       0
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "LMFD": {
+    "n": "L-1311",
+    "t": "Limestone rotary feeder",
+    "d": "DITL-LS110",
+    "df": {
+     "st": 6,
+     "on": "RUNNING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       7,
+       "",
+       null,
+       null
+      ],
+      [
+       "STOP",
+       8,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-cw.js",
+  "id": "CWN",
+  "title": "030 CIRCULATING WATER",
+  "num": "030",
+  "name": "CIRCULATING WATER (SEAWATER)",
+  "before": "SW",
+  "w": 1600,
+  "h": 856,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file"
+  ],
+  "machN": 13,
+  "machNpre": 13,
+  "artLen": 27332,
+  "artLenPre": 27332,
+  "dv": 15,
+  "dvUniq": 15,
+  "ctlTags": [],
+  "unitN": 20,
+  "machKeys": [
+   "n",
+   "t",
+   "ad",
+   "io",
+   "d",
+   "cur",
+   "band",
+   "df",
+   "fld",
+   "fieldOp",
+   "why"
+  ],
+  "attrCounts": {
+   "fv": 10,
+   "v": 15,
+   "u": 15,
+   "dp": 15,
+   "st": 7,
+   "md": 6,
+   "vcb": 3,
+   "ynr": 6,
+   "ynt": 6,
+   "do": 4,
+   "ns": 5,
+   "go": 1,
+   "hit": 18,
+   "yn": 6
+  },
+  "mach": {
+   "SWA": {
+    "n": "SWP-A",
+    "t": "P-1501A",
+    "ad": "M.3353",
+    "io": "MIR-P1501A",
+    "d": "DITL-29A",
+    "cur": "IIP1501A",
+    "band": [
+     205,
+     215
+    ]
+   },
+   "SWB": {
+    "n": "SWP-B",
+    "t": "P-1501B",
+    "ad": "M.3354",
+    "io": "MIR-P1501B",
+    "d": "DITL-29A #B",
+    "cur": "IIP1501B",
+    "band": [
+     205,
+     215
+    ]
+   },
+   "SWC": {
+    "n": "SWP-C",
+    "t": "P-1501C",
+    "ad": "M.3355",
+    "io": "MIR-P1501C",
+    "d": "DITL-29A #C",
+    "cur": "IIP1501C",
+    "band": [
+     205,
+     215
+    ]
+   },
+   "BPA": {
+    "n": "SWBP-A",
+    "t": "P-1503A",
+    "ad": "DITL-30",
+    "io": "MIR-P1503A",
+    "d": "DITL-30",
+    "cur": "IIP1503A"
+   },
+   "BPB": {
+    "n": "SWBP-B",
+    "t": "P-1503B",
+    "ad": "DITL-30 #B",
+    "io": "MIR-P1503B",
+    "d": "DITL-30 #B",
+    "cur": "IIP1503B"
+   },
+   "BPC": {
+    "n": "SWBP-C",
+    "t": "P-1503C",
+    "ad": "DITL-30 #C",
+    "io": "MIR-P1503C",
+    "d": "DITL-30 #C",
+    "cur": "IIP1503C"
+   },
+   "DF1": {
+    "n": "S-1502",
+    "t": "Debris filter",
+    "io": "DIR-DF1001",
+    "d": "DITL-39",
+    "df": {
+     "pbs": [
+      [
+       "AUTO START",
+       7,
+       "M.0790"
+      ],
+      [
+       "AUTO STOP",
+       9,
+       "M.0791"
+      ]
+     ],
+     "st": 3,
+     "dp": "DPISW1502",
+     "perm": [
+      1,
+      2,
+      3
+     ],
+     "why": "running seawater pump"
+    }
+   },
+   "DF2": {
+    "n": "S-1504",
+    "t": "Debris filter",
+    "io": "DIR-DF1002",
+    "d": "DITL-39",
+    "df": {
+     "pbs": [
+      [
+       "AUTO START",
+       18,
+       "M.0792"
+      ],
+      [
+       "AUTO STOP",
+       20,
+       "M.0793"
+      ]
+     ],
+     "st": 14,
+     "dp": "DPISW1504",
+     "perm": [],
+     "why": ""
+    }
+   },
+   "CTA": {
+    "n": "CTCS-A",
+    "t": "P-1113",
+    "io": "DOP-CTCS1001",
+    "d": "DITL-119"
+   },
+   "CTB": {
+    "n": "CTCS-B",
+    "t": "P-1114",
+    "io": "DOP-CTCS1002",
+    "d": "DITL-119"
+   },
+   "HUA": {
+    "n": "P-0761A",
+    "t": "Unloading",
+    "fld": "hypoU",
+    "io": "MIR-P0761A",
+    "d": "STN105 DI",
+    "fieldOp": true,
+    "why": "Field equipment (local panel HCDSP): the STN105 inputs are running / overload status only, no DCS command."
+   },
+   "HDA": {
+    "n": "P-0762A",
+    "t": "NaOCl dosing",
+    "fld": "hypo",
+    "io": "MIR-P0762A",
+    "d": "STN105 DI",
+    "fieldOp": true,
+    "why": "Field equipment (local panel HCDSP): the STN105 inputs are running / overload status only, no DCS command."
+   },
+   "HDB": {
+    "n": "P-0762B",
+    "t": "NaOCl dosing",
+    "fld": "hypoB",
+    "io": "MIR-P0762B",
+    "d": "STN105 DI",
+    "fieldOp": true,
+    "why": "Field equipment (local panel HCDSP): the STN105 inputs are running / overload status only, no DCS command."
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-db.js",
+  "id": "MK11",
+  "title": "DIESEL AND BURNERS",
+  "num": "",
+  "name": "DIESEL AND BURNERS",
+  "before": "SW",
+  "w": 1600,
+  "h": 1000,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file",
+   "_pb"
+  ],
+  "machN": 18,
+  "machNpre": 14,
+  "artLen": 30977,
+  "artLenPre": 30721,
+  "dv": 25,
+  "dvUniq": 25,
+  "ctlTags": [
+   "FIC-OM",
+   "PICDO0005",
+   "HICDO1012",
+   "FICFA1043A",
+   "FICFA1043B",
+   "FICFA1043C",
+   "FICFA1043D",
+   "PICDO1008",
+   "FICDO1043A",
+   "FICDO1043B",
+   "FICDO1043C",
+   "FICDO1043D"
+  ],
+  "unitN": 10,
+  "machKeys": [
+   "n",
+   "t",
+   "ad",
+   "d",
+   "io",
+   "ctl",
+   "df"
+  ],
+  "attrCounts": {
+   "ns": 2,
+   "ctl": 19,
+   "v": 25,
+   "u": 25,
+   "dp": 25,
+   "st": 2,
+   "md": 2,
+   "dy": 16,
+   "on": 16,
+   "off": 16,
+   "hit": 18,
+   "fv": 6
+  },
+  "mach": {
+   "PA": {
+    "n": "DIESEL OIL PUMP A",
+    "t": "P-0702A",
+    "ad": "DITL-31",
+    "d": "DITL-31",
+    "io": "MIR-P0702A"
+   },
+   "PB": {
+    "n": "DIESEL OIL PUMP B",
+    "t": "P-0702B",
+    "ad": "DITL-31 #B",
+    "d": "DITL-31 #B",
+    "io": "MIR-P0702B"
+   },
+   "REC": {
+    "n": "PICDO0005",
+    "t": "Recirculation PCV-DO0002",
+    "ctl": "PICDO0005",
+    "io": "PICDO0005"
+   },
+   "SUP": {
+    "n": "HICDO1012",
+    "t": "Supply to burners FCV-DO1012",
+    "ctl": "HICDO1012",
+    "io": "HICDO1012"
+   },
+   "RET": {
+    "n": "PICDO1008",
+    "t": "Oil return PCV-DO1009",
+    "ctl": "PICDO1008",
+    "io": "PICDO1008"
+   },
+   "OM": {
+    "n": "FIC-OM",
+    "t": "Oil master",
+    "ctl": "FIC-OM",
+    "io": "FIC-OM"
+   },
+   "FA": {
+    "n": "FICDO1043A",
+    "t": "Burner A oil FCV-DO1043-A3",
+    "ctl": "FICDO1043A",
+    "io": "FICDO1043A"
+   },
+   "FB": {
+    "n": "FICDO1043B",
+    "t": "Burner B oil FCV-DO1043-B3",
+    "ctl": "FICDO1043B",
+    "io": "FICDO1043B"
+   },
+   "FC": {
+    "n": "FICDO1043C",
+    "t": "Burner C oil FCV-DO1043-C3",
+    "ctl": "FICDO1043C",
+    "io": "FICDO1043C"
+   },
+   "FD": {
+    "n": "FICDO1043D",
+    "t": "Burner D oil FCV-DO1043-D3",
+    "ctl": "FICDO1043D",
+    "io": "FICDO1043D"
+   },
+   "AA": {
+    "n": "FICFA1043A",
+    "t": "Burner A air MCV-FA1043-A",
+    "ctl": "FICFA1043A",
+    "io": "FICFA1043A"
+   },
+   "AB": {
+    "n": "FICFA1043B",
+    "t": "Burner B air MCV-FA1043-B",
+    "ctl": "FICFA1043B",
+    "io": "FICFA1043B"
+   },
+   "AC": {
+    "n": "FICFA1043C",
+    "t": "Burner C air MCV-FA1043-C",
+    "ctl": "FICFA1043C",
+    "io": "FICFA1043C"
+   },
+   "AD": {
+    "n": "FICFA1043D",
+    "t": "Burner D air MCV-FA1043-D",
+    "ctl": "FICFA1043D",
+    "io": "FICFA1043D"
+   },
+   "BNA": {
+    "n": "Burner A",
+    "t": "Igniter and burner A push buttons",
+    "d": "DITL-09",
+    "df": {
+     "st": 26,
+     "on": "REMOTE",
+     "off": "NOT REMOTE",
+     "pbs": [
+      [
+       "IGNITER ON",
+       4,
+       "",
+       null,
+       null
+      ],
+      [
+       "IGNITER OFF",
+       6,
+       "",
+       null,
+       null
+      ],
+      [
+       "BURNER ON",
+       8,
+       "",
+       null,
+       null
+      ],
+      [
+       "BURNER OFF",
+       10,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": "",
+     "free": 1
+    }
+   },
+   "BNB": {
+    "n": "Burner B",
+    "t": "Igniter and burner B push buttons",
+    "d": "DITL-09 #B",
+    "df": {
+     "st": 26,
+     "on": "REMOTE",
+     "off": "NOT REMOTE",
+     "pbs": [
+      [
+       "IGNITER ON",
+       4,
+       "",
+       null,
+       null
+      ],
+      [
+       "IGNITER OFF",
+       6,
+       "",
+       null,
+       null
+      ],
+      [
+       "BURNER ON",
+       8,
+       "",
+       null,
+       null
+      ],
+      [
+       "BURNER OFF",
+       10,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": "",
+     "free": 1
+    }
+   },
+   "BNC": {
+    "n": "Burner C",
+    "t": "Igniter and burner C push buttons",
+    "d": "DITL-09 #C",
+    "df": {
+     "st": 26,
+     "on": "REMOTE",
+     "off": "NOT REMOTE",
+     "pbs": [
+      [
+       "IGNITER ON",
+       4,
+       "",
+       null,
+       null
+      ],
+      [
+       "IGNITER OFF",
+       6,
+       "",
+       null,
+       null
+      ],
+      [
+       "BURNER ON",
+       8,
+       "",
+       null,
+       null
+      ],
+      [
+       "BURNER OFF",
+       10,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": "",
+     "free": 1
+    }
+   },
+   "BND": {
+    "n": "Burner D",
+    "t": "Igniter and burner D push buttons",
+    "d": "DITL-09 #D",
+    "df": {
+     "st": 26,
+     "on": "REMOTE",
+     "off": "NOT REMOTE",
+     "pbs": [
+      [
+       "IGNITER ON",
+       4,
+       "",
+       null,
+       null
+      ],
+      [
+       "IGNITER OFF",
+       6,
+       "",
+       null,
+       null
+      ],
+      [
+       "BURNER ON",
+       8,
+       "",
+       null,
+       null
+      ],
+      [
+       "BURNER OFF",
+       10,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": "",
+     "free": 1
+    }
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-ea.js",
+  "id": "MK14",
+  "title": "ESP AND ASH",
+  "num": "",
+  "name": "ESP AND ASH",
+  "before": "SW",
+  "w": 1600,
+  "h": 940,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file"
+  ],
+  "machN": 7,
+  "machNpre": 7,
+  "artLen": 24435,
+  "artLenPre": 24435,
+  "dv": 21,
+  "dvUniq": 21,
+  "ctlTags": [
+   "DPICFG108",
+   "SICL1060A"
+  ],
+  "unitN": 0,
+  "machKeys": [
+   "n",
+   "t",
+   "ad",
+   "d",
+   "io",
+   "ctl",
+   "fld",
+   "fieldOp",
+   "why"
+  ],
+  "attrCounts": {
+   "v": 21,
+   "u": 21,
+   "dp": 21,
+   "ns": 10,
+   "dy": 10,
+   "on": 10,
+   "off": 10,
+   "ctl": 7,
+   "hit": 7
+  },
+  "mach": {
+   "BCA": {
+    "n": "ASH COOLER A",
+    "t": "L-1060A",
+    "ad": "DITL-21A",
+    "d": "DITL-21A",
+    "io": "I.0250"
+   },
+   "BCB": {
+    "n": "ASH COOLER B",
+    "t": "L-1060B",
+    "ad": "DITL-21A #B",
+    "d": "DITL-21A #B"
+   },
+   "BCC": {
+    "n": "ASH COOLER C",
+    "t": "L-1060C",
+    "ad": "DITL-21A #C",
+    "d": "DITL-21A #C"
+   },
+   "BCD": {
+    "n": "ASH COOLER D",
+    "t": "L-1060D",
+    "ad": "DITL-21A #D",
+    "d": "DITL-21A #D"
+   },
+   "DP": {
+    "n": "DPICFG108",
+    "t": "Furnace differential pressure",
+    "ctl": "DPICFG108",
+    "io": "DPICFG108"
+   },
+   "SA": {
+    "n": "SICL1060A",
+    "t": "Screw speed",
+    "ctl": "SICL1060A",
+    "io": "SICL1060A"
+   },
+   "ESP": {
+    "n": "ESP",
+    "t": "Electrostatic precipitator",
+    "d": "EP PLC panel",
+    "fld": "esp",
+    "fieldOp": true,
+    "why": "Field equipment: the precipitator (transformer-rectifiers U-1201 ~ U-1205, purge air heater H-1201 and fan F-1201) is started at the EP PLC panel. No DCS command; dust and opacity follow it."
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-ex.js",
+  "id": "MK18",
+  "title": "EXTRACTION AND DRAINS",
+  "num": "",
+  "name": "EXTRACTION AND DRAINS",
+  "before": "SW",
+  "w": 1600,
+  "h": 1010,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file"
+  ],
+  "machN": 18,
+  "machNpre": 18,
+  "artLen": 29591,
+  "artLenPre": 29591,
+  "dv": 13,
+  "dvUniq": 13,
+  "ctlTags": [],
+  "unitN": 4,
+  "machKeys": [
+   "n",
+   "t",
+   "mov",
+   "tg"
+  ],
+  "attrCounts": {
+   "movr": 11,
+   "v": 13,
+   "u": 13,
+   "dp": 13,
+   "mov": 39,
+   "vt": 1,
+   "ns": 5,
+   "dy": 2,
+   "hit": 29
+  },
+  "mach": {
+   "S1": {
+    "n": "MV-TS1001",
+    "t": "Extraction steam No. 1 shut-off valve",
+    "mov": "DITL-94",
+    "tg": "MV-TS1001"
+   },
+   "S2": {
+    "n": "MV-TS1002",
+    "t": "Extraction steam No. 2 shut-off valve",
+    "mov": "DITL-95",
+    "tg": "MV-TS1002"
+   },
+   "S3": {
+    "n": "MV-TS1003",
+    "t": "Extraction steam No. 3 shut-off valve",
+    "mov": "DITL-96",
+    "tg": "MV-TS1003"
+   },
+   "S4": {
+    "n": "MV-TS1004",
+    "t": "Extraction steam No. 4 shut-off valve",
+    "mov": "DITL-97",
+    "tg": "MV-TS1004"
+   },
+   "S5": {
+    "n": "MV-TS1005",
+    "t": "Extraction steam No. 5 shut-off valve",
+    "mov": "DITL-98",
+    "tg": "MV-TS1005"
+   },
+   "D1391": {
+    "n": "MV-TS1391",
+    "t": "Extraction steam No. 1 drain valve",
+    "mov": "DITL-99",
+    "tg": "MV-TS1391"
+   },
+   "D1397": {
+    "n": "MV-TS1397",
+    "t": "Extraction steam No. 1 drain valve",
+    "mov": "DITL-100",
+    "tg": "MV-TS1397"
+   },
+   "D1392": {
+    "n": "MV-TS1392",
+    "t": "Extraction steam No. 2 drain valve",
+    "mov": "DITL-101",
+    "tg": "MV-TS1392"
+   },
+   "D1396": {
+    "n": "MV-TS1396",
+    "t": "Extraction steam No. 2 drain valve",
+    "mov": "DITL-102",
+    "tg": "MV-TS1396"
+   },
+   "D1393": {
+    "n": "MV-TS1393",
+    "t": "Extraction steam No. 3 drain valve",
+    "mov": "DITL-103",
+    "tg": "MV-TS1393"
+   },
+   "D1399": {
+    "n": "MV-TS1399",
+    "t": "Extraction steam No. 3 drain valve",
+    "mov": "DITL-104",
+    "tg": "MV-TS1399"
+   },
+   "D1398": {
+    "n": "MV-TS1398",
+    "t": "Extraction steam No. 3 drain valve",
+    "mov": "DITL-105",
+    "tg": "MV-TS1398"
+   },
+   "D1394": {
+    "n": "MV-TS1394",
+    "t": "Extraction steam No. 4 drain valve",
+    "mov": "DITL-106",
+    "tg": "MV-TS1394"
+   },
+   "D1390": {
+    "n": "MV-TS1390",
+    "t": "Extraction steam No. 4 drain valve",
+    "mov": "DITL-107",
+    "tg": "MV-TS1390"
+   },
+   "D1395": {
+    "n": "MV-TS1395",
+    "t": "Extraction steam No. 5 drain valve",
+    "mov": "DITL-108",
+    "tg": "MV-TS1395"
+   },
+   "D1389": {
+    "n": "MV-TS1389",
+    "t": "Extraction steam No. 5 drain valve",
+    "mov": "DITL-109",
+    "tg": "MV-TS1389"
+   },
+   "D1400": {
+    "n": "MV-TS1400",
+    "t": "Extraction steam No. 3 drain valve (not on PD-013)",
+    "mov": "DITL-110",
+    "tg": "MV-TS1400"
+   },
+   "XF": {
+    "n": "XV-FS1005",
+    "t": "Flash pipe drain valve",
+    "mov": "DITL-57",
+    "tg": "XV-FS1005"
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-fg.js",
+  "id": "MK09",
+  "title": "AIR AND FLUE GAS",
+  "num": "",
+  "name": "AIR AND FLUE GAS",
+  "before": "SW",
+  "w": 1600,
+  "h": 1050,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file"
+  ],
+  "machN": 24,
+  "machNpre": 24,
+  "artLen": 27777,
+  "artLenPre": 27777,
+  "dv": 64,
+  "dvUniq": 64,
+  "ctlTags": [
+   "HICHR1002A",
+   "HICHR1002B",
+   "PICFG108",
+   "PICFG108A",
+   "FICFA1071",
+   "FICFA1081",
+   "FICFA1055A",
+   "FICFA1055B",
+   "AICFG112",
+   "TICHR1002A"
+  ],
+  "unitN": 25,
+  "machKeys": [
+   "n",
+   "t",
+   "ad",
+   "d",
+   "io",
+   "ctl",
+   "mov",
+   "tg"
+  ],
+  "attrCounts": {
+   "v": 64,
+   "u": 64,
+   "dp": 64,
+   "ns": 16,
+   "ctl": 21,
+   "go": 1,
+   "st": 8,
+   "short": 1,
+   "mov": 8,
+   "hit": 24
+  },
+  "mach": {
+   "PAF": {
+    "n": "PAF",
+    "t": "F-1053",
+    "ad": "DITL-26A",
+    "d": "DITL-26A",
+    "io": "MIR-F1053"
+   },
+   "SAF": {
+    "n": "SAF",
+    "t": "F-1054",
+    "ad": "DITL-27A",
+    "d": "DITL-27A",
+    "io": "MIR-F1054"
+   },
+   "IDF": {
+    "n": "IDF",
+    "t": "F-1056",
+    "ad": "DITL-25A",
+    "d": "DITL-25A",
+    "io": "MIR-F1056"
+   },
+   "FA": {
+    "n": "FA BLOWER-A",
+    "t": "F-1055A",
+    "ad": "DITL-28A",
+    "d": "DITL-28A",
+    "io": "MIR-F1055A"
+   },
+   "FB": {
+    "n": "FA BLOWER-B",
+    "t": "F-1055B",
+    "ad": "DITL-28A #B",
+    "d": "DITL-28A #B",
+    "io": "MIR-F1055B"
+   },
+   "FCA": {
+    "n": "FICFA1055A",
+    "t": "Fluidizing air blower A inlet damper FCV-FA1055-A1",
+    "ctl": "FICFA1055A",
+    "io": "FICFA1055A"
+   },
+   "FCB": {
+    "n": "FICFA1055B",
+    "t": "Fluidizing air blower B inlet damper FCV-FA1055-B1",
+    "ctl": "FICFA1055B",
+    "io": "FICFA1055B"
+   },
+   "SVA": {
+    "n": "XV-FA1055-A2",
+    "t": "Fluidizing air blower A surge (to silencer) SOV",
+    "mov": "DITL-28C",
+    "tg": "~TO SILENCE"
+   },
+   "SVB": {
+    "n": "XV-FA1055-B2",
+    "t": "Fluidizing air blower B surge (to silencer) SOV",
+    "mov": "DITL-28C #B",
+    "tg": "~TO SILENCE"
+   },
+   "OVA": {
+    "n": "XV-FA1055-A3",
+    "t": "Fluidizing air blower A outlet SOV",
+    "mov": "DITL-28C",
+    "tg": "~OUTLET SOV"
+   },
+   "OVB": {
+    "n": "XV-FA1055-B3",
+    "t": "Fluidizing air blower B outlet SOV",
+    "mov": "DITL-28C #B",
+    "tg": "~OUTLET SOV"
+   },
+   "LOA": {
+    "n": "PAF LUBE OIL PUMP A",
+    "t": "Primary air fan lube oil pump A",
+    "ad": "DITL-24",
+    "d": "DITL-24"
+   },
+   "LOB": {
+    "n": "PAF LUBE OIL PUMP B",
+    "t": "Primary air fan lube oil pump B",
+    "ad": "DITL-24 #B",
+    "d": "DITL-24 #B"
+   },
+   "APH": {
+    "n": "AIR PREHEATER",
+    "t": "H-1052",
+    "ad": "DITL-43",
+    "d": "DITL-43"
+   },
+   "CPA": {
+    "n": "FICFA1071",
+    "t": "Primary air flow",
+    "ctl": "FICFA1071",
+    "io": "FICFA1071"
+   },
+   "CSA": {
+    "n": "FICFA1081",
+    "t": "Secondary air flow",
+    "ctl": "FICFA1081",
+    "io": "FICFA1081"
+   },
+   "MPA": {
+    "n": "FICFA1071",
+    "t": "MCV-FA1053-1",
+    "ctl": "FICFA1071",
+    "io": "FICFA1071"
+   },
+   "MSA": {
+    "n": "FICFA1081",
+    "t": "MCV-FA1054-1",
+    "ctl": "FICFA1081",
+    "io": "FICFA1081"
+   },
+   "IDC": {
+    "n": "PICFG108",
+    "t": "IDF hydraulic coupling",
+    "ctl": "PICFG108",
+    "io": "PICFG108"
+   },
+   "IDD": {
+    "n": "PICFG108A",
+    "t": "IDF inlet damper PCD-FG1056-1",
+    "ctl": "PICFG108A",
+    "io": "PICFG108A"
+   },
+   "RHD": {
+    "n": "HICHR1002A",
+    "t": "RH biasing damper TCV-FG1116A-D",
+    "ctl": "HICHR1002A",
+    "io": "HICHR1002A"
+   },
+   "SHD": {
+    "n": "HICHR1002B",
+    "t": "SH biasing damper TCV-FG1117A-D",
+    "ctl": "HICHR1002B",
+    "io": "HICHR1002B"
+   },
+   "O2": {
+    "n": "AICFG112",
+    "t": "O2 control",
+    "ctl": "AICFG112",
+    "io": "AICFG112"
+   },
+   "RHT": {
+    "n": "TICHR1002A",
+    "t": "Reheater outlet temperature",
+    "ctl": "TICHR1002A",
+    "io": "TICHR1002A"
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-fw.js",
+  "id": "MK06",
+  "title": "FEEDWATER",
+  "num": "",
+  "name": "FEEDWATER",
+  "before": "SW",
+  "w": 1600,
+  "h": 820,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file"
+  ],
+  "machN": 25,
+  "machNpre": 25,
+  "artLen": 27205,
+  "artLenPre": 27205,
+  "dv": 33,
+  "dvUniq": 33,
+  "ctlTags": [
+   "LICHD11061",
+   "LICHD11051",
+   "LICBR1001B",
+   "FICFW1007",
+   "LICBR1001",
+   "LICBR1001A",
+   "TICBR1140",
+   "TICMS1004",
+   "TICHR1002",
+   "TICMS1022",
+   "TICBR1130",
+   "TICBR1150"
+  ],
+  "unitN": 22,
+  "machKeys": [
+   "n",
+   "t",
+   "ad",
+   "d",
+   "io",
+   "aux",
+   "ctl",
+   "mov",
+   "tg"
+  ],
+  "attrCounts": {
+   "ynr": 2,
+   "v": 33,
+   "u": 33,
+   "dp": 33,
+   "go": 1,
+   "mov": 19,
+   "ns": 2,
+   "st": 2,
+   "ynt": 2,
+   "vt": 6,
+   "ctl": 19,
+   "hit": 27,
+   "yn": 2,
+   "apb": 2
+  },
+  "mach": {
+   "PA": {
+    "n": "BFWP-A",
+    "t": "P-1115A",
+    "ad": "DITL-23A",
+    "d": "DITL-23A",
+    "io": "MIR-P1115A",
+    "aux": [
+     [
+      "Lube oil pump A",
+      "DITL-22"
+     ],
+     [
+      "Lube oil pump B",
+      "DITL-22 #B"
+     ]
+    ]
+   },
+   "PB": {
+    "n": "BFWP-B",
+    "t": "P-1115B",
+    "ad": "DITL-23A #B",
+    "d": "DITL-23A #B",
+    "io": "MIR-P1115B",
+    "aux": [
+     [
+      "Lube oil pump A",
+      "DITL-22 #C"
+     ],
+     [
+      "Lube oil pump B",
+      "DITL-22 #D"
+     ]
+    ]
+   },
+   "C1061": {
+    "n": "LICHD11061",
+    "t": "No.2 HP heater drain LCV-HD1106-1",
+    "ctl": "LICHD11061",
+    "io": "LICHD11061"
+   },
+   "C1051": {
+    "n": "LICHD11051",
+    "t": "No.1 HP heater drain LCV-HD1105-1",
+    "ctl": "LICHD11051",
+    "io": "LICHD11051"
+   },
+   "CSU": {
+    "n": "LICBR1001B",
+    "t": "Start-up FCV-FW1130-2",
+    "ctl": "LICBR1001B",
+    "io": "LICBR1001B"
+   },
+   "CMN": {
+    "n": "FICFW1007",
+    "t": "Main FCV-FW1130-1 (three element)",
+    "ctl": "FICFW1007",
+    "io": "FICFW1007"
+   },
+   "C1001": {
+    "n": "LICBR1001",
+    "t": "Drum level 3 element, level master (ABC-010)",
+    "ctl": "LICBR1001",
+    "io": "LICBR1001"
+   },
+   "C1001A": {
+    "n": "LICBR1001A",
+    "t": "Drum level 1 element (ABC-010)",
+    "ctl": "LICBR1001A",
+    "io": "LICBR1001A"
+   },
+   "C1130": {
+    "n": "TICBR1130",
+    "t": "Superheater spray 1 TCV-FW1110-1 / -2",
+    "ctl": "TICBR1130",
+    "io": "TICBR1130"
+   },
+   "C1150": {
+    "n": "TICBR1150",
+    "t": "Superheater spray 2 TCV-FW1120-1 / -2",
+    "ctl": "TICBR1150",
+    "io": "TICBR1150"
+   },
+   "C1002": {
+    "n": "TICHR1002",
+    "t": "Reheater inlet spray TCV-FW1150",
+    "ctl": "TICHR1002",
+    "io": "TICHR1002"
+   },
+   "C1022": {
+    "n": "TICMS1022",
+    "t": "HP turbine bypass spray TCV-FW1060",
+    "ctl": "TICMS1022",
+    "io": "TICMS1022"
+   },
+   "M1003": {
+    "n": "MV-TS1003",
+    "t": "Extraction steam No.3 shut-off",
+    "mov": "DITL-96",
+    "tg": "MV-TS1003"
+   },
+   "M1002": {
+    "n": "MV-TS1002",
+    "t": "Extraction steam No.2 shut-off",
+    "mov": "DITL-95",
+    "tg": "MV-TS1002"
+   },
+   "M1001": {
+    "n": "MV-TS1001",
+    "t": "Extraction steam No.1 shut-off",
+    "mov": "DITL-94",
+    "tg": "MV-TS1001"
+   },
+   "MA": {
+    "n": "MV-FW1001",
+    "t": "BFWP-A discharge",
+    "mov": "DITL-38 #MV-FW1001",
+    "tg": "MV-FW1001"
+   },
+   "MB": {
+    "n": "MV-FW1002",
+    "t": "BFWP-B discharge",
+    "mov": "DITL-38 #MV-FW1002",
+    "tg": "MV-FW1002"
+   },
+   "BA": {
+    "n": "MV-FW1391",
+    "t": "BFWP-A discharge bypass",
+    "mov": "DITL-38 #MV-FW1391",
+    "tg": "MV-FW1391"
+   },
+   "BB": {
+    "n": "MV-FW1392",
+    "t": "BFWP-B discharge bypass",
+    "mov": "DITL-38 #MV-FW1392",
+    "tg": "MV-FW1392"
+   },
+   "X11A": {
+    "n": "XV-FW1111-1",
+    "t": "Superheater spray 1 block (1)",
+    "mov": "DITL-32",
+    "tg": "XV-FW1111-1"
+   },
+   "X21A": {
+    "n": "XV-FW1121-1",
+    "t": "Superheater spray 2 block (1)",
+    "mov": "DITL-33",
+    "tg": "XV-FW1121-1"
+   },
+   "X11B": {
+    "n": "XV-FW1111-2",
+    "t": "Superheater spray 1 block (2)",
+    "mov": "DITL-32 #B",
+    "tg": "XV-FW1111-2"
+   },
+   "X21B": {
+    "n": "XV-FW1121-2",
+    "t": "Superheater spray 2 block (2)",
+    "mov": "DITL-33 #B",
+    "tg": "XV-FW1121-2"
+   },
+   "C1140": {
+    "n": "TICBR1140",
+    "t": "Superheater 2 outlet steam temperature, spray 1 master (ABC-011)",
+    "ctl": "TICBR1140",
+    "io": "TICBR1140"
+   },
+   "CMS4": {
+    "n": "TICMS1004",
+    "t": "Main steam temperature, spray 2 master (ABC-012)",
+    "ctl": "TICMS1004",
+    "io": "TICMS1004"
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-gn.js",
+  "id": "MK17",
+  "title": "GENERATOR",
+  "num": "",
+  "name": "GENERATOR",
+  "before": "SW",
+  "w": 1600,
+  "h": 960,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file"
+  ],
+  "machN": 0,
+  "machNpre": 0,
+  "artLen": 20447,
+  "artLenPre": 20447,
+  "dv": 38,
+  "dvUniq": 30,
+  "ctlTags": [],
+  "unitN": 28,
+  "machKeys": [],
+  "attrCounts": {
+   "dyr": 10,
+   "dir": 11,
+   "uyr": 2,
+   "dy": 8,
+   "on": 2,
+   "off": 2,
+   "di": 11,
+   "v": 38,
+   "u": 38,
+   "dp": 38,
+   "uy": 1
+  },
+  "mach": {}
+ },
+ {
+  "file": "hmi-mock-ia.js",
+  "id": "MK03",
+  "title": "INSTRUMENT AND PLANT AIR",
+  "num": "",
+  "name": "INSTRUMENT AND PLANT AIR",
+  "before": "SW",
+  "w": 1600,
+  "h": 1130,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file"
+  ],
+  "machN": 12,
+  "machNpre": 12,
+  "artLen": 32665,
+  "artLenPre": 32665,
+  "dv": 24,
+  "dvUniq": 24,
+  "ctlTags": [],
+  "unitN": 24,
+  "machKeys": [
+   "n",
+   "t",
+   "io",
+   "d",
+   "sti",
+   "sto",
+   "remi"
+  ],
+  "attrCounts": {
+   "st": 12,
+   "short": 12,
+   "v": 24,
+   "u": 24,
+   "dp": 24,
+   "vt": 37,
+   "md": 6,
+   "go": 1,
+   "hit": 12
+  },
+  "mach": {
+   "iac0": {
+    "n": "Instrument air compressor A",
+    "t": "C-0704A",
+    "io": "MIR-C0704A",
+    "d": "DITL-113 (local panel start)",
+    "sti": [
+     "DITL-113",
+     5,
+     6
+    ]
+   },
+   "iad0": {
+    "n": "Instrument air dryer A",
+    "t": "D-0704A",
+    "io": "MIR-D0704A",
+    "d": "DITL-45",
+    "sto": [
+     "DITL-45",
+     14
+    ],
+    "remi": [
+     "DITL-45",
+     15
+    ]
+   },
+   "iac1": {
+    "n": "Instrument air compressor B",
+    "t": "C-0704B",
+    "io": "MIR-C0704B",
+    "d": "DITL-113 (local panel start)",
+    "sti": [
+     "DITL-113",
+     12,
+     13
+    ]
+   },
+   "iad1": {
+    "n": "Instrument air dryer B",
+    "t": "D-0704B",
+    "io": "MIR-D0704B",
+    "d": "DITL-45 #B",
+    "sto": [
+     "DITL-45 #B",
+     14
+    ],
+    "remi": [
+     "DITL-45 #B",
+     15
+    ]
+   },
+   "iac2": {
+    "n": "Instrument air compressor C",
+    "t": "C-0704C",
+    "io": "MIR-C0704C",
+    "d": "DITL-113 (local panel start)",
+    "sti": [
+     "DITL-113",
+     19,
+     20
+    ]
+   },
+   "iad2": {
+    "n": "Instrument air dryer C",
+    "t": "D-0704C",
+    "io": "MIR-D0704C",
+    "d": "DITL-45 #C",
+    "sto": [
+     "DITL-45 #C",
+     14
+    ],
+    "remi": [
+     "DITL-45 #C",
+     15
+    ]
+   },
+   "pac0": {
+    "n": "Plant air compressor A",
+    "t": "C-0703A",
+    "io": "MIR-C0703A",
+    "d": "DITL-114 (local panel start)",
+    "sti": [
+     "DITL-114",
+     5,
+     6
+    ]
+   },
+   "pad0": {
+    "n": "Plant air dryer A",
+    "t": "D-0703A",
+    "io": "MIR-D0703A",
+    "d": "DITL-45",
+    "sto": [
+     "DITL-45",
+     3
+    ],
+    "remi": [
+     "DITL-45",
+     4
+    ]
+   },
+   "pac1": {
+    "n": "Plant air compressor B",
+    "t": "C-0703B",
+    "io": "MIR-C0703B",
+    "d": "DITL-114 (local panel start)",
+    "sti": [
+     "DITL-114",
+     12,
+     13
+    ]
+   },
+   "pad1": {
+    "n": "Plant air dryer B",
+    "t": "D-0703B",
+    "io": "MIR-D0703B",
+    "d": "DITL-45 #B",
+    "sto": [
+     "DITL-45 #B",
+     3
+    ],
+    "remi": [
+     "DITL-45 #B",
+     4
+    ]
+   },
+   "pac2": {
+    "n": "Plant air compressor C",
+    "t": "C-0703C",
+    "io": "MIR-C0703C",
+    "d": "DITL-114 (local panel start)",
+    "sti": [
+     "DITL-114",
+     19,
+     20
+    ]
+   },
+   "pad2": {
+    "n": "Plant air dryer C",
+    "t": "D-0703C",
+    "io": "MIR-D0703C",
+    "d": "DITL-45 #C",
+    "sto": [
+     "DITL-45 #C",
+     3
+    ],
+    "remi": [
+     "DITL-45 #C",
+     4
+    ]
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-ms.js",
+  "id": "MK07",
+  "title": "DRUM AND MAIN STEAM",
+  "num": "",
+  "name": "DRUM AND MAIN STEAM",
+  "before": "SW",
+  "w": 1600,
+  "h": 980,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file"
+  ],
+  "machN": 17,
+  "machNpre": 17,
+  "artLen": 28949,
+  "artLenPre": 28949,
+  "dv": 47,
+  "dvUniq": 47,
+  "ctlTags": [
+   "LICBR1001B",
+   "HICBR1391",
+   "TICMS1004",
+   "PICMS1002",
+   "PICMS1006",
+   "TICMS1022",
+   "TICHR1002",
+   "PICHR1391",
+   "PICHR1003",
+   "TICHR1012"
+  ],
+  "unitN": 10,
+  "machKeys": [
+   "n",
+   "t",
+   "mov",
+   "tg",
+   "ctl",
+   "io",
+   "fset"
+  ],
+  "attrCounts": {
+   "v": 47,
+   "u": 47,
+   "dp": 47,
+   "ctl": 14,
+   "go": 8,
+   "mov": 10,
+   "ns": 7,
+   "hit": 17
+  },
+  "mach": {
+   "BD2": {
+    "n": "MV-BD1002",
+    "t": "Continuous blowdown",
+    "mov": "DITL-38 #MV-BD1002",
+    "tg": "MV-BD1002"
+   },
+   "BD1": {
+    "n": "MV-BD1001",
+    "t": "Intermittent blowdown",
+    "mov": "DITL-38",
+    "tg": "MV-BD1001"
+   },
+   "BR": {
+    "n": "HICBR1391",
+    "t": "MV-BR1391",
+    "ctl": "HICBR1391",
+    "io": "HICBR1391"
+   },
+   "PMS2": {
+    "n": "PICMS1002",
+    "t": "Main steam PCV-MS1001",
+    "ctl": "PICMS1002",
+    "io": "PICMS1002"
+   },
+   "MS1": {
+    "n": "MV-MS1391",
+    "t": "Main steam stop",
+    "mov": "DITL-38 #MV-MS1391",
+    "tg": "MV-MS1391"
+   },
+   "MS2": {
+    "n": "MV-MS1392",
+    "t": "Main steam stop bypass",
+    "mov": "DITL-38 #MV-MS1392",
+    "tg": "MV-MS1392"
+   },
+   "D88": {
+    "n": "XV-MS1011",
+    "t": "Main steam drain pot DP-MS01",
+    "mov": "DITL-88",
+    "tg": "XV-MS1011"
+   },
+   "PMS6": {
+    "n": "PICMS1006",
+    "t": "HP bypass PCV-MS1020",
+    "ctl": "PICMS1006",
+    "io": "PICMS1006"
+   },
+   "TMS22": {
+    "n": "TICMS1022",
+    "t": "HP bypass spray TCV-FW1060",
+    "ctl": "TICMS1022",
+    "io": "TICMS1022"
+   },
+   "D73": {
+    "n": "XV-CR1011",
+    "t": "Cold reheat drain pot DP-CR01",
+    "mov": "DITL-73",
+    "tg": "XV-CR1011"
+   },
+   "TS1": {
+    "n": "MV-TS1001",
+    "t": "Extraction steam No.1 shut-off",
+    "mov": "DITL-94",
+    "tg": "MV-TS1001"
+   },
+   "THR2": {
+    "n": "TICHR1002",
+    "t": "Reheater inlet spray TCV-FW1150",
+    "ctl": "TICHR1002",
+    "io": "TICHR1002"
+   },
+   "PHR391": {
+    "n": "PICHR1391",
+    "t": "MV-HR1391",
+    "ctl": "PICHR1391",
+    "io": "PICHR1391"
+   },
+   "D80": {
+    "n": "XV-HR1021",
+    "t": "Hot reheat drain pot DP-HR01",
+    "mov": "DITL-80",
+    "tg": "XV-HR1021"
+   },
+   "PHR3": {
+    "n": "PICHR1003",
+    "t": "LP bypass PCV-HR1010",
+    "ctl": "PICHR1003",
+    "io": "PICHR1003"
+   },
+   "THR12": {
+    "n": "TICHR1012",
+    "t": "LP bypass spray TCV-CD1115",
+    "ctl": "TICHR1012",
+    "io": "TICHR1012"
+   },
+   "LHD": {
+    "n": "V-BD1005 ~ V-BD1021",
+    "t": "Lower ring header drains (manual)",
+    "fset": "[fn] () => {\n          const st = () => (window.AN && AN.fieldState ? !!AN.fieldState().lhd : null),\n            pc = () => (st() ? (AN.lhdPct ? AN.lhdPct() : 0) || null : 0),\n            set = x => AN.fie"
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-mu.js",
+  "id": "MK02",
+  "title": "MAKE-UP AND CLOSED COOLING WATER",
+  "num": "",
+  "name": "MAKE-UP AND CLOSED COOLING WATER",
+  "before": "SW",
+  "w": 1600,
+  "h": 1064,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file"
+  ],
+  "machN": 6,
+  "machNpre": 6,
+  "artLen": 31741,
+  "artLenPre": 31741,
+  "dv": 19,
+  "dvUniq": 19,
+  "ctlTags": [
+   "TICLO1002"
+  ],
+  "unitN": 19,
+  "machKeys": [
+   "n",
+   "t",
+   "ad",
+   "io",
+   "d",
+   "cur",
+   "outMode",
+   "remRows",
+   "auRow",
+   "ctl"
+  ],
+  "attrCounts": {
+   "ynr": 5,
+   "vt": 38,
+   "v": 19,
+   "u": 19,
+   "dp": 19,
+   "st": 5,
+   "md": 5,
+   "ynt": 5,
+   "go": 9,
+   "ox": 1,
+   "dsvc": 1,
+   "ctl": 3,
+   "hit": 11,
+   "yn": 5
+  },
+  "mach": {
+   "PA": {
+    "n": "MWP-A",
+    "t": "P-0709A",
+    "ad": "DITL-112",
+    "io": "MIR-P0709A",
+    "d": "DITL-112",
+    "cur": "IIP0709A"
+   },
+   "PB": {
+    "n": "MWP-B",
+    "t": "P-0709B",
+    "ad": "DITL-112 #B",
+    "io": "MIR-P0709B",
+    "d": "DITL-112 #B",
+    "cur": "IIP0709B"
+   },
+   "PC": {
+    "n": "MWP-C",
+    "t": "P-0709C",
+    "ad": "DITL-112 #C",
+    "io": "MIR-P0709C",
+    "d": "DITL-112 #C",
+    "cur": "IIP0709C"
+   },
+   "ACA": {
+    "n": "ACWP-A",
+    "t": "P-1108A",
+    "ad": "DITL-76",
+    "io": "MIR-P1108A",
+    "d": "DITL-76",
+    "cur": "IIP1108A",
+    "outMode": 1,
+    "remRows": [
+     19
+    ],
+    "auRow": 0
+   },
+   "ACB": {
+    "n": "ACWP-B",
+    "t": "P-1108B",
+    "ad": "DITL-77",
+    "io": "MIR-P1108B",
+    "d": "DITL-77",
+    "cur": "IIP1108B",
+    "outMode": 1,
+    "remRows": [
+     19
+    ],
+    "auRow": 0
+   },
+   "TIC": {
+    "n": "TICLO1002",
+    "t": "Lube oil temperature (TCV-CW1201)",
+    "ctl": "TICLO1002",
+    "io": "TICLO1002",
+    "d": "ABC-053"
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-ov.js",
+  "id": "MK00",
+  "title": "OVERVIEW",
+  "num": "",
+  "name": "OVERVIEW",
+  "before": "SW",
+  "w": 1600,
+  "h": 900,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file"
+  ],
+  "machN": 5,
+  "machNpre": 5,
+  "artLen": 17865,
+  "artLenPre": 17865,
+  "dv": 10,
+  "dvUniq": 7,
+  "ctlTags": [
+   "HIC-ULD",
+   "TICMS1004",
+   "FICFW1007",
+   "LICBR1001B",
+   "FIC-CM",
+   "FIC-OM",
+   "EIC-TM",
+   "PIC-COBM",
+   "HIC-BM"
+  ],
+  "unitN": 2,
+  "machKeys": [
+   "n",
+   "t",
+   "ctl",
+   "io"
+  ],
+  "attrCounts": {
+   "v": 10,
+   "u": 10,
+   "dp": 10,
+   "ctl": 24,
+   "go": 23,
+   "dy": 2,
+   "on": 2,
+   "off": 2,
+   "ns": 3,
+   "hit": 5
+  },
+  "mach": {
+   "HICULD": {
+    "n": "HIC-ULD",
+    "t": "Unit load demand",
+    "ctl": "HIC-ULD",
+    "io": "HIC-ULD"
+   },
+   "EICTM": {
+    "n": "EIC-TM",
+    "t": "Turbine master",
+    "ctl": "EIC-TM",
+    "io": "EIC-TM"
+   },
+   "PICCOBM": {
+    "n": "PIC-COBM",
+    "t": "Boiler pressure (boiler master demand)",
+    "ctl": "PIC-COBM",
+    "io": "PIC-COBM"
+   },
+   "HICBM": {
+    "n": "HIC-BM",
+    "t": "Boiler master",
+    "ctl": "HIC-BM",
+    "io": "HIC-BM"
+   },
+   "FICCM": {
+    "n": "FIC-CM",
+    "t": "Coal master",
+    "ctl": "FIC-CM",
+    "io": "FIC-CM"
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-pt.js",
+  "id": "MK10",
+  "title": "PURGE AND TRIP",
+  "num": "",
+  "name": "PURGE AND TRIP",
+  "before": "SW",
+  "w": 1600,
+  "h": 900,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file",
+   "_pb"
+  ],
+  "machN": 5,
+  "machNpre": 4,
+  "artLen": 21860,
+  "artLenPre": 21754,
+  "dv": 0,
+  "dvUniq": 0,
+  "ctlTags": [],
+  "unitN": 0,
+  "machKeys": [
+   "n",
+   "t",
+   "ad",
+   "d",
+   "io",
+   "df"
+  ],
+  "attrCounts": {
+   "dyr": 38,
+   "dysr": 1,
+   "dfor": 1,
+   "dy": 39,
+   "g": 15,
+   "dys": 1,
+   "hit": 6,
+   "do": 2,
+   "ns": 1,
+   "dfo": 1
+  },
+  "mach": {
+   "IDF": {
+    "n": "IDF",
+    "t": "F-1056",
+    "ad": "DITL-25A",
+    "d": "DITL-25A",
+    "io": "MIR-F1056"
+   },
+   "SAF": {
+    "n": "SAF",
+    "t": "F-1054",
+    "ad": "DITL-27A",
+    "d": "DITL-27A",
+    "io": "MIR-F1054"
+   },
+   "FA": {
+    "n": "FA BLOWER-A",
+    "t": "F-1055A",
+    "ad": "DITL-28A",
+    "d": "DITL-28A",
+    "io": "MIR-F1055A"
+   },
+   "PAF": {
+    "n": "PAF",
+    "t": "F-1053",
+    "ad": "DITL-26A",
+    "d": "DITL-26A",
+    "io": "MIR-F1053"
+   },
+   "PURGE": {
+    "n": "Furnace purge",
+    "t": "Furnace purge start (screen push button)",
+    "d": "DITL-02",
+    "df": {
+     "st": 5,
+     "on": "PURGE IN PROGRESS",
+     "off": "NOT IN PROGRESS",
+     "pbs": [
+      [
+       "PURGE START",
+       5,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-sb.js",
+  "id": "MK15",
+  "title": "SOOTBLOWERS",
+  "num": "",
+  "name": "SOOTBLOWERS",
+  "before": "SW",
+  "w": 1600,
+  "h": 1030,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file",
+   "_pb"
+  ],
+  "machN": 31,
+  "machNpre": 1,
+  "artLen": 26761,
+  "artLenPre": 25471,
+  "dv": 6,
+  "dvUniq": 6,
+  "ctlTags": [
+   "PICSB1052"
+  ],
+  "unitN": 4,
+  "machKeys": [
+   "n",
+   "t",
+   "ctl",
+   "io",
+   "d",
+   "df"
+  ],
+  "attrCounts": {
+   "dyr": 39,
+   "dy": 46,
+   "on": 37,
+   "off": 37,
+   "ns": 5,
+   "ctl": 2,
+   "v": 6,
+   "u": 6,
+   "dp": 6,
+   "hit": 31
+  },
+  "mach": {
+   "PIC": {
+    "n": "PICSB1052",
+    "t": "Sootblower steam pressure PCV-SB1053",
+    "ctl": "PICSB1052",
+    "io": "PICSB1052"
+   },
+   "SBN-1011": {
+    "n": "N-1011",
+    "t": "Sootblower",
+    "d": "DITL-80A",
+    "df": {
+     "st": 25,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       25,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       26,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1012": {
+    "n": "N-1012",
+    "t": "Sootblower",
+    "d": "DITL-80B",
+    "df": {
+     "st": 1,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       1,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       2,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1014": {
+    "n": "N-1014",
+    "t": "Sootblower",
+    "d": "DITL-80B",
+    "df": {
+     "st": 9,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       9,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       10,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1013": {
+    "n": "N-1013",
+    "t": "Sootblower",
+    "d": "DITL-80B",
+    "df": {
+     "st": 5,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       5,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       6,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1015": {
+    "n": "N-1015",
+    "t": "Sootblower",
+    "d": "DITL-80B",
+    "df": {
+     "st": 13,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       13,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       14,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1016": {
+    "n": "N-1016",
+    "t": "Sootblower",
+    "d": "DITL-80B",
+    "df": {
+     "st": 17,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       17,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       18,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1018": {
+    "n": "N-1018",
+    "t": "Sootblower",
+    "d": "DITL-80B",
+    "df": {
+     "st": 25,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       25,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       26,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1017": {
+    "n": "N-1017",
+    "t": "Sootblower",
+    "d": "DITL-80B",
+    "df": {
+     "st": 21,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       21,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       22,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1019": {
+    "n": "N-1019",
+    "t": "Sootblower",
+    "d": "DITL-80C",
+    "df": {
+     "st": 1,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       1,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       2,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1020": {
+    "n": "N-1020",
+    "t": "Sootblower",
+    "d": "DITL-80C",
+    "df": {
+     "st": 5,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       5,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       6,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1022": {
+    "n": "N-1022",
+    "t": "Sootblower",
+    "d": "DITL-80C",
+    "df": {
+     "st": 13,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       13,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       14,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1021": {
+    "n": "N-1021",
+    "t": "Sootblower",
+    "d": "DITL-80C",
+    "df": {
+     "st": 9,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       9,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       10,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1023": {
+    "n": "N-1023",
+    "t": "Sootblower",
+    "d": "DITL-80C",
+    "df": {
+     "st": 17,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       17,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       18,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1024": {
+    "n": "N-1024",
+    "t": "Sootblower",
+    "d": "DITL-80C",
+    "df": {
+     "st": 21,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       21,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       22,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1026": {
+    "n": "N-1026",
+    "t": "Sootblower",
+    "d": "DITL-80D",
+    "df": {
+     "st": 1,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       1,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       2,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1025": {
+    "n": "N-1025",
+    "t": "Sootblower",
+    "d": "DITL-80C",
+    "df": {
+     "st": 25,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       25,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       26,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1027": {
+    "n": "N-1027",
+    "t": "Sootblower",
+    "d": "DITL-80D",
+    "df": {
+     "st": 5,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       5,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       6,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1028": {
+    "n": "N-1028",
+    "t": "Sootblower",
+    "d": "DITL-80D",
+    "df": {
+     "st": 9,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       9,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       10,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1030": {
+    "n": "N-1030",
+    "t": "Sootblower",
+    "d": "DITL-80D",
+    "df": {
+     "st": 17,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       17,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       18,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1029": {
+    "n": "N-1029",
+    "t": "Sootblower",
+    "d": "DITL-80D",
+    "df": {
+     "st": 13,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       13,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       14,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1031": {
+    "n": "N-1031",
+    "t": "Sootblower",
+    "d": "DITL-80D",
+    "df": {
+     "st": 21,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       21,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       22,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1032": {
+    "n": "N-1032",
+    "t": "Sootblower",
+    "d": "DITL-80D",
+    "df": {
+     "st": 25,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       25,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       26,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1034": {
+    "n": "N-1034",
+    "t": "Sootblower",
+    "d": "DITL-80E",
+    "df": {
+     "st": 5,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       5,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       6,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1033": {
+    "n": "N-1033",
+    "t": "Sootblower",
+    "d": "DITL-80E",
+    "df": {
+     "st": 1,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       1,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       2,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1035": {
+    "n": "N-1035",
+    "t": "Sootblower",
+    "d": "DITL-80E",
+    "df": {
+     "st": 9,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       9,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       10,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1036": {
+    "n": "N-1036",
+    "t": "Sootblower",
+    "d": "DITL-80E",
+    "df": {
+     "st": 13,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       13,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       14,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1038": {
+    "n": "N-1038",
+    "t": "Sootblower",
+    "d": "DITL-80E",
+    "df": {
+     "st": 21,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       21,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       22,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1037": {
+    "n": "N-1037",
+    "t": "Sootblower",
+    "d": "DITL-80E",
+    "df": {
+     "st": 17,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       17,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       18,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1040": {
+    "n": "N-1040",
+    "t": "Air preheater sootblower",
+    "d": "DITL-80F",
+    "df": {
+     "st": 25,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       25,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       26,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   },
+   "SBN-1042": {
+    "n": "N-1042",
+    "t": "Air preheater sootblower",
+    "d": "DITL-80F",
+    "df": {
+     "st": 25,
+     "on": "OPERATING",
+     "off": "STOPPED",
+     "pbs": [
+      [
+       "START",
+       25,
+       "",
+       null,
+       null
+      ],
+      [
+       "SKIP",
+       26,
+       "",
+       null,
+       null
+      ]
+     ],
+     "perm": [],
+     "why": ""
+    }
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-sp.js",
+  "id": "MK16",
+  "title": "SAMPLING AND DOSING",
+  "num": "",
+  "name": "SAMPLING AND DOSING",
+  "before": "SW",
+  "w": 1600,
+  "h": 1000,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "udi",
+   "_file"
+  ],
+  "machN": 7,
+  "machNpre": 7,
+  "artLen": 27257,
+  "artLenPre": 27257,
+  "dv": 21,
+  "dvUniq": 21,
+  "ctlTags": [],
+  "unitN": 15,
+  "udi": {
+   "MIR-Z1101A": "ch_agt",
+   "AL1-SP01": "spAL1",
+   "AL2-SP01": "spAL2",
+   "AL3-SP01": "spAL3",
+   "AL-Z1110": "spALZ"
+  },
+  "machKeys": [
+   "n",
+   "t",
+   "fld",
+   "io",
+   "d",
+   "fieldOp",
+   "why"
+  ],
+  "attrCounts": {
+   "dir": 4,
+   "v": 21,
+   "u": 21,
+   "dp": 21,
+   "di": 14,
+   "st": 6,
+   "hit": 7
+  },
+  "mach": {
+   "TSPA": {
+    "n": "Z-1107A",
+    "t": "Phosphate dosing pump A",
+    "fld": "tspA",
+    "io": "MIR-Z1107A",
+    "d": "STN101 DI",
+    "fieldOp": true,
+    "why": "Field equipment: the I/O list has only its RUNNING and ELECTRIC TROUBLE inputs (no DCS command), so the field operator starts and stops it at the local panel (PR-OPE-5002: one dosing pump of each chemical, B standby; flow diagram K1AU3-PD-042)."
+   },
+   "TSPB": {
+    "n": "Z-1107B",
+    "t": "Phosphate dosing pump B",
+    "fld": "tspB",
+    "io": "MIR-Z1107B",
+    "d": "STN101 DI",
+    "fieldOp": true,
+    "why": "Field equipment: the I/O list has only its RUNNING and ELECTRIC TROUBLE inputs (no DCS command), so the field operator starts and stops it at the local panel (PR-OPE-5002: one dosing pump of each chemical, B standby; flow diagram K1AU3-PD-042)."
+   },
+   "AMNA": {
+    "n": "Z-1108A",
+    "t": "Neutral amine dosing pump A",
+    "fld": "amnA",
+    "io": "MIR-Z1108A",
+    "d": "STN101 DI",
+    "fieldOp": true,
+    "why": "Field equipment: the I/O list has only its RUNNING and ELECTRIC TROUBLE inputs (no DCS command), so the field operator starts and stops it at the local panel (PR-OPE-5002: one dosing pump of each chemical, B standby; flow diagram K1AU3-PD-042)."
+   },
+   "AMNB": {
+    "n": "Z-1108B",
+    "t": "Neutral amine dosing pump B",
+    "fld": "amnB",
+    "io": "MIR-Z1108B",
+    "d": "STN101 DI",
+    "fieldOp": true,
+    "why": "Field equipment: the I/O list has only its RUNNING and ELECTRIC TROUBLE inputs (no DCS command), so the field operator starts and stops it at the local panel (PR-OPE-5002: one dosing pump of each chemical, B standby; flow diagram K1AU3-PD-042)."
+   },
+   "CHZA": {
+    "n": "Z-1109A",
+    "t": "Carbohydrazide dosing pump A",
+    "fld": "chzA",
+    "io": "MIR-Z1109A",
+    "d": "STN101 DI",
+    "fieldOp": true,
+    "why": "Field equipment: the I/O list has only its RUNNING and ELECTRIC TROUBLE inputs (no DCS command), so the field operator starts and stops it at the local panel (PR-OPE-5002: one dosing pump of each chemical, B standby; flow diagram K1AU3-PD-042)."
+   },
+   "CHZB": {
+    "n": "Z-1109B",
+    "t": "Carbohydrazide dosing pump B",
+    "fld": "chzB",
+    "io": "MIR-Z1109B",
+    "d": "STN101 DI",
+    "fieldOp": true,
+    "why": "Field equipment: the I/O list has only its RUNNING and ELECTRIC TROUBLE inputs (no DCS command), so the field operator starts and stops it at the local panel (PR-OPE-5002: one dosing pump of each chemical, B standby; flow diagram K1AU3-PD-042)."
+   },
+   "AGT": {
+    "n": "Z-1101",
+    "t": "Phosphate tank agitator",
+    "fld": "agt",
+    "io": "MIR-Z1101A",
+    "d": "STN101 DI",
+    "fieldOp": true,
+    "why": "Field equipment: the I/O list has only its RUNNING and ELECTRIC TROUBLE inputs (no DCS command), so the field operator starts and stops it at the local panel (PR-OPE-5002: one dosing pump of each chemical, B standby; flow diagram K1AU3-PD-042)."
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-to.js",
+  "id": "MK04",
+  "title": "036 TURBINE OIL",
+  "num": "036",
+  "name": "TURBINE LUBE, CONTROL AND TRIP OIL",
+  "before": "SW",
+  "w": 1600,
+  "h": 900,
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "mach",
+   "unit",
+   "_file"
+  ],
+  "machN": 7,
+  "machNpre": 7,
+  "artLen": 16587,
+  "artLenPre": 16587,
+  "dv": 19,
+  "dvUniq": 19,
+  "ctlTags": [],
+  "unitN": 17,
+  "machKeys": [
+   "n",
+   "t",
+   "d",
+   "tcs",
+   "why",
+   "fld",
+   "fieldOp",
+   "io"
+  ],
+  "attrCounts": {
+   "st": 6,
+   "v": 19,
+   "u": 19,
+   "dp": 19,
+   "go": 1,
+   "hit": 13
+  },
+  "mach": {
+   "MA": {
+    "n": "MOP-A",
+    "t": "P-1922A",
+    "d": "MAIN OIL PUMP (A) · TCS",
+    "tcs": "mopA",
+    "why": "Run by the turbine control system (TCS), not by a DCS logic sheet."
+   },
+   "MB": {
+    "n": "MOP-B",
+    "t": "P-1922B",
+    "d": "MAIN OIL PUMP (B) · TCS",
+    "tcs": "mopB",
+    "why": "Run by the turbine control system (TCS), not by a DCS logic sheet."
+   },
+   "EO": {
+    "n": "EOP",
+    "t": "P-1923",
+    "d": "DC EMERGENCY OIL PUMP · TCS",
+    "tcs": "eop",
+    "why": "Starts by itself on low bearing oil header pressure (PSLO1004). Run by the turbine control system (TCS), not by a DCS logic sheet."
+   },
+   "CA": {
+    "n": "COP-A",
+    "t": "P-1931A",
+    "d": "CONTROL OIL PUMP (A) · TCS",
+    "tcs": "copA",
+    "why": "Run by the turbine control system (TCS), not by a DCS logic sheet."
+   },
+   "CB": {
+    "n": "COP-B",
+    "t": "P-1931B",
+    "d": "CONTROL OIL PUMP (B) · TCS",
+    "tcs": "copB",
+    "why": "Run by the turbine control system (TCS), not by a DCS logic sheet."
+   },
+   "VX": {
+    "n": "VAPOUR EXTRACTOR",
+    "t": "F-1937",
+    "d": "MAIN OIL TANK VAPOUR EXTRACTOR · TCS",
+    "tcs": "vex",
+    "why": "Run by the turbine control system (TCS), not by a DCS logic sheet."
+   },
+   "PU": {
+    "n": "OIL PURIFIER",
+    "t": "P-1941",
+    "d": "local panel",
+    "fld": "pur",
+    "fieldOp": true,
+    "io": "P-1941",
+    "why": "Field equipment: the oil purifier is started at its local panel, no DCS command."
+   }
+  }
+ },
+ {
+  "file": "hmi-mock-ts.js",
+  "id": "MK13",
+  "title": "TURBINE START",
+  "num": "",
+  "name": "TURBINE START",
+  "before": "SW",
+  "w": 1600,
+  "h": 1410,
+  "tall": 1,
+  "fz": 1.35,
+  "fzAt": {
+   "24,50": 1,
+   "24,356": 1,
+   "206,*": 1,
+   "30,1236": 1,
+   "30,1256": 1,
+   "30,1276": 1,
+   "470,1236": 1,
+   "470,1256": 1,
+   "470,1276": 1,
+   "898,*": 1.15,
+   "1248,*": 1.15
+  },
+  "keys": [
+   "id",
+   "title",
+   "num",
+   "name",
+   "before",
+   "w",
+   "h",
+   "tall",
+   "fz",
+   "fzAt",
+   "mach",
+   "unit",
+   "_file"
+  ],
+  "machN": 0,
+  "machNpre": 0,
+  "artLen": 28307,
+  "artLenPre": 28307,
+  "dv": 31,
+  "dvUniq": 28,
+  "ctlTags": [],
+  "unitN": 24,
+  "machKeys": [],
+  "attrCounts": {
+   "uyr": 9,
+   "dyr": 2,
+   "dir": 1,
+   "ut": 1,
+   "uy": 18,
+   "v": 31,
+   "u": 31,
+   "dp": 31,
+   "dy": 2,
+   "on": 2,
+   "off": 2,
+   "di": 1,
+   "ns": 2,
+   "e6": 1,
+   "tpb": 8,
+   "ttr": 1,
+   "tt": 2,
+   "tfo": 23
+  },
+  "mach": {}
+ }
+]
