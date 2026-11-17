@@ -37,7 +37,10 @@
   };
   const TABS = {
     why: ['Why', 'Why is it …? The live cause of the selected wire, back to the root signal'],
-    insp: ['Inspector', 'The inputs, forces and values of the sheet (analog: the Inspector; digital: the panel of the sheet)'],
+    insp: [
+      'Inspector',
+      'The inputs, forces and values of the sheet (analog: the Inspector; digital: the panel of the sheet)'
+    ],
     fp: ['Faceplate', 'The controller faceplates of the open analog sheet'],
     alm: ['Alarms', 'The standing alarms and the last event']
   };
@@ -51,7 +54,9 @@
     body = null,
     sec = {},
     btn = null,
-    open = ls('ls-scdet') == null ? null : ls('ls-scdet') === '1';
+    /* compact shell (user 2026-11-17, approved mockup): the plant picture has the whole width; the column opens on demand. A new key,
+       so an old 'open' of the first shell C does not keep it open */
+    open = ls('ls-scdet2') == null ? null : ls('ls-scdet2') === '1';
   const eng = () => B.classList.contains('sceng');
   const tabOf = () => {
     const k = ls(eng() ? 'ls-scdet-eng' : 'ls-scdet-op');
@@ -143,13 +148,19 @@
       true
     );
     addEventListener('keydown', e => {
-      if (e.key === 'Escape' && B.classList.contains('scdet') && !wide() && !document.querySelector('.fpo-box,#scal:not([hidden]),#scins:not([hidden]),#scask:not([hidden])')) setOpen(false);
+      if (
+        e.key === 'Escape' &&
+        B.classList.contains('scdet') &&
+        !wide() &&
+        !document.querySelector('.fpo-box,#scal:not([hidden]),#scins:not([hidden]),#scask:not([hidden])')
+      )
+        setOpen(false);
     });
     return true;
   }
   function setOpen(on) {
     open = on;
-    ls('ls-scdet', on ? '1' : '0');
+    ls('ls-scdet2', on ? '1' : '0');
     paint();
     dispatchEvent(new Event('resize'));
   }
@@ -162,7 +173,8 @@
   }
   /* the sheet's own panel, opened and switched with its own buttons */
   /* shown on screen (a panel placed in the column is position: fixed, whose offsetParent is always null) */
-  const vis = el => !!(el && el.getClientRects().length && getComputedStyle(el).display !== 'none' && el.offsetWidth > 0);
+  const vis = el =>
+    !!(el && el.getClientRects().length && getComputedStyle(el).display !== 'none' && el.offsetWidth > 0);
   function showPanel(k) {
     const an = call(() => AN.cat === 'an', false);
     if (an) {
@@ -171,7 +183,9 @@
       if (anp && anp.classList.contains('min')) call(() => $('anptab').click());
       const want = k === 'fp' ? 'Faceplate' : 'Inspector';
       setTimeout(() => {
-        const b = [...document.querySelectorAll('#anp .hmitabs button, #opp .hmitabs button')].find(x => x.textContent.trim() === want && !x.classList.contains('on'));
+        const b = [...document.querySelectorAll('#anp .hmitabs button, #opp .hmitabs button')].find(
+          x => x.textContent.trim() === want && !x.classList.contains('on')
+        );
         if (b) b.click();
         void opp;
       }, 0);
@@ -183,14 +197,19 @@
 
   function dockOpen() {
     const dock = $('gdock');
-    return !!(dock && vis(dock) && !document.documentElement.classList.contains('gd-min') && call(() => LS_GUIDE.on, false));
+    return !!(
+      dock &&
+      vis(dock) &&
+      !document.documentElement.classList.contains('gd-min') &&
+      call(() => LS_GUIDE.on, false)
+    );
   }
   function paint() {
     if (!col) return;
     const ok = B.classList.contains('sc') && (B.dataset.tab === 'operate' || eng());
     /* the full Training panel (dock.js #gdock) is open: it has the right side; the column comes back when it is folded */
     const dockOn = dockOpen();
-    const on = ok && !dockOn && (open == null ? wide() : open);
+    const on = ok && !dockOn && (open == null ? eng() && wide() : open);
     B.classList.toggle('scdet', on);
     /* Giselle beta.266 (Jennie, Mina's live check of 263: at 1024 the column lay over the overview cards, the plant drawing and the
        sheet buttons): the page gives the column its width at every size (no overlay). Below 1280 px the column still starts closed */
@@ -230,7 +249,9 @@
     sec.trainNo.hidden = !!(card && !card.hidden);
     /* a training that runs with no step card (the panel is not open yet, e.g. after a reload): one press opens its panel (the
        "Open ▲" of the step card, shellc-ins.js setMin(false)) */
-    const tn = gOn ? 'A training is running.' : 'No training is running. The Instructor console starts one (start state, practice sections).';
+    const tn = gOn
+      ? 'A training is running.'
+      : 'No training is running. The Instructor console starts one (start state, practice sections).';
     if (sec.trainNo.dataset.t !== tn) {
       sec.trainNo.dataset.t = tn;
       sec.trainNo.textContent = '';
@@ -259,12 +280,18 @@
       if (!AL.length) sec.almL.append(E('p', 'scdnone', 'No standing alarm.'));
       for (const a of AL.slice().reverse().slice(0, 40)) {
         const r = E('div', 'scdar' + (a.ack ? '' : ' new') + (a.kind === 'TRIP' ? ' trip' : ''));
-        r.append(E('span', 'scdt', a.t || ''), E('span', 'scdn', a.nm || a.k), E('span', 'scds', a.kind === 'TRIP' ? 'Trip' : a.ack ? 'Acknowledged' : 'New'));
+        r.append(
+          E('span', 'scdt', a.t || ''),
+          E('span', 'scdn', a.nm || a.k),
+          E('span', 'scds', a.kind === 'TRIP' ? 'Trip' : a.ack ? 'Acknowledged' : 'New')
+        );
         sec.almL.append(r);
       }
     }
     const ev = call(() => lsEvents[0], null),
-      et = ev ? (ev.sh && ev.sh !== 'DCS' ? ev.sh + ': ' : '') + (ev.text || '') + (ev.t ? ' · ' + ev.t : '') : 'No event yet.';
+      et = ev
+        ? (ev.sh && ev.sh !== 'DCS' ? ev.sh + ': ' : '') + (ev.text || '') + (ev.t ? ' · ' + ev.t : '')
+        : 'No event yet.';
     if (sec.almEv.textContent !== et) sec.almEv.textContent = et;
     /* Inspector / Faceplate: the panel is placed over the body of the column (CSS); a closed panel shows a button to open it */
     const pn = ['anp', 'opp', 'dp'].map($).find(vis);
@@ -286,7 +313,8 @@
     const v = Math.round(r.top) + 'px';
     if (B.style.getPropertyValue('--scdbt') !== v) B.style.setProperty('--scdbt', v);
     /* the panel's own Auto-hide (it would close the panel on a click on the sheet) gives its place to the column */
-    for (const l of document.querySelectorAll('#anp .ph label, #dp label')) if (/Auto-hide/i.test(l.textContent) && !l.hasAttribute('data-scdh')) l.setAttribute('data-scdh', '');
+    for (const l of document.querySelectorAll('#anp .ph label, #dp label'))
+      if (/Auto-hide/i.test(l.textContent) && !l.hasAttribute('data-scdh')) l.setAttribute('data-scdh', '');
     /* the tab follows the panel the app opened itself (Run moves the analog pane to its Faceplate tab, hmi.js) */
     if (panOn && call(() => AN.cat === 'an', false)) {
       const k = vis($('opp')) ? 'fp' : vis($('anp')) ? 'insp' : null;
