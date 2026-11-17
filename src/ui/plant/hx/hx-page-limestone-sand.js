@@ -19,6 +19,10 @@
    Drawn simpler than the sheets: the vent filters are part of the silo top; the pneumatic control panels, the fluidizing
    valves, the density stabilisers, the 4 way splitter and the hand valves are not drawn; the eight injection valves are a row
    of states at the furnace, not eight lines.
+   The start controls are the three faceplates the old page has (hmi-mock-pb.js): the system (silo; DITL-LS10 / DITL-771), the
+   isolating valves (DITL-LS212 switch row 10; DITL-776 row 3) and the limestone feeder (DITL-LS110 rows 8 / 9). The order in the
+   notes on the page is the one that starts the system in the app (headless 2026-11-18: isolating valves, feeder, system;
+   the system START pressed first does not latch).
    NO-SOURCE in the app: the speed of the limestone feeder (ST-M1311 has no signal in hx-registry.js). */
 (function () {
   const { V, E, M, L, page } = HX;
@@ -89,7 +93,16 @@
           sc: 1.5,
           lab: 'l'
         }),
-        at(E('rotary', 'Limestone feeder', 'L-1311', [], { on: LM_RUN }), LX, 812, { id: 'lfd', sc: 1.5, lab: 'l' }),
+        at(M('rotary', 'L-1311', 'Limestone feeder', []), LX, 812, { id: 'lfd', sc: 1.5, lab: 'l' }),
+        at(M('valve', 'XV-LM1811A ~ H', 'Isolating valves A to H', [], { kind: 'shutoff', wrap: 12 }), 370, 890, {
+          id: 'liso',
+          lab: 't'
+        }),
+        at(M('valve', 'XV-SD1802A / B', 'Sand isolating valves', [], { kind: 'shutoff', wrap: 12 }), 1060, 560, {
+          id: 'siso',
+          rot: -90,
+          lab: 'r'
+        }),
         at(xv('Equalising air valve', 'XV-PA1814C', 'DITL-LS200|o|1'), 110, 890, { id: 'lv5', lab: 'b' }),
         at(L('compressed-air', 'Plant air', { back: true }), 40, 960, { id: 'pal' }),
         at(B('Bypass air valves', dy('DITL-LS212|o|9+10'), { w: 170 }), 640, 940, { id: 'lby' }),
@@ -173,8 +186,19 @@
           flow: 'h:ls5',
           arrow: false
         },
-        { med: 'solid', w: W_S, pts: ['lfd.b', [LX, 890], [470, 890], [470, FY + 258 * FS], 'fu.lime'], flow: LM_RUN },
-        { med: 'solid', w: W_S, pts: [[470, 890], [1000, 890], [1000, FY + 290 * FS], 'fu.ret'], flow: LM_RUN },
+        { med: 'solid', w: W_S, pts: ['lfd.b', [LX, 890], 'liso.l'], flow: LM_RUN, arrow: false },
+        {
+          med: 'solid',
+          w: W_S,
+          pts: ['liso.r', [470, 890], [470, FY + 258 * FS], 'fu.lime'],
+          flow: LM_RUN + '&m:XV-LM1811A ~ H'
+        },
+        {
+          med: 'solid',
+          w: W_S,
+          pts: [[470, 890], [1000, 890], [1000, FY + 290 * FS], 'fu.ret'],
+          flow: LM_RUN + '&m:XV-LM1811A ~ H'
+        },
         /* sand */
         { med: 'solid', w: W_S, pts: ['sd.b', 'sv1.l'], flow: 'h:ls6', arrow: false },
         { med: 'solid', w: W_S, pts: ['sv1.r', 'sv.t'], flow: 'h:ls6' },
@@ -190,10 +214,24 @@
         },
         { med: 'air', w: W_A, pts: ['sat.l', [1640, 780], [1640, 730], 'sv4.r'], flow: SD_AIR, arrow: false },
         { med: 'air', w: W_A, pts: ['sv4.l', [SX, 730]], flow: SD_AIR, arrow: false },
-        { med: 'solid', w: W_S, pts: ['sv2.r', [SX, 800], [1060, 800], [1060, FY + 214 * FS], 'fu.sa2'], flow: SD_OUT }
+        { med: 'solid', w: W_S, pts: ['sv2.r', [SX, 800], [1060, 800], 'siso.l'], flow: SD_OUT, arrow: false },
+        { med: 'solid', w: W_S, pts: ['siso.r', [1060, FY + 214 * FS], 'fu.sa2'], flow: SD_OUT + '&m:XV-SD1802A / B' }
       ],
       taps: [],
       texts: [
+        {
+          x: 24,
+          y: 40,
+          s: 'To start limestone: 1 Isolating valves OPEN · 2 Limestone feeder START · 3 Limestone system START',
+          cls: 'hx-note'
+        },
+        {
+          x: 1736,
+          y: 40,
+          s: 'To start sand: 1 Sand isolating valves OPEN · 2 Sand system START',
+          cls: 'hx-note',
+          anchor: 'end'
+        },
         { x: 481, y: 604, s: 'LIMESTONE INJECTION · A to F', cls: 'hx-zone' },
         { x: 1121, y: 624, s: 'LIMESTONE · REAR SIDE', cls: 'hx-zone' },
         { x: 1120, y: 392, s: 'SAND · REAR SIDE', cls: 'hx-zone' },

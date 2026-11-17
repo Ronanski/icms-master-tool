@@ -2476,7 +2476,21 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
             : /AUT/i.test(m)
               ? 'Auto'
               : m;
-  const stTxt = s => (s === 'run' ? 'Running' : s === 'stop' ? 'Stopped' : s === 'trip' ? 'Tripped' : '-----');
+  /* the state in words; a machine that is a valve or a set of valves (its name is its tag: XV-..., MV-...) is open / closed */
+  const stTxt = (s, name) =>
+    /^(XV|MV)-/.test(name || '')
+      ? s === 'run'
+        ? 'Open'
+        : s === 'stop'
+          ? 'Closed'
+          : '-----'
+      : s === 'run'
+        ? 'Running'
+        : s === 'stop'
+          ? 'Stopped'
+          : s === 'trip'
+            ? 'Tripped'
+            : '-----';
 
   function drawControls(def, inv) {
     let h = '';
@@ -2751,7 +2765,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
         });
         Q('[data-st]').forEach(e => {
           const m = D.machine(e.dataset.st) || {},
-            t = stTxt(m.st) + (m.mode ? ' · ' + m.mode : '');
+            t = stTxt(m.st, e.dataset.st) + (m.mode ? ' · ' + m.mode : '');
           if (e.textContent !== t) e.textContent = t;
           e.setAttribute('class', 'hx-st ' + (m.st || 'none'));
         });
@@ -2832,7 +2846,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
         Q('[data-card-mach]').forEach(c => {
           const m = D.machine(c.dataset.cardMach) || {},
             F = f => c.querySelector(`[data-f="${f}"]`);
-          F('st').textContent = stTxt(m.st);
+          F('st').textContent = stTxt(m.st, c.dataset.cardMach);
           F('st').className = 'hx-pill ' + (m.st || '');
           F('mode').textContent = m.mode || '';
           const y = c.querySelector('.hx-ynb');
@@ -5541,11 +5555,13 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
    master FIC-CM and the total coal flow correction HS-COAL (ABC-004A); limestone silo T-1311 (LT-LM1800) with lock vessel
    (PT-LM1811) and dispensing vessel (PT-LM1812), eight injection points; sand silo T-1300 (LT-SD1800) with the dense phase
    vessel S-1300 (PT-SD1800), two injection points on the rear side.
-   The flow diagrams PD-061 / 062 / 063 were NOT re-read for this page: the tags, names and order are those of temporary
-   page 12. Check the page against the three sheets before the temporary page is removed.
+   The flow diagram PD-061 was NOT re-read for this page: the tags, names and order are those of temporary page 12. PD-062 and
+   PD-063 sheet 1 were read for the Limestone and sand page.
+   Per feeder three states of its logic (DITL-19 of feeder A / B / C, as page 12 reads them): inlet plugging alarm (output
+   13), belt tracking alarm (output 15), clean-out conveyor in AUTO (output 22).
    Drawn simpler: the two fuel ports of a feeder are one line; the limestone and sand trains (lock vessel, dispensing vessel,
    rotary feeder, valve sets) are one silo each, with their pressures as values; their single valves are in the faceplate of
-   "Limestone system" / "Sand system" and stay on temporary page 12 until the Limestone and sand page is drawn. */
+   "Limestone system" / "Sand system" and are drawn on the Limestone and sand page. */
 (function () {
   const { V, E, M, C, X, L, page } = HX;
   const K = 'kg/cm²';
@@ -5565,6 +5581,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
     FY = 190,
     FS = 1.75; /* furnace: roof centre */
   const N = ['A', 'B', 'C'];
+  const INST = ['', ' #B', ' #C']; /* the drawing instance of feeder A / B / C */
   const run = i => 'm:COAL FEEDER ' + N[i];
   const train = i => {
     const bx = BX[i],
@@ -5607,6 +5624,21 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
             rot: 90,
             lab: 'r'
           }
+        ),
+        /* states of the feeder logic, as temporary page 12 reads them (DITL-19 instance of feeder A / B / C) */
+        at(HX.B('Inlet plugging', 'data-do="DITL-19' + INST[i] + '|13|ALARM|NORMAL"', { w: 140 }), bx - 8, 600, {
+          id: 'ip' + i
+        }),
+        at(HX.B('Belt tracking', 'data-do="DITL-19' + INST[i] + '|15|ALARM|NORMAL"', { w: 140 }), bx - 8, 638, {
+          id: 'bt' + i
+        }),
+        at(
+          HX.B('Clean-out conveyor', 'data-dy="DITL-19' + INST[i] + '|o|22" data-on="AUTO" data-off="NOT AUTO"', {
+            w: 140
+          }),
+          bx - 8,
+          676,
+          { id: 'cc' + i }
         )
       ],
       pipes: [
@@ -5656,7 +5688,8 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
           1600,
           700,
           { id: 'sd', sc: 2, lab: 'b' }
-        )
+        ),
+        at(L('limestone-sand', 'Limestone and sand trains'), 1600, 520, { id: 'lsl' })
       ],
       pipes: [
         ...T.flatMap(t => t.pipes),
@@ -5680,7 +5713,6 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
       texts: [
         { x: FX + 6, y: FY + 200 * FS, s: 'Furnace', cls: 'hx-name', anchor: 'middle' },
         { x: 1130, y: CY + 30, s: 'six fuel ports, front wall', cls: 'hx-note', anchor: 'middle' },
-        { x: 1512, y: 440, s: 'eight injection points', cls: 'hx-note' },
         { x: 1532, y: 660, s: 'rear side', cls: 'hx-note' }
       ]
     }
@@ -5708,6 +5740,10 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
    Drawn simpler than the sheets: the vent filters are part of the silo top; the pneumatic control panels, the fluidizing
    valves, the density stabilisers, the 4 way splitter and the hand valves are not drawn; the eight injection valves are a row
    of states at the furnace, not eight lines.
+   The start controls are the three faceplates the old page has (hmi-mock-pb.js): the system (silo; DITL-LS10 / DITL-771), the
+   isolating valves (DITL-LS212 switch row 10; DITL-776 row 3) and the limestone feeder (DITL-LS110 rows 8 / 9). The order in the
+   notes on the page is the one that starts the system in the app (headless 2026-11-18: isolating valves, feeder, system;
+   the system START pressed first does not latch).
    NO-SOURCE in the app: the speed of the limestone feeder (ST-M1311 has no signal in hx-registry.js). */
 (function () {
   const { V, E, M, L, page } = HX;
@@ -5778,7 +5814,16 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
           sc: 1.5,
           lab: 'l'
         }),
-        at(E('rotary', 'Limestone feeder', 'L-1311', [], { on: LM_RUN }), LX, 812, { id: 'lfd', sc: 1.5, lab: 'l' }),
+        at(M('rotary', 'L-1311', 'Limestone feeder', []), LX, 812, { id: 'lfd', sc: 1.5, lab: 'l' }),
+        at(M('valve', 'XV-LM1811A ~ H', 'Isolating valves A to H', [], { kind: 'shutoff', wrap: 12 }), 370, 890, {
+          id: 'liso',
+          lab: 't'
+        }),
+        at(M('valve', 'XV-SD1802A / B', 'Sand isolating valves', [], { kind: 'shutoff', wrap: 12 }), 1060, 560, {
+          id: 'siso',
+          rot: -90,
+          lab: 'r'
+        }),
         at(xv('Equalising air valve', 'XV-PA1814C', 'DITL-LS200|o|1'), 110, 890, { id: 'lv5', lab: 'b' }),
         at(L('compressed-air', 'Plant air', { back: true }), 40, 960, { id: 'pal' }),
         at(B('Bypass air valves', dy('DITL-LS212|o|9+10'), { w: 170 }), 640, 940, { id: 'lby' }),
@@ -5862,8 +5907,19 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
           flow: 'h:ls5',
           arrow: false
         },
-        { med: 'solid', w: W_S, pts: ['lfd.b', [LX, 890], [470, 890], [470, FY + 258 * FS], 'fu.lime'], flow: LM_RUN },
-        { med: 'solid', w: W_S, pts: [[470, 890], [1000, 890], [1000, FY + 290 * FS], 'fu.ret'], flow: LM_RUN },
+        { med: 'solid', w: W_S, pts: ['lfd.b', [LX, 890], 'liso.l'], flow: LM_RUN, arrow: false },
+        {
+          med: 'solid',
+          w: W_S,
+          pts: ['liso.r', [470, 890], [470, FY + 258 * FS], 'fu.lime'],
+          flow: LM_RUN + '&m:XV-LM1811A ~ H'
+        },
+        {
+          med: 'solid',
+          w: W_S,
+          pts: [[470, 890], [1000, 890], [1000, FY + 290 * FS], 'fu.ret'],
+          flow: LM_RUN + '&m:XV-LM1811A ~ H'
+        },
         /* sand */
         { med: 'solid', w: W_S, pts: ['sd.b', 'sv1.l'], flow: 'h:ls6', arrow: false },
         { med: 'solid', w: W_S, pts: ['sv1.r', 'sv.t'], flow: 'h:ls6' },
@@ -5879,10 +5935,24 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         },
         { med: 'air', w: W_A, pts: ['sat.l', [1640, 780], [1640, 730], 'sv4.r'], flow: SD_AIR, arrow: false },
         { med: 'air', w: W_A, pts: ['sv4.l', [SX, 730]], flow: SD_AIR, arrow: false },
-        { med: 'solid', w: W_S, pts: ['sv2.r', [SX, 800], [1060, 800], [1060, FY + 214 * FS], 'fu.sa2'], flow: SD_OUT }
+        { med: 'solid', w: W_S, pts: ['sv2.r', [SX, 800], [1060, 800], 'siso.l'], flow: SD_OUT, arrow: false },
+        { med: 'solid', w: W_S, pts: ['siso.r', [1060, FY + 214 * FS], 'fu.sa2'], flow: SD_OUT + '&m:XV-SD1802A / B' }
       ],
       taps: [],
       texts: [
+        {
+          x: 24,
+          y: 40,
+          s: 'To start limestone: 1 Isolating valves OPEN · 2 Limestone feeder START · 3 Limestone system START',
+          cls: 'hx-note'
+        },
+        {
+          x: 1736,
+          y: 40,
+          s: 'To start sand: 1 Sand isolating valves OPEN · 2 Sand system START',
+          cls: 'hx-note',
+          anchor: 'end'
+        },
         { x: 481, y: 604, s: 'LIMESTONE INJECTION · A to F', cls: 'hx-zone' },
         { x: 1121, y: 624, s: 'LIMESTONE · REAR SIDE', cls: 'hx-zone' },
         { x: 1120, y: 392, s: 'SAND · REAR SIDE', cls: 'hx-zone' },
