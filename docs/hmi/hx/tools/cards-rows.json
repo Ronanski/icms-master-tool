@@ -1,0 +1,839 @@
+{
+ "MV-MS1391": {
+  "ad": "DITL-38 #MV-MS1391",
+  "I": "TypeError: Converting circular structure to JSON\n    --> starting at object with constructor 'Object'\n    |     property '_inst' -> object with constructor 'Object'\n    --- property 'base' closes the circle",
+  "err": null,
+  "sheet": "(62)DITL-38 #MV-MS1391",
+  "title": "MOTOR CONTROL VALVE",
+  "rows": [
+   {
+    "r": 1,
+    "svc": "MCV REMOTE MODE SELECTED",
+    "tag": "",
+    "v": 1
+   },
+   {
+    "r": 4,
+    "svc": "MCV OPEN P.B.",
+    "tag": "",
+    "v": 0
+   },
+   {
+    "r": 5,
+    "svc": "MCV FULL OPENED",
+    "tag": "",
+    "v": 1
+   },
+   {
+    "r": 6,
+    "svc": "MCV TRIP",
+    "tag": "",
+    "v": 0
+   },
+   {
+    "r": 8,
+    "svc": "MCV STOP PB",
+    "tag": "",
+    "v": 0
+   },
+   {
+    "r": 10,
+    "svc": "MCV CLOSED PB",
+    "tag": "",
+    "v": 0
+   },
+   {
+    "r": 12,
+    "svc": "MCV FULL CLOSED",
+    "tag": "",
+    "v": 0
+   }
+  ]
+ },
+ "MV-MS1392": {
+  "ad": "DITL-38 #MV-MS1392",
+  "I": "TypeError: Converting circular structure to JSON\n    --> starting at object with constructor 'Object'\n    |     property '_inst' -> object with constructor 'Object'\n    --- property 'base' closes the circle",
+  "err": null,
+  "sheet": "(62)DITL-38 #MV-MS1392",
+  "title": "MOTOR CONTROL VALVE",
+  "rows": [
+   {
+    "r": 1,
+    "svc": "MCV REMOTE MODE SELECTED",
+    "tag": "",
+    "v": 1
+   },
+   {
+    "r": 4,
+    "svc": "MCV OPEN P.B.",
+    "tag": "",
+    "v": 0
+   },
+   {
+    "r": 5,
+    "svc": "MCV FULL OPENED",
+    "tag": "",
+    "v": 0
+   },
+   {
+    "r": 6,
+    "svc": "MCV TRIP",
+    "tag": "",
+    "v": 0
+   },
+   {
+    "r": 8,
+    "svc": "MCV STOP PB",
+    "tag": "",
+    "v": 0
+   },
+   {
+    "r": 10,
+    "svc": "MCV CLOSED PB",
+    "tag": "",
+    "v": 0
+   },
+   {
+    "r": 12,
+    "svc": "MCV FULL CLOSED",
+    "tag": "",
+    "v": 1
+   }
+  ]
+ },
+ "XV-MS1011": {
+  "ad": "DITL-88",
+  "I": {
+   "sheet": "DITL-88",
+   "rows": [],
+   "miss": [],
+   "pb": false,
+   "live": true,
+   "eq": ""
+  },
+  "err": null,
+  "sheet": "(104)DITL-88",
+  "title": "MAIN STEAM SYSTEM DRN POT DP-MS01 DRN VLV XV-MS1011",
+  "rows": [
+   {
+    "r": 0,
+    "svc": "MAIN STEAM DRN POT DP-MS01 DRN VLV AUTO PB",
+    "tag": "M.0612",
+    "v": 0
+   },
+   {
+    "r": 2,
+    "svc": "CONDENSER VACUUM AVAILABLE",
+    "tag": "M.0728",
+    "v": 1
+   },
+   {
+    "r": 3,
+    "svc": "MAIN STEAM DRN POT DP-MS01 -M.0612 DRN VLV MANUAL SELECTED",
+    "tag": "",
+    "v": 1
+   },
+   {
+    "r": 4,
+    "svc": "MAIN STEAM DRN POT DP-MS01 DRN VLV OPEN PB",
+    "tag": "M.0610",
+    "v": 0
+   },
+   {
+    "r": 10,
+    "svc": "MAIN STEAM DRN POT DP-MS01 DRN VLV AUTO SELECTED",
+    "tag": "M.0612",
+    "v": 0
+   },
+   {
+    "r": 14,
+    "svc": "GCB 52G1 ON",
+    "tag": "I.0931",
+    "v": 1
+   },
+   {
+    "r": 18,
+    "svc": "MAIN STEAM DRN POT DP-MS01 DRN VLV CLOSE PB",
+    "tag": "M.0611",
+    "v": 0
+   },
+   {
+    "r": 22,
+    "svc": "MAIN STEAM DRN POT DP-MS01 DRN VLV OPEN COMMAND",
+    "tag": "M.0613",
+    "v": 0
+   }
+  ]
+ },
+ "XV-CR1011": {
+  "ad": "DITL-73",
+  "I": {
+   "sheet": "DITL-73",
+   "rows": [],
+   "miss": [],
+   "pb": false,
+   "live": true,
+   "eq": ""
+  },
+  "err": null,
+  "sheet": "(92)DITL-73",
+  "title": "COLD REHEAT STEAM SYSTEM CRH DRN POT DP-CR01 DRN VLV XV-CR1011",
+  "rows": [
+   {
+    "r": 0,
+    "svc": "CRH DRN POT DP-CR01 DRN VLV AUTO PB",
+    "tag": "M.0562",
+    "v": 0
+   },
+   {
+    "r": 3,
+    "svc": "CRH DRN POT DP-CR01 -M.0562 DRN VLV MANUAL SELECTED",
+    "tag": "",
+    "v": 1
+   },
+   {
+    "r": 4,
+    "svc": "CRH DRN POT DP-CR01 DRN VLV OPEN PB",
+    "tag": "M.0560",
+    "v": 0
+   },
+   {
+    "r": 6,
+    "svc": "LS-CR1001-1 CRH DRN POT DP-CR01 DRN VLV HI LEVEL SWITCH",
+    "tag": "I.004A",
+    "v": 0
+   },
+   {
+    "r": 7,
+    "svc": "LS-CR1001-2 CRH DRN POT DP-CR01 DRN VLV HI-HI LEVEL SWITCH",
+    "tag": "I.004B",
+    "v": 0
+   },
+   {
+    "r": 10,
+    "svc": "CRH DRN POT DP-CR01 DRN VLV AUTO SELECTED",
+    "tag": "M.0562",
+    "v": 0
+   },
+   {
+    "r": 14,
+    "svc": "ICV TO CV TRANSFER COMPLETE",
+    "tag": "I.0418",
+    "v": 1
+   },
+   {
+    "r": 18,
+    "svc": "CRH DRN POT DP-CR01 DRN VLV CLOSE PB",
+    "tag": "M.0561",
+    "v": 0
+   },
+   {
+    "r": 22,
+    "svc": "CRH DRN POT DP-CR01 DRN VLV OPEN COMMAND",
+    "tag": "M.0563",
+    "v": 0
+   },
+   {
+    "r": 25,
+    "svc": "CONDENSER PRESSURE PT-CD1110",
+    "tag": "",
+    "v": 1
+   },
+   {
+    "r": 26,
+    "svc": "CONDENSER VACUUM PRESSURE",
+    "tag": "M.0727",
+    "v": 0
+   }
+  ]
+ },
+ "MV-TS1001": {
+  "ad": "DITL-94",
+  "I": "TypeError: Converting circular structure to JSON\n    --> starting at object with constructor 'Object'\n    |     property '_inst' -> object with constructor 'Object'\n    --- property 'base' closes the circle",
+  "err": null,
+  "sheet": "(108)DITL-94",
+  "title": "EXTRACTION STEAM SYSTEM EXTRACTION STM NO.1 SHUT-OFF MOV MV-TS1001",
+  "rows": [
+   {
+    "r": 0,
+    "svc": "EXTRACTION STM NO.1 SHUT-OFF MOV AUTO PB",
+    "tag": "M.0283",
+    "v": 1
+   },
+   {
+    "r": 4,
+    "svc": "EXTRACTION STM NO.1 SHUT-OFF MOV OPEN PB",
+    "tag": "M.0280",
+    "v": 0
+   },
+   {
+    "r": 5,
+    "svc": "EXTRACTION STM NO.1 -M.0283 SHUT-OFF MOV MANUAL MODE SELECTED",
+    "tag": "",
+    "v": 0
+   },
+   {
+    "r": 7,
+    "svc": "EXTRACTION STM NO.1 SHUT-OFF MOV FULLY OPEN",
+    "tag": "I.0010",
+    "v": 1
+   },
+   {
+    "r": 8,
+    "svc": "EXTRACTION STM NO.1 SHUT-OFF MOV TRIP",
+    "tag": "I.0012",
+    "v": 0
+   },
+   {
+    "r": 9,
+    "svc": "EXTRACTION STM NO.1 SHUT-OFF MOV STOP PB",
+    "tag": "M.0282",
+    "v": 0
+   },
+   {
+    "r": 10,
+    "svc": "EXTRACTION STM NO.1 SHUT-OFF MOV FULLY CLOSED",
+    "tag": "I.0011",
+    "v": 0
+   },
+   {
+    "r": 11,
+    "svc": "EXTRACTION STM NO.1 SHUT-OFF MOV REMOTE",
+    "tag": "I.0013",
+    "v": 1
+   },
+   {
+    "r": 13,
+    "svc": "EXTRACTION STM NO.1 SHUT-OFF MOV CLOSE PB",
+    "tag": "M.0281",
+    "v": 0
+   },
+   {
+    "r": 17,
+    "svc": "HOUSE OPERATION",
+    "tag": "M.3101",
+    "v": 0
+   },
+   {
+    "r": 18,
+    "svc": "TURBINE TRIP",
+    "tag": "I.0400",
+    "v": 0
+   },
+   {
+    "r": 19,
+    "svc": "HP HEATER NO.2 LEVEL HI-HI",
+    "tag": "M.0203",
+    "v": 0
+   },
+   {
+    "r": 20,
+    "svc": "EXTRACTION STM NO.1 SHUT-OFF MOV AUTO MODE SELECTED",
+    "tag": "M.0283",
+    "v": 1
+   },
+   {
+    "r": 22,
+    "svc": "HP HEATER NO.2 LEVEL HI",
+    "tag": "M.0204",
+    "v": 0
+   },
+   {
+    "r": 23,
+    "svc": "EXTRACTION STM NO.3 ZSO-TS1003 SHUT-OFF MOV FULLY OPEN",
+    "tag": "",
+    "v": 1
+   },
+   {
+    "r": 24,
+    "svc": "ICV TO CV TRANSFER COMPLETE",
+    "tag": "I.0418",
+    "v": 1
+   },
+   {
+    "r": 26,
+    "svc": "EXTRACTION STM NO.1 AI0738 SHUT-OFF MOV POSITION",
+    "tag": "",
+    "v": 1
+   },
+   {
+    "r": 27,
+    "svc": "EXTRACTION STM NO.2 SHUT-OFF MOV FULLY OPEN",
+    "tag": "I.0015",
+    "v": 1
+   }
+  ]
+ },
+ "XV-HR1021": {
+  "ad": "DITL-80",
+  "I": {
+   "sheet": "DITL-80",
+   "rows": [],
+   "miss": [],
+   "pb": false,
+   "live": true,
+   "eq": ""
+  },
+  "err": null,
+  "sheet": "(99)DITL-80",
+  "title": "HOT REHEAT STEAM SYSTEM HRH DRN POT DP-HR01 DRN VLV XV-HR1021",
+  "rows": [
+   {
+    "r": 0,
+    "svc": "HRH DRN POT DP-HR01 DRN VLV AUTO PB",
+    "tag": "M.0592",
+    "v": 0
+   },
+   {
+    "r": 2,
+    "svc": "CONDENSER VACUUM AVAILABLE",
+    "tag": "M.0728",
+    "v": 1
+   },
+   {
+    "r": 3,
+    "svc": "HRH DRN POT DP-HR01 -M.0592 DRN VLV MANUAL SELECTED",
+    "tag": "",
+    "v": 1
+   },
+   {
+    "r": 4,
+    "svc": "HRH DRN POT DP-HR01 DRN VLV OPEN PB",
+    "tag": "M.0590",
+    "v": 0
+   },
+   {
+    "r": 10,
+    "svc": "HRH DRN POT DP-HR01 DRN VLV AUTO SELECTED",
+    "tag": "M.0592",
+    "v": 0
+   },
+   {
+    "r": 14,
+    "svc": "GCB 52G1 ON",
+    "tag": "I.0931",
+    "v": 1
+   },
+   {
+    "r": 18,
+    "svc": "HRH DRN POT DP-HR01 DRN VLV CLOSE PB",
+    "tag": "M.0591",
+    "v": 0
+   },
+   {
+    "r": 22,
+    "svc": "HRH DRN POT DP-HR01 DRN VLV OPEN COMMAND",
+    "tag": "M.0593",
+    "v": 0
+   }
+  ]
+ },
+ "XV-HR1022": {
+  "ad": "DITL-81",
+  "I": {
+   "sheet": "DITL-81",
+   "rows": [],
+   "miss": [],
+   "pb": false,
+   "live": true,
+   "eq": ""
+  },
+  "err": null,
+  "sheet": "(100)DITL-81",
+  "title": "HOT REHEAT STEAM SYSTEM HRH DRN POT DP-HR02 DRN VLV XV-HR1022",
+  "rows": [
+   {
+    "r": 0,
+    "svc": "HRH DRN POT DP-HR02 DRN VLV AUTO PB",
+    "tag": "M.0602",
+    "v": 0
+   },
+   {
+    "r": 2,
+    "svc": "CONDENSER VACUUM AVAILABLE",
+    "tag": "M.0728",
+    "v": 1
+   },
+   {
+    "r": 3,
+    "svc": "HRH DRN POT DP-HR02 -M.0602 DRN VLV MANUAL SELECTED",
+    "tag": "",
+    "v": 1
+   },
+   {
+    "r": 4,
+    "svc": "HRH DRN POT DP-HR02 DRN VLV OPEN PB",
+    "tag": "M.0600",
+    "v": 0
+   },
+   {
+    "r": 10,
+    "svc": "HRH DRN POT DP-HR02 DRN VLV AUTO SELECTED",
+    "tag": "M.0602",
+    "v": 0
+   },
+   {
+    "r": 14,
+    "svc": "GCB 52G1 ON",
+    "tag": "I.0931",
+    "v": 1
+   },
+   {
+    "r": 18,
+    "svc": "HRH DRN POT DP-HR02 DRN VLV CLOSE PB",
+    "tag": "M.0601",
+    "v": 0
+   },
+   {
+    "r": 22,
+    "svc": "HRH DRN POT DP-HR02 DRN VLV OPEN COMMAND",
+    "tag": "M.0603",
+    "v": 0
+   }
+  ]
+ },
+ "XV-FW1151": {
+  "ad": "DITL-35",
+  "I": {
+   "sheet": "DITL-35",
+   "rows": [],
+   "miss": [],
+   "pb": false,
+   "live": true,
+   "eq": ""
+  },
+  "err": null,
+  "sheet": "(59)DITL-35",
+  "title": "REHEATER INLET DESUPERHEATER SPRAY WATER SHUT OFF VALVE",
+  "rows": [
+   {
+    "r": 0,
+    "svc": "REHEATER INLET DESUPERHEATER SPRAY WATER SOV OPEN P.B.",
+    "tag": "M.0640",
+    "v": 0
+   },
+   {
+    "r": 1,
+    "svc": "REHEATER INLET DESUPERHEATER SPRAY WATER SOV CLOSED",
+    "tag": "I.088F",
+    "v": 0
+   },
+   {
+    "r": 4,
+    "svc": "REHEATER INLET DESUPERHEATER SPRAY WATER SOV AUTO MODE",
+    "tag": "M.0642",
+    "v": 0
+   },
+   {
+    "r": 5,
+    "svc": "REHEATER INLET DE-S/H TEMP. > 11°C ABOVE SATURATION TEMP.",
+    "tag": "M.0172",
+    "v": 1
+   },
+   {
+    "r": 7,
+    "svc": "REHEATER INLET DESUPERHEATER SPRAY WATER SOV CLOSE P.B.",
+    "tag": "M.0641",
+    "v": 0
+   },
+   {
+    "r": 8,
+    "svc": "REHEATER INLET DE-S/H TEMP. < 11°C BELOW SATURATION TEMP.",
+    "tag": "",
+    "v": 0
+   },
+   {
+    "r": 9,
+    "svc": "MFT",
+    "tag": "I.000F",
+    "v": 0
+   },
+   {
+    "r": 10,
+    "svc": "ICV TO CV TRANSFER COMPLETE",
+    "tag": "I.0418",
+    "v": 1
+   },
+   {
+    "r": 20,
+    "svc": "REHEATER INLET DESUPERHEATER SPRAY WATER SOV OPEN COMMAND",
+    "tag": "",
+    "v": 1
+   }
+  ]
+ },
+ "XV-FW1061": {
+  "ad": "DITL-79",
+  "I": {
+   "sheet": "DITL-79",
+   "rows": [],
+   "miss": [],
+   "pb": false,
+   "live": true,
+   "eq": ""
+  },
+  "err": null,
+  "sheet": "(98)DITL-79",
+  "title": "FEEDWATER SYSTEM HP TURBINE BYPASS DESUPERHEATING SPRAY WTR BLOCK VLV XV-FW1061",
+  "rows": [
+   {
+    "r": 0,
+    "svc": "HP TURBINE BYPASS DESUPERHEATING SPRAY WTR BLOCK VLV AUTO PB",
+    "tag": "M.0582",
+    "v": 0
+   },
+   {
+    "r": 2,
+    "svc": "HP TURBINE BYPASS DESUPERHEATING SPRAY WTR BLOCK VLV OPEN PB",
+    "tag": "M.0580",
+    "v": 0
+   },
+   {
+    "r": 4,
+    "svc": "HP TURBINE BYPASS DESUPERHEATING SPRAY WTR BLOCK VLV AUTO MODE SELECTED",
+    "tag": "M.0582",
+    "v": 0
+   },
+   {
+    "r": 5,
+    "svc": "HP TURBINE BYPASS DESUPERHEATING TICMS1022.MV SPRAY WTR CONTROL VLV DEMAND",
+    "tag": "",
+    "v": 1
+   },
+   {
+    "r": 9,
+    "svc": "HP TURBINE BYPASS DESUPERHEATING SPRAY WTR BLOCK VLV CLOSE PB",
+    "tag": "M.0581",
+    "v": 0
+   }
+  ]
+ },
+ "XV-CD1114": {
+  "ad": "DITL-66",
+  "I": {
+   "sheet": "DITL-66",
+   "rows": [],
+   "miss": [],
+   "pb": false,
+   "live": true,
+   "eq": ""
+  },
+  "err": null,
+  "sheet": "(85)DITL-66",
+  "title": "CONDENSATE SYSTEM LP TURBINE BYPASS DESUPERHEATING SPRAY WTR BLOCK VLV XV-CD1114",
+  "rows": [
+   {
+    "r": 2,
+    "svc": "LP TURBINE BYPASS DESUPERHEATING SPRAY WTR BLOCK VLV OPEN PB",
+    "tag": "M.0520",
+    "v": 0
+   },
+   {
+    "r": 4,
+    "svc": "LP TURBINE BYPASS DESUPERHEATING SPRAY WTR BLOCK VLV AUTO MODE SELECTED",
+    "tag": "M.0522",
+    "v": 0
+   },
+   {
+    "r": 5,
+    "svc": "LP TURBINE BYPASS DESUPERHEATING SPRAY TICHR1012.MV WTR CONTROL VALVE DEMAND",
+    "tag": "",
+    "v": 0
+   },
+   {
+    "r": 9,
+    "svc": "LP TURBINE BYPASS DESUPERHEATING SPRAY WTR BLOCK VLV CLOSE PB",
+    "tag": "M.0521",
+    "v": 0
+   },
+   {
+    "r": 25,
+    "svc": "LP TURBINE BYPASS DESUPERHEATING SPRAY WTR BLOCK VLV AUTO PB",
+    "tag": "M.0522",
+    "v": 0
+   }
+  ]
+ },
+ "MV-AS1394": {
+  "ad": "DITL-75",
+  "I": "TypeError: Converting circular structure to JSON\n    --> starting at object with constructor 'Object'\n    |     property '_inst' -> object with constructor 'Object'\n    --- property 'base' closes the circle",
+  "err": null,
+  "sheet": "(94)DITL-75",
+  "title": "COLD REHEAT STEAM SYSTEM HP TURBINE WARMING LINE DRN MOV MV-AS1394",
+  "rows": [
+   {
+    "r": 0,
+    "svc": "HP TURBINE WARMING LINE DRN MOV AUTO PB",
+    "tag": "M.0463",
+    "v": 0
+   },
+   {
+    "r": 2,
+    "svc": "CONDENSER VACUUM AVAILABLE",
+    "tag": "M.0728",
+    "v": 1
+   },
+   {
+    "r": 4,
+    "svc": "HP TURBINE WARMING LINE DRN MOV OPEN PB",
+    "tag": "M.0460",
+    "v": 0
+   },
+   {
+    "r": 6,
+    "svc": "HP TURBINE WARMING LINE DRN MOV TRIP",
+    "tag": "I.0247",
+    "v": 0
+   },
+   {
+    "r": 7,
+    "svc": "HP TURBINE WARMING LINE DRAIN VLV OPEN COMMAND",
+    "tag": "I.0407",
+    "v": 0
+   },
+   {
+    "r": 8,
+    "svc": "HP TURBINE WARMING LINE DRN MOV FULLY OPEN",
+    "tag": "I.0245",
+    "v": 0
+   },
+   {
+    "r": 9,
+    "svc": "HP TURBINE WARMING LINE DRN MOV AUTO MODE SELECTED",
+    "tag": "M.0463",
+    "v": 0
+   },
+   {
+    "r": 10,
+    "svc": "HP TURBINE WARMING LINE DRAIN VLV  CLOSED COMMAND",
+    "tag": "I.0408",
+    "v": 0
+   },
+   {
+    "r": 11,
+    "svc": "HP TURBINE WARMING LINE DRN MOV REMOTE",
+    "tag": "I.0248",
+    "v": 1
+   },
+   {
+    "r": 12,
+    "svc": "HP TURBINE WARMING LINE DRN MOV STOP PB",
+    "tag": "M.0462",
+    "v": 0
+   },
+   {
+    "r": 13,
+    "svc": "HP TURBINE WARMING LINE DRN MOV TORQUE",
+    "tag": "I.0249",
+    "v": 1
+   },
+   {
+    "r": 15,
+    "svc": "HP TURBINE WARMING LINE DRN MOV CLOSE PB",
+    "tag": "M.0461",
+    "v": 0
+   },
+   {
+    "r": 19,
+    "svc": "HP TURBINE WARMING LINE -M.0463 DRN MOV MANUAL MODE SELECTED",
+    "tag": "",
+    "v": 1
+   }
+  ]
+ },
+ "_dui": [
+  "why",
+  "need",
+  "rowInfo",
+  "rowVal",
+  "outs",
+  "outVal",
+  "cause",
+  "netVal",
+  "causeNet",
+  "rowNets",
+  "motState",
+  "mark",
+  "after",
+  "refs",
+  "link",
+  "goItem",
+  "back",
+  "bar",
+  "inspAuto",
+  "pick",
+  "sel",
+  "labelOf",
+  "goRef",
+  "setPick",
+  "setMach",
+  "upd"
+ ],
+ "_live": [
+  "rec",
+  "recCsv",
+  "recNow",
+  "recClear",
+  "kind",
+  "state",
+  "rows",
+  "scan",
+  "reset",
+  "load",
+  "why",
+  "audit",
+  "fp",
+  "ctlTag",
+  "has",
+  "val",
+  "sheetOf",
+  "live",
+  "done",
+  "base",
+  "practice",
+  "B",
+  "H",
+  "modeOf",
+  "mvOf",
+  "pvOf",
+  "svOf",
+  "getV",
+  "NAMES",
+  "f1"
+ ],
+ "_why": {
+  "PICMS1006": {
+   "err": "TypeError: Cannot read properties of undefined (reading 'rt')"
+  },
+  "TICMS1022": {
+   "err": "TypeError: Cannot read properties of undefined (reading 'rt')"
+  },
+  "PICAS1005": {
+   "err": "TypeError: Cannot read properties of undefined (reading 'rt')"
+  },
+  "TICHR1002": {
+   "err": "TypeError: Cannot read properties of undefined (reading 'rt')"
+  },
+  "HICBR1391": {
+   "err": "TypeError: Cannot read properties of undefined (reading 'rt')"
+  },
+  "PICHR1391": {
+   "err": "TypeError: Cannot read properties of undefined (reading 'rt')"
+  },
+  "PICHR1003": {
+   "err": "TypeError: Cannot read properties of undefined (reading 'rt')"
+  },
+  "TICHR1012": {
+   "err": "TypeError: Cannot read properties of undefined (reading 'rt')"
+  },
+  "TICHR1002A": {
+   "err": "TypeError: Cannot read properties of undefined (reading 'rt')"
+  },
+  "HICHR1002A": {
+   "err": "TypeError: Cannot read properties of undefined (reading 'rt')"
+  },
+  "HICHR1002B": {
+   "err": "TypeError: Cannot read properties of undefined (reading 'rt')"
+  }
+ }
+}

@@ -1,0 +1,5882 @@
+{
+ "CWN": {
+  "v": [
+   {
+    "tag": "LISW1501",
+    "u": " m",
+    "dp": "2",
+    "t": "-4.00 m",
+    "ns": false,
+    "near": "Alarm H -6.0 · L -9.6 · LL -9.9 m | LT-SW1501 | Seawater Pump Inlet Pool"
+   },
+   {
+    "tag": "IIP1501A",
+    "u": " A",
+    "dp": "1",
+    "t": "0.0 A",
+    "ns": false,
+    "near": "IT-P1501A | Y | V-SW1001"
+   },
+   {
+    "tag": "IIP1501B",
+    "u": " A",
+    "dp": "1",
+    "t": "229.8 A",
+    "ns": false,
+    "near": "IT-P1501B | Y | V-SW1003"
+   },
+   {
+    "tag": "IIP1501C",
+    "u": " A",
+    "dp": "1",
+    "t": "229.8 A",
+    "ns": false,
+    "near": "IT-P1501C | Y | V-SW1005"
+   },
+   {
+    "tag": "PISW1110A1",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "1.0 kg/cm2",
+    "ns": false,
+    "near": "PT-SW1110-A1 | TT-SW1110-A1 | Path A"
+   },
+   {
+    "tag": "TISW1110A1",
+    "u": " °C",
+    "dp": "1",
+    "t": "28.5 °C",
+    "ns": false,
+    "near": "TT-SW1110-A1 | PT-SW1110-A1 | V-SW1007"
+   },
+   {
+    "tag": "PISW1110B1",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "1.0 kg/cm2",
+    "ns": false,
+    "near": "PT-SW1110-B1 | TT-SW1110-B1 | Path B"
+   },
+   {
+    "tag": "TISW1110B1",
+    "u": " °C",
+    "dp": "1",
+    "t": "28.6 °C",
+    "ns": false,
+    "near": "TT-SW1110-B1 | PT-SW1110-B1 | V-SW1008"
+   },
+   {
+    "tag": "PISW1110A2",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "0.6 kg/cm2",
+    "ns": false,
+    "near": "PT-SW1110-A2 | TT-SW1110-A2 | V-SW1002"
+   },
+   {
+    "tag": "TISW1110A2",
+    "u": " °C",
+    "dp": "1",
+    "t": "33.4 °C",
+    "ns": false,
+    "near": "TT-SW1110-A2 | PT-SW1110-A2 | V-SW1009"
+   },
+   {
+    "tag": "PISW1110B2",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "0.6 kg/cm2",
+    "ns": false,
+    "near": "PT-SW1110-B2 | TT-SW1110-B2 | air from plant air (PD-023)"
+   },
+   {
+    "tag": "TISW1110B2",
+    "u": " °C",
+    "dp": "1",
+    "t": "33.5 °C",
+    "ns": false,
+    "near": "TT-SW1110-B2 | PT-SW1110-B2 | V-SW1010"
+   },
+   {
+    "tag": "IIP1503A",
+    "u": " A",
+    "dp": "1",
+    "t": "90.0 A",
+    "ns": false,
+    "near": "Y | Booster Pump A | V-SW1015"
+   },
+   {
+    "tag": "IIP1503B",
+    "u": " A",
+    "dp": "1",
+    "t": "0.0 A",
+    "ns": false,
+    "near": "Y | Booster Pump B | V-SW1017"
+   },
+   {
+    "tag": "IIP1503C",
+    "u": " A",
+    "dp": "1",
+    "t": "90.0 A",
+    "ns": false,
+    "near": "Y | Booster Pump C | V-SW1019"
+   }
+  ],
+  "ctl": [],
+  "st": [
+   {
+    "id": "SWA",
+    "t": "STOPPED"
+   },
+   {
+    "id": "SWB",
+    "t": "RUNNING"
+   },
+   {
+    "id": "SWC",
+    "t": "RUNNING"
+   },
+   {
+    "id": "HDA",
+    "t": "RUNNING"
+   },
+   {
+    "id": "BPA",
+    "t": "RUNNING"
+   },
+   {
+    "id": "BPB",
+    "t": "STOPPED"
+   },
+   {
+    "id": "BPC",
+    "t": "RUNNING"
+   }
+  ],
+  "md": [
+   {
+    "id": "SWA",
+    "t": "Remote · Manual"
+   },
+   {
+    "id": "SWB",
+    "t": "Remote · Manual"
+   },
+   {
+    "id": "SWC",
+    "t": "Remote · Manual"
+   },
+   {
+    "id": "BPA",
+    "t": "Remote · Manual"
+   },
+   {
+    "id": "BPB",
+    "t": "Remote · Auto"
+   },
+   {
+    "id": "BPC",
+    "t": "Remote · Manual"
+   }
+  ],
+  "mov": [],
+  "dox": [
+   {
+    "a": "DITL-39|3|IN OPERATION|NOT IN OPERATION|run",
+    "t": "NOT IN OPERATION"
+   },
+   {
+    "a": "DITL-39|4|COMMON FAIL|Common fail: no|alarm",
+    "t": "Common fail: no"
+   },
+   {
+    "a": "DITL-39|14|IN OPERATION|NOT IN OPERATION|run",
+    "t": "NOT IN OPERATION"
+   },
+   {
+    "a": "DITL-39|15|COMMON FAIL|Common fail: no|alarm",
+    "t": "Common fail: no"
+   }
+  ],
+  "go": [
+   {
+    "g": "MK02",
+    "t": "Water side: Make-Up and Closed Cooling p"
+   }
+  ]
+ },
+ "MK02": {
+  "v": [
+   {
+    "tag": "LIMU0708A",
+    "u": " m",
+    "dp": "1",
+    "t": "13.8 m",
+    "ns": false,
+    "near": "Alarm L 2.0 · LL 0.2 m | Tank A | LT-MU0708-A"
+   },
+   {
+    "tag": "LIMU0708B",
+    "u": " m",
+    "dp": "1",
+    "t": "13.7 m",
+    "ns": false,
+    "near": "Alarm L 2.0 · LL 0.2 m | Tank B | LT-MU0708-B"
+   },
+   {
+    "tag": "DPIMU0709A",
+    "u": " kg/cm2",
+    "dp": "3",
+    "t": "0.030 kg/cm2",
+    "ns": false,
+    "near": "DPT-MU0709-A | Make-Up Pump B | STR-MU0001"
+   },
+   {
+    "tag": "IIP0709A",
+    "u": " A",
+    "dp": "1",
+    "t": "21.3 A",
+    "ns": false,
+    "near": "IT-P0709A | recirculation | to tanks · V-MU0013"
+   },
+   {
+    "tag": "DPIMU0709B",
+    "u": " kg/cm2",
+    "dp": "3",
+    "t": "0.000 kg/cm2",
+    "ns": false,
+    "near": "DPT-MU0709-B | Make-Up Pump C | STR-MU0002"
+   },
+   {
+    "tag": "IIP0709B",
+    "u": " A",
+    "dp": "1",
+    "t": "0.0 A",
+    "ns": false,
+    "near": "IT-P0709B | recirculation | to tanks · V-MU0015"
+   },
+   {
+    "tag": "DPIMU0709C",
+    "u": " kg/cm2",
+    "dp": "3",
+    "t": "0.030 kg/cm2",
+    "ns": false,
+    "near": "DPT-MU0709-C | STR-MU0003 | IT-P0709C"
+   },
+   {
+    "tag": "IIP0709C",
+    "u": " A",
+    "dp": "1",
+    "t": "21.3 A",
+    "ns": false,
+    "near": "IT-P0709C | recirculation | to tanks · V-MU0017"
+   },
+   {
+    "tag": "PIMU0709",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "9.0 kg/cm2",
+    "ns": false,
+    "near": "PT-MU0709 | Make-up header | Alarm H 9.2 · L 6.5 · LL 6.0"
+   },
+   {
+    "tag": "FIMU1001",
+    "u": " m3/h",
+    "dp": "1",
+    "t": "14.9 m3/h",
+    "ns": false,
+    "near": "Make-up flow (phase 1) | FT-MU0001 · not drawn on PD-024 | Y"
+   },
+   {
+    "tag": "LICW1109",
+    "u": " m",
+    "dp": "2",
+    "t": "0.80 m",
+    "ns": false,
+    "near": "LT-CW1109 | Expansion | Normal 1.7 m (PR-OPE-5002)"
+   },
+   {
+    "tag": "DPICW1108A",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "0.27 kg/cm2",
+    "ns": false,
+    "near": "DPT-CW1108-A | IT-P1108A | Y"
+   },
+   {
+    "tag": "IIP1108A",
+    "u": " A",
+    "dp": "1",
+    "t": "26.8 A",
+    "ns": false,
+    "near": "IT-P1108A | DPT-CW1108-A | P-1108B"
+   },
+   {
+    "tag": "DPICW1108B",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "0.00 kg/cm2",
+    "ns": false,
+    "near": "DPT-CW1108-B | INSTRUMENT & PLANT AIR | 036 TURBINE OIL"
+   },
+   {
+    "tag": "IIP1108B",
+    "u": " A",
+    "dp": "1",
+    "t": "0.0 A",
+    "ns": false,
+    "near": "036 TURBINE OIL | IT-P1108B | DPT-CW1108-B"
+   },
+   {
+    "tag": "PICW1152",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "6.4 kg/cm2",
+    "ns": false,
+    "near": "PT-CW1152 | Pump discharge | TT-CW1152"
+   },
+   {
+    "tag": "TICW1152",
+    "u": " °C",
+    "dp": "0",
+    "t": "40 °C",
+    "ns": false,
+    "near": "TT-CW1152 | PT-CW1152 | H 7.0 · L 5.3 kg/cm2"
+   },
+   {
+    "tag": "PICW1153",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "5.2 kg/cm2",
+    "ns": false,
+    "near": "Supply to users | H 7.0 · L 5.0 · LL 4.8 kg/cm2 · temp H 40 °C | PT-CW1153"
+   },
+   {
+    "tag": "TICW1153",
+    "u": " °C",
+    "dp": "0",
+    "t": "38 °C",
+    "ns": false,
+    "near": "TT-CW1153 | PT-CW1153 | Supply to users"
+   }
+  ],
+  "ctl": [
+   {
+    "c": "TICLO1002|mv|1| %",
+    "t": "54.0 %"
+   },
+   {
+    "c": "TICLO1002|mode",
+    "t": "Auto"
+   },
+   {
+    "c": "TICLO1002|pv|0| °C",
+    "t": "46 °C"
+   }
+  ],
+  "st": [
+   {
+    "id": "PA",
+    "t": "RUNNING"
+   },
+   {
+    "id": "PB",
+    "t": "STOPPED"
+   },
+   {
+    "id": "PC",
+    "t": "RUNNING"
+   },
+   {
+    "id": "ACA",
+    "t": "RUNNING"
+   },
+   {
+    "id": "ACB",
+    "t": "STOPPED"
+   }
+  ],
+  "md": [
+   {
+    "id": "PA",
+    "t": "Remote · Manual"
+   },
+   {
+    "id": "PB",
+    "t": "Remote · Manual"
+   },
+   {
+    "id": "PC",
+    "t": "Remote · Manual"
+   },
+   {
+    "id": "ACA",
+    "t": "Remote · Manual"
+   },
+   {
+    "id": "ACB",
+    "t": "Remote · Auto"
+   }
+  ],
+  "mov": [],
+  "dox": [
+   {
+    "a": "muXv|OPEN|CLOSED",
+    "t": "CLOSED"
+   },
+   {
+    "a": "DITL-78|AUTO SELECTED|Auto|Manual",
+    "t": "Manual"
+   }
+  ],
+  "go": [
+   {
+    "g": "MK07",
+    "t": "page: Drum & Main Steamclick = open this"
+   },
+   {
+    "g": "MK06",
+    "t": "page: Feedwaterclick = open this page"
+   },
+   {
+    "g": "MK05",
+    "t": "page: Condensateclick = open this page"
+   },
+   {
+    "g": "CWN",
+    "t": "Seawater side of the heat exchangers: Ci"
+   },
+   {
+    "g": "MK04",
+    "t": "page: Turbine Oilclick = open this page"
+   },
+   {
+    "g": "MK06",
+    "t": "page: Feedwaterclick = open this page"
+   },
+   {
+    "g": "MK09",
+    "t": "page: Air & Flue Gasclick = open this pa"
+   },
+   {
+    "g": "MK14",
+    "t": "page: ESP & Ashclick = open this page"
+   },
+   {
+    "g": "MK03",
+    "t": "page: Instrument & Plant Airclick = open"
+   }
+  ]
+ },
+ "MK03": {
+  "v": [
+   {
+    "tag": "IIC0704A",
+    "u": " A",
+    "dp": "0",
+    "t": "212 A",
+    "ns": false,
+    "near": "RUN | IT-C0704A | Local panel start"
+   },
+   {
+    "tag": "IIC0704B",
+    "u": " A",
+    "dp": "0",
+    "t": "0 A",
+    "ns": false,
+    "near": "STOP | IT-C0704B | Local panel start"
+   },
+   {
+    "tag": "IIC0704C",
+    "u": " A",
+    "dp": "0",
+    "t": "0 A",
+    "ns": false,
+    "near": "STOP | IT-C0704C | Local panel start"
+   },
+   {
+    "tag": "FID0704A",
+    "u": " m3/h",
+    "dp": "0",
+    "t": "1200 m3/h",
+    "ns": false,
+    "near": "Start / stop from DCS | Remote | RUN"
+   },
+   {
+    "tag": "PIIA0107",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "7.15 kg/cm2",
+    "ns": false,
+    "near": "PT-IA0107 | A3 · A4 | V-IA0010"
+   },
+   {
+    "tag": "FID0704B",
+    "u": " m3/h",
+    "dp": "0",
+    "t": "0 m3/h",
+    "ns": false,
+    "near": "Start / stop from DCS | Remote | STOP"
+   },
+   {
+    "tag": "PIIA0127",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "7.15 kg/cm2",
+    "ns": false,
+    "near": "PT-IA0127 | B3 · B4 | V-IA0011"
+   },
+   {
+    "tag": "FID0704C",
+    "u": " m3/h",
+    "dp": "0",
+    "t": "0 m3/h",
+    "ns": false,
+    "near": "Start / stop from DCS | Remote | STOP"
+   },
+   {
+    "tag": "PIIA0147",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "7.15 kg/cm2",
+    "ns": false,
+    "near": "PT-IA0147 | C3 · C4 | V-IA0012"
+   },
+   {
+    "tag": "PIIA0706B",
+    "u": "",
+    "dp": "2",
+    "t": "7.00",
+    "ns": false,
+    "near": "kg/cm2 | 5 m3 | PT-IA0706-B"
+   },
+   {
+    "tag": "PIIA0706A",
+    "u": "",
+    "dp": "2",
+    "t": "7.00",
+    "ns": false,
+    "near": "kg/cm2 | 5 m3 | PT-IA0706-A"
+   },
+   {
+    "tag": "PIIA1706",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "6.80 kg/cm2",
+    "ns": false,
+    "near": "Alarm L 5.0 · LL 3.5 kg/cm2 | V-IA1101 · 3 in · PT-IA1706, PSL-IA1706 | Low switch 2.8 kg/cm2 (trip)"
+   },
+   {
+    "tag": "IIC0703A",
+    "u": " A",
+    "dp": "0",
+    "t": "44 A",
+    "ns": false,
+    "near": "RUN | IT-C0703A | Local panel start"
+   },
+   {
+    "tag": "IIC0703B",
+    "u": " A",
+    "dp": "0",
+    "t": "0 A",
+    "ns": false,
+    "near": "STOP | IT-C0703B | Local panel start"
+   },
+   {
+    "tag": "IIC0703C",
+    "u": " A",
+    "dp": "0",
+    "t": "0 A",
+    "ns": false,
+    "near": "STOP | IT-C0703C | Local panel start"
+   },
+   {
+    "tag": "FID0703A",
+    "u": " m3/h",
+    "dp": "0",
+    "t": "1500 m3/h",
+    "ns": false,
+    "near": "Start / stop from DCS | Remote | RUN"
+   },
+   {
+    "tag": "PIPA0107",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "7.15 kg/cm2",
+    "ns": false,
+    "near": "PT-PA0107 | A3 · A4 | V-PA0010"
+   },
+   {
+    "tag": "FID0703B",
+    "u": " m3/h",
+    "dp": "0",
+    "t": "0 m3/h",
+    "ns": false,
+    "near": "Start / stop from DCS | Remote | STOP"
+   },
+   {
+    "tag": "PIPA0127",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "7.15 kg/cm2",
+    "ns": false,
+    "near": "PT-PA0127 | B3 · B4 | V-PA0011"
+   },
+   {
+    "tag": "FID0703C",
+    "u": " m3/h",
+    "dp": "0",
+    "t": "0 m3/h",
+    "ns": false,
+    "near": "Start / stop from DCS | INSTRUMENT & PLANT AIR | Remote"
+   },
+   {
+    "tag": "PIPA0147",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "7.15 kg/cm2",
+    "ns": false,
+    "near": "PT-PA0147 | C3 · C4 | V-PA0012"
+   },
+   {
+    "tag": "PIPA0705B",
+    "u": "",
+    "dp": "2",
+    "t": "7.00",
+    "ns": false,
+    "near": "kg/cm2 | 10 m3 | PT-PA0705-B"
+   },
+   {
+    "tag": "PIPA0705A",
+    "u": "",
+    "dp": "2",
+    "t": "7.00",
+    "ns": false,
+    "near": "kg/cm2 | 10 m3 | PT-PA0705-A"
+   },
+   {
+    "tag": "PIPA1705",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "6.80 kg/cm2",
+    "ns": false,
+    "near": "Alarm L 5.0 · LL -1.0 kg/cm2 | V-PA1087 · 6 in · PT-PA1705, PSL-PA1705 | Low switch 2.8 kg/cm2 (alarm)"
+   }
+  ],
+  "ctl": [],
+  "st": [
+   {
+    "id": "iac0",
+    "t": "RUN"
+   },
+   {
+    "id": "iac1",
+    "t": "STOP"
+   },
+   {
+    "id": "iac2",
+    "t": "STOP"
+   },
+   {
+    "id": "iad0",
+    "t": "RUN"
+   },
+   {
+    "id": "iad1",
+    "t": "STOP"
+   },
+   {
+    "id": "iad2",
+    "t": "STOP"
+   },
+   {
+    "id": "pac0",
+    "t": "RUN"
+   },
+   {
+    "id": "pac1",
+    "t": "STOP"
+   },
+   {
+    "id": "pac2",
+    "t": "STOP"
+   },
+   {
+    "id": "pad0",
+    "t": "RUN"
+   },
+   {
+    "id": "pad1",
+    "t": "STOP"
+   },
+   {
+    "id": "pad2",
+    "t": "STOP"
+   }
+  ],
+  "md": [
+   {
+    "id": "iad0",
+    "t": "Remote"
+   },
+   {
+    "id": "iad1",
+    "t": "Remote"
+   },
+   {
+    "id": "iad2",
+    "t": "Remote"
+   },
+   {
+    "id": "pad0",
+    "t": "Remote"
+   },
+   {
+    "id": "pad1",
+    "t": "Remote"
+   },
+   {
+    "id": "pad2",
+    "t": "Remote"
+   }
+  ],
+  "mov": [],
+  "dox": [],
+  "go": [
+   {
+    "g": "MK02",
+    "t": "Cooling water of compressors and dryers:"
+   }
+  ]
+ },
+ "MK04": {
+  "v": [
+   {
+    "tag": "PTLO1922A",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "6.6 kg/cm2",
+    "ns": false,
+    "near": "P-1922A · PTLO1922A | Main Oil Pump A | Main Oil Pump B"
+   },
+   {
+    "tag": "PTLO1922B",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "0.0 kg/cm2",
+    "ns": false,
+    "near": "P-1922B · PTLO1922B | Main Oil Pump B | P-1922A · PTLO1922A"
+   },
+   {
+    "tag": "PTLO1923",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "0.0 kg/cm2",
+    "ns": false,
+    "near": "P-1923 · PTLO1923 · straight to the bearing header | DC Emergency Oil Pump | P-1922B · PTLO1922B"
+   },
+   {
+    "tag": "TELO1001",
+    "u": " °C",
+    "dp": "0",
+    "t": "62 °C",
+    "ns": false,
+    "near": "Cooler inlet | TELO1001 | oil side / water side"
+   },
+   {
+    "tag": "TE-LO1002-1",
+    "u": " °C",
+    "dp": "0",
+    "t": "46 °C",
+    "ns": false,
+    "near": "Cooler outlet | TELO10021 | TELO10022"
+   },
+   {
+    "tag": "TE-LO1002-2",
+    "u": " °C",
+    "dp": "0",
+    "t": "46 °C",
+    "ns": false,
+    "near": "TELO10022 | TELO10021 | Cooler outlet"
+   },
+   {
+    "tag": "PTLO10031",
+    "u": "",
+    "dp": "1",
+    "t": "3.3",
+    "ns": false,
+    "near": "PTLO10031 · 10032 · 10033 | Bearing oil header | Low switch PSLO1004 starts"
+   },
+   {
+    "tag": "PTLO10032",
+    "u": "",
+    "dp": "1",
+    "t": "3.3",
+    "ns": false,
+    "near": "PTLO10031 · 10032 · 10033 | Bearing oil header | Low switch PSLO1004 starts"
+   },
+   {
+    "tag": "PTLO10033",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "3.3 kg/cm2",
+    "ns": false,
+    "near": "PTLO10031 · 10032 · 10033 | Bearing oil header | Low switch PSLO1004 starts"
+   },
+   {
+    "tag": "TEGE1007",
+    "u": " °C",
+    "dp": "0",
+    "t": "55 °C",
+    "ns": false,
+    "near": "TEGE1007 | Generator No.3 / No.4 | HP, IP / LP turbine and generator bearings, turning gear"
+   },
+   {
+    "tag": "TEGE1008",
+    "u": " °C",
+    "dp": "0",
+    "t": "56 °C",
+    "ns": false,
+    "near": "TEGE1008 | TEGE1007 | Control oil header"
+   },
+   {
+    "tag": "PTLO1931A",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "163.2 kg/cm2",
+    "ns": false,
+    "near": "P-1931A · PTLO1931A | Control Oil Pump A | Control Oil Pump B"
+   },
+   {
+    "tag": "PTLO1931B",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "0.0 kg/cm2",
+    "ns": false,
+    "near": "P-1931B · PTLO1931B | Control Oil Pump B | Trip oil"
+   },
+   {
+    "tag": "PTLO10061",
+    "u": "",
+    "dp": "1",
+    "t": "162.6",
+    "ns": false,
+    "near": "PTLO10061 · 10062 · 10063 | Control oil header | Very low = turbine trip (TCS)"
+   },
+   {
+    "tag": "PTLO10062",
+    "u": "",
+    "dp": "1",
+    "t": "162.6",
+    "ns": false,
+    "near": "PTLO10061 · 10062 · 10063 | Control oil header | Very low = turbine trip (TCS)"
+   },
+   {
+    "tag": "PTLO10063",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "162.6 kg/cm2",
+    "ns": false,
+    "near": "Main Stop Valves | PTLO10061 · 10062 · 10063 | Control oil header"
+   },
+   {
+    "tag": "PTLO10071",
+    "u": "",
+    "dp": "1",
+    "t": "162.6",
+    "ns": false,
+    "near": "Trip oil | PTLO10071 · 10072 · 10073 | P-1931B · PTLO1931B"
+   },
+   {
+    "tag": "PTLO10072",
+    "u": "",
+    "dp": "1",
+    "t": "162.6",
+    "ns": false,
+    "near": "Trip oil | PTLO10071 · 10072 · 10073 | P-1931B · PTLO1931B"
+   },
+   {
+    "tag": "PTLO10073",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "162.6 kg/cm2",
+    "ns": false,
+    "near": "Trip oil | PTLO10071 · 10072 · 10073 | P-1931B · PTLO1931B"
+   }
+  ],
+  "ctl": [],
+  "st": [
+   {
+    "id": "VX",
+    "t": "RUNNING"
+   },
+   {
+    "id": "MA",
+    "t": "RUNNING"
+   },
+   {
+    "id": "MB",
+    "t": "STOPPED"
+   },
+   {
+    "id": "EO",
+    "t": "STOPPED"
+   },
+   {
+    "id": "CA",
+    "t": "RUNNING"
+   },
+   {
+    "id": "CB",
+    "t": "STOPPED"
+   }
+  ],
+  "md": [],
+  "mov": [],
+  "dox": [],
+  "go": [
+   {
+    "g": "MK02",
+    "t": "Cooling water: closed cooling water, tem"
+   }
+  ]
+ },
+ "MK05": {
+  "v": [
+   {
+    "tag": "PTCD1110",
+    "u": " kg/cm2A",
+    "dp": "3",
+    "t": "0.073 kg/cm2A",
+    "ns": false,
+    "near": "PT-CD1110 | Pressure | Neck temperature"
+   },
+   {
+    "tag": "TTCD11103",
+    "u": " °C",
+    "dp": "0",
+    "t": "36 °C",
+    "ns": false,
+    "near": "TT-CD1110-3 | Neck temperature | PT-CD1110"
+   },
+   {
+    "tag": "TTCD11104",
+    "u": " °C",
+    "dp": "0",
+    "t": "39 °C",
+    "ns": false,
+    "near": "TT-CD1110-4 | chamber | Flash"
+   },
+   {
+    "tag": "LTCD1110",
+    "u": " mm",
+    "dp": "0",
+    "t": "3 mm",
+    "ns": false,
+    "near": "LT-CD1110 | Hot well level | Water"
+   },
+   {
+    "tag": "TTCD11101",
+    "u": "",
+    "dp": "0",
+    "t": "36",
+    "ns": false,
+    "near": "LT-CD1110 | Water | Hot well level"
+   },
+   {
+    "tag": "TTCD11102",
+    "u": " °C",
+    "dp": "0",
+    "t": "36 °C",
+    "ns": false,
+    "near": "LT-CD1110 | Water | Hot well level"
+   },
+   {
+    "tag": "DPCEPA",
+    "u": "",
+    "dp": "3",
+    "t": "0.017",
+    "ns": false,
+    "near": "DP | Y | DP"
+   },
+   {
+    "tag": "DPCEPB",
+    "u": "",
+    "dp": "3",
+    "t": "0.000",
+    "ns": false,
+    "near": "DP | Y | neutral amine in"
+   },
+   {
+    "tag": "ITP1116A",
+    "u": " A",
+    "dp": "1",
+    "t": "27.2 A",
+    "ns": false,
+    "near": "Condensate Pump A | P-1116A · IT-P1116A | Condensate Pump B"
+   },
+   {
+    "tag": "ITP1116B",
+    "u": " A",
+    "dp": "1",
+    "t": "0.0 A",
+    "ns": false,
+    "near": "Condensate Pump B | P-1116B · IT-P1116B | MAKE-UP WATER"
+   },
+   {
+    "tag": "PTCD1117",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "17.2 kg/cm2",
+    "ns": false,
+    "near": "PT-CD1117 | Pump outlet | 036 TURBINE OIL"
+   },
+   {
+    "tag": "TTCD1118",
+    "u": " °C",
+    "dp": "0",
+    "t": "36 °C",
+    "ns": false,
+    "near": "TT-CD1118 | Steam Jet Air Ejector Condenser | PT-CD1117"
+   },
+   {
+    "tag": "TTCD1119",
+    "u": " °C",
+    "dp": "0",
+    "t": "37 °C",
+    "ns": false,
+    "near": "TT-CD1119 | Gland Steam Condenser | 027 CLOSED COOLING WATER"
+   },
+   {
+    "tag": "TTCD1120",
+    "u": " °C",
+    "dp": "0",
+    "t": "38 °C",
+    "ns": false,
+    "near": "TT-CD1120 | Condensate flow | H-1903"
+   },
+   {
+    "tag": "FTCD1120",
+    "u": " T/H",
+    "dp": "1",
+    "t": "359.8 T/H",
+    "ns": false,
+    "near": "FT-CD1120 | Condensate flow | TT-CD1120"
+   },
+   {
+    "tag": "FTCD1121",
+    "u": " T/H",
+    "dp": "1",
+    "t": "0.2 T/H",
+    "ns": false,
+    "near": "FT-CD1121 | MV-CD1007 | M"
+   },
+   {
+    "tag": "FTCD1115",
+    "u": " T/H",
+    "dp": "1",
+    "t": "0.0 T/H",
+    "ns": false,
+    "near": "LP turbine bypass desuperheater | XV-CD1005 | XV-CD1004 (normal)"
+   },
+   {
+    "tag": "TT-CD1101",
+    "u": " °C",
+    "dp": "0",
+    "t": "38 °C",
+    "ns": false,
+    "near": "TT-CD1101 | Deaerator level | Low Pressure Heater 1"
+   },
+   {
+    "tag": "TT-CD1102",
+    "u": " °C",
+    "dp": "0",
+    "t": "71 °C",
+    "ns": false,
+    "near": "TT-CD1102 | Low Pressure Heater 2 | bypass MV-CD1003"
+   },
+   {
+    "tag": "TT-CD1103-1",
+    "u": " °C",
+    "dp": "0",
+    "t": "91 °C",
+    "ns": false,
+    "near": "TT-CD1103-1 | Low Pressure Heater 3 | H-1103"
+   },
+   {
+    "tag": "TT-CD1103-2",
+    "u": " °C",
+    "dp": "0",
+    "t": "115 °C",
+    "ns": false,
+    "near": "TT-CD1103-2 | H-1103 | Low Pressure Heater 3"
+   },
+   {
+    "tag": "FTCD1122",
+    "u": " T/H",
+    "dp": "1",
+    "t": "359.8 T/H",
+    "ns": false,
+    "near": "FT-CD1122 | To deaerator | PT-CD1122"
+   },
+   {
+    "tag": "PTCD1122",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "6.7 kg/cm2",
+    "ns": false,
+    "near": "PT-CD1122 | FT-CD1122 | TT-CD1122"
+   },
+   {
+    "tag": "TT-CD1122",
+    "u": " °C",
+    "dp": "0",
+    "t": "115 °C",
+    "ns": false,
+    "near": "TT-CD1122 | PT-CD1122 | LT-CD1104-1 / 2 / 3"
+   },
+   {
+    "tag": "PTCD1104",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "5.1 kg/cm2",
+    "ns": false,
+    "near": "Deaerator H-1104 | PT-CD1104 | To deaerator"
+   },
+   {
+    "tag": "LTCD11041",
+    "u": "",
+    "dp": "0",
+    "t": "71",
+    "ns": false,
+    "near": "LT-CD1104-1 / 2 / 3 | Storage Tank T-1104 | TT-CD1104"
+   },
+   {
+    "tag": "LTCD11042",
+    "u": "",
+    "dp": "0",
+    "t": "60",
+    "ns": false,
+    "near": "LT-CD1104-1 / 2 / 3 | Storage Tank T-1104 | TT-CD1104"
+   },
+   {
+    "tag": "LTCD11043",
+    "u": " mm",
+    "dp": "0",
+    "t": "65 mm",
+    "ns": false,
+    "near": "LT-CD1104-1 / 2 / 3 | Storage Tank T-1104 | TT-CD1104"
+   },
+   {
+    "tag": "TTCD1104",
+    "u": " °C",
+    "dp": "0",
+    "t": "159 °C",
+    "ns": false,
+    "near": "TT-CD1104 | LT-CD1104-1 / 2 / 3 | Storage Tank T-1104"
+   }
+  ],
+  "ctl": [
+   {
+    "c": "LICCD1110A|mv|1| %",
+    "t": "25.6 %"
+   },
+   {
+    "c": "LICCD1110A|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "FICCD1121|mv|1| %",
+    "t": "100.0 %"
+   },
+   {
+    "c": "FICCD1121|mode|U",
+    "t": "MANUAL"
+   },
+   {
+    "c": "FICCD1120|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "FICCD1120|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "LICCD1110B|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "LICCD1110B|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "LICCD1104|mv|1| %",
+    "t": "16.8 %"
+   },
+   {
+    "c": "LICCD1104|mode|U",
+    "t": "AUTO"
+   }
+  ],
+  "st": [
+   {
+    "id": "CA",
+    "t": "RUNNING"
+   },
+   {
+    "id": "CB",
+    "t": "STOPPED"
+   }
+  ],
+  "md": [],
+  "mov": [
+   {
+    "m": "DITL-60|MV-MU1001|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-63|XV-CD1004|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-63|XV-CD1005|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-64|MV-CD1007|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-65|MV-CD1008|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-62|XV-CD1006|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-67|XV-CD1123|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-68|XV-CD1125|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-66|XV-CD1114|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-71|MV-CD1003|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-69|MV-CD1001|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-70|MV-CD1002|pct",
+    "r": null,
+    "t": "100.0 %"
+   }
+  ],
+  "dox": [],
+  "go": [
+   {
+    "g": "CWN",
+    "t": "Circulating Water pageclick = open this "
+   },
+   {
+    "g": "MK02",
+    "t": "From Make-Up pageclick = open this page"
+   }
+  ]
+ },
+ "MK06": {
+  "v": [
+   {
+    "tag": "LT-CD1104-1",
+    "u": "",
+    "dp": "0",
+    "t": "71",
+    "ns": false,
+    "near": "Storage Tank T-1104 | low-low LSLL-CD1104-4 | H-1104"
+   },
+   {
+    "tag": "LT-CD1104-2",
+    "u": "",
+    "dp": "0",
+    "t": "60",
+    "ns": false,
+    "near": "Storage Tank T-1104 | low-low LSLL-CD1104-4 | H-1104"
+   },
+   {
+    "tag": "LT-CD1104-3",
+    "u": " mm",
+    "dp": "0",
+    "t": "65 mm",
+    "ns": false,
+    "near": "Storage Tank T-1104 | low-low LSLL-CD1104-4 | H-1104"
+   },
+   {
+    "tag": "PT-CD1104",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "5.14 kg/cm2",
+    "ns": false,
+    "near": "low-low LSLL-CD1104-4 | Storage Tank T-1104 | suction 12 in"
+   },
+   {
+    "tag": "PT-TS1017",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "5.13 kg/cm2",
+    "ns": false,
+    "near": "Heating steam: extraction 3 | Deaerator | H-1104"
+   },
+   {
+    "tag": "IT-P1115A",
+    "u": " A",
+    "dp": "1",
+    "t": "282.6 A",
+    "ns": false,
+    "near": "P-1115A · motor M-1115A · lube oil Z-1115A | Boiler Feed Pump A | Y"
+   },
+   {
+    "tag": "DPT-FW1115-A",
+    "u": "",
+    "dp": "2",
+    "t": "0.26",
+    "ns": false,
+    "near": "P-1115A · motor M-1115A · lube oil Z-1115A | Boiler Feed Pump A | Y"
+   },
+   {
+    "tag": "PT-FW1115-A",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "6.6 kg/cm2",
+    "ns": false,
+    "near": "P-1115A · motor M-1115A · lube oil Z-1115A | Boiler Feed Pump A | M"
+   },
+   {
+    "tag": "IT-P1115B",
+    "u": " A",
+    "dp": "1",
+    "t": "0.0 A",
+    "ns": false,
+    "near": "P-1115B · motor M-1115B · lube oil Z-1115B | Boiler Feed Pump B | Y"
+   },
+   {
+    "tag": "DPT-FW1115-B",
+    "u": "",
+    "dp": "2",
+    "t": "0.00",
+    "ns": false,
+    "near": "Boiler Feed Pump B | Y | M"
+   },
+   {
+    "tag": "PT-FW1115-B",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "7.0 kg/cm2",
+    "ns": false,
+    "near": "Y | Boiler Feed Pump B | M"
+   },
+   {
+    "tag": "PT-FW1011",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "169.4 kg/cm2",
+    "ns": false,
+    "near": "PT-FW1011 | TT-FW1011 | heater 1 drain in"
+   },
+   {
+    "tag": "TT-FW1011",
+    "u": " °C",
+    "dp": "0",
+    "t": "159 °C",
+    "ns": false,
+    "near": "TT-FW1011 | PT-FW1011 | M"
+   },
+   {
+    "tag": "LT-HD1105-1",
+    "u": "",
+    "dp": "0",
+    "t": "-9",
+    "ns": false,
+    "near": "LT-HD1105-1/2 | H-1105 | High Pressure Heater 1"
+   },
+   {
+    "tag": "LT-HD1105-2",
+    "u": " mm",
+    "dp": "0",
+    "t": "-3 mm",
+    "ns": false,
+    "near": "LT-HD1105-1/2 | H-1105 | High Pressure Heater 1"
+   },
+   {
+    "tag": "PT-TS1013",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "13.66 kg/cm2",
+    "ns": false,
+    "near": "Extraction 2 | TT-FW1105 | High Pressure Heater 1"
+   },
+   {
+    "tag": "TT-FW1105",
+    "u": " °C",
+    "dp": "0",
+    "t": "196 °C",
+    "ns": false,
+    "near": "TT-FW1105 | High Pressure Heater 2 | H-1106"
+   },
+   {
+    "tag": "LT-HD1106-1",
+    "u": "",
+    "dp": "0",
+    "t": "-4",
+    "ns": false,
+    "near": "LT-HD1106-1/2 | H-1106 | alternate LCV-HD1106-2"
+   },
+   {
+    "tag": "LT-HD1106-2",
+    "u": " mm",
+    "dp": "0",
+    "t": "3 mm",
+    "ns": false,
+    "near": "LT-HD1106-1/2 | H-1106 | TT-FW1106"
+   },
+   {
+    "tag": "TT-TS1011",
+    "u": " °C",
+    "dp": "0",
+    "t": "372 °C",
+    "ns": false,
+    "near": "bypass V-FW1017 | Cold reheat steam | TT-TS1011"
+   },
+   {
+    "tag": "TT-FW1106",
+    "u": " °C",
+    "dp": "0",
+    "t": "246 °C",
+    "ns": false,
+    "near": "TT-FW1106 | FT-FW1007-1/2 T/H | Main FCV-FW1130-1"
+   },
+   {
+    "tag": "FT-FW1007-1",
+    "u": "",
+    "dp": "1",
+    "t": "461.3",
+    "ns": false,
+    "near": "FT-FW1007-1/2 T/H | Feedwater flow | Start-up FCV-FW1130-2"
+   },
+   {
+    "tag": "FT-FW1007-2",
+    "u": "",
+    "dp": "1",
+    "t": "461.6",
+    "ns": false,
+    "near": "Feedwater flow | FT-FW1007-1/2 T/H | Start-up FCV-FW1130-2"
+   },
+   {
+    "tag": "PT-FW1160",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "136.4 kg/cm2",
+    "ns": false,
+    "near": "PT / TT-FW1160 | To economizer | Drum & Main Steam page"
+   },
+   {
+    "tag": "TT-FW1160",
+    "u": " °C",
+    "dp": "0",
+    "t": "246 °C",
+    "ns": false,
+    "near": "To economizer | PT / TT-FW1160 | Drum & Main Steam page"
+   },
+   {
+    "tag": "FT-FW1109",
+    "u": " T/H",
+    "dp": "1",
+    "t": "15.2 T/H",
+    "ns": false,
+    "near": "Superheater spray 1 | Drum level 1 element | Drum & Main Steam page"
+   },
+   {
+    "tag": "ZT-FW1110-1",
+    "u": " %",
+    "dp": "1",
+    "t": "10.9 %",
+    "ns": false,
+    "near": "Superheater spray 2 | Drum & Main Steam page | Superheater spray 1"
+   },
+   {
+    "tag": "ZT-FW1110-2",
+    "u": " %",
+    "dp": "1",
+    "t": "100.0 %",
+    "ns": false,
+    "near": "Superheater spray 2 | Drum & Main Steam page | Superheater spray 1"
+   },
+   {
+    "tag": "FT-FW1119",
+    "u": " T/H",
+    "dp": "1",
+    "t": "4.7 T/H",
+    "ns": false,
+    "near": "Superheater spray 2 | to superheater 1 and 2 outlet | desuperheaters (Drum & Main Steam)"
+   },
+   {
+    "tag": "ZT-FW1120-1",
+    "u": " %",
+    "dp": "1",
+    "t": "0.4 %",
+    "ns": false,
+    "near": "to superheater 1 and 2 outlet | desuperheaters (Drum & Main Steam) | Superheater spray 2"
+   },
+   {
+    "tag": "ZT-FW1120-2",
+    "u": " %",
+    "dp": "1",
+    "t": "83.4 %",
+    "ns": false,
+    "near": "to superheater 1 and 2 outlet | desuperheaters (Drum & Main Steam) | Superheater spray 2"
+   },
+   {
+    "tag": "FT-FW1149",
+    "u": " T/H",
+    "dp": "1",
+    "t": "0.0 T/H",
+    "ns": false,
+    "near": "Reheater inlet desuperheater | to condenser | HP turbine bypass desuperheater"
+   },
+   {
+    "tag": "FT-FW1059",
+    "u": " T/H",
+    "dp": "1",
+    "t": "0.0 T/H",
+    "ns": false,
+    "near": "HP turbine bypass desuperheater | Reheater inlet desuperheater | interstage"
+   }
+  ],
+  "ctl": [
+   {
+    "c": "LICHD11061|mv|1| %",
+    "t": "31.1 %"
+   },
+   {
+    "c": "LICHD11051|mv|1| %",
+    "t": "47.8 %"
+   },
+   {
+    "c": "LICBR1001B|mv|1| %",
+    "t": "0.6 %"
+   },
+   {
+    "c": "LICBR1001B|mode|U",
+    "t": "MANUAL"
+   },
+   {
+    "c": "FICFW1007|mv|1| %",
+    "t": "53.2 %"
+   },
+   {
+    "c": "FICFW1007|pv|1",
+    "t": "474.8"
+   },
+   {
+    "c": "FICFW1007|sv|1| T/H",
+    "t": "474.8 T/H"
+   },
+   {
+    "c": "LICBR1001|mv|1| %",
+    "t": "2.7 %"
+   },
+   {
+    "c": "LICBR1001|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "LICBR1001A|mv|1| %",
+    "t": "53.2 %"
+   },
+   {
+    "c": "LICBR1001A|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "TICBR1140|pv|0| °C",
+    "t": "462 °C"
+   },
+   {
+    "c": "TICBR1140|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "TICMS1004|pv|0| °C",
+    "t": "543 °C"
+   },
+   {
+    "c": "TICMS1004|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "TICHR1002|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "TICHR1002|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "TICMS1022|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "TICMS1022|mode|U",
+    "t": "MANUAL"
+   }
+  ],
+  "st": [
+   {
+    "id": "PA",
+    "t": "RUNNING"
+   },
+   {
+    "id": "PB",
+    "t": "STOPPED"
+   }
+  ],
+  "md": [],
+  "mov": [
+   {
+    "m": "DITL-96|MV-TS1003|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-38 #MV-FW1001|MV-FW1001|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-38 #MV-FW1391|MV-FW1391|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-38 #MV-FW1002|MV-FW1002|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-38 #MV-FW1392|MV-FW1392|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-95|MV-TS1002|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-94|MV-TS1001|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-32|XV-FW1111-1|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-32|XV-FW1111-1|md",
+    "r": null,
+    "t": "MANUAL"
+   },
+   {
+    "m": "DITL-32 #B|XV-FW1111-2|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-32 #B|XV-FW1111-2|md",
+    "r": null,
+    "t": "MANUAL"
+   },
+   {
+    "m": "DITL-33|XV-FW1121-1|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-33|XV-FW1121-1|md",
+    "r": null,
+    "t": "MANUAL"
+   },
+   {
+    "m": "DITL-33 #B|XV-FW1121-2|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-33 #B|XV-FW1121-2|md",
+    "r": null,
+    "t": "MANUAL"
+   },
+   {
+    "m": "DITL-35|XV-FW1151|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-79|XV-FW1061|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-97|MV-TS1004|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-98|MV-TS1005|pct",
+    "r": null,
+    "t": "100.0 %"
+   }
+  ],
+  "dox": [],
+  "go": [
+   {
+    "g": "MK05",
+    "t": "Condensate in (Condensate page)click = o"
+   }
+  ]
+ },
+ "MK07": {
+  "v": [
+   {
+    "tag": "PT-BR1001-1",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "133.3 kg/cm2",
+    "ns": false,
+    "near": "Steam Drum T-1001 | three element control | downcomers"
+   },
+   {
+    "tag": "LT-BR1001-1",
+    "u": "",
+    "dp": "0",
+    "t": "-84",
+    "ns": false,
+    "near": "three element control | Steam Drum T-1001 | downcomers"
+   },
+   {
+    "tag": "LT-BR1001-2",
+    "u": "",
+    "dp": "0",
+    "t": "-88",
+    "ns": false,
+    "near": "three element control | Steam Drum T-1001 | Back pass"
+   },
+   {
+    "tag": "LT-BR1001-3",
+    "u": "",
+    "dp": "0",
+    "t": "-80",
+    "ns": false,
+    "near": "three element control | Steam Drum T-1001 | Back pass"
+   },
+   {
+    "tag": "PT-FW1160",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "136.4 kg/cm2",
+    "ns": false,
+    "near": "PT / TT-FW1160 | Feedwater in (Feedwater page)click = open this page | Mass blowdown"
+   },
+   {
+    "tag": "TT-FW1160",
+    "u": " °C",
+    "dp": "0",
+    "t": "246 °C",
+    "ns": false,
+    "near": "PT / TT-FW1160 | Feedwater in (Feedwater page)click = open this page | Mass blowdown"
+   },
+   {
+    "tag": "TT-BR1020",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "TT-BR1020 | TT-BR1030 | Economizer 1"
+   },
+   {
+    "tag": "TT-BR1030",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "TT-BR1030 | TT-BR1040 | TT-BR1020"
+   },
+   {
+    "tag": "TT-BR1040",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "TT-BR1040 | chemical dosing and | TT-BR1030"
+   },
+   {
+    "tag": "TT-BR1110",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "TT-BR1110 | walls | panel 1"
+   },
+   {
+    "tag": "TT-BR1120-1",
+    "u": "",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "TT-BR1120-1/-2 | panel 1 | TT-BR1130-1/-2"
+   },
+   {
+    "tag": "TT-BR1120-2",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "TT-BR1120-1/-2 | TT-BR1130-1/-2 | PT-BR1130"
+   },
+   {
+    "tag": "FT-FW1109",
+    "u": " T/H",
+    "dp": "1",
+    "t": "15.2 T/H",
+    "ns": false,
+    "near": "from Feedwater pageclick = open this page | Superheater | panel 2"
+   },
+   {
+    "tag": "ZT-FW1110-1",
+    "u": " %",
+    "dp": "1",
+    "t": "10.9 %",
+    "ns": false,
+    "near": "from Feedwater pageclick = open this page | Superheater | panel 2"
+   },
+   {
+    "tag": "ZT-FW1110-2",
+    "u": " %",
+    "dp": "1",
+    "t": "100.0 %",
+    "ns": false,
+    "near": "from Feedwater pageclick = open this page | from Feedwater pageclick = open this page | Superheater"
+   },
+   {
+    "tag": "TT-BR1130-1",
+    "u": "",
+    "dp": "0",
+    "t": "389",
+    "ns": false,
+    "near": "TT-BR1130-1/-2 | PT-BR1130 | TT-BR1120-1/-2"
+   },
+   {
+    "tag": "TT-BR1130-2",
+    "u": " °C",
+    "dp": "0",
+    "t": "391 °C",
+    "ns": false,
+    "near": "TT-BR1130-1/-2 | PT-BR1130 | panel 2"
+   },
+   {
+    "tag": "PT-BR1130",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "PT-BR1130 | TT-BR1130-1/-2 | TT-BR1120-1/-2"
+   },
+   {
+    "tag": "TT-BR1140-1",
+    "u": "",
+    "dp": "0",
+    "t": "462",
+    "ns": false,
+    "near": "TT-BR1140-1/-2 | TT-BR1150-1/-2 | panel 2"
+   },
+   {
+    "tag": "TT-BR1140-2",
+    "u": " °C",
+    "dp": "0",
+    "t": "462 °C",
+    "ns": false,
+    "near": "TT-BR1140-1/-2 | TT-BR1150-1/-2 | PT-BR1150"
+   },
+   {
+    "tag": "FT-FW1119",
+    "u": " T/H",
+    "dp": "1",
+    "t": "4.7 T/H",
+    "ns": false,
+    "near": "from Feedwater pageclick = open this page | Final | superheater"
+   },
+   {
+    "tag": "ZT-FW1120-1",
+    "u": " %",
+    "dp": "1",
+    "t": "0.4 %",
+    "ns": false,
+    "near": "from Feedwater pageclick = open this page | Final | superheater"
+   },
+   {
+    "tag": "ZT-FW1120-2",
+    "u": " %",
+    "dp": "1",
+    "t": "83.4 %",
+    "ns": false,
+    "near": "from Feedwater pageclick = open this page | Final | superheater"
+   },
+   {
+    "tag": "TT-BR1150-1",
+    "u": "",
+    "dp": "0",
+    "t": "454",
+    "ns": false,
+    "near": "TT-BR1150-1/-2 | TT-BR1140-1/-2 | PT-BR1150"
+   },
+   {
+    "tag": "TT-BR1150-2",
+    "u": " °C",
+    "dp": "0",
+    "t": "452 °C",
+    "ns": false,
+    "near": "TT-BR1150-1/-2 | superheater | PT-BR1150"
+   },
+   {
+    "tag": "PT-BR1150",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "PT-BR1150 | TT-BR1150-1/-2 | TT-BR1140-1/-2"
+   },
+   {
+    "tag": "FT-MS1031",
+    "u": " T/H",
+    "dp": "1",
+    "t": "475.3 T/H",
+    "ns": false,
+    "near": "FT-MS1031 | silencer | Z-1003"
+   },
+   {
+    "tag": "PT-MS1002",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "122.4 kg/cm2",
+    "ns": false,
+    "near": "PT-MS1002 · TT-MS1004 | FT-MS1031 | PT-BR1150"
+   },
+   {
+    "tag": "PT-MS1006-1",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "121.9 kg/cm2",
+    "ns": false,
+    "near": "PT-MS1006 · TT-MS1007 | (Condensate page) | to condenserclick = open this page"
+   },
+   {
+    "tag": "TT-MS1007",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "drain pot DP-MS01 | PT-MS1006 · TT-MS1007 | (Condensate page)"
+   },
+   {
+    "tag": "FT-FW1059",
+    "u": " T/H",
+    "dp": "1",
+    "t": "0.0 T/H",
+    "ns": false,
+    "near": "spray TCV-FW1060 | from Feedwater pageclick = open this page | HP bypass"
+   },
+   {
+    "tag": "TT-MS1022-1",
+    "u": "",
+    "dp": "0",
+    "t": "359",
+    "ns": false,
+    "near": "TT-MS1022-1/-2 | PT-MS1021 | from Feedwater pageclick = open this page"
+   },
+   {
+    "tag": "TT-MS1022-2",
+    "u": " °C",
+    "dp": "0",
+    "t": "356 °C",
+    "ns": false,
+    "near": "TT-MS1022-1/-2 | PT-MS1021 | HP turbine"
+   },
+   {
+    "tag": "PT-MS1021",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "33.8 kg/cm2",
+    "ns": false,
+    "near": "PT-MS1021 | TT-MS1022-1/-2 | HP turbine"
+   },
+   {
+    "tag": "RPM",
+    "u": " rpm",
+    "dp": "0",
+    "t": "3600 rpm",
+    "ns": false,
+    "near": "HP turbine | cold reheat 24 in | ----- / -----"
+   },
+   {
+    "tag": "PT-CR1003",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "34.1 kg/cm2",
+    "ns": false,
+    "near": "PT-CR1003 · TT-CR1004 | to HP heater 2 (Feedwater page)click = open this page | G-1901"
+   },
+   {
+    "tag": "TT-CR1004",
+    "u": " °C",
+    "dp": "0",
+    "t": "372 °C",
+    "ns": false,
+    "near": "PT-CR1003 · TT-CR1004 | DP-CR01 | PT-MS1021"
+   },
+   {
+    "tag": "FT-FW1149",
+    "u": " T/H",
+    "dp": "1",
+    "t": "0.0 T/H",
+    "ns": false,
+    "near": "from Feedwater pageclick = open this page | Reheater desuperheater | T-1050"
+   },
+   {
+    "tag": "TT-CR1005-1",
+    "u": "",
+    "dp": "0",
+    "t": "372",
+    "ns": false,
+    "near": "TT-CR1005-1/-2 | PT-CR1006 | reheat stop / intercept"
+   },
+   {
+    "tag": "TT-CR1005-2",
+    "u": " °C",
+    "dp": "0",
+    "t": "372 °C",
+    "ns": false,
+    "near": "TT-CR1005-1/-2 | PT-CR1006 | reheat stop / intercept"
+   },
+   {
+    "tag": "PT-CR1006",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "33.7 kg/cm2",
+    "ns": false,
+    "near": "PT-CR1006 | TT-CR1005-1/-2 | out: top"
+   },
+   {
+    "tag": "TT-HR1002-1",
+    "u": "",
+    "dp": "0",
+    "t": "538",
+    "ns": false,
+    "near": "TT-HR1002-1/-2 | PT-HR1001 | PT-HR1003-1/-2 · TT-HR1004"
+   },
+   {
+    "tag": "TT-HR1002-2",
+    "u": " °C",
+    "dp": "0",
+    "t": "538 °C",
+    "ns": false,
+    "near": "PT-HR1001 | TT-HR1002-1/-2 | PT-HR1003-1/-2 · TT-HR1004"
+   },
+   {
+    "tag": "PT-HR1001",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "PT-HR1001 | PT-HR1003-1/-2 · TT-HR1004 | TT-HR1002-1/-2"
+   },
+   {
+    "tag": "PT-HR1003-1",
+    "u": "",
+    "dp": "1",
+    "t": "33.2",
+    "ns": false,
+    "near": "PT-HR1003-1/-2 · TT-HR1004 | PT-HR1001 | safety"
+   },
+   {
+    "tag": "PT-HR1003-2",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "33.3 kg/cm2",
+    "ns": false,
+    "near": "PT-HR1003-1/-2 · TT-HR1004 | safety | ZV-HR1001/2/3"
+   },
+   {
+    "tag": "TT-HR1004",
+    "u": " °C",
+    "dp": "0",
+    "t": "537 °C",
+    "ns": false,
+    "near": "safety | ZV-HR1001/2/3 | PT-HR1003-1/-2 · TT-HR1004"
+   }
+  ],
+  "ctl": [
+   {
+    "c": "LICBR1001B|pv|0| mm",
+    "t": "0 mm"
+   },
+   {
+    "c": "HICBR1391|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "TICMS1004|pv|0| °C",
+    "t": "543 °C"
+   },
+   {
+    "c": "PICMS1002|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "PICMS1002|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "PICMS1006|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "TICMS1022|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "TICMS1022|mode|U",
+    "t": "MANUAL"
+   },
+   {
+    "c": "TICHR1002|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "TICHR1002|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "PICHR1391|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "PICHR1003|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "TICHR1012|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "TICHR1012|mode|U",
+    "t": "MANUAL"
+   }
+  ],
+  "st": [],
+  "md": [],
+  "mov": [
+   {
+    "m": "DITL-38 #MV-BD1002|MV-BD1002|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-38|MV-BD1001|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-38 #MV-MS1391|MV-MS1391|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-38 #MV-MS1391|MV-MS1391|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-38 #MV-MS1392|MV-MS1392|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-88|XV-MS1011|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-73|XV-CR1011|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-94|MV-TS1001|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-80|XV-HR1021|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-81|XV-HR1022|oc",
+    "r": null,
+    "t": "CLOSED"
+   }
+  ],
+  "dox": [],
+  "go": [
+   {
+    "g": "MK06",
+    "t": "Feedwater in (Feedwater page)click = ope"
+   },
+   {
+    "g": "MK06",
+    "t": "from Feedwater pageclick = open this pag"
+   },
+   {
+    "g": "MK06",
+    "t": "from Feedwater pageclick = open this pag"
+   },
+   {
+    "g": "MK06",
+    "t": "from Feedwater pageclick = open this pag"
+   },
+   {
+    "g": "MK06",
+    "t": "to HP heater 2 (Feedwater page)click = o"
+   },
+   {
+    "g": "MK06",
+    "t": "from Feedwater pageclick = open this pag"
+   },
+   {
+    "g": "MK05",
+    "t": "to condenserclick = open this page"
+   },
+   {
+    "g": "MK05",
+    "t": "from Condensate pageclick = open this pa"
+   }
+  ]
+ },
+ "MK08": {
+  "v": [
+   {
+    "tag": "PT-AS1004",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "10.2 kg/cm2",
+    "ns": false,
+    "near": "PT-AS1004 · PT-AS1005 | TT-AS1003 | SOP: stable at 10 kg/cm2"
+   },
+   {
+    "tag": "TT-AS1003",
+    "u": " °C",
+    "dp": "0",
+    "t": "238 °C",
+    "ns": false,
+    "near": "TT-AS1003 | PT-AS1004 · PT-AS1005 | AS-1-008"
+   },
+   {
+    "tag": "TT-AS1001",
+    "u": " °C",
+    "dp": "0",
+    "t": "31 °C",
+    "ns": false,
+    "near": "TT-AS1001 | spray TCV-CD1124 | Aux steam header 12 in"
+   },
+   {
+    "tag": "ZT-AS1020-1",
+    "u": " %",
+    "dp": "1",
+    "t": "0.0 %",
+    "ns": false,
+    "near": "from Condensate pageclick = open this page | M | MV-AS1396"
+   },
+   {
+    "tag": "ZT-AS1020-2",
+    "u": " %",
+    "dp": "1",
+    "t": "14.4 %",
+    "ns": false,
+    "near": "M | MV-AS1396 | Unit 2 aux steam tie AS-0-011 6 in"
+   },
+   {
+    "tag": "TT-CD1119",
+    "u": " °C",
+    "dp": "0",
+    "t": "37 °C",
+    "ns": false,
+    "near": "Air ejector condenser H-1119 | drains to flash chamber | air AV-1-005 6 in to ejector suction"
+   },
+   {
+    "tag": "PT-CD1110",
+    "u": " kg/cm2 abs  PT-CD1110",
+    "dp": "3",
+    "t": "0.073 kg/cm2 abs  PT-CD1110",
+    "ns": false,
+    "near": "Condenser H-1110 | hot well and pumps: Condensate pageclick = open this page | seal water V-MU1020"
+   },
+   {
+    "tag": "PTST11101",
+    "u": "",
+    "dp": "3",
+    "t": "0.073",
+    "ns": false,
+    "near": "Condenser H-1110 | hot well and pumps: Condensate pageclick = open this page | FV-GS1036 to LP heater 1"
+   },
+   {
+    "tag": "PTST11102",
+    "u": "",
+    "dp": "3",
+    "t": "0.073",
+    "ns": false,
+    "near": "Condenser H-1110 | hot well and pumps: Condensate pageclick = open this page | FV-GS1036 to LP heater 1"
+   },
+   {
+    "tag": "PTST11103",
+    "u": "",
+    "dp": "3",
+    "t": "0.073",
+    "ns": false,
+    "near": "Condenser H-1110 | hot well and pumps: Condensate pageclick = open this page | FV-GS1036 to LP heater 1"
+   },
+   {
+    "tag": "TEST11101",
+    "u": "",
+    "dp": "0",
+    "t": "40",
+    "ns": false,
+    "near": "hot well and pumps: Condensate pageclick = open this page | Condenser H-1110 | FV-GS1036 to LP heater 1"
+   },
+   {
+    "tag": "TEST11102",
+    "u": "",
+    "dp": "0",
+    "t": "40",
+    "ns": false,
+    "near": "hot well and pumps: Condensate pageclick = open this page | Condenser H-1110 | FV-GS1036 to LP heater 1"
+   },
+   {
+    "tag": "TEST11103",
+    "u": " °C",
+    "dp": "0",
+    "t": "40 °C",
+    "ns": false,
+    "near": "hot well and pumps: Condensate pageclick = open this page | Condenser H-1110 | FV-GS1036 to LP heater 1"
+   },
+   {
+    "tag": "TT-AS1015",
+    "u": " °C",
+    "dp": "0",
+    "t": "259 °C",
+    "ns": false,
+    "near": "TT-AS1015 | Drain separator T-1125 | AS-1-008"
+   },
+   {
+    "tag": "ZT-AS1011",
+    "u": " %",
+    "dp": "1",
+    "t": "0.0 %",
+    "ns": false,
+    "near": "to cold reheat: HP turbine warming | M | Gland steam header 8 in"
+   },
+   {
+    "tag": "PV-GS1031",
+    "u": " %",
+    "dp": "1",
+    "t": "0.0 %",
+    "ns": false,
+    "near": "PV-GS1031 | MV-GS1030 | PT-GS1001-1/-2"
+   },
+   {
+    "tag": "PTGS10011",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "0.32 kg/cm2",
+    "ns": false,
+    "near": "PT-GS1001-1/-2 | Gland steam header 8 in | PV-GS1031"
+   },
+   {
+    "tag": "TEGS1002",
+    "u": "",
+    "dp": "0",
+    "t": "366",
+    "ns": false,
+    "near": "TEGS1002 / 1003 | TT-AS1017 | ZV-GS1037"
+   },
+   {
+    "tag": "TEGS1003",
+    "u": " °C",
+    "dp": "0",
+    "t": "364 °C",
+    "ns": false,
+    "near": "TEGS1002 / 1003 | ZV-GS1037 | TT-AS1017"
+   },
+   {
+    "tag": "PV-GS1034",
+    "u": " %",
+    "dp": "1",
+    "t": "37.1 %",
+    "ns": false,
+    "near": "unloading | ZV-GS1037 | FV-GS1036 to LP heater 1"
+   },
+   {
+    "tag": "TT-AS1017",
+    "u": " °C",
+    "dp": "0",
+    "t": "186 °C",
+    "ns": false,
+    "near": "TT-AS1017 | TEGS1002 / 1003 | No. 2"
+   },
+   {
+    "tag": "TT-CD1120",
+    "u": " °C",
+    "dp": "0",
+    "t": "38 °C",
+    "ns": false,
+    "near": "G-19XX | Gland steam condenser | M"
+   }
+  ],
+  "ctl": [
+   {
+    "c": "PICAS1004|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "PICAS1004|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "TICAS1001|mv|1| %",
+    "t": "0.1 %"
+   },
+   {
+    "c": "TICAS1001|mode|U",
+    "t": "MANUAL"
+   },
+   {
+    "c": "PICAS1004|sv|1| kg/cm2",
+    "t": "9.4 kg/cm2"
+   },
+   {
+    "c": "PICAS1004|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "PICAS1005|sv|1| kg/cm2",
+    "t": "10.2 kg/cm2"
+   },
+   {
+    "c": "PICAS1005|mv|1| %",
+    "t": "1.9 %"
+   },
+   {
+    "c": "PICAS1005|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "PICCD1104|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "PICCD1104|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "TICAS1017|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "TICAS1017|mode|U",
+    "t": "AUTO"
+   }
+  ],
+  "st": [],
+  "md": [],
+  "mov": [
+   {
+    "m": "DITL-51|MV-AS1391|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-51|MV-AS1391|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-67|XV-CD1123|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-52|MV-AS1392|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-54|MV-AS1395|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-54|MV-AS1395|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-55|MV-AS1396|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-55|MV-AS1396|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-56|MV-AV1391|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-68|XV-CD1125|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-53|MV-AS1393|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-75|MV-AS1394|pct",
+    "r": null,
+    "t": "0.0 %"
+   }
+  ],
+  "dox": [],
+  "go": [
+   {
+    "g": "MK07",
+    "t": "from main steam (Drum & Main Steam page)"
+   },
+   {
+    "g": "MK05",
+    "t": "from Condensate pageclick = open this pa"
+   },
+   {
+    "g": "MK07",
+    "t": "from cold reheat (Drum & Main Steam page"
+   },
+   {
+    "g": "MK06",
+    "t": "to deaerator pegging (Feedwater page)cli"
+   },
+   {
+    "g": "MK05",
+    "t": "hot well and pumps: Condensate pageclick"
+   },
+   {
+    "g": "MK05",
+    "t": "from Condensate pageclick = open this pa"
+   }
+  ]
+ },
+ "MK09": {
+  "v": [
+   {
+    "tag": "PT-FG1085",
+    "u": "",
+    "dp": "0",
+    "t": "-17",
+    "ns": false,
+    "near": "PT-FG1085/1086/1087 | pressure, mmH2O | upper / lower average"
+   },
+   {
+    "tag": "PT-FG1086",
+    "u": "",
+    "dp": "0",
+    "t": "-18",
+    "ns": false,
+    "near": "pressure, mmH2O | PT-FG1085/1086/1087 | upper / lower average"
+   },
+   {
+    "tag": "PT-FG1087",
+    "u": "",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "pressure, mmH2O | PT-FG1085/1086/1087 | upper / lower average"
+   },
+   {
+    "tag": "TT-FG1091",
+    "u": "",
+    "dp": "0",
+    "t": "976",
+    "ns": false,
+    "near": "upper / lower average | TT-FG1091 / 1090 | PT-FG1085/1086/1087"
+   },
+   {
+    "tag": "TT-FG1090",
+    "u": " °C",
+    "dp": "0",
+    "t": "967 °C",
+    "ns": false,
+    "near": "TT-FG1091 / 1090 | upper / lower average | bed DP"
+   },
+   {
+    "tag": "DPT-FG1081",
+    "u": " mmH2O",
+    "dp": "0",
+    "t": "1460 mmH2O",
+    "ns": false,
+    "near": "DPT-FG1081 / 1082 | bed DP | TT-FG1091 / 1090"
+   },
+   {
+    "tag": "DPT-FG1084",
+    "u": "",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "DPT-FG1084 / 1184 | plenum to lower bed DP | lower to upper DP"
+   },
+   {
+    "tag": "DPT-FG1184",
+    "u": " mmH2O",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "DPT-FG1084 / 1184 | plenum to lower bed DP | lower to upper DP"
+   },
+   {
+    "tag": "DPT-FG1083",
+    "u": "",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "lower to upper DP | DPT-FG1083 / 1183 | DPT-FG1084 / 1184"
+   },
+   {
+    "tag": "DPT-FG1183",
+    "u": " mmH2O",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "lower to upper DP | DPT-FG1083 / 1183 | DPT-FG1084 / 1184"
+   },
+   {
+    "tag": "TT-FG1009-A",
+    "u": "",
+    "dp": "0",
+    "t": "901",
+    "ns": false,
+    "near": "solids down | TT-FG1009-A/B | pots"
+   },
+   {
+    "tag": "TT-FG1009-B",
+    "u": " °C",
+    "dp": "0",
+    "t": "901 °C",
+    "ns": false,
+    "near": "solids down | TT-FG1009-A/B | pots"
+   },
+   {
+    "tag": "PT-FG1009-A2",
+    "u": "",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "mmH2O PT-FG1009 | Seal pot | T-1009A/B"
+   },
+   {
+    "tag": "PT-FG1009-B2",
+    "u": "",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "mmH2O PT-FG1009 | Air preheater H-1052 (rotary) | Seal pot"
+   },
+   {
+    "tag": "TT-FG1095-A",
+    "u": "",
+    "dp": "0",
+    "t": "874",
+    "ns": false,
+    "near": "Back pass | Reheater 1 | Cyclone"
+   },
+   {
+    "tag": "TT-FG1095-B",
+    "u": " °C",
+    "dp": "0",
+    "t": "874 °C",
+    "ns": false,
+    "near": "Back pass | Reheater 1 | Final SH 1"
+   },
+   {
+    "tag": "TT-FG1110",
+    "u": "",
+    "dp": "0",
+    "t": "338",
+    "ns": false,
+    "near": "Economizer 1 (common) | TCV-FG1116A-D | TCV-FG1117A-D"
+   },
+   {
+    "tag": "TT-FG1113",
+    "u": " °C",
+    "dp": "0",
+    "t": "338 °C",
+    "ns": false,
+    "near": "Economizer 1 (common) | TCV-FG1117A-D | TCV-FG1116A-D"
+   },
+   {
+    "tag": "DPT-FG1052-5",
+    "u": " mmH2O",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "gas side | DPT-FG1052-5 | AT-FG1122 / 1123"
+   },
+   {
+    "tag": "TT-FG1124",
+    "u": "",
+    "dp": "0",
+    "t": "298",
+    "ns": false,
+    "near": "TT-FG1124 / 1125 · PT-FG1121 | AT-FG1122 / 1123 | gas side"
+   },
+   {
+    "tag": "TT-FG1125",
+    "u": " °C",
+    "dp": "0",
+    "t": "298 °C",
+    "ns": false,
+    "near": "TT-FG1124 / 1125 · PT-FG1121 | AT-FG1122 / 1123 | gas side"
+   },
+   {
+    "tag": "PT-FG1121",
+    "u": " mmH2O",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "TT-FG1124 / 1125 · PT-FG1121 | AT-FG1122 / 1123 | gas side"
+   },
+   {
+    "tag": "AT-FG1122",
+    "u": "",
+    "dp": "1",
+    "t": "3.6",
+    "ns": false,
+    "near": "AT-FG1122 / 1123 | TT-FG1124 / 1125 · PT-FG1121 | gas side"
+   },
+   {
+    "tag": "AT-FG1123",
+    "u": " %",
+    "dp": "1",
+    "t": "3.6 %",
+    "ns": false,
+    "near": "AT-FG1122 / 1123 | TT-FG1124 / 1125 · PT-FG1121 | gas side"
+   },
+   {
+    "tag": "TT-FG1132",
+    "u": "",
+    "dp": "0",
+    "t": "125",
+    "ns": false,
+    "near": "TT-FG1132 / 1133 · PT-FG1134 · AT-FG1131 | Precipitator Z-1010 | ESP & Ash page"
+   },
+   {
+    "tag": "TT-FG1133",
+    "u": " °C",
+    "dp": "0",
+    "t": "125 °C",
+    "ns": false,
+    "near": "TT-FG1132 / 1133 · PT-FG1134 · AT-FG1131 | Precipitator Z-1010 | ESP & Ash page"
+   },
+   {
+    "tag": "PT-FG1134",
+    "u": " mmH2O",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "TT-FG1132 / 1133 · PT-FG1134 · AT-FG1131 | ESP & Ash page | Precipitator Z-1010"
+   },
+   {
+    "tag": "AT-FG1131",
+    "u": " %",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "ESP & Ash page | Precipitator Z-1010 | TT-FG1132 / 1133 · PT-FG1134 · AT-FG1131"
+   },
+   {
+    "tag": "PT-FG1141-A",
+    "u": "",
+    "dp": "0",
+    "t": "-410",
+    "ns": false,
+    "near": "PT-FG1141-A/B | TT-FG1152 · PT-FG1151 | Precipitator Z-1010"
+   },
+   {
+    "tag": "PT-FG1141-B",
+    "u": " mmH2O",
+    "dp": "0",
+    "t": "-417 mmH2O",
+    "ns": false,
+    "near": "PT-FG1141-A/B | TT-FG1152 · PT-FG1151 | damper"
+   },
+   {
+    "tag": "IT-F1056",
+    "u": " A",
+    "dp": "1",
+    "t": "187.7 A",
+    "ns": false,
+    "near": "ID fan F-1056 | damper | Stack Z-1057"
+   },
+   {
+    "tag": "TT-FG1152",
+    "u": " °C",
+    "dp": "0",
+    "t": "131 °C",
+    "ns": false,
+    "near": "TT-FG1152 · PT-FG1151 | PT-FG1141-A/B | damper"
+   },
+   {
+    "tag": "PT-FG1151",
+    "u": " mmH2O",
+    "dp": "0",
+    "t": "-6 mmH2O",
+    "ns": false,
+    "near": "TT-FG1152 · PT-FG1151 | PT-FG1141-A/B | Stack Z-1057"
+   },
+   {
+    "tag": "AT-FG1057-4",
+    "u": " %",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "O2 | NOx | FG1057-1 to -8"
+   },
+   {
+    "tag": "AT-FG1057-2",
+    "u": " ppm",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "NOx | SOx | O2"
+   },
+   {
+    "tag": "AT-FG1057-1",
+    "u": " ppm",
+    "dp": "0",
+    "t": "500 ppm",
+    "ns": false,
+    "near": "SOx | NOx | CO"
+   },
+   {
+    "tag": "AT-FG1057-3",
+    "u": " ppm",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "CO | opacity | SOx"
+   },
+   {
+    "tag": "AT-FG1057-6",
+    "u": " %",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "opacity | dust | CO"
+   },
+   {
+    "tag": "AT-FG1057-5",
+    "u": " mg/m3",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "dust | opacity | temperature"
+   },
+   {
+    "tag": "TT-FG1057-8",
+    "u": " °C",
+    "dp": "0",
+    "t": "131 °C",
+    "ns": false,
+    "near": "temperature | velocity | dust"
+   },
+   {
+    "tag": "FT-FG1057-7",
+    "u": " m/s",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "velocity | temperature | dust"
+   },
+   {
+    "tag": "TT-FA1087",
+    "u": "",
+    "dp": "0",
+    "t": "279",
+    "ns": false,
+    "near": "TT-FA1087 / 1086 · PT-FA1088 | hot secondary air to 22 wall dampers | T-1009A/B"
+   },
+   {
+    "tag": "TT-FA1086",
+    "u": " °C",
+    "dp": "0",
+    "t": "279 °C",
+    "ns": false,
+    "near": "TT-FA1087 / 1086 · PT-FA1088 | hot secondary air to 22 wall dampers | T-1009A/B"
+   },
+   {
+    "tag": "PT-FA1088",
+    "u": " mmH2O",
+    "dp": "0",
+    "t": "1056 mmH2O",
+    "ns": false,
+    "near": "TT-FA1087 / 1086 · PT-FA1088 | hot secondary air to 22 wall dampers | cold in bottom"
+   },
+   {
+    "tag": "FT-FA1079",
+    "u": " T/H",
+    "dp": "1",
+    "t": "344.0 T/H",
+    "ns": false,
+    "near": "TT-FA1076 / 1077 · PT-FA1078 | to coal pipes 28 in | TT-FA1087 / 1086 · PT-FA1088"
+   },
+   {
+    "tag": "TT-FA1076",
+    "u": "",
+    "dp": "0",
+    "t": "265",
+    "ns": false,
+    "near": "to coal pipes 28 in | TT-FA1076 / 1077 · PT-FA1078 | to coal feeders 10 in"
+   },
+   {
+    "tag": "TT-FA1077",
+    "u": " °C",
+    "dp": "0",
+    "t": "265 °C",
+    "ns": false,
+    "near": "to coal pipes 28 in | TT-FA1076 / 1077 · PT-FA1078 | to coal feeders 10 in"
+   },
+   {
+    "tag": "PT-FA1078",
+    "u": " mmH2O",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "to coal pipes 28 in | TT-FA1076 / 1077 · PT-FA1078 | hot out left"
+   },
+   {
+    "tag": "IT-F1053",
+    "u": " A",
+    "dp": "1",
+    "t": "267.1 A",
+    "ns": false,
+    "near": "to coal feeders 10 in | to coal pipes 28 in | TT-FA1076 / 1077 · PT-FA1078"
+   },
+   {
+    "tag": "TT-FA1072",
+    "u": " °C",
+    "dp": "0",
+    "t": "30 °C",
+    "ns": false,
+    "near": "to coal feeders 10 in | Primary air fan F-1053 | MAKE-UP WATER"
+   },
+   {
+    "tag": "PT-FA1075",
+    "u": " mmH2O",
+    "dp": "0",
+    "t": "1649 mmH2O",
+    "ns": false,
+    "near": "to coal feeders 10 in | MAKE-UP WATER | 036 TURBINE OIL"
+   },
+   {
+    "tag": "TT-FA1073",
+    "u": "",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "to coal feeders 10 in | INSTRUMENT & PLANT AIR | 036 TURBINE OIL"
+   },
+   {
+    "tag": "TT-FA1074",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "to coal feeders 10 in | INSTRUMENT & PLANT AIR | 036 TURBINE OIL"
+   },
+   {
+    "tag": "IT-F1054",
+    "u": " A",
+    "dp": "1",
+    "t": "98.0 A",
+    "ns": false,
+    "near": "MAKE-UP WATER | 036 TURBINE OIL | 030 SEAWATER"
+   },
+   {
+    "tag": "TT-FA1082",
+    "u": " °C",
+    "dp": "0",
+    "t": "31 °C",
+    "ns": false,
+    "near": "MAKE-UP WATER | 030 SEAWATER | 036 TURBINE OIL"
+   },
+   {
+    "tag": "PT-FA1085",
+    "u": " mmH2O",
+    "dp": "0",
+    "t": "1157 mmH2O",
+    "ns": false,
+    "near": "MAKE-UP WATER | 036 TURBINE OIL | 030 SEAWATER"
+   },
+   {
+    "tag": "TT-FA1083",
+    "u": "",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "INSTRUMENT & PLANT AIR | 036 TURBINE OIL | MAKE-UP WATER"
+   },
+   {
+    "tag": "TT-FA1084",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "INSTRUMENT & PLANT AIR | 036 TURBINE OIL | 027 CLOSED COOLING WATER"
+   },
+   {
+    "tag": "IT-F1055A",
+    "u": " A",
+    "dp": "1",
+    "t": "36.7 A",
+    "ns": false,
+    "near": "Fluidizing air blowers F-1055A/B | AIR AND FLUE GAS | MSP"
+   },
+   {
+    "tag": "IT-F1055B",
+    "u": " A",
+    "dp": "1",
+    "t": "0.0 A",
+    "ns": false,
+    "near": "Fluidizing air blowers F-1055A/B | Furnace | AIR AND FLUE GAS"
+   },
+   {
+    "tag": "FT-FA1055",
+    "u": " T/H",
+    "dp": "1",
+    "t": "25.6 T/H",
+    "ns": false,
+    "near": "Fluidizing air blowers F-1055A/B | AIR AND FLUE GAS | MSP"
+   },
+   {
+    "tag": "PT-FA1055-A",
+    "u": "",
+    "dp": "0",
+    "t": "3080",
+    "ns": false,
+    "near": "Fluidizing air blowers F-1055A/B | Furnace | AIR AND FLUE GAS"
+   },
+   {
+    "tag": "PT-FA1055-B",
+    "u": " mmH2O",
+    "dp": "0",
+    "t": "3135 mmH2O",
+    "ns": false,
+    "near": "Furnace | Fluidizing air blowers F-1055A/B | H-1001 circulating bed"
+   },
+   {
+    "tag": "ABC-002|SI0060",
+    "u": " T/H",
+    "dp": "1",
+    "t": "569.9 T/H",
+    "ns": false,
+    "near": "----- / ----- | HYDRAULIC (ID fan coupling) | Stack monitor"
+   }
+  ],
+  "ctl": [
+   {
+    "c": "HICHR1002A|mv|1| %",
+    "t": "51.2 %"
+   },
+   {
+    "c": "HICHR1002B|mv|1| %",
+    "t": "54.2 %"
+   },
+   {
+    "c": "PICFG108|mv|1| %",
+    "t": "43.9 %"
+   },
+   {
+    "c": "PICFG108A|mv|1| %",
+    "t": "100.0 %"
+   },
+   {
+    "c": "PICFG108A|mode|U",
+    "t": "MANUAL"
+   },
+   {
+    "c": "FICFA1071|pv|1| T/H",
+    "t": "371.1 T/H"
+   },
+   {
+    "c": "FICFA1071|sv|1|",
+    "t": "370.8"
+   },
+   {
+    "c": "FICFA1071|mv|1| %",
+    "t": "37.3 %"
+   },
+   {
+    "c": "FICFA1081|pv|1| T/H",
+    "t": "172.6 T/H"
+   },
+   {
+    "c": "FICFA1081|sv|1|",
+    "t": "172.5"
+   },
+   {
+    "c": "FICFA1081|mv|1| %",
+    "t": "30.1 %"
+   },
+   {
+    "c": "FICFA1055A|mv|1| %",
+    "t": "42.8 %"
+   },
+   {
+    "c": "FICFA1055A|mode|U",
+    "t": "MANUAL"
+   },
+   {
+    "c": "FICFA1055B|mv|1| %",
+    "t": "24.9 %"
+   },
+   {
+    "c": "FICFA1055B|mode|U",
+    "t": "MANUAL"
+   },
+   {
+    "c": "AICFG112|sv|1| %",
+    "t": "3.5 %"
+   },
+   {
+    "c": "TICHR1002A|pv|0|",
+    "t": "538"
+   },
+   {
+    "c": "TICHR1002A|sv|0| °C",
+    "t": "538 °C"
+   },
+   {
+    "c": "HICHR1002A|mv|1| %",
+    "t": "51.2 %"
+   },
+   {
+    "c": "HICHR1002B|mv|1| %",
+    "t": "54.2 %"
+   },
+   {
+    "c": "HICHR1002A|mode|U",
+    "t": "AUTO"
+   }
+  ],
+  "st": [
+   {
+    "id": "APH",
+    "t": "RUN"
+   },
+   {
+    "id": "IDF",
+    "t": "RUNNING"
+   },
+   {
+    "id": "PAF",
+    "t": "RUNNING"
+   },
+   {
+    "id": "SAF",
+    "t": "RUNNING"
+   },
+   {
+    "id": "FA",
+    "t": "RUNNING"
+   },
+   {
+    "id": "FB",
+    "t": "STOPPED"
+   },
+   {
+    "id": "LOA",
+    "t": "STOPPED"
+   },
+   {
+    "id": "LOB",
+    "t": "RUNNING"
+   }
+  ],
+  "md": [],
+  "mov": [
+   {
+    "m": "DITL-28C|~TO SILENCE|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-28C|~TO SILENCE|md",
+    "r": null,
+    "t": "MANUAL"
+   },
+   {
+    "m": "DITL-28C #B|~TO SILENCE|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-28C #B|~TO SILENCE|md",
+    "r": null,
+    "t": "AUTO"
+   },
+   {
+    "m": "DITL-28C|~OUTLET SOV|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-28C|~OUTLET SOV|md",
+    "r": null,
+    "t": "MANUAL"
+   },
+   {
+    "m": "DITL-28C #B|~OUTLET SOV|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-28C #B|~OUTLET SOV|md",
+    "r": null,
+    "t": "AUTO"
+   }
+  ],
+  "dox": [],
+  "go": [
+   {
+    "g": "MK07",
+    "t": "tubes and steam side: Drum & Main Steam "
+   }
+  ]
+ },
+ "MK10": {
+  "v": [],
+  "ctl": [],
+  "st": [],
+  "md": [],
+  "mov": [],
+  "dox": [
+   {
+    "a": "DITL-02|15|OK|NO OK",
+    "t": "NO OK"
+   },
+   {
+    "a": "DITL-02|9|1|0",
+    "t": "0"
+   }
+  ],
+  "go": []
+ },
+ "MK11": {
+  "v": [
+   {
+    "tag": "LT-DO0701",
+    "u": " m",
+    "dp": "3",
+    "t": "4.978 m",
+    "ns": false,
+    "near": "LT-DO0701 | range 0 to 8.2 m | T-0701"
+   },
+   {
+    "tag": "DPT-DO0001",
+    "u": " kg/cm2",
+    "dp": "3",
+    "t": "0.029 kg/cm2",
+    "ns": false,
+    "near": "DPT-DO0001 strainer DP | V-DO0003 | V-DO0015"
+   },
+   {
+    "tag": "IT-P0702A",
+    "u": " A",
+    "dp": "1",
+    "t": "25.4 A",
+    "ns": false,
+    "near": "P-0702A | Diesel oil pump A | V-DO0007"
+   },
+   {
+    "tag": "IT-P0702B",
+    "u": " A",
+    "dp": "1",
+    "t": "0.0 A",
+    "ns": false,
+    "near": "P-0702B | Diesel oil pump B | V-DO0009"
+   },
+   {
+    "tag": "PT-DO0005",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "12.8 kg/cm2",
+    "ns": false,
+    "near": "PT-DO0005 pump outlet | alarm list cells 19.5 / 15.0 / 5 / 3 | DO-1-023"
+   },
+   {
+    "tag": "ZT-DO0002",
+    "u": " %",
+    "dp": "1",
+    "t": "24.2 %",
+    "ns": false,
+    "near": "PCV-DO0002 recirculation | PIC-DO0005 · ABC-028 | STR-DO0001"
+   },
+   {
+    "tag": "ZT-DO1012",
+    "u": " %",
+    "dp": "1",
+    "t": "100.0 %",
+    "ns": false,
+    "near": "FCV-DO1012 to burners | HIC-DO1012 · ABC-029 | to Unit 2"
+   },
+   {
+    "tag": "FT-DO1043-A",
+    "u": " T/H",
+    "dp": "2",
+    "t": "0.00 T/H",
+    "ns": false,
+    "near": "FT-DO1043-A | FCV-DO1043-A3 | XV-DO1043-A1 / A2"
+   },
+   {
+    "tag": "ZT-DO1043-A3",
+    "u": " %",
+    "dp": "1",
+    "t": "25.0 %",
+    "ns": false,
+    "near": "FCV-DO1043-A3 | CLOSED | XV-DO1043-A1 / A2"
+   },
+   {
+    "tag": "PT-DO1043-A2",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "0.0 kg/cm2",
+    "ns": false,
+    "near": "PT-DO1043-A2 | purge | XV-PA1043-A3"
+   },
+   {
+    "tag": "BT-DO1043-A",
+    "u": " %",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "flame | BT-DO1043-A | OFF · igniter OFF"
+   },
+   {
+    "tag": "FT-DO1043-B",
+    "u": " T/H",
+    "dp": "2",
+    "t": "0.00 T/H",
+    "ns": false,
+    "near": "FT-DO1043-B | FCV-DO1043-B3 | XV-DO1043-B1 / B2"
+   },
+   {
+    "tag": "ZT-DO1043-B3",
+    "u": " %",
+    "dp": "1",
+    "t": "25.0 %",
+    "ns": false,
+    "near": "FCV-DO1043-B3 | atomizing air | CLOSED"
+   },
+   {
+    "tag": "PT-DO1043-B2",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "0.0 kg/cm2",
+    "ns": false,
+    "near": "PT-DO1043-B2 | XV-PA1043-A2 CLOSED | purge"
+   },
+   {
+    "tag": "BT-DO1043-B",
+    "u": " %",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "flame | BT-DO1043-B | OFF · igniter OFF"
+   },
+   {
+    "tag": "FT-DO1043-C",
+    "u": " T/H",
+    "dp": "2",
+    "t": "0.00 T/H",
+    "ns": false,
+    "near": "FT-DO1043-C | FCV-DO1043-C3 | XV-DO1043-C1 / C2"
+   },
+   {
+    "tag": "ZT-DO1043-C3",
+    "u": " %",
+    "dp": "1",
+    "t": "25.0 %",
+    "ns": false,
+    "near": "FCV-DO1043-C3 | atomizing air | CLOSED"
+   },
+   {
+    "tag": "PT-DO1043-C2",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "0.0 kg/cm2",
+    "ns": false,
+    "near": "PT-DO1043-C2 | XV-PA1043-B2 CLOSED | purge"
+   },
+   {
+    "tag": "BT-DO1043-C",
+    "u": " %",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "flame | BT-DO1043-C | OFF · igniter OFF"
+   },
+   {
+    "tag": "FT-DO1043-D",
+    "u": " T/H",
+    "dp": "2",
+    "t": "0.00 T/H",
+    "ns": false,
+    "near": "FT-DO1043-D | FCV-DO1043-D3 | XV-DO1043-D1 / D2"
+   },
+   {
+    "tag": "ZT-DO1043-D3",
+    "u": " %",
+    "dp": "1",
+    "t": "25.0 %",
+    "ns": false,
+    "near": "FCV-DO1043-D3 | atomizing air | CLOSED"
+   },
+   {
+    "tag": "PT-DO1043-D2",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "0.0 kg/cm2",
+    "ns": false,
+    "near": "PT-DO1043-D2 | XV-PA1043-C2 CLOSED | purge"
+   },
+   {
+    "tag": "BT-DO1043-D",
+    "u": " %",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "flame | BT-DO1043-D | OFF · igniter OFF"
+   },
+   {
+    "tag": "ZT-DO1009",
+    "u": " %",
+    "dp": "1",
+    "t": "85.7 %",
+    "ns": false,
+    "near": "PCV-DO1009 oil return | PIC-DO1008 · ABC-029 | FT-DO1043-D"
+   },
+   {
+    "tag": "PT-DO1008",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "11.0 kg/cm2",
+    "ns": false,
+    "near": "PT-DO1008 | V-DO0007 | DO-1-023"
+   }
+  ],
+  "ctl": [
+   {
+    "c": "FIC-OM|mode|U",
+    "t": "MANUAL"
+   },
+   {
+    "c": "FIC-OM|pv|1|",
+    "t": "0.0"
+   },
+   {
+    "c": "FIC-OM|sv|1| T/H",
+    "t": "0.0 T/H"
+   },
+   {
+    "c": "FIC-OM|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "PICDO0005|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "HICDO1012|mode|U",
+    "t": "MANUAL"
+   },
+   {
+    "c": "FICFA1043A|pv|1| T/H",
+    "t": "30.9 T/H"
+   },
+   {
+    "c": "FICFA1043A|mv|1| %",
+    "t": "25.0 %"
+   },
+   {
+    "c": "FICFA1043A|mode|U",
+    "t": "MANUAL"
+   },
+   {
+    "c": "FICFA1043B|pv|1| T/H",
+    "t": "28.9 T/H"
+   },
+   {
+    "c": "FICFA1043B|mv|1| %",
+    "t": "25.0 %"
+   },
+   {
+    "c": "FICFA1043B|mode|U",
+    "t": "MANUAL"
+   },
+   {
+    "c": "FICFA1043C|pv|1| T/H",
+    "t": "28.6 T/H"
+   },
+   {
+    "c": "FICFA1043C|mv|1| %",
+    "t": "25.0 %"
+   },
+   {
+    "c": "FICFA1043C|mode|U",
+    "t": "MANUAL"
+   },
+   {
+    "c": "FICFA1043D|pv|1| T/H",
+    "t": "34.5 T/H"
+   },
+   {
+    "c": "FICFA1043D|mv|1| %",
+    "t": "25.0 %"
+   },
+   {
+    "c": "FICFA1043D|mode|U",
+    "t": "MANUAL"
+   },
+   {
+    "c": "PICDO1008|mode|U",
+    "t": "AUTO"
+   }
+  ],
+  "st": [
+   {
+    "id": "PA",
+    "t": "RUNNING"
+   },
+   {
+    "id": "PB",
+    "t": "STOPPED"
+   }
+  ],
+  "md": [
+   {
+    "id": "PA",
+    "t": "Remote · Manual"
+   },
+   {
+    "id": "PB",
+    "t": "Remote · Auto"
+   }
+  ],
+  "mov": [],
+  "dox": [],
+  "go": []
+ },
+ "MK12": {
+  "v": [
+   {
+    "tag": "LT-CL1008-A",
+    "u": " m",
+    "dp": "2",
+    "t": "-----",
+    "ns": false,
+    "near": "LT-CL1008-A | T-1008A | Coal bunker A"
+   },
+   {
+    "tag": "MIA-CL1061-A1",
+    "u": " T",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "FIC-CL1061A | OPEN | Coal feeder A"
+   },
+   {
+    "tag": "LT-CL1008-B",
+    "u": " m",
+    "dp": "2",
+    "t": "-----",
+    "ns": false,
+    "near": "LT-CL1008-B | T-1008B | Coal bunker B"
+   },
+   {
+    "tag": "MIA-CL1061-B1",
+    "u": " T",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "FIC-CL1061B | OPEN | Coal feeder B"
+   },
+   {
+    "tag": "LT-CL1008-C",
+    "u": " m",
+    "dp": "2",
+    "t": "-----",
+    "ns": false,
+    "near": "LT-CL1008-C | T-1008C | Coal bunker C"
+   },
+   {
+    "tag": "MIA-CL1061-C1",
+    "u": " T",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "FIC-CL1061C | OPEN | Coal feeder C"
+   },
+   {
+    "tag": "LT-LM1800",
+    "u": " %",
+    "dp": "1",
+    "t": "69.4 %",
+    "ns": false,
+    "near": "LT-LM1800 | T-1311 | Limestone silo"
+   },
+   {
+    "tag": "PT-LM1811",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "0.0 kg/cm2",
+    "ns": false,
+    "near": "PT-LM1811 | Lock vessel | PV-PA1811"
+   },
+   {
+    "tag": "PT-LM1812",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "0.1 kg/cm2",
+    "ns": false,
+    "near": "PT-LM1812 | vessel | Dispensing"
+   },
+   {
+    "tag": "LT-SD1800",
+    "u": " %",
+    "dp": "1",
+    "t": "50.1 %",
+    "ns": false,
+    "near": "LT-SD1800 | T-1300 | Sand silo"
+   },
+   {
+    "tag": "PT-SD1800",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "0.0 kg/cm2",
+    "ns": false,
+    "near": "PT-SD1800 | vessel S-1300 | Dense phase"
+   }
+  ],
+  "ctl": [
+   {
+    "c": "FICCL1061A|pv|1| T/H",
+    "t": "28.9 T/H"
+   },
+   {
+    "c": "FICCL1061A|sv|1|",
+    "t": "28.9"
+   },
+   {
+    "c": "FICCL1061A|mv|1| T/H",
+    "t": "28.9 T/H"
+   },
+   {
+    "c": "FICCL1061A|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "FICCL1061B|pv|1| T/H",
+    "t": "28.9 T/H"
+   },
+   {
+    "c": "FICCL1061B|sv|1|",
+    "t": "28.9"
+   },
+   {
+    "c": "FICCL1061B|mv|1| T/H",
+    "t": "28.9 T/H"
+   },
+   {
+    "c": "FICCL1061B|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "FICCL1061C|pv|1| T/H",
+    "t": "28.9 T/H"
+   },
+   {
+    "c": "FICCL1061C|sv|1|",
+    "t": "28.9"
+   },
+   {
+    "c": "FICCL1061C|mv|1| T/H",
+    "t": "28.9 T/H"
+   },
+   {
+    "c": "FICCL1061C|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "FIC-CM|mode|U",
+    "t": "REMOTE"
+   },
+   {
+    "c": "FIC-CM|pv|1|",
+    "t": "86.7"
+   },
+   {
+    "c": "FIC-CM|sv|1| T/H",
+    "t": "86.7 T/H"
+   },
+   {
+    "c": "FIC-CM|mv|1| %",
+    "t": "72.2 %"
+   },
+   {
+    "c": "HS-COAL|mode|U",
+    "t": "REMOTE"
+   },
+   {
+    "c": "HS-COAL|pv|1|",
+    "t": "83.6"
+   },
+   {
+    "c": "HS-COAL|sv|1| T/H",
+    "t": "82.6 T/H"
+   },
+   {
+    "c": "HS-COAL|mv|1| %",
+    "t": "37.8 %"
+   },
+   {
+    "c": "FIC-CM|pv|1| T/H",
+    "t": "86.7 T/H"
+   }
+  ],
+  "st": [
+   {
+    "id": "CFA",
+    "t": "RUNNING"
+   },
+   {
+    "id": "CFB",
+    "t": "RUNNING"
+   },
+   {
+    "id": "CFC",
+    "t": "RUNNING"
+   }
+  ],
+  "md": [],
+  "mov": [],
+  "dox": [
+   {
+    "a": "DITL-19|13|alarm: inlet plugging| |alarm",
+    "t": ""
+   },
+   {
+    "a": "DITL-19 #B|13|alarm: inlet plugging| |alarm",
+    "t": ""
+   },
+   {
+    "a": "DITL-19 #B|15|alarm: belt tracking| |alarm",
+    "t": ""
+   },
+   {
+    "a": "DITL-19 #C|13|alarm: inlet plugging| |alarm",
+    "t": ""
+   }
+  ],
+  "go": []
+ },
+ "MK13": {
+  "v": [
+   {
+    "tag": "PT-MS1006",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "PT-MS1006 · TT-MS1007 | main steam | ZIST1903A/B · ZIST1904A/B"
+   },
+   {
+    "tag": "TT-MS1007",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "PT-MS1006 · TT-MS1007 | main steam | ZIST1903A/B · ZIST1904A/B"
+   },
+   {
+    "tag": "ZI-CV",
+    "u": " %",
+    "dp": "1",
+    "t": "96.8 %",
+    "ns": false,
+    "near": "CV A / B | MSV A / B | OPEN / OPEN"
+   },
+   {
+    "tag": "ZI-ICV",
+    "u": " %",
+    "dp": "1",
+    "t": "100.0 %",
+    "ns": false,
+    "near": "ZIST1905A1~6 / B1~6 | IP-LP turbine | RSV A / B  OPEN / OPEN"
+   },
+   {
+    "tag": "GCP-AI1001",
+    "u": " MW",
+    "dp": "1",
+    "t": "151.0 MW",
+    "ns": false,
+    "near": "GCP-AI1001 | Generator | generator breaker"
+   },
+   {
+    "tag": "SI-TB",
+    "u": " rpm",
+    "dp": "0",
+    "t": "3600 rpm",
+    "ns": false,
+    "near": "snapshot 4.PNG | generator breaker | GCP-AI1001"
+   },
+   {
+    "tag": "GEN.VF",
+    "u": "",
+    "dp": "1",
+    "t": "46.0",
+    "ns": false,
+    "near": "line breaker | CLOSED | CLOSED"
+   },
+   {
+    "tag": "GEN.IF",
+    "u": "",
+    "dp": "1",
+    "t": "8.7",
+    "ns": false,
+    "near": "line breaker | CLOSED | CLOSED"
+   },
+   {
+    "tag": "GEN.KV",
+    "u": "",
+    "dp": "1",
+    "t": "13.8",
+    "ns": false,
+    "near": "snapshot 37.PNG | snapshot 4.PNG | generator breaker"
+   },
+   {
+    "tag": "GEN.KA",
+    "u": "",
+    "dp": "2",
+    "t": "6.47",
+    "ns": false,
+    "near": "snapshot 37.PNG | generator breaker | CLOSED"
+   },
+   {
+    "tag": "GEN.HZ",
+    "u": "",
+    "dp": "1",
+    "t": "60.0",
+    "ns": false,
+    "near": "snapshot 37.PNG | generator breaker | CLOSED"
+   },
+   {
+    "tag": "GEN.MVAR",
+    "u": "",
+    "dp": "1",
+    "t": "33.0",
+    "ns": false,
+    "near": "line breaker | CLOSED | CLOSED"
+   },
+   {
+    "tag": "GEN.PF",
+    "u": "",
+    "dp": "3",
+    "t": "0.977",
+    "ns": false,
+    "near": "line breaker | CLOSED | grid"
+   },
+   {
+    "tag": "VIST-MAX",
+    "u": "",
+    "dp": "3",
+    "t": "0.038",
+    "ns": false,
+    "near": "criteria 1.24 · VIST1001x / 1002x | ATS monitoring criteria (value now) | Differential expansion high · ----- mm"
+   },
+   {
+    "tag": "TT-HOOD",
+    "u": " °C",
+    "dp": "0",
+    "t": "36 °C",
+    "ns": false,
+    "near": "criteria 1.12 | criteria 1.28 · ZIST10021 / 10022 | Differential expansion high · ----- mm"
+   },
+   {
+    "tag": "PT-CD",
+    "u": " kg/cm2 abs",
+    "dp": "3",
+    "t": "0.073 kg/cm2 abs",
+    "ns": false,
+    "near": "criteria 1.11 · page 8 condenser | criteria 1.12 | criteria 1.15 · PTLO10031~33"
+   },
+   {
+    "tag": "PT-BRG",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "3.3 kg/cm2",
+    "ns": false,
+    "near": "criteria 1.15 · PTLO10031~33 | criteria 1.11 · page 8 condenser | Thermal stress high · NO-SOURCE"
+   },
+   {
+    "tag": "ZI-SEXP",
+    "u": " mm",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "ZIST1001 · ZIST10031 | criteria (number not printed) | Thermal stress high · NO-SOURCE"
+   },
+   {
+    "tag": "TIST-THF",
+    "u": "",
+    "dp": "0",
+    "t": "55",
+    "ns": false,
+    "near": "TIST10111 / 10112 / 10121 / 10122 | ZIST1001 · ZIST10031 | criteria (number not printed)"
+   },
+   {
+    "tag": "TIST-THR",
+    "u": "",
+    "dp": "0",
+    "t": "62",
+    "ns": false,
+    "near": "TIST10111 / 10112 / 10121 / 10122 | ZIST1001 · ZIST10031 | criteria (number not printed)"
+   },
+   {
+    "tag": "PT-LUBE",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "6.6 kg/cm2",
+    "ns": false,
+    "near": "PTLO1922A · 36.PNG | Oil and generator now | PTLO1931B · pump A running"
+   },
+   {
+    "tag": "PT-CTL",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "162.6 kg/cm2",
+    "ns": false,
+    "near": "PTLO1931B · pump A running | PTLO1922A · 36.PNG | PTLO1923"
+   },
+   {
+    "tag": "PT-EOP",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "0.0 kg/cm2",
+    "ns": false,
+    "near": "PTLO1923 | PTLO1931B · pump A running | PTLO10061 · PTLO10071"
+   },
+   {
+    "tag": "PT-CTL",
+    "u": "",
+    "dp": "1",
+    "t": "162.6",
+    "ns": false,
+    "near": "PTLO10061 · PTLO10071 | PTLO1923 | TILO10021 / 10022"
+   },
+   {
+    "tag": "PT-TRIP",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "162.6 kg/cm2",
+    "ns": false,
+    "near": "PTLO10061 · PTLO10071 | PTLO1923 | TILO10021 / 10022"
+   },
+   {
+    "tag": "TT-LOCOOL",
+    "u": " °C",
+    "dp": "0",
+    "t": "46 °C",
+    "ns": false,
+    "near": "TILO10021 / 10022 | PTLO10061 · PTLO10071 | GCP-AI1001 / 1002 · 0 to 240"
+   },
+   {
+    "tag": "GCP-AI1001",
+    "u": "",
+    "dp": "1",
+    "t": "151.0",
+    "ns": false,
+    "near": "GCP-AI1001 / 1002 · 0 to 240 | TILO10021 / 10022 | TIGE10061~66 · P35SHAFT.JPG"
+   },
+   {
+    "tag": "GCP-AI1002",
+    "u": " MW",
+    "dp": "1",
+    "t": "151.0 MW",
+    "ns": false,
+    "near": "GCP-AI1001 / 1002 · 0 to 240 | TILO10021 / 10022 | TIGE10061~66 · P35SHAFT.JPG"
+   },
+   {
+    "tag": "GEN.TSMAX",
+    "u": "",
+    "dp": "0",
+    "t": "99",
+    "ns": false,
+    "near": "TIGE10061~66 · P35SHAFT.JPG | GCP-AI1001 / 1002 · 0 to 240 | TIGE10041~44"
+   },
+   {
+    "tag": "GEN.TAIR",
+    "u": "",
+    "dp": "0",
+    "t": "41",
+    "ns": false,
+    "near": "TIGE10041~44 | TIGE10061~66 · P35SHAFT.JPG | GCP-AI1001 / 1002 · 0 to 240"
+   },
+   {
+    "tag": "GCP-AI1001",
+    "u": " MW",
+    "dp": "1",
+    "t": "151.0 MW",
+    "ns": false,
+    "near": "52G open, 41 open, turbine trip | generator load below 20 % (30 MW) | N"
+   }
+  ],
+  "ctl": [],
+  "st": [],
+  "md": [],
+  "mov": [],
+  "dox": [],
+  "go": []
+ },
+ "MK14": {
+  "v": [
+   {
+    "tag": "DPT-FG1081",
+    "u": "",
+    "dp": "0",
+    "t": "1460",
+    "ns": false,
+    "near": "----- | ----- | M"
+   },
+   {
+    "tag": "DPT-FG1082",
+    "u": " mmH2O",
+    "dp": "0",
+    "t": "1466 mmH2O",
+    "ns": false,
+    "near": "----- | ----- | M"
+   },
+   {
+    "tag": "PT-CW1156",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "PT / TT-CW1156 | cooling water | Ash cooler A"
+   },
+   {
+    "tag": "TT-CW1156",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "PT / TT-CW1156 | cooling water | Ash cooler A"
+   },
+   {
+    "tag": "TT-BH1060-A1",
+    "u": "",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "STOPPED · ----- A | L-1060A | STOPPED · ----- A"
+   },
+   {
+    "tag": "TT-BH1060-A2",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "STOPPED · ----- A | STOPPED · ----- A | L-1060B"
+   },
+   {
+    "tag": "TT-CW1060-A1",
+    "u": "",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "STOPPED · ----- A | L-1060A | Ash cooler A"
+   },
+   {
+    "tag": "TT-CW1060-A2",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "STOPPED · ----- A | L-1060A | STOPPED · ----- A"
+   },
+   {
+    "tag": "TT-BH1060-B1",
+    "u": "",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "STOPPED · ----- A | L-1060B | STOPPED · ----- A"
+   },
+   {
+    "tag": "TT-BH1060-B2",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "STOPPED · ----- A | STOPPED · ----- A | L-1060C"
+   },
+   {
+    "tag": "TT-CW1060-B1",
+    "u": "",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "STOPPED · ----- A | L-1060B | Ash cooler B"
+   },
+   {
+    "tag": "TT-CW1060-B2",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "STOPPED · ----- A | L-1060B | STOPPED · ----- A"
+   },
+   {
+    "tag": "TT-BH1060-C1",
+    "u": "",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "STOPPED · ----- A | L-1060C | STOPPED · ----- A"
+   },
+   {
+    "tag": "TT-BH1060-C2",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "STOPPED · ----- A | STOPPED · ----- A | L-1060D"
+   },
+   {
+    "tag": "TT-CW1060-C1",
+    "u": "",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "STOPPED · ----- A | L-1060C | Ash cooler C"
+   },
+   {
+    "tag": "TT-CW1060-C2",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "STOPPED · ----- A | L-1060C | STOPPED · ----- A"
+   },
+   {
+    "tag": "TT-BH1060-D1",
+    "u": "",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "STOPPED · ----- A | L-1060D | Ash cooler D"
+   },
+   {
+    "tag": "TT-BH1060-D2",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "STOPPED · ----- A | L-1060D | Ash cooler D"
+   },
+   {
+    "tag": "TT-CW1060-D1",
+    "u": "",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "STOPPED · ----- A | L-1060D | Ash cooler D"
+   },
+   {
+    "tag": "TT-CW1060-D2",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "STOPPED · ----- A | L-1060D | Ash cooler D"
+   },
+   {
+    "tag": "LT-BH1750",
+    "u": " %",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "LT-BH1750 | T-1090 | Bottom ash silo"
+   }
+  ],
+  "ctl": [
+   {
+    "c": "DPICFG108|pv|0| mmH2O",
+    "t": "1463 mmH2O"
+   },
+   {
+    "c": "DPICFG108|sv|0|",
+    "t": "1475"
+   },
+   {
+    "c": "DPICFG108|mv|1| %",
+    "t": "0.0 %"
+   },
+   {
+    "c": "DPICFG108|mode|U",
+    "t": "MANUAL"
+   },
+   {
+    "c": "SICL1060A|pv|1|",
+    "t": "0.0"
+   },
+   {
+    "c": "SICL1060A|sv|1| rpm",
+    "t": "0.6 rpm"
+   },
+   {
+    "c": "SICL1060A|mode|U",
+    "t": "MANUAL"
+   }
+  ],
+  "st": [],
+  "md": [],
+  "mov": [],
+  "dox": [],
+  "go": []
+ },
+ "MK15": {
+  "v": [
+   {
+    "tag": "PT-SB1052",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "0.1 kg/cm2",
+    "ns": false,
+    "near": "PT-SB1052 header | relief ZV-SB1001 to silencer (PD-019) | SB-1-005 3 in"
+   },
+   {
+    "tag": "PT-SB1040",
+    "u": "",
+    "dp": "1",
+    "t": "0.0",
+    "ns": false,
+    "near": "INSTRUMENT & PLANT AIR | air heater blower steam PT-SB1040 hot · PT-SB1042 cold | 036 TURBINE OIL"
+   },
+   {
+    "tag": "PT-SB1042",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "0.0 kg/cm2",
+    "ns": false,
+    "near": "INSTRUMENT & PLANT AIR | air heater blower steam PT-SB1040 hot · PT-SB1042 cold | air heater blowers: source STEAM selected (snapshot)"
+   },
+   {
+    "tag": "TT-SB1056",
+    "u": " °C",
+    "dp": "0",
+    "t": "107 °C",
+    "ns": false,
+    "near": "TT-SB1056 drain A | TRP-SB1003 | T"
+   },
+   {
+    "tag": "TT-SB1057",
+    "u": " °C",
+    "dp": "0",
+    "t": "105 °C",
+    "ns": false,
+    "near": "TT-SB1057 drain B | N-1042 | TRP-SB1002"
+   },
+   {
+    "tag": "IT-SB01",
+    "u": " A",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "IT-SB01 system current | program OFF, MANUAL mode | Forward ----- · reverse -----"
+   }
+  ],
+  "ctl": [
+   {
+    "c": "PICSB1052|mv|1| %",
+    "t": "0.2 %"
+   },
+   {
+    "c": "PICSB1052|mode|U",
+    "t": "MANUAL"
+   }
+  ],
+  "st": [],
+  "md": [],
+  "mov": [],
+  "dox": [],
+  "go": []
+ },
+ "MK16": {
+  "v": [
+   {
+    "tag": "AT-SP1001",
+    "u": "",
+    "dp": "1",
+    "t": "9.0",
+    "ns": false,
+    "near": "pH | AT-SP1003 | SP-1-002 · grab sample M2"
+   },
+   {
+    "tag": "AT-SP1002",
+    "u": " µS/cm",
+    "dp": "3",
+    "t": "0.055 µS/cm",
+    "ns": false,
+    "near": "cation cond. | dissolved O2 | AT-SP1002"
+   },
+   {
+    "tag": "AT-SP1003",
+    "u": "",
+    "dp": "1",
+    "t": "9.0",
+    "ns": false,
+    "near": "pH | AT-SP1006 | SP-1-003 · grab sample M3"
+   },
+   {
+    "tag": "AT-SP1004",
+    "u": " ppb",
+    "dp": "1",
+    "t": "10.0 ppb",
+    "ns": false,
+    "near": "specific cond. | AT-SP1007 | dissolved O2"
+   },
+   {
+    "tag": "AT-SP1005",
+    "u": " µS/cm",
+    "dp": "3",
+    "t": "0.055 µS/cm",
+    "ns": false,
+    "near": "cation cond. | silica | AT-SP1005"
+   },
+   {
+    "tag": "AT-SP1006",
+    "u": "",
+    "dp": "1",
+    "t": "7.5",
+    "ns": false,
+    "near": "pH | AT-SP1009 | SP-1-004 · grab sample M4"
+   },
+   {
+    "tag": "AT-SP1007",
+    "u": " µS/cm",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "dissolved O2 | AT-SP1010 | AT-SP1009"
+   },
+   {
+    "tag": "AT-SP1008",
+    "u": " ppb",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "AT-SP1010 | dissolved O2 | silica"
+   },
+   {
+    "tag": "AT-SP1009",
+    "u": "",
+    "dp": "1",
+    "t": "9.0",
+    "ns": false,
+    "near": "pH | AT-SP1011 | SP-1-005 · grab sample M5"
+   },
+   {
+    "tag": "AT-SP1010",
+    "u": " ppb",
+    "dp": "1",
+    "t": "0.0 ppb",
+    "ns": false,
+    "near": "specific cond. | AT-SP1012 | AT-SP1011"
+   },
+   {
+    "tag": "AT-SP1011",
+    "u": "",
+    "dp": "1",
+    "t": "9.5",
+    "ns": false,
+    "near": "specific cond. | AT-SP1014 | SP-1-006 · grab sample M6"
+   },
+   {
+    "tag": "AT-SP1012",
+    "u": " µS/cm",
+    "dp": "1",
+    "t": "19.1 µS/cm",
+    "ns": false,
+    "near": "silica | AT-SP1015 | specific cond."
+   },
+   {
+    "tag": "AT-SP1013",
+    "u": " ppb",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "AT-SP1015 | silica | silica"
+   },
+   {
+    "tag": "AT-SP1014",
+    "u": " µS/cm",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "pH | AT-SP1016 | SP-1-007 · grab sample M7"
+   },
+   {
+    "tag": "AT-SP1015",
+    "u": " ppb",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "silica | AT-SP1017 | AT-SP1016"
+   },
+   {
+    "tag": "AT-SP1016",
+    "u": "",
+    "dp": "1",
+    "t": "9.0",
+    "ns": false,
+    "near": "cation cond. 1 | AT-SP1018 | SP-1-008 · grab sample M8"
+   },
+   {
+    "tag": "AT-SP1017",
+    "u": " ppb",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "cation cond. 2 | AT-SP1019 | AT-SP1018"
+   },
+   {
+    "tag": "AT-SP1021",
+    "u": " µS/cm",
+    "dp": "3",
+    "t": "0.055 µS/cm",
+    "ns": false,
+    "near": "cation cond. | sodium | AT-SP1021"
+   },
+   {
+    "tag": "AT-SP1018",
+    "u": " µS/cm",
+    "dp": "3",
+    "t": "0.055 µS/cm",
+    "ns": false,
+    "near": "cation cond. 1 | AT-SP1018 | SP-1-008 · grab sample M8"
+   },
+   {
+    "tag": "AT-SP1019",
+    "u": " µS/cm",
+    "dp": "3",
+    "t": "0.055 µS/cm",
+    "ns": false,
+    "near": "cation cond. 2 | AT-SP1019 | AT-SP1018"
+   },
+   {
+    "tag": "AT-SP1020",
+    "u": " ppb",
+    "dp": "1",
+    "t": "0.0 ppb",
+    "ns": false,
+    "near": "sodium | AT-SP1020 | AT-SP1019"
+   }
+  ],
+  "ctl": [],
+  "st": [
+   {
+    "id": "TSPA",
+    "t": "RUNNING"
+   },
+   {
+    "id": "TSPB",
+    "t": "STOPPED"
+   },
+   {
+    "id": "AMNA",
+    "t": "RUNNING"
+   },
+   {
+    "id": "AMNB",
+    "t": "STOPPED"
+   },
+   {
+    "id": "CHZA",
+    "t": "RUNNING"
+   },
+   {
+    "id": "CHZB",
+    "t": "STOPPED"
+   }
+  ],
+  "md": [],
+  "mov": [],
+  "dox": [],
+  "go": []
+ },
+ "MK17": {
+  "v": [
+   {
+    "tag": "GCP-AI1001",
+    "u": " MW",
+    "dp": "1",
+    "t": "151.0 MW",
+    "ns": false,
+    "near": "Generator | G | CLOSED · -----"
+   },
+   {
+    "tag": "GEN.KV",
+    "u": "",
+    "dp": "1",
+    "t": "13.8",
+    "ns": false,
+    "near": "Generator | G | field breaker"
+   },
+   {
+    "tag": "GEN.VF",
+    "u": "",
+    "dp": "1",
+    "t": "46.0",
+    "ns": false,
+    "near": "TCA312-A4 · TCA313-A1 | field current to the rotor | CLOSED"
+   },
+   {
+    "tag": "GEN.IF",
+    "u": "",
+    "dp": "1",
+    "t": "8.7",
+    "ns": false,
+    "near": "TCA312-A4 · TCA313-A1 | field current to the rotor | Energy"
+   },
+   {
+    "tag": "GCP-AI1001",
+    "u": " MW",
+    "dp": "1",
+    "t": "151.0 MW",
+    "ns": false,
+    "near": "GCP-AI1001 | GCP-AI1002 | TCA320A1"
+   },
+   {
+    "tag": "GCP-AI1002",
+    "u": " MW",
+    "dp": "1",
+    "t": "151.0 MW",
+    "ns": false,
+    "near": "GCP-AI1002 | GCP-AI1001 | TCA320A1"
+   },
+   {
+    "tag": "GEN.MVAR",
+    "u": "",
+    "dp": "1",
+    "t": "33.0",
+    "ns": false,
+    "near": "TCA320A1 | GCP-AI1002 | TCA320A2"
+   },
+   {
+    "tag": "GEN.PF",
+    "u": "",
+    "dp": "3",
+    "t": "0.977",
+    "ns": false,
+    "near": "TCA320A2 | TCA320A1 | TCA321A1"
+   },
+   {
+    "tag": "GEN.HZ",
+    "u": "",
+    "dp": "1",
+    "t": "60.0",
+    "ns": false,
+    "near": "TCA321A1 | TCA320A2 | TCA310_A2"
+   },
+   {
+    "tag": "GEN.KV",
+    "u": "",
+    "dp": "1",
+    "t": "13.8",
+    "ns": false,
+    "near": "TCA310_A2 | TCA321A1 | TCA312A2"
+   },
+   {
+    "tag": "GEN.KV",
+    "u": "",
+    "dp": "1",
+    "t": "13.8",
+    "ns": false,
+    "near": "TCA312A2 | TCA310_A2 | TCA314A1"
+   },
+   {
+    "tag": "GEN.KV",
+    "u": "",
+    "dp": "1",
+    "t": "13.8",
+    "ns": false,
+    "near": "TCA314A1 | TCA312A2 | TCA310_A3"
+   },
+   {
+    "tag": "GEN.KA",
+    "u": "",
+    "dp": "2",
+    "t": "6.47",
+    "ns": false,
+    "near": "TCA310_A3 | TCA314A1 | TCA312A3"
+   },
+   {
+    "tag": "GEN.KA",
+    "u": "",
+    "dp": "2",
+    "t": "6.47",
+    "ns": false,
+    "near": "TCA312A3 | TCA310_A3 | TCA314A2"
+   },
+   {
+    "tag": "GEN.KA",
+    "u": "",
+    "dp": "2",
+    "t": "6.47",
+    "ns": false,
+    "near": "TCA314A2 | TCA312A3 | TCA312-A4"
+   },
+   {
+    "tag": "GEN.VF",
+    "u": "",
+    "dp": "1",
+    "t": "46.0",
+    "ns": false,
+    "near": "TCA312-A4 | TCA314A2 | TCA313-A1"
+   },
+   {
+    "tag": "GEN.IF",
+    "u": "",
+    "dp": "1",
+    "t": "8.7",
+    "ns": false,
+    "near": "TCA313-A1 | TCA312-A4 | TCA775_A1"
+   },
+   {
+    "tag": "GEN.MWH",
+    "u": "",
+    "dp": "0",
+    "t": "7267415",
+    "ns": false,
+    "near": "TCA775_A1 | TCA313-A1 | TCA775_A2"
+   },
+   {
+    "tag": "GEN.MVARH",
+    "u": "",
+    "dp": "0",
+    "t": "883249",
+    "ns": false,
+    "near": "TCA775_A2 | TCA775_A1 | Reactive energy"
+   },
+   {
+    "tag": "TEGE1001",
+    "u": " °C",
+    "dp": "0",
+    "t": "80 °C",
+    "ns": false,
+    "near": "metal temperature | TEGE1002 | Bearing No. 4 (generator)"
+   },
+   {
+    "tag": "TEGE1007",
+    "u": " °C",
+    "dp": "0",
+    "t": "55 °C",
+    "ns": false,
+    "near": "outlet oil (36.PNG) | TEGE1008 | TEGE1002"
+   },
+   {
+    "tag": "VEGE10011",
+    "u": "",
+    "dp": "3",
+    "t": "0.016",
+    "ns": false,
+    "near": "vibration X / Y | VEGE10021 / 22 | TEGE1008"
+   },
+   {
+    "tag": "VEGE10012",
+    "u": " mm",
+    "dp": "3",
+    "t": "0.016 mm",
+    "ns": false,
+    "near": "vibration X / Y | VEGE10021 / 22 | TEGE1008"
+   },
+   {
+    "tag": "TEGE1002",
+    "u": " °C",
+    "dp": "0",
+    "t": "78 °C",
+    "ns": false,
+    "near": "air cooler outlet A / B | TEGE10041 / 42 | Cooling air and exciter"
+   },
+   {
+    "tag": "TEGE1008",
+    "u": " °C",
+    "dp": "0",
+    "t": "56 °C",
+    "ns": false,
+    "near": "air cooler outlet C / D | TEGE10043 / 44 | TEGE10041 / 42"
+   },
+   {
+    "tag": "VEGE10021",
+    "u": "",
+    "dp": "3",
+    "t": "0.063",
+    "ns": false,
+    "near": "AC exciter outlet air | TEGE1005 | TEGE10043 / 44"
+   },
+   {
+    "tag": "VEGE10022",
+    "u": " mm",
+    "dp": "3",
+    "t": "0.037 mm",
+    "ns": false,
+    "near": "AC exciter outlet air | TEGE1005 | TEGE10043 / 44"
+   },
+   {
+    "tag": "GEN.TA1",
+    "u": "",
+    "dp": "0",
+    "t": "39",
+    "ns": false,
+    "near": "A / B | TEGE10061 / 62 | Stator coil"
+   },
+   {
+    "tag": "GEN.TA2",
+    "u": "",
+    "dp": "0",
+    "t": "38",
+    "ns": false,
+    "near": "A / B | TEGE10061 / 62 | Stator coil"
+   },
+   {
+    "tag": "GEN.TA3",
+    "u": "",
+    "dp": "0",
+    "t": "43",
+    "ns": false,
+    "near": "C / D | TEGE10063 / 64 | TEGE10061 / 62"
+   },
+   {
+    "tag": "GEN.TA4",
+    "u": "",
+    "dp": "0",
+    "t": "44",
+    "ns": false,
+    "near": "C / D | TEGE10063 / 64 | TEGE10061 / 62"
+   },
+   {
+    "tag": "GEN.TEX",
+    "u": "",
+    "dp": "0",
+    "t": "89",
+    "ns": false,
+    "near": "E / F | TEGE10065 / 66 | TEGE10063 / 64"
+   },
+   {
+    "tag": "GEN.TS1",
+    "u": "",
+    "dp": "0",
+    "t": "95",
+    "ns": false,
+    "near": "A / B | TEGE10061 / 62 | Stator coil"
+   },
+   {
+    "tag": "GEN.TS2",
+    "u": "",
+    "dp": "0",
+    "t": "99",
+    "ns": false,
+    "near": "A / B | TEGE10061 / 62 | Stator coil"
+   },
+   {
+    "tag": "GEN.TS3",
+    "u": "",
+    "dp": "0",
+    "t": "95",
+    "ns": false,
+    "near": "C / D | TEGE10063 / 64 | TEGE10061 / 62"
+   },
+   {
+    "tag": "GEN.TS4",
+    "u": "",
+    "dp": "0",
+    "t": "98",
+    "ns": false,
+    "near": "C / D | TEGE10063 / 64 | TEGE10061 / 62"
+   },
+   {
+    "tag": "GEN.TS5",
+    "u": "",
+    "dp": "0",
+    "t": "92",
+    "ns": false,
+    "near": "E / F | TEGE10065 / 66 | TEGE10063 / 64"
+   },
+   {
+    "tag": "GEN.TS6",
+    "u": "",
+    "dp": "0",
+    "t": "99",
+    "ns": false,
+    "near": "E / F | TEGE10065 / 66 | TEGE10063 / 64"
+   }
+  ],
+  "ctl": [],
+  "st": [],
+  "md": [],
+  "mov": [],
+  "dox": [],
+  "go": []
+ },
+ "MK18": {
+  "v": [
+   {
+    "tag": "PICR19011",
+    "u": "",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "PICR19011 / 12 / 13 | No. 1 extraction | TT-TS1011"
+   },
+   {
+    "tag": "PICR19012",
+    "u": "",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "PICR19011 / 12 / 13 | No. 1 extraction | TT-TS1011"
+   },
+   {
+    "tag": "PICR19013",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "-----",
+    "ns": false,
+    "near": "PICR19011 / 12 / 13 | No. 1 extraction | TT-TS1011"
+   },
+   {
+    "tag": "TT-TS1011",
+    "u": " °C",
+    "dp": "0",
+    "t": "372 °C",
+    "ns": false,
+    "near": "TT-TS1011 | PICR19011 / 12 / 13 | TRP-TS1001"
+   },
+   {
+    "tag": "PT-TS1013",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "13.66 kg/cm2",
+    "ns": false,
+    "near": "PT-TS1013 | No. 2 extraction | TT-TS1014"
+   },
+   {
+    "tag": "TT-TS1014",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "TT-TS1014 | PT-TS1013 | TRP-TS1003"
+   },
+   {
+    "tag": "PT-TS1022",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "1.25 kg/cm2",
+    "ns": false,
+    "near": "PT-TS1022 | No. 4 extraction | Extraction IV"
+   },
+   {
+    "tag": "TT-TS1023",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "TT-TS1023 | PT-TS1022 | TRP-TS1007"
+   },
+   {
+    "tag": "PT-TS1026",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "-----",
+    "ns": false,
+    "near": "PT-TS1026 | No. 5 extraction | Extraction V"
+   },
+   {
+    "tag": "TT-TS1027",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "TT-TS1027 | PT-TS1026 | TRP-TS1009"
+   },
+   {
+    "tag": "PT-TS1017",
+    "u": " kg/cm2",
+    "dp": "2",
+    "t": "5.13 kg/cm2",
+    "ns": false,
+    "near": "PT-TS1017 | No. 3 extraction | TT-TS1018"
+   },
+   {
+    "tag": "TT-TS1018",
+    "u": " °C",
+    "dp": "0",
+    "t": "-----",
+    "ns": false,
+    "near": "TT-TS1018 | PT-TS1017 | TRP-TS1005"
+   },
+   {
+    "tag": "PT-CD1110",
+    "u": " kg/cm2 abs",
+    "dp": "3",
+    "t": "0.073 kg/cm2 abs",
+    "ns": false,
+    "near": "H-1101 in the condenser neck | Low pressure heater 1 | H-1102"
+   }
+  ],
+  "ctl": [],
+  "st": [],
+  "md": [],
+  "mov": [
+   {
+    "m": "DITL-99|MV-TS1391|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-99|MV-TS1391|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-94|MV-TS1001|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-94|MV-TS1001|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-94|MV-TS1001|am",
+    "r": null,
+    "t": "AUTO · REMOTE"
+   },
+   {
+    "m": "DITL-100|MV-TS1397|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-100|MV-TS1397|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-101|MV-TS1392|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-101|MV-TS1392|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-102|MV-TS1396|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-102|MV-TS1396|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-95|MV-TS1002|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-95|MV-TS1002|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-95|MV-TS1002|am",
+    "r": null,
+    "t": "AUTO · REMOTE"
+   },
+   {
+    "m": "DITL-106|MV-TS1394|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-106|MV-TS1394|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-107|MV-TS1390|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-107|MV-TS1390|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-97|MV-TS1004|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-97|MV-TS1004|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-97|MV-TS1004|am",
+    "r": null,
+    "t": "AUTO · REMOTE"
+   },
+   {
+    "m": "DITL-108|MV-TS1395|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-108|MV-TS1395|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-109|MV-TS1389|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-109|MV-TS1389|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-98|MV-TS1005|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-98|MV-TS1005|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-98|MV-TS1005|am",
+    "r": null,
+    "t": "AUTO · REMOTE"
+   },
+   {
+    "m": "DITL-103|MV-TS1393|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-103|MV-TS1393|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-104|MV-TS1399|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-104|MV-TS1399|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-96|MV-TS1003|pct",
+    "r": null,
+    "t": "100.0 %"
+   },
+   {
+    "m": "DITL-96|MV-TS1003|oc",
+    "r": null,
+    "t": "OPEN"
+   },
+   {
+    "m": "DITL-96|MV-TS1003|am",
+    "r": null,
+    "t": "AUTO · REMOTE"
+   },
+   {
+    "m": "DITL-105|MV-TS1398|pct",
+    "r": null,
+    "t": "0.0 %"
+   },
+   {
+    "m": "DITL-105|MV-TS1398|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-57|XV-FS1005|oc",
+    "r": null,
+    "t": "CLOSED"
+   },
+   {
+    "m": "DITL-110|MV-TS1400|pct",
+    "r": null,
+    "t": "0.0 %"
+   }
+  ],
+  "dox": [],
+  "go": []
+ },
+ "MK00": {
+  "v": [
+   {
+    "tag": "GCP-AI1001",
+    "u": " MW",
+    "dp": "1",
+    "t": "151.0 MW",
+    "ns": false,
+    "near": "Output | OVERVIEW | MSP"
+   },
+   {
+    "tag": "PT-MS1002",
+    "u": " kg/cm2",
+    "dp": "1",
+    "t": "122.4 kg/cm2",
+    "ns": false,
+    "near": "Main steam pressure | Output | Main steam temp"
+   },
+   {
+    "tag": "ABC-001C|SI0230",
+    "u": " T/H",
+    "dp": "1",
+    "t": "459.8 T/H",
+    "ns": false,
+    "near": "Main steam flow | Main steam temp | Feedwater flow"
+   },
+   {
+    "tag": "PT-FG1085",
+    "u": " mmH2O",
+    "dp": "0",
+    "t": "-17 mmH2O",
+    "ns": false,
+    "near": "Furnace pressure | Total air flow | Drum level"
+   },
+   {
+    "tag": "ABC-002|SI0060",
+    "u": "",
+    "dp": "1",
+    "t": "569.9",
+    "ns": false,
+    "near": "Total air flow | Furnace pressure | Coal flow"
+   },
+   {
+    "tag": "GCP-AI1001",
+    "u": " MW",
+    "dp": "1",
+    "t": "151.0 MW",
+    "ns": false,
+    "near": "52G1 closed / 52L1 closed | Generatorclick = open this page | shaft"
+   },
+   {
+    "tag": "SI-TB",
+    "u": " rpm",
+    "dp": "0",
+    "t": "3600 rpm",
+    "ns": false,
+    "near": "HP and IP-LP, ATS | Turbineclick = open this page | shaft"
+   },
+   {
+    "tag": "PT-CD1110",
+    "u": " kg/cm2 abs",
+    "dp": "3",
+    "t": "0.073 kg/cm2 abs",
+    "ns": false,
+    "near": "aux steam, gland, vacuum | Condenserclick = open this page | hot well, pumps,"
+   },
+   {
+    "tag": "PT-FG1085",
+    "u": " mmH2O",
+    "dp": "0",
+    "t": "-17 mmH2O",
+    "ns": false,
+    "near": "bed and water walls | Furnaceclick = open this page | cyclones, seal pots"
+   },
+   {
+    "tag": "ABC-002|SI0060",
+    "u": "",
+    "dp": "1",
+    "t": "569.9",
+    "ns": false,
+    "near": "PA, SA, FA blowers | Air fansclick = open this page | air side (bottom)"
+   }
+  ],
+  "ctl": [
+   {
+    "c": "HIC-ULD|mv|1| MW",
+    "t": "151.5 MW"
+   },
+   {
+    "c": "TICMS1004|pv|0| °C",
+    "t": "543 °C"
+   },
+   {
+    "c": "FICFW1007|pv|1| T/H",
+    "t": "474.8 T/H"
+   },
+   {
+    "c": "LICBR1001B|pv|0| mm",
+    "t": "0 mm"
+   },
+   {
+    "c": "FIC-CM|pv|1| T/H",
+    "t": "86.7 T/H"
+   },
+   {
+    "c": "FIC-CM|mode|U",
+    "t": "REMOTE"
+   },
+   {
+    "c": "LICBR1001B|pv|0| mm",
+    "t": "0 mm"
+   },
+   {
+    "c": "FICFW1007|pv|1| T/H",
+    "t": "474.8 T/H"
+   },
+   {
+    "c": "FIC-CM|pv|1| T/H",
+    "t": "86.7 T/H"
+   },
+   {
+    "c": "FIC-OM|mode|U",
+    "t": "MANUAL"
+   },
+   {
+    "c": "HIC-ULD|pv|1|",
+    "t": "151.5"
+   },
+   {
+    "c": "HIC-ULD|sv|1| MW",
+    "t": "151.5 MW"
+   },
+   {
+    "c": "HIC-ULD|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "EIC-TM|pv|1|",
+    "t": "151.0"
+   },
+   {
+    "c": "EIC-TM|sv|1| MW",
+    "t": "151.0 MW"
+   },
+   {
+    "c": "EIC-TM|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "PIC-COBM|pv|1|",
+    "t": "122.4"
+   },
+   {
+    "c": "PIC-COBM|sv|1| kg/cm2",
+    "t": "122.3 kg/cm2"
+   },
+   {
+    "c": "PIC-COBM|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "HIC-BM|mv|1| %",
+    "t": "68.7 %"
+   },
+   {
+    "c": "HIC-BM|mode|U",
+    "t": "AUTO"
+   },
+   {
+    "c": "FIC-CM|pv|1|",
+    "t": "86.7"
+   },
+   {
+    "c": "FIC-CM|sv|1| T/H",
+    "t": "86.7 T/H"
+   },
+   {
+    "c": "FIC-CM|mode|U",
+    "t": "REMOTE"
+   }
+  ],
+  "st": [],
+  "md": [],
+  "mov": [],
+  "dox": [],
+  "go": [
+   {
+    "g": "MK17",
+    "t": "Generatorclick = open this page"
+   },
+   {
+    "g": "MK18",
+    "t": "Extraction, drainsclick = open this page"
+   },
+   {
+    "g": "MK16",
+    "t": "Sampling, dosingclick = open this page"
+   },
+   {
+    "g": "MK13",
+    "t": "Turbineclick = open this page"
+   },
+   {
+    "g": "MK04",
+    "t": "Turbine oilclick = open this page"
+   },
+   {
+    "g": "MK07",
+    "t": "Drum and main steamclick = open this pag"
+   },
+   {
+    "g": "MK08",
+    "t": "Condenserclick = open this page"
+   },
+   {
+    "g": "MK05",
+    "t": "Condensateclick = open this page"
+   },
+   {
+    "g": "MK06",
+    "t": "Feedwaterclick = open this page"
+   },
+   {
+    "g": "CWN",
+    "t": "Circulating waterclick = open this page"
+   },
+   {
+    "g": "MK02",
+    "t": "Make-up and coolingclick = open this pag"
+   },
+   {
+    "g": "MK03",
+    "t": "Instrument and plant airclick = open thi"
+   },
+   {
+    "g": "MK09",
+    "t": "Furnaceclick = open this page"
+   },
+   {
+    "g": "MK09",
+    "t": "Back passclick = open this page"
+   },
+   {
+    "g": "MK09",
+    "t": "Air preheaterclick = open this page"
+   },
+   {
+    "g": "MK14",
+    "t": "ESPclick = open this page"
+   },
+   {
+    "g": "MK09",
+    "t": "ID fan, stackclick = open this page"
+   },
+   {
+    "g": "MK09",
+    "t": "Air fansclick = open this page"
+   },
+   {
+    "g": "MK12",
+    "t": "Coal, limestone, sandclick = open this p"
+   },
+   {
+    "g": "MK11",
+    "t": "Start-up burnersclick = open this page"
+   },
+   {
+    "g": "MK10",
+    "t": "Purge and tripclick = open this page"
+   },
+   {
+    "g": "MK14",
+    "t": "Bottom ashclick = open this page"
+   },
+   {
+    "g": "MK15",
+    "t": "Sootblowersclick = open this page"
+   }
+  ]
+ },
+ "_ctl": [],
+ "_keys": {
+  "AN": [
+   "ws",
+   "wsr",
+   "ramp",
+   "cat",
+   "sheets",
+   "i",
+   "run",
+   "spd",
+   "vals",
+   "sel",
+   "data",
+   "sv",
+   "lne",
+   "fl",
+   "av",
+   "lnSrc",
+   "kv",
+   "errs",
+   "hmi",
+   "hmiUi",
+   "hmiSheets",
+   "applySaved",
+   "loadData",
+   "xrefGo",
+   "sm",
+   "gsc",
+   "find",
+   "hist",
+   "showTag",
+   "cj",
+   "rv",
+   "wireVals",
+   "ah",
+   "inspAuto",
+   "sched",
+   "anSteps",
+   "suFw",
+   "stepSetG",
+   "patchPaint",
+   "view",
+   "allLegs",
+   "stepN",
+   "stepBack",
+   "runOn",
+   "pauseOn",
+   "almLv",
+   "plantUi",
+   "plantSheets",
+   "plantOn",
+   "inMark",
+   "markInputs",
+   "anStationOf",
+   "anSvSwitchOf",
+   "anHasRemote",
+   "stepTier",
+   "ensure",
+   "linksOf",
+   "actSet",
+   "cosInfo",
+   "cosFill",
+   "procRemote",
+   "nm",
+   "anPins",
+   "stepSet",
+   "lnTables",
+   "lnApplyEdits",
+   "lnResolve",
+   "fxIn",
+   "netRange",
+   "extRange",
+   "plantLoad150",
+   "plantCold",
+   "plantColdAsync",
+   "loadStart",
+   "plantLoad150Async",
+   "plantLive",
+   "fault",
+   "turbine",
+   "tcs",
+   "gen",
+   "elec",
+   "unitRestart",
+   "tcsTrip",
+   "tcsIbd",
+   "tcsIbdSheets",
+   "tcsIbdMissing",
+   "tcsIO",
+   "tcsInit",
+   "oilValve",
+   "blowdown",
+   "field",
+   "tsat",
+   "fieldState",
+   "lhdPct",
+   "srcSt",
+   "stVal",
+   "fanI",
+   "aphIn",
+   "aphAir",
+   "aphOut",
+   "bedSS",
+   "bedStep",
+   "swValve",
+   "swValves",
+   "fv",
+   "ditlPos",
+   "ditlRun",
+   "airValves",
+   "avSv",
+   "fxs",
+   "doValve",
+   "baK",
+   "engState",
+   "sync",
+   "clock0",
+   "plantT",
+   "dsIdx",
+   "descOf",
+   "hmiCtrls",
+   "modeNets",
+   "modeNetsBy",
+   "faceTags",
+   "MODEK",
+   "latchMode",
+   "modeStatus",
+   "descWire",
+   "updBack",
+   "dsTextAt",
+   "dsRefsIn",
+   "viewSet",
+   "lookOnly",
+   "go",
+   "cs",
+   "paint",
+   "fitView",
+   "settle",
+   "setCat",
+   "reset",
+   "pick",
+   "panelUpd",
+   "selBox",
+   "dsOpen",
+   "trSeries",
+   "trSample",
+   "trDraw",
+   "trZoom",
+   "trModel",
+   "trMap",
+   "trGoCrumb",
+   "cosOn",
+   "procLock",
+   "procAI",
+   "hmiAdd",
+   "hmiFind",
+   "hmiPick",
+   "hmiVal",
+   "hmiOpen",
+   "hmiClose",
+   "hmiAuto",
+   "hmiUpd",
+   "hmiSetMode",
+   "hmiRender",
+   "hmiHeader",
+   "hmiSync",
+   "hmiAddrOf",
+   "hmiList",
+   "hmiZoomBy",
+   "hmiFit",
+   "hmiVb",
+   "hmiWrite",
+   "hmiState",
+   "hmiToggleForce",
+   "hmiPlantOwned",
+   "hmiForced",
+   "setForce",
+   "wrCtl",
+   "ades",
+   "plOpen",
+   "plClose",
+   "plAIs",
+   "plRes",
+   "plVal",
+   "plantSwitch",
+   "dsGoRef",
+   "connClick",
+   "lneSave",
+   "lnOpen",
+   "addrTable",
+   "_src",
+   "_cur",
+   "_ready",
+   "why",
+   "whyMan",
+   "onStep",
+   "fpFind",
+   "opSheet",
+   "fpBuild",
+   "worldSheets",
+   "_askNo",
+   "_uiCold"
+  ],
+  "LS": [
+   "LS_TCSV",
+   "LS_SIMM",
+   "DUI",
+   "WORLD",
+   "LS_TCSD",
+   "LS_FXINFO",
+   "LS_FXPATH",
+   "LS_PROC5002",
+   "LS_PROC5002_LIM",
+   "LS_SOP_WHY",
+   "LS_LIVE",
+   "LS_TRAINING_OFF",
+   "LS_GUIDE",
+   "LS_DOCK",
+   "LS_LOOP",
+   "LS_SPLIT",
+   "PLANT_SYS",
+   "PLANT_V2",
+   "LS_MOCK",
+   "LS_FPREG",
+   "LS_FPHIST",
+   "LS_FPOP",
+   "PLANT_VALVE_CTL",
+   "LS_ORIG",
+   "LS_TRACER"
+  ],
+  "live": [
+   "rec",
+   "recCsv",
+   "recNow",
+   "recClear",
+   "kind",
+   "state",
+   "rows",
+   "scan",
+   "reset",
+   "load",
+   "why",
+   "audit",
+   "fp",
+   "ctlTag",
+   "has",
+   "val",
+   "sheetOf",
+   "live",
+   "done",
+   "base",
+   "practice",
+   "B",
+   "H",
+   "modeOf",
+   "mvOf",
+   "pvOf",
+   "svOf",
+   "getV",
+   "NAMES",
+   "f1"
+  ],
+  "dock": [
+   "sopFor",
+   "dName",
+   "amRow",
+   "openD",
+   "grpOn",
+   "tabFix",
+   "menu",
+   "follow",
+   "quit",
+   "noFollow",
+   "start",
+   "resume",
+   "open",
+   "stop",
+   "layout",
+   "fill",
+   "interlock",
+   "fieldOf",
+   "fieldSet",
+   "fieldRow",
+   "dsel",
+   "dremote",
+   "mst",
+   "modeOf",
+   "dmotor",
+   "dOf",
+   "needNet",
+   "leaves",
+   "permOf",
+   "pbBlock",
+   "dpress",
+   "dset",
+   "dout",
+   "pout",
+   "runOut",
+   "el"
+  ],
+  "fpop": [
+   "motor",
+   "valve",
+   "valveTag",
+   "valveKind",
+   "valveOpen",
+   "tcs",
+   "mov",
+   "fieldPct",
+   "pb",
+   "field",
+   "fset",
+   "yn",
+   "hit",
+   "openAd",
+   "place",
+   "close",
+   "info",
+   "open",
+   "_spl"
+  ],
+  "sheets": [
+   "ABC-000A|CONTENTS (1)",
+   "ABC-003B|B-START UP BURNER CONTROL (FUEL / AIR)",
+   "ABC-003C|C-START UP BURNER CONTROL (FUEL / AIR)",
+   "ABC-003D|D-START UP BURNER CONTROL (FUEL / AIR)",
+   "ABC-003E|OIL MASTER CONTROL",
+   "ABC-004A|COAL MASTER CONTROL & A-COAL FEEDER CONTROL",
+   "ABC-004B|B-COAL FEEDER CONTROL",
+   "ABC-004C|C-COAL FEEDER CONTROL",
+   "ABC-005|LIMESTONE FEEDER CONTROL (SOx CONTROL)",
+   "ABC-006|TOTAL AIR FLOW (PAF / SAF / FAB)",
+   "ABC-007|PAF/SAF AIR FLOW CONTROL",
+   "ABC-000B|CONTENTS (2)",
+   "ABC-008|FURNACE PRESSURE CONTROL",
+   "ABC-009A|FURNACE DIFF. PRESSURE CONTROL (A/B/C-BOTTOM ASH SCREW COOLER)",
+   "ABC-009B|D-BOTTOM ASH SCREW COOLER CONTROL",
+   "ABC-010|DRUM LEVEL CONTROL (FEED WATER FLOW CONTROL)",
+   "ABC-011|SUPERHEATER NO.2 OUTLET STEAM TEMP. CONTROL",
+   "ABC-012|MAIN STEAM TEMPERATURE CONTROL",
+   "ABC-013|MAIN STEAM PRESSURE CONTROL (BLOW-OFF)",
+   "ABC-014|FLUIDIZING AIR FLOW CONTROL",
+   "ABC-015|FURNACE TEMPERATURE CONTROL (1)",
+   "ABC-016|FURNACE TEMPERATURE CONTROL (2)",
+   "ABC-000|SYMBOL LIST",
+   "ABC-017|SOOTBLOWER STEAM PRESSURE CONTROL",
+   "ABC-019|REHEATER OUTLET HEADER TEMP. CONTROL",
+   "ABC-020|REHEATER/SUPERHEATER FLUE GAS DAMPER CONTROL",
+   "ABC-026|FURNACE TEMPERATURE (1)",
+   "ABC-027|FURNACE TEMPERATURE (2)",
+   "ABC-028|DIESEL OIL PUMP OUTLET OIL PRESSURE CONTROL",
+   "ABC-029|OIL RETURN LINE PRESSURE CONTROL",
+   "ABC-030|MAIN STEAM TO AUX. STEAM PRESSURE / COLD REHEAT TO AUX. STEAM PRESSURE",
+   "ABC-031|COND. DUMPING TO RAW PIT / COND. MAKE-UP WATER / DEAERATOR LEVEL CONTROL",
+   "ABC-032|CONDENSATE WATER FLOW / CONDENSATE POLISHER INLET WATER FLOW CONTROL",
+   "ABC-001A|COORDINATED CONTROL SYSTEM",
+   "ABC-033|MAIN STEAM TO AUX. STEAM DE-S/H SPRAY WATER TEMP. CONTROL",
+   "ABC-034|GLAND STEAM DE-S/H SPRAY WATER TEMP. CONTROL",
+   "ABC-035|NO.1 HPH LEVEL CONTROL",
+   "ABC-036|NO.2 HPH LEVEL CONTROL",
+   "ABC-037|NO.1 LPH LEVEL CONTROL",
+   "ABC-038|NO.2 LPH LEVEL CONTROL",
+   "ABC-039|NO.3 LPH LEVEL CONTROL",
+   "ABC-050|HP TURBINE BYPASS STEAM PRESSURE CONTROL",
+   "ABC-051|HP TURBINE BYPASS STEAM SPRAY WATER TEMP. CONTROL",
+   "ABC-052|LP TURBINE BYPASS STEAM CONTROL",
+   "ABC-001B|COORDINATED CONTROL SYSTEM",
+   "ABC-053|TURBINE OIL COOLER OUTLET OIL TEMP. CONTROL",
+   "ABC-054|HOT REHEAT STEAM PRESSURE CONTROL (BLOW-OFF)",
+   "ABC-055|NO.1 S/H OUTLET HEADER TO REHEATER MOTOR VALVE POSITION CONTROL",
+   "ABC-056|DEAERATOR PRESSURE CONTROL",
+   "ABC-057|FURNACE TEMPERATURE (3)",
+   "ABC-001C|CCS / BOILER MASTER / TURBINE MASTER",
+   "ABC-001D|CCS BIR LOGIC",
+   "ABC-002|COMBUSTION AIR CONTROL",
+   "ABC-003A|A-START UP BURNER CONTROL (FUEL / AIR)"
+  ]
+ },
+ "_strip": [
+  "Load151.0MW",
+  "Main steam pressure122.4kg/cm²",
+  "Main steam temperature543°C",
+  "Main steam flow459.8t/h",
+  "Reheat steam pressure33.9kg/cm²",
+  "Reheat steam temperature538°C",
+  "Drum level0mm",
+  "Bed temperature881°C",
+  "Furnace pressure-17mmH₂O",
+  "Total coal flow86.7t/h",
+  "Total air flow569.9t/h"
+ ],
+ "_alarms": [
+  "TIFG1091A #1 Furnace lower layer above temp. (A)",
+  "TIFG1091B #1 Furnace lower layer above temp. (B)",
+  "TIFG1091C #1 Furnace lower layer above temp. (C)",
+  "TIFG1091 #1 Furnace lower layer above temp. (A)",
+  "TIFG1091D #1 Furnace lower layer above temp. (D)",
+  "TIFG1090C #1 Furnace lower layer under temp. (C)",
+  "TIFG1090L #1 Furnace lower layer under temp. (A)",
+  "PIST10013 #1 HP turbine first stage steam pressure (C)"
+ ]
+}
