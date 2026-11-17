@@ -6536,8 +6536,8 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
    Machines and values are the ones temporary page 02 binds (DITL-112, DITL-76 / 77).
    Drawn simpler: the users of the closed cooling water are one supply line with their names; the oil temperature valve
    TCV-CW1201 is on the Turbine oil page.
-   NOT on this page yet: the state and the faceplate of the expansion tank fill valve XV-MU1109 (plant model state, DITL-78)
-   and the hand valves of temporary page 02: the new look has no piece for them yet. */
+   The expansion tank fill valve XV-MU1109 and the hand valves V-MU / V-CW of temporary page 02 are HX.H pieces: their state
+   and their faceplate are the ones of fp-pop.js. */
 (function () {
   const { V, E, M, L, page } = HX;
   const K = 'kg/cm²';
@@ -6556,7 +6556,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
     CPY = [640, 830] /* closed cooling pumps */,
     CSX = 1130 /* their suction */,
     CDX = 840 /* their discharge header */,
-    EIX = 700,
+    EIX = 720,
     EXX = 600,
     EOX = 480,
     EY = [600, 720, 840]; /* heat exchangers */
@@ -6614,11 +6614,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         at(L('feedwater', 'Deaerator initial fill'), 1500, MY[1], { id: 'u1' }),
         at(L('drum-steam', 'Boiler initial fill'), 1500, MY[2], { id: 'u2' }),
         /* closed cooling water */
-        at(E('valve', 'Expansion tank fill valve', 'XV-MU1109', [], { wrap: 14 }), ETX, 470, {
-          id: 'fv',
-          rot: 90,
-          lab: 'r'
-        }),
+        at(HX.H('XV-MU1109', 'Fill valve XV-MU1109', { w: 170 }), ETX, 470, { id: 'fv' }),
         at(
           E('tank', 'Expansion tank', 'T-1109', [V('Level', 'LICW1109', 'm', 2)], {
             id: 'et',
@@ -6646,6 +6642,21 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         ),
         ...N.map((n, i) => at(E('cooler', n, 'H-1107' + n, []), EXX, EY[i], { id: 'e' + i, sc: 1.3, lab: 't' })),
         at(L('sea-water', 'Sea water side'), EXX, 510, { id: 'swl' }),
+        /* hand valves of the plant model (temporary page 02; K1AU3-PD-021 for the V-CW valves) */
+        at(HX.H('V-MU0001'), 120, 380, { id: 'hm1' }),
+        at(HX.H('V-MU0002'), 330, 380, { id: 'hm2' }),
+        ...['V-MU0003', 'V-MU0004', 'V-MU0005'].map((t, i) => at(HX.H(t, t, { w: 80 }), 542, MY[i], { id: 'hs' + i })),
+        ...['V-MU0007', 'V-MU0009', 'V-MU0011'].map((t, i) =>
+          at(HX.H(t, t, { w: 78 }), 818, MY[i] - 45, { id: 'hd' + i })
+        ),
+        at(HX.H('V-MU1031'), UX, 380, { id: 'hf1' }),
+        at(HX.H('V-MU1032'), ETX, 524, { id: 'hf2' }),
+        at(HX.H('V-MU1033', 'Bypass V-MU1033', { w: 140 }), ETX + 170, 470, { id: 'hf3' }),
+        at(HX.H('V-CW1001'), 1215, 770, { id: 'hc1' }),
+        ...['V-CW1002', 'V-CW1004'].map((t, i) => at(HX.H(t, t, { w: 80 }), 1083, CPY[i], { id: 'hcs' + i })),
+        ...['V-CW1007', 'V-CW1009'].map((t, i) => at(HX.H(t, t, { w: 92 }), 920, CPY[i] - 50, { id: 'hcd' + i })),
+        ...['V-CW1010', 'V-CW1011', 'V-CW1012'].map((t, i) => at(HX.H(t, t, { w: 78 }), 677, EY[i], { id: 'hei' + i })),
+        ...['V-CW1013', 'V-CW1014', 'V-CW1015'].map((t, i) => at(HX.H(t, t, { w: 78 }), 523, EY[i], { id: 'heo' + i })),
         at(L('turbine-oil', 'Turbine oil coolers'), 300, 620, { id: 'tol' })
       ],
       pipes: [
@@ -6695,8 +6706,8 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         { med: 'water', w: W_S, pts: [[UX, MY[1]], 'u1.l'], flow: MU },
         { med: 'water', w: W_S, pts: [[UX, MY[2]], 'u2.l'], flow: MU },
         /* expansion tank fill */
-        { med: 'water', w: W_S, pts: [[UX, MY[2]], [UX, 410], [ETX, 410], 'fv.l'], flow: MU, arrow: false },
-        { med: 'water', w: W_S, pts: ['fv.r', 'et.t'], flow: MU },
+        { med: 'water', w: W_S, pts: [[UX, MY[2]], [UX, 410], [ETX, 410], 'fv.t'], flow: MU, arrow: false },
+        { med: 'water', w: W_S, pts: ['fv.b', 'et.t'], flow: MU },
         /* closed cooling water loop */
         { med: 'cooling', w: W_M, pts: ['et.b', [ETX, 770], [CSX, 770]], flow: CW, arrow: false },
         {
@@ -6777,8 +6788,8 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
       taps: [
         { x: 960, y: MY[1], side: 't', label: 'Make-up header', key: 'PIMU0709', unit: K, dp: 1, tag: 'PT-MU0709' },
         { x: 1090, y: MY[1], side: 't', label: 'Make-up flow', key: 'FIMU1001', unit: 'm³/h', dp: 1, tag: 'FT-MU1001' },
-        { x: 770, y: EY[1], side: 't', label: 'Pump discharge', key: 'PICW1152', unit: K, dp: 1, tag: 'PT-CW1152' },
-        { x: 770, y: EY[1], side: 'b', label: 'Temperature', key: 'TICW1152', unit: '°C', dp: 0, tag: 'TT-CW1152' },
+        { x: 784, y: EY[1], side: 't', label: 'Pump discharge', key: 'PICW1152', unit: K, dp: 1, tag: 'PT-CW1152' },
+        { x: 784, y: EY[1], side: 'b', label: 'Temperature', key: 'TICW1152', unit: '°C', dp: 0, tag: 'TT-CW1152' },
         {
           x: 380,
           y: EY[1],
@@ -7515,7 +7526,8 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
      the utility area.
    The standby compressors start by themselves when two of tank A, tank B and Unit 1 pressure are below 5 kg/cm2 for 3 s.
    Drawn simpler: the filters are not drawn; the start-up compressor C-0707 and the compressor control air strip are not
-   drawn. NOT on this page yet: the hand valves V-IA / V-PA of temporary page 03 (no hand valve piece in the new look yet). */
+   drawn. Of the hand valves V-IA / V-PA of temporary page 03 only V-PA0013 is a valve of the plant model: it is the
+   HX.H piece between the two trains; the others have no state and no faceplate on page 03 either. */
 (function () {
   const { V, E, M, L, page } = HX;
   const K = 'kg/cm²';
@@ -7658,7 +7670,9 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
       items: [
         ...IA.items,
         ...PA.items,
-        at(L('makeup-cooling', 'Cooling water of compressors and dryers', { back: true }), 1560, 490, { id: 'cwl' })
+        at(L('makeup-cooling', 'Cooling water of compressors and dryers', { back: true }), 1560, 490, { id: 'cwl' }),
+        /* the one hand valve of temporary page 03 that the plant model has: the tie from plant air to the instrument air tanks */
+        at(HX.H('V-PA0013', 'Tie from plant air V-PA0013', { w: 210 }), 1230, 490, { id: 'tie' })
       ],
       pipes: [...IA.pipes, ...PA.pipes],
       taps: [...IA.taps, ...PA.taps],

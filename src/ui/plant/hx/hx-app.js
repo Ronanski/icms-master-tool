@@ -332,13 +332,15 @@
     MK17: 'HX-generator' /* GENERATOR: every state and value it had */,
     MK15: 'HX-sootblowers' /* SOOTBLOWERS: every blower, state and value it had */,
     CWN: 'HX-sea-water' /* 030 CIRCULATING WATER: pumps, values, hand valves, filter states */,
+    MK02: 'HX-makeup-cooling' /* MAKE-UP AND CLOSED COOLING WATER: pumps, values, hand valves, fill valve */,
+    MK03: 'HX-compressed-air' /* INSTRUMENT AND PLANT AIR: machines, values, the one model valve */,
     MK10: 'HX-purge-trip' /* PURGE AND TRIP: every row of DITL-01 / 02 / 03A it had */,
     /* an older page of a system whose temporary page is still needed (hand valves, states the new look has no piece for yet):
        it opens that temporary page until the new page is complete */
     SW: 'HX-sea-water' /* 030 SEAWATER */,
-    MU: 'MK02' /* MAKE-UP WATER -> MAKE-UP AND CLOSED COOLING WATER */,
-    CW: 'MK02' /* 027 CLOSED COOLING WATER */,
-    IA: 'MK03' /* INSTRUMENT & PLANT AIR -> INSTRUMENT AND PLANT AIR */,
+    MU: 'HX-makeup-cooling' /* MAKE-UP WATER */,
+    CW: 'HX-makeup-cooling' /* 027 CLOSED COOLING WATER */,
+    IA: 'HX-compressed-air' /* INSTRUMENT & PLANT AIR */,
     /* the first temporary pages (hmi-temp.js, 2026-11-03), each followed since by a page 00 ~ 18 */
     TCF: 'HX-condensate',
     TDO: 'MK11',

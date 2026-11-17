@@ -13,7 +13,8 @@
      the utility area.
    The standby compressors start by themselves when two of tank A, tank B and Unit 1 pressure are below 5 kg/cm2 for 3 s.
    Drawn simpler: the filters are not drawn; the start-up compressor C-0707 and the compressor control air strip are not
-   drawn. NOT on this page yet: the hand valves V-IA / V-PA of temporary page 03 (no hand valve piece in the new look yet). */
+   drawn. Of the hand valves V-IA / V-PA of temporary page 03 only V-PA0013 is a valve of the plant model: it is the
+   HX.H piece between the two trains; the others have no state and no faceplate on page 03 either. */
 (function () {
   const { V, E, M, L, page } = HX;
   const K = 'kg/cm²';
@@ -156,7 +157,9 @@
       items: [
         ...IA.items,
         ...PA.items,
-        at(L('makeup-cooling', 'Cooling water of compressors and dryers', { back: true }), 1560, 490, { id: 'cwl' })
+        at(L('makeup-cooling', 'Cooling water of compressors and dryers', { back: true }), 1560, 490, { id: 'cwl' }),
+        /* the one hand valve of temporary page 03 that the plant model has: the tie from plant air to the instrument air tanks */
+        at(HX.H('V-PA0013', 'Tie from plant air V-PA0013', { w: 210 }), 1230, 490, { id: 'tie' })
       ],
       pipes: [...IA.pipes, ...PA.pipes],
       taps: [...IA.taps, ...PA.taps],
