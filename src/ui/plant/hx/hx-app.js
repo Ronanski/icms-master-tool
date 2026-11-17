@@ -36,7 +36,7 @@
   let lastXY = [200, 200];
   document.addEventListener('pointerdown', e => (lastXY = [e.clientX, e.clientY]), true);
   function store(api, g) {
-    const st = { api, LOG: {}, PM: {}, CT: {}, vals: new Set(), loops: {}, valves: {}, px: null, pm: {} };
+    const st = { api, LOG: {}, PM: {}, CT: {}, vals: new Set(), loops: {}, valves: {}, machs: {}, px: null, pm: {} };
     /* hidden holder of the click targets of the controllers and of the page of hmi-mock.js that resolves the valves */
     st.px = document.createElementNS(NS, 'g');
     st.px.setAttribute('opacity', '0');
@@ -56,6 +56,14 @@
     st.api.reg({ t: 'ctl', tag }, X => (st.CT[tag] = X || null), hit);
   };
   const needValve = tag => S && !(tag in S.valves) && (S.valves[tag] = bindOf(tag));
+  /* a machine (pump, fan ...): the SAME description the temporary page has for it (LS_MOCK.defs: its DITL sheet, I/O tag, lube oil
+     pumps ...), found by the page and id of hx-registry.js, so state, mode, Y / N and both faceplates are the ones of that page */
+  const machDef = name => {
+    const m = R.machines[name],
+      d = m && LS_MOCK.defs.find(x => x.id === m.page);
+    return (d && d.mach && d.mach[m.id]) || null;
+  };
+  const needMach = name => S && !(name in S.machs) && (S.machs[name] = machDef(name));
   /* after the first pass of the page (every key it asks is known): the hidden page of hmi-mock.js for its valves */
   function proxy() {
     const mach = {},
@@ -97,6 +105,30 @@
         tag +
         '" width="1" height="1"/>';
     }
+    for (const name in S.machs) {
+      if (!S.machs[name]) continue;
+      mach[name] = S.machs[name];
+      art +=
+        '<text data-st="' +
+        name +
+        '" data-hxs="' +
+        name +
+        '"></text><text data-md="' +
+        name +
+        '" data-hxd="' +
+        name +
+        '"></text>' +
+        '<text data-ynt="' +
+        name +
+        '" data-hxy="' +
+        name +
+        '"></text>' +
+        '<rect data-hit="' +
+        name +
+        '" width="1" height="1"/><rect data-yn="' +
+        name +
+        '" width="1" height="1"/>';
+    }
     if (!art) return;
     const g2 = document.createElementNS(NS, 'g');
     S.px.append(g2);
@@ -126,7 +158,19 @@
         t = e ? e.textContent : '';
       return /^-?[0-9]/.test(t) ? parseFloat(t) : null;
     },
-    machine: () => null,
+    machine(name) {
+      needMach(name);
+      const e = pq('[data-hxs="' + name + '"]');
+      if (!e) return null;
+      const t = e.textContent || '',
+        md = (pq('[data-hxd="' + name + '"]') || {}).textContent || '',
+        y = (pq('[data-hxy="' + name + '"]') || {}).textContent || '';
+      return {
+        st: t === 'RUNNING' ? 'run' : t === 'STOPPED' ? 'stop' : t === 'TRIP' ? 'trip' : null,
+        mode: md && md !== '-----' ? md : null,
+        perm: y === 'Y' ? true : y === 'N' ? false : null
+      };
+    },
     loop(tag) {
       needLoop(tag);
       const X = S && S.CT[tag];
