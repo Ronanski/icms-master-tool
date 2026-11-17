@@ -23,8 +23,7 @@
      (XV-CD1123, XV-CD1125) belong to the Auxiliary steam page, the low pressure bypass spray to the Reheat page;
    - the extraction steam and the drains of the low pressure heaters are not drawn (Extraction steam page).
    Left out on purpose, all without a signal in hx-registry.js: the other hand valves, vents, drains, the strainers, the level switches
-   of the hotwell, the chemical dosing and sampling lines, the seal water lines. FT-CD1121 (polisher bypass flow) is the
-   measured value in the faceplate of its valve. */
+   of the hotwell, the chemical dosing and sampling lines, the seal water lines. */
 (function () {
   const { V, E, M, C, X, L, page } = HX;
   const K = 'kg/cm²';
@@ -341,7 +340,8 @@
         { x: HX1 + 14, y: HAY - 46, s: 'Low pressure heater 1', cls: 'hx-name', anchor: 'middle' },
         { x: HX1 + 14, y: HBY - 46, s: 'Low pressure heater 2', cls: 'hx-name', anchor: 'middle' },
         { x: HX1 + 14, y: HCY - 46, s: 'Low pressure heater 3', cls: 'hx-name', anchor: 'middle' },
-        { x: 1000, y: 478, s: 'from polisher', cls: 'hx-end', anchor: 'middle' }
+        { x: 1000, y: 478, s: 'from polisher', cls: 'hx-end', anchor: 'middle' },
+        { x: 900, y: 508, s: 'Polisher flow', key: 'FTCD1121', unit: 't/h', anchor: 'middle' }
       ]
     }
   });

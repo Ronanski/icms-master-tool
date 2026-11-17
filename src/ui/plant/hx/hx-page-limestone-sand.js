@@ -219,6 +219,15 @@
       ],
       taps: [],
       texts: [
+        /* DITL-776: with CLOSE selected the valves close 300 s after SYSTEM ON drops (TR328, line purge), 180 s after an
+           emergency stop or a master fuel trip (TR329) (Jennie 2026-11-18) */
+        {
+          x: 1736,
+          y: 58,
+          s: 'After CLOSE the sand valves close 5 minutes after the system stops (line purge).',
+          cls: 'hx-note',
+          anchor: 'end'
+        },
         {
           x: 24,
           y: 40,

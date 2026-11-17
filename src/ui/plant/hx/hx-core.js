@@ -726,7 +726,7 @@
               : m;
   /* the state in words; a machine that is a valve or a set of valves (its name is its tag: XV-..., MV-...) is open / closed */
   const stTxt = (s, name) =>
-    /^(XV|MV)-/.test(name || '')
+    /^(XV|MV|V)-/.test(name || '')
       ? s === 'run'
         ? 'Open'
         : s === 'stop'
