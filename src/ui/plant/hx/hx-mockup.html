@@ -623,7 +623,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
   <div id="hx"></div>
 </div>
 <template id="doc"><div class="doc"><h2>HX plant pages: handoff for the next coder</h2>
-<p><b>IN THE APP since 2026-11-17 (user: "Ganyan ang HMI na gsto ko. Dapat iyan lang makita ko n mga itsura. Ung temporary at old hmi, aalisin na").</b> This folder moved from <code>docs/hmi/hx/</code> to <code>src/ui/plant/hx/</code>. <code>src/ui/hmi/inject.js</code> puts <code>hx.css</code>, <code>hx-real.js</code>, <code>hx-core.js</code>, <code>hx-registry.js</code>, every page file and <code>hx-app.js</code> into the app. <code>hx-app.js</code> is the real adapter of section 5 (read its head comment): each HX page is a page of the Plant view, values / controllers / valves come from the same resolvers as the temporary pages, clicks open the faceplates of the app. A new page file must be added to the list in <code>inject.js</code> (and to <code>ORDER</code> in <code>tools/build.mjs</code>). Pages in the app: <code>hx-page-reheat.js</code>, <code>hx-page-boiler-steam.js</code>, <code>hx-page-feedwater.js</code>, <code>hx-page-condensate.js</code>, <code>hx-page-furnace-gas.js</code>, <code>hx-page-combustion-air.js</code>, <code>hx-page-coal.js</code>, <code>hx-page-oil-burners.js</code>, <code>hx-page-aux-steam.js</code>, <code>hx-page-extraction.js</code>, <code>hx-page-turbine-oil.js</code>, <code>hx-page-sea-water.js</code>, <code>hx-page-makeup-cooling.js</code>, <code>hx-page-turbine.js</code>, <code>hx-page-purge-trip.js</code> (2026-11-17). A page id is the id of the page plan in <code>hx-pages.js</code> (drum-steam, feedwater, condensate ...), so the links between pages work. Machines: <code>hx-app.js</code> takes the description of a machine from the temporary page that binds it (<code>LS_MOCK.defs</code>); when a temporary page is removed, keep its <code>mach</code> and <code>unit</code> data. Not in the app: <code>hx-cards*.js</code>, <code>hx-sample.js</code>, <code>hx-pages.js</code>, <code>hx-sym.js</code>. The temporary page of a system is removed only when its HX page works in the app.</p>
+<p><b>IN THE APP since 2026-11-17 (user: "Ganyan ang HMI na gsto ko. Dapat iyan lang makita ko n mga itsura. Ung temporary at old hmi, aalisin na").</b> This folder moved from <code>docs/hmi/hx/</code> to <code>src/ui/plant/hx/</code>. <code>src/ui/hmi/inject.js</code> puts <code>hx.css</code>, <code>hx-real.js</code>, <code>hx-core.js</code>, <code>hx-registry.js</code>, every page file and <code>hx-app.js</code> into the app. <code>hx-app.js</code> is the real adapter of section 5 (read its head comment): each HX page is a page of the Plant view, values / controllers / valves come from the same resolvers as the temporary pages, clicks open the faceplates of the app. A new page file must be added to the list in <code>inject.js</code> (and to <code>ORDER</code> in <code>tools/build.mjs</code>). Pages in the app: <code>hx-page-reheat.js</code>, <code>hx-page-boiler-steam.js</code>, <code>hx-page-feedwater.js</code>, <code>hx-page-condensate.js</code>, <code>hx-page-furnace-gas.js</code>, <code>hx-page-combustion-air.js</code>, <code>hx-page-coal.js</code>, <code>hx-page-oil-burners.js</code>, <code>hx-page-aux-steam.js</code>, <code>hx-page-extraction.js</code>, <code>hx-page-turbine-oil.js</code>, <code>hx-page-sea-water.js</code>, <code>hx-page-makeup-cooling.js</code>, <code>hx-page-turbine.js</code>, <code>hx-page-purge-trip.js</code>, <code>hx-page-generator.js</code> (2026-11-17). A page id is the id of the page plan in <code>hx-pages.js</code> (drum-steam, feedwater, condensate ...), so the links between pages work. Machines: <code>hx-app.js</code> takes the description of a machine from the temporary page that binds it (<code>LS_MOCK.defs</code>); when a temporary page is removed, keep its <code>mach</code> and <code>unit</code> data. Not in the app: <code>hx-cards*.js</code>, <code>hx-sample.js</code>, <code>hx-pages.js</code>, <code>hx-sym.js</code>. The temporary page of a system is removed only when its HX page works in the app.</p>
 <p>Made 2026-11-16 on the order of the user: "gawan ng mga HMI pages ... lahat ng planta macocover pati operator controls at trend", "BE ORIGINAL WALA KA DAPAT GAGAYAHIN", "hmi shell lang ... no need to integrate sa app, pero dapat retrofit ready", "babase ka lang sa available data".</p>
 <p><b>Where it stands (2026-11-17).</b> The user rejected the look twice: first the 23 summary pages ("nakahiwalay ang controls, valves"), then the full drawing of the reheat system because it looked like a P&amp;ID: <b>"wag yung parang P&amp;ID ha. realistic with animation ha. magaan din dapat sa app"</b>. The answer is the REALISTIC look of section 6d, first on ONE page, <code>hx-page-reheat.js</code>.</p>
 <p><b>The user accepted the look (2026-11-17): "ok na sige na. gawin mo na rin yung iba pang HMI page. dapat sa HMI pages, ayan yung nakikita, wala na ibang style."</b> So: (1) every page is drawn in the realistic look, one system after the other, by the method of 6d; (2) NO other style is shown: the mockup holds only realistic pages. The 23 earlier summary pages (<code>hx-pages.js</code>, line symbols <code>hx-sym.js</code>) are out of the mockup; they stay in the folder only as the list of what each system holds (machines, loops, values, trend pens) and their titles are listed grey in the rail as "to be drawn". Delete both files when the last system is drawn. (3) The placement follows the plant as the control room shows it (user: "i-align mo rin sa kung paano actual sa field ... yung pwestuhan ng mga equipment"): on the reheat page the boiler is on the left and the turbine on the right as on screen 005, and the turbine train is HP, ILP, generator from left to right as on screen 035.</p>
@@ -7089,7 +7089,146 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
   });
 })();
 
-HX.soon = [{"id":"overview","group":"Unit","title":"Plant overview"},{"id":"unit-control","group":"Unit","title":"Unit load control"},{"id":"limestone-sand","group":"Fuel","title":"Limestone and sand"},{"id":"bottom-ash","group":"Air and flue gas","title":"Bottom ash"},{"id":"sootblowers","group":"Air and flue gas","title":"Sootblowers"},{"id":"sampling","group":"Water and steam","title":"Sampling and chemical dosing"},{"id":"generator","group":"Turbine and generator","title":"Generator"},{"id":"compressed-air","group":"Cooling and utilities","title":"Instrument and plant air"}];
+/* HX page in the REALISTIC look: generator (user 2026-11-17: "Lahat ng luma na HMI, alisin dyan s app"; "Kumpletuhin muna
+   lahat ng HMI pages").
+   THE PICTURE: the generator on the left with its single line to the grid above it (generator breaker, disconnect switch,
+   earth switch, main transformer, line breaker) and its excitation below; on the right the generator values and its
+   monitoring; below the breaker status and protection list.
+   EVERYTHING on this page is what temporary page 17 "GENERATOR" shows (its sources: snapshot 37.PNG, snapshot P35SHAFT, the
+   turbine control system input / output list, generator data sheet GAE-2013-0136 R2):
+   - 52G1 / 52L1 = DITL-03E inputs 2 / 1; generator breaker on / off = DITL-89 input 14 / DITL-03H input 17; earth switch,
+     disconnect switch, remote, ready to synchronize, generator trip = digital inputs of the input / output list (MIG-52G1-3
+     ~ 6, MIL-52G1, RY-52G, RY-52L, MIT-GEN);
+   - power = GCP-AI1001 / 1002; kV, kA, Hz, MVar, power factor, field, energy, field breaker, cooling air, stator coil = the
+     generator model; bearings No. 3 / No. 4 = the turbine oil model.
+   NO-SOURCE in the app (as on page 17): generator lockout 86G-A / 86G-B, water and oil leakage. The three phase voltages and
+   currents of page 17 are one value each here (the model has one). The page has no push button: the generator is
+   synchronized by the turbine control system (Turbine start page). */
+(function () {
+  const { E, L, page } = HX;
+  const B = HX.B;
+  const at = (it, x, y, o) => Object.assign(it, { x, y }, o || {});
+  const ON = 'v:SI-TB>50';
+  const GX = 340,
+    GY = 450;
+  const val = (i, label, key, unit, dp, key2, tag) => ({
+    x: 730 + (i % 4) * 255,
+    y: 110 + Math.floor(i / 4) * 78,
+    side: 'r',
+    label,
+    key,
+    key2,
+    unit,
+    dp,
+    tag: tag || ''
+  });
+  const ST = [
+    ['Generator breaker 52G1 remote', 'data-di="MIL-52G1|Y|N"'],
+    ['Generator breaker 52G1 on', 'data-dy="DITL-89|i|14"'],
+    ['Generator breaker 52G1 off', 'data-dy="DITL-03H|i|17"'],
+    ['Disconnect switch on', 'data-di="MIG-52G1-3|Y|N"'],
+    ['Disconnect switch off', 'data-di="MIG-52G1-4|Y|N"'],
+    ['Earth switch on', 'data-di="MIG-52G1-5|Y|N"'],
+    ['Earth switch off', 'data-di="MIG-52G1-6|Y|N"'],
+    ['Line breaker 52L1 open (house load)', 'data-dy="DITL-03E|i|1"'],
+    ['52G1 ready to synchronize', 'data-di="RY-52G|Y|N"'],
+    ['52L1 ready to synchronize', 'data-di="RY-52L|Y|N"'],
+    ['Generator trip', 'data-di="MIT-GEN|Y|N"']
+  ];
+
+  page({
+    id: 'generator',
+    group: 'Turbine and generator',
+    title: 'Generator',
+    about:
+      'Generator single line, excitation, values and monitoring, breaker status. What temporary page 17 shows (snapshot 37, turbine control system input / output list).',
+    plan: {
+      look: 'real',
+      w: 1760,
+      h: 1000,
+      items: [
+        at(E('generator', 'Generator', '', [], { on: ON }), GX, GY, { id: 'gen', sc: 2.2, lab: 'b' }),
+        at(L('turbine', 'Turbine', { back: true }), 110, GY, { id: 'tbl' }),
+        at(B('Line breaker 52L1', 'data-dy="DITL-03E|i|1|neg" data-on="CLOSED" data-off="OPEN"', { w: 180 }), GX, 110, {
+          id: 'l1'
+        }),
+        at(B('Disconnect switch', 'data-di="MIG-52G1-3|CLOSED|OPEN"', { w: 180 }), GX, 230, { id: 'ds' }),
+        at(B('Earth switch', 'data-di="MIG-52G1-5|CLOSED|OPEN"', { w: 150 }), 555, 230, { id: 'es' }),
+        at(
+          B('Generator breaker 52G1', 'data-dy="DITL-03E|i|2|neg" data-on="CLOSED" data-off="OPEN"', { w: 180 }),
+          GX,
+          310,
+          {
+            id: 'g1'
+          }
+        ),
+        at(B('52G1 control', 'data-di="MIL-52G1|REMOTE|LOCAL"', { w: 150 }), 555, 310, { id: 'g1m' }),
+        at(B('Field breaker', 'data-uy="gen.fcb|1|CLOSED|OPEN"', { w: 180 }), GX, 640, { id: 'fb' }),
+        ...ST.map((s, i) =>
+          at(B(s[0], s[1] + ' data-row="' + i + '"', { w: 244 }), 800 + (i % 4) * 254, 610 + Math.floor(i / 4) * 46, {
+            id: 's' + i
+          })
+        )
+      ],
+      pipes: [
+        { med: 'power', w: 4, pts: [[GX, 60], 'l1.t'], flow: ON, arrow: false },
+        { med: 'power', w: 4, pts: ['l1.b', 'ds.t'], flow: ON, arrow: false },
+        { med: 'power', w: 4, pts: ['ds.b', 'g1.t'], flow: ON, arrow: false },
+        { med: 'power', w: 4, pts: ['g1.b', 'gen.t'], flow: ON, arrow: false },
+        { med: 'power', w: 2.5, pts: [[GX, 270], [555, 270], 'es.b'], arrow: false },
+        { med: 'power', w: 2.5, pts: ['fb.t', [GX, 560]], flow: ON, arrow: false },
+        { med: 'power', w: 2.5, pts: ['tbl.r', 'gen.l'], flow: ON, arrow: false }
+      ],
+      taps: [
+        {
+          x: GX,
+          y: 700,
+          side: 'b',
+          label: 'Field voltage / current',
+          key: 'GEN.VF',
+          key2: 'GEN.IF',
+          unit: '',
+          dp: 0,
+          tag: 'V DC / A'
+        },
+        val(0, 'Power (C)', 'GCP-AI1001', 'MW', 1, null, 'GCP-AI1001'),
+        val(1, 'Power (D)', 'GCP-AI1002', 'MW', 1, null, 'GCP-AI1002'),
+        val(2, 'Reactive power', 'GEN.MVAR', 'MVar', 1),
+        val(3, 'Power factor', 'GEN.PF', '', 3),
+        val(4, 'Voltage', 'GEN.KV', 'kV', 1),
+        val(5, 'Current', 'GEN.KA', 'kA', 2),
+        val(6, 'Frequency', 'GEN.HZ', 'Hz', 2),
+        val(7, 'Energy', 'GEN.MWH', 'MWh', 0),
+        val(8, 'Reactive energy', 'GEN.MVARH', 'MVarh', 0),
+        val(9, 'Bearing 3 metal / outlet oil', 'TEGE1001', '°C', 0, 'TEGE1007', 'TEGE1001 / 1007'),
+        val(10, 'Bearing 3 vibration X / Y', 'VEGE10011', 'mm', 3, 'VEGE10012', 'VEGE10011 / 12'),
+        val(11, 'Bearing 4 metal / outlet oil', 'TEGE1002', '°C', 0, 'TEGE1008', 'TEGE1002 / 1008'),
+        val(12, 'Bearing 4 vibration X / Y', 'VEGE10021', 'mm', 3, 'VEGE10022', 'VEGE10021 / 22'),
+        val(13, 'Air cooler outlet A / B', 'GEN.TA1', '°C', 0, 'GEN.TA2', 'TEGE10041 / 42'),
+        val(14, 'Air cooler outlet C / D', 'GEN.TA3', '°C', 0, 'GEN.TA4', 'TEGE10043 / 44'),
+        val(15, 'Exciter outlet air', 'GEN.TEX', '°C', 0, null, 'TEGE1005'),
+        val(16, 'Stator coil A / B', 'GEN.TS1', '°C', 0, 'GEN.TS2', 'TEGE10061 / 62'),
+        val(17, 'Stator coil C / D', 'GEN.TS3', '°C', 0, 'GEN.TS4', 'TEGE10063 / 64'),
+        val(18, 'Stator coil E / F', 'GEN.TS5', '°C', 0, 'GEN.TS6', 'TEGE10065 / 66')
+      ],
+      texts: [
+        { x: GX + 14, y: 62, s: 'to the grid', cls: 'hx-note' },
+        { x: GX + 14, y: 175, s: 'main transformer', cls: 'hx-note' },
+        { x: GX + 14, y: 585, s: 'excitation: exciter transformer, voltage regulator', cls: 'hx-note' },
+        { x: 720, y: 60, s: 'GENERATOR VALUES AND MONITORING', cls: 'hx-name' },
+        { x: 680, y: 565, s: 'BREAKER STATUS AND PROTECTION · Y = true', cls: 'hx-name' },
+        {
+          x: 680,
+          y: 770,
+          s: 'Generator air coolers: closed cooling water. Bearing vibration very high trips the turbine.',
+          cls: 'hx-note'
+        }
+      ]
+    }
+  });
+})();
+
+HX.soon = [{"id":"overview","group":"Unit","title":"Plant overview"},{"id":"unit-control","group":"Unit","title":"Unit load control"},{"id":"limestone-sand","group":"Fuel","title":"Limestone and sand"},{"id":"bottom-ash","group":"Air and flue gas","title":"Bottom ash"},{"id":"sootblowers","group":"Air and flue gas","title":"Sootblowers"},{"id":"sampling","group":"Water and steam","title":"Sampling and chemical dosing"},{"id":"compressed-air","group":"Cooling and utilities","title":"Instrument and plant air"}];
 HX.shell(document.getElementById('hx'), {
   strip: [['Load', 'GCP-AI1001', 'MW'], ['Steam pressure', 'PT-MS1002', 'kg/cm²'], ['Steam temperature', 'pv:TICMS1004', '°C', 0], ['Steam flow', 'FT-MS1031', 't/h'], ['Reheat temperature', 'TT-HR1002-1', '°C', 0], ['Drum level', 'pv:LICBR1001B', 'mm', 0], ['Bed temperature', 'TT-FG1090', '°C', 0], ['Furnace pressure', 'PT-FG1085', 'mmH₂O', 0], ['Coal flow', 'pv:FIC-CM', 't/h'], ['Total air flow', 'ABC-002|SI0060', 't/h']],
   start: "reheat-steam",

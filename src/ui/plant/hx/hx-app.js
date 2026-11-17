@@ -157,7 +157,18 @@
     const g2 = document.createElementNS(NS, 'g');
     S.px.append(g2);
     S.pm = { g: g2 };
-    call(() => LS_MOCK.page({ id: 'HXP', title: '', w: 10, h: 10, art, mach, unit })(g2, S.api));
+    call(() =>
+      LS_MOCK.page({
+        id: 'HXP',
+        title: '',
+        w: 10,
+        h: 10,
+        art,
+        mach,
+        unit,
+        udi: Object.assign({}, ...LS_MOCK.defs.map(d => d.udi || {}))
+      })(g2, S.api)
+    );
   }
   const pq = sel => (S && S.pm.g ? S.pm.g.querySelector(sel) : null);
   /* the faceplate of fp-pop.js opens beside the element that was clicked: the hidden click target is moved under the pointer first */
@@ -310,6 +321,7 @@
     TO: 'HX-turbine-oil' /* 036 TURBINE OIL, the page before MK04 */,
     MK08: 'HX-aux-steam' /* AUX STEAM AND VACUUM */,
     MK18: 'HX-extraction' /* EXTRACTION AND DRAINS */,
+    MK17: 'HX-generator' /* GENERATOR: every state and value it had */,
     MK10: 'HX-purge-trip' /* PURGE AND TRIP: every row of DITL-01 / 02 / 03A it had */,
     /* an older page of a system whose temporary page is still needed (hand valves, states the new look has no piece for yet):
        it opens that temporary page until the new page is complete */
