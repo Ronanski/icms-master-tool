@@ -1,5 +1,7 @@
 # HX plant pages: handoff for the next coder
 
+**IN THE APP since 2026-11-17 (user: "Ganyan ang HMI na gsto ko. Dapat iyan lang makita ko n mga itsura. Ung temporary at old hmi, aalisin na").** This folder moved from `docs/hmi/hx/` to `src/ui/plant/hx/`. `src/ui/hmi/inject.js` puts `hx.css`, `hx-real.js`, `hx-core.js`, `hx-registry.js`, every page file and `hx-app.js` into the app. `hx-app.js` is the real adapter of section 5 (read its head comment): each HX page is a page of the Plant view, values / controllers / valves come from the same resolvers as the temporary pages, clicks open the faceplates of the app. A new page file must be added to the list in `inject.js`. Not in the app: `hx-cards*.js`, `hx-sample.js`, `hx-pages.js`, `hx-sym.js`. The temporary page of a system is removed only when its HX page works in the app.
+
 Made 2026-11-16 on the order of the user: "gawan ng mga HMI pages ... lahat ng planta macocover pati operator controls at trend", "BE ORIGINAL WALA KA DAPAT GAGAYAHIN", "hmi shell lang ... no need to integrate sa app, pero dapat retrofit ready", "babase ka lang sa available data".
 
 **Where it stands (2026-11-17).** The user rejected the look twice: first the 23 summary pages ("nakahiwalay ang controls, valves"), then the full drawing of the reheat system because it looked like a P&ID: **"wag yung parang P&ID ha. realistic with animation ha. magaan din dapat sa app"**. The answer is the REALISTIC look of section 6d, first on ONE page, `hx-page-reheat.js`.

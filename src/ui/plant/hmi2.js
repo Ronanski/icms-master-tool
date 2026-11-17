@@ -1459,7 +1459,8 @@
       g.append(defs);
       g.append(S_('rect', { x: 0, y: 0, width: sys.w, height: sys.h, fill: C.bg }));
       (SCREENS[sys.screen] || (() => {}))(g, api);
-      frame(g, sys, api);
+      /* 3.2.4: an HX page (hx-app.js) has its own head: no bars of this frame over it */
+      if (!sys.hx) frame(g, sys, api);
     }
   };
   /* the new screens come first in the list of the Plant view; the old ones stay until the new set replaces them */
