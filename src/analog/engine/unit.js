@@ -4158,11 +4158,17 @@ function anTbFlow(U, tb, D, dt, dirt) {
   }
   if (!isFinite(tb.fi)) tb.fi = tb.fd - D / M0;
   tb.fi = L(tb.fi + (dt * (D - U.MW)) / (U.tcs * M0), -0.5, 0.5);
-  const r = (U.fdRate || 0.01) * dt;
+  /* 3.2.4 (JENNIE): the speed path of TCE206 (p.140, ADD008 with GOV.SET) acts on the grid too: flow span x (rpm - 3600, less the dead
+     band) / (droop x 3600), the same law as on house load. The MW error integral (TCE195) then takes the MW back to its target. It is
+     added after the rate limit (the FILTER LME240 T 0.3 s is shorter than the scan of the model): the droop answers at once */
+  const r = (U.fdRate || 0.01) * dt,
+    dr = tb.st === 'load' ? (U.flowSpan * anDb((tb.rpm || 3600) - 3600, U.dbRpm || 0)) / ((U.droop || 0.06) * 3600) : 0;
   tb.fd = L(tb.fd + L(L(D / M0 + tb.fi, 0, 1.4) - tb.fd, -r, r), 0, 1.4);
+  tb.fdD = dr;
   const s = (U.vRate || 0.1) * dt,
-    icvD = L(tb.fd / B, 0, 1),
-    cvD = L((tb.fd - B) / (1 - B), 0, 1.4),
+    fdT = L(tb.fd - dr, 0, 1.4),
+    icvD = L(fdT / B, 0, 1),
+    cvD = L((fdT - B) / (1 - B), 0, 1.4),
     i0 = tb.icv == null ? icvD : tb.icv;
   tb.icv = L(i0 + L(icvD - i0, -s, s), 0, 1);
   U.gv = L((+U.gv || 0) + L(cvD - (+U.gv || 0), -s, s), 0, 1.4);
@@ -4197,9 +4203,22 @@ function anRp32(U, on, dt) {
     ev('2nd REVERSE POWER (32) OPERATED: generator lockout relay 86G-A, turbine trip');
   }
 }
+/* 3.2.4 (JENNIE, priority list: grid events): the grid frequency the generator is locked to on the grid. Trainer fault 'grid.lo' (world.js):
+   59.5 Hz, reached at 0.1 Hz/s (a unit lost elsewhere; NO-SOURCE trainer setting, the Philippine Grid Code normal band is 59.7 ~ 60.3 Hz),
+   back to 60.0 at 0.02 Hz/s when cleared. Not modelled: the motors of the plant slow with the frequency (about 0.8 % at 59.5 Hz) */
+const AN_GRID = { lo: 59.5, down: 0.1, up: 0.02 };
+function anGridHz(U, dt) {
+  const W = typeof window !== 'undefined' ? window.WORLD : null,
+    aim = W && W.ft && W.ft.has('grid.lo') ? AN_GRID.lo : 60,
+    f = isFinite(U.gridHz) ? U.gridHz : 60;
+  U.gridHz = aim < f ? Math.max(aim, f - AN_GRID.down * dt) : Math.min(aim, f + AN_GRID.up * dt);
+  return U.gridHz;
+}
 function anTbSpeed(U, tb, dt, on, Pm, Pe) {
+  const hz = anGridHz(U, dt);
   if (!(U.el && U.el.l52 === false)) {
-    if (tb.st === 'sync' || tb.st === 'load') tb.rpm = 3600;
+    /* on the grid the shaft turns with the grid (2-pole, 60 Hz = 3600 rpm) */
+    if (tb.st === 'sync' || tb.st === 'load') tb.rpm = hz * 60;
     return;
   }
   if (!on || !isFinite(Pe) || !(U.Hgen > 0)) return;
@@ -5097,7 +5116,13 @@ function anUnitStep0(dt) {
   /* 3.2.4-beta.11: on house load (52L1 open) the generator gives what the house load takes (elec.js): its MW is that load, at once.
      Before, the MW fell from 150 to the house load with the 10 s steam lag (tauMW) while the breaker was open */
   if (onGrid && U.el && U.el.l52 === false && tb.xfer && !trip && isFinite(D)) U.MW = D;
-  else U.MW += ((MWss - U.MW) * dt) / U.tauMW;
+  else if (onGrid && !trip && isFinite(U.Pm)) {
+    /* 3.2.4 (JENNIE, grid frequency fault): on the grid the shaft speed is the grid, so the generator gives the shaft power of now (U.Pm):
+       the HP part behind the steam chest (0.3 s) and the IP / LP part behind the reheater, whose pressure is its own mass balance (U.rr,
+       Crh: about 20 ~ 30 s). Before, a second lag tauMW 10 s on top of them (the reheater counted twice): +6 MW of governor answer took
+       25 s to show instead of the HP part at once */
+    U.MW = U.Pm;
+  } else U.MW += ((MWss - U.MW) * dt) / U.tauMW;
   anRp32(U, onGrid && !trip, dt);
   anTbSpeed(U, tb, dt, onGrid && !trip && tb.xfer, U.Pm, D);
   /* 52G open: no load on the machine */
