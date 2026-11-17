@@ -259,8 +259,27 @@
      the new page was checked against it. */
   const GONE = {
     MK09: 'HX-furnace-gas' /* AIR AND FLUE GAS: Furnace and flue gas + Combustion air */,
-    AFG: 'HX-furnace-gas' /* 007 AIR & FLUE GAS, the page before MK09 */
+    AFG: 'HX-furnace-gas' /* 007 AIR & FLUE GAS, the page before MK09 */,
+    MK04: 'HX-turbine-oil' /* 036 TURBINE OIL (temporary page 04) */,
+    TO: 'HX-turbine-oil' /* 036 TURBINE OIL, the page before MK04 */,
+    MK08: 'HX-aux-steam' /* AUX STEAM AND VACUUM */,
+    MK18: 'HX-extraction' /* EXTRACTION AND DRAINS */,
+    /* an older page of a system whose temporary page is still needed (hand valves, states the new look has no piece for yet):
+       it opens that temporary page until the new page is complete */
+    SW: 'CWN' /* 030 SEAWATER -> 030 CIRCULATING WATER */,
+    MU: 'MK02' /* MAKE-UP WATER -> MAKE-UP AND CLOSED COOLING WATER */,
+    CW: 'MK02' /* 027 CLOSED COOLING WATER */,
+    IA: 'MK03' /* INSTRUMENT & PLANT AIR -> INSTRUMENT AND PLANT AIR */,
+    /* the first temporary pages (hmi-temp.js, 2026-11-03), each followed since by a page 00 ~ 18 */
+    TCF: 'HX-condensate',
+    TDO: 'MK11',
+    TFN: 'HX-combustion-air',
+    TPG: 'MK10',
+    TBR: 'MK11',
+    TTA: 'HX-turbine-oil',
+    TTS: 'MK13',
+    TCC: 'MK12'
   };
-  for (const e of L) if (GONE[e.id] && PLANT_V2.screens[GONE[e.id]]) e.gone = GONE[e.id];
+  for (const e of L) if (GONE[e.id] && L.some(x => x.id === GONE[e.id])) e.gone = GONE[e.id];
   window.LS_HX = { pages: () => HX.pages.map(p => p.id), store: () => S, gone: GONE };
 })();

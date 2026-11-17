@@ -210,7 +210,7 @@
         { med: 'lube', w: W_S, pts: [[HX2, AY - 60], 'cf.l'], flow: COP },
         { med: 'lube', w: W_S, pts: ['cf.r', [HX2, CH]], flow: COP, arrow: false },
         { med: 'lube', w: W_S, pts: [[1250, CH], 'mts.l'], flow: COP, arrow: false },
-        { med: 'lube', w: W_S, pts: ['mts.r', [1730, CH], [1730, 440]], to: 'trip oil', flow: COP },
+        { med: 'lube', w: W_S, pts: ['mts.r', [1730, CH], [1730, 490]], to: 'trip oil', flow: COP },
         ...A.map(a => a.pipe)
       ],
       taps: [
@@ -280,7 +280,8 @@
           unit: K,
           dp: 1,
           tag: 'PTLO10071 / 72'
-        }
+        },
+        { x: 1730, y: 440, side: 'l', label: 'Third transmitter', key: 'PTLO10073', unit: K, dp: 1, tag: 'PTLO10073' }
       ],
       texts: [
         { x: 560, y: 978, s: 'control oil from the main oil tank', cls: 'hx-note' },
