@@ -2,15 +2,19 @@
    Dapat iyan lang makita ko n mga itsura").
    THE PICTURE: the condenser cut open on the left (exhaust neck, tube bundles, hotwell), the two condensate pumps in the pit
    beside it, the condensate line with the polisher branch, the air ejector condenser and the gland steam condenser, then the
-   three low pressure heaters one above the other on the right, cut open, and on to the deaerator.
+   three low pressure heaters one above the other on the right, cut open, the condensate coming down past them (No. 1 on
+   top), and on to the deaerator.
    THE CONNECTIONS: K1AU3-PD-016 Rev D, condensate system: condenser H-1110 with the hotwell; make-up into the condenser by
    MV-MU1001 and by the level valve LCV-MU1110; the two condensate pumps P-1116A / B (strainer with DPT-CD1001 / 1002) on one
    suction line; the common discharge line (PT-CD1117, TT-CD1118); the curtain spray XV-CD1006 and the flash chamber sprays
    XV-CD1004 / 1005; the condensate polisher branch (MV-CD1007 in, MV-CD1008 back) with the bypass valve FCV-CD1121 in the
    line; flow element FE-CD1120 and the minimum flow valve FCV-CD1120 back to the condenser; the dump valve LCV-CD1110; the
    steam jet air ejector condenser H-1119 (TT-CD1119 after it) and the gland steam condenser H-1903 (TT-CD1120 after it);
-   the inlet valve MV-CD1001, No. 1 low pressure heater H-1101 (TT-CD1101 before it, TT-CD1102 after it), No. 2 H-1102
-   (TT-CD1103-1 after it), No. 3 H-1103 (TT-CD1103-2 after it), the outlet valve MV-CD1002 and the bypass valve MV-CD1003;
+   the three low pressure heaters, EACH with its own inlet valve, outlet valve and bypass valve (PD-016; team-files/
+   plant-study/11-heater-valves.md; the plant model reads the same nine valves, unit.js anHtrPath): No. 1 H-1101 with the motor
+   valves MV-CD1001 / 1002 / bypass 1003 (TT-CD1101 before it, TT-CD1102 after it), No. 2 H-1102 with the gear operated hand
+   valves V-CD1026 / 1027 / bypass 1028 (TT-CD1103-1 after it), No. 3 H-1103 with V-CD1029 / 1030 / bypass 1031 (TT-CD1103-2
+   after it). The hand valves are valve symbols of the plant model: a click opens the field faceplate;
    flow element FE-CD1122 (FT-CD1122, PT-CD1122, TT-CD1122); the deaerator level valve LCV-CD1104; the deaerator (PD-017).
    Names of the values as the temporary page 05 gives them (neck temperature, flash chamber, pump outlet).
    Drawn simpler than the sheet:
@@ -18,7 +22,7 @@
    - the dump line and the sprays end with a word; the spray water lines to the auxiliary steam and gland steam desuperheaters
      (XV-CD1123, XV-CD1125) belong to the Auxiliary steam page, the low pressure bypass spray to the Reheat page;
    - the extraction steam and the drains of the low pressure heaters are not drawn (Extraction steam page).
-   Left out on purpose, all without a signal in hx-registry.js: hand valves, vents, drains, the strainers, the level switches
+   Left out on purpose, all without a signal in hx-registry.js: the other hand valves, vents, drains, the strainers, the level switches
    of the hotwell, the chemical dosing and sampling lines, the seal water lines. FT-CD1121 (polisher bypass flow) is the
    measured value in the faceplate of its valve. */
 (function () {
@@ -40,17 +44,74 @@
     HY = 600 /* common discharge line */,
     RY = 400 /* minimum flow back to the condenser */,
     UX = 1250 /* up through the two small condensers */,
-    DNX = 1320 /* down to the low pressure heaters */,
-    HX1 = 1520,
-    HAY = 800,
-    HBY = 640,
-    HCY = 480 /* heater No. 1 (lowest), No. 2, No. 3 */,
+    RX = 1420 /* the condensate line down past the three heaters */,
+    HX1 = 1610,
+    HAY = 396,
+    HBY = 615,
+    HCY = 822 /* heater No. 1 (on top), No. 2, No. 3 */,
     HS = 1.5,
-    WX = HX1 - 53 * HS /* condensate up through the three heaters */,
-    TY = 250; /* line to the deaerator */
+    WX = HX1 - 53 * HS /* the water box nozzles of the heaters */,
+    VX = 1476 /* inlet and outlet valves */,
+    BO1 = 64,
+    BO2 = 50 /* a heater branch leaves the line this far above and comes back this far below the heater (No. 1: motor valves) */,
+    TY = 944; /* line to the deaerator */
   const A = 'm:CEP-A',
     B = 'm:CEP-B',
     CD = A + '|' + B;
+  /* one low pressure heater on the condensate line: inlet valve, heater, outlet valve, and the bypass valve in the line */
+  const heater = (n, y, vin, vout, vby, rin, rout, rby) => {
+    const h = 'h' + n,
+      BO = n === 1 ? BO1 : BO2,
+      through = CD + '&' + rin + '&' + rout;
+    return {
+      through,
+      items: [
+        at(E('heater', '', '', [], { id: 'l' + n, flow: through }), HX1, y, { id: h, under: true, sc: HS, mir: true }),
+        at(vin, VX, y - BO, { id: h + 'i', lab: 't' }),
+        at(vout, VX, y + BO, { id: h + 'o', lab: 'b' }),
+        at(vby, RX, y, { id: h + 'b', rot: 90, lab: 'l' })
+      ],
+      pipes: [
+        { med: 'condensate', w: W_CD, pts: [[RX, y - BO], h + 'i.l'], flow: CD + '&' + rin, arrow: false },
+        { med: 'condensate', w: W_CD, pts: [h + 'i.r', [WX, y - BO], h + '.out'], flow: through },
+        { med: 'condensate', w: W_CD, pts: [h + '.in', [WX, y + BO], h + 'o.r'], flow: through, arrow: false },
+        { med: 'condensate', w: W_CD, pts: [h + 'o.l', [RX, y + BO]], flow: through },
+        { med: 'condensate', w: W_SM, pts: [[RX, y - BO], h + 'b.l'], flow: CD + '&' + rby, arrow: false },
+        { med: 'condensate', w: W_SM, pts: [h + 'b.r', [RX, y + BO]], flow: CD + '&' + rby, arrow: false }
+      ]
+    };
+  };
+  const fv = t => 'h:fv-' + t;
+  const H1 = heater(
+      1,
+      HAY,
+      X('MV-CD1001', 'Inlet valve', { cname: 'Low pressure heater 1 inlet valve', wrap: 12 }),
+      X('MV-CD1002', 'Outlet valve', { cname: 'Low pressure heater 1 outlet valve', wrap: 12 }),
+      X('MV-CD1003', 'Bypass valve', { cname: 'Low pressure heater 1 bypass valve', wrap: 10 }),
+      'x:MV-CD1001',
+      'x:MV-CD1002',
+      'x:MV-CD1003'
+    ),
+    H2 = heater(
+      2,
+      HBY,
+      HX.HV('V-CD1026'),
+      HX.HV('V-CD1027'),
+      HX.HV('V-CD1028'),
+      fv('V-CD1026'),
+      fv('V-CD1027'),
+      fv('V-CD1028')
+    ),
+    H3 = heater(
+      3,
+      HCY,
+      HX.HV('V-CD1029'),
+      HX.HV('V-CD1030'),
+      HX.HV('V-CD1031'),
+      fv('V-CD1029'),
+      fv('V-CD1030'),
+      fv('V-CD1031')
+    );
   const spray = (id, valve, name, cname, x, to) => ({
     item: at(X(valve, name, { wrap: 10, cname }), x, 690, { id, rot: 90, lab: 'l' }),
     pipes: [
@@ -133,26 +194,12 @@
         }),
 
         /* ---- the three low pressure heaters with inlet, outlet and bypass valve ---- */
-        at(E('heater', '', '', [], { id: 'l1', flow: CD }), HX1, HAY, { id: 'h1', under: true, sc: HS, mir: true }),
-        at(E('heater', '', '', [], { id: 'l2', flow: CD }), HX1, HBY, { id: 'h2', under: true, sc: HS, mir: true }),
-        at(E('heater', '', '', [], { id: 'l3', flow: CD }), HX1, HCY, { id: 'h3', under: true, sc: HS, mir: true }),
-        at(X('MV-CD1001', 'Heater inlet valve', { cname: 'Low pressure heater inlet valve', wrap: 12 }), DNX, 800, {
-          id: 'hin',
-          rot: 90,
-          lab: 'l'
-        }),
-        at(X('MV-CD1002', 'Heater outlet valve', { cname: 'Low pressure heater outlet valve', wrap: 12 }), WX, 350, {
-          id: 'hout',
-          rot: -90,
-          lab: 'r'
-        }),
-        at(X('MV-CD1003', 'Heater bypass valve', { cname: 'Low pressure heater bypass valve' }), 1382, TY, {
-          id: 'hby',
-          lab: 't'
-        }),
+        ...H1.items,
+        ...H2.items,
+        ...H3.items,
 
         /* ---- to the deaerator ---- */
-        at(C('LICCD1104', 'Deaerator level valve', { tag: 'LCV-CD1104', wrap: 14 }), 1660, TY, { id: 'dlv', lab: 'b' }),
+        at(C('LICCD1104', 'Deaerator level valve', { tag: 'LCV-CD1104', wrap: 14 }), 1692, TY, { id: 'dlv', lab: 't' }),
         at(L('feedwater', 'To the deaerator'), 1660, 150, { id: 'dal' })
       ],
       pipes: [
@@ -214,18 +261,31 @@
         /* through the two small condensers */
         { med: 'condensate', w: W_CD, pts: [[1210, HY], [UX, HY], 'ejc.b'], flow: CD },
         { med: 'condensate', w: W_CD, pts: ['ejc.t', 'gsc.b'], flow: CD, arrow: false },
-        { med: 'condensate', w: W_CD, pts: ['gsc.t', [UX, 330], [DNX, 330]], flow: CD },
-        /* the heaters: inlet valve, No. 1, No. 2, No. 3, outlet valve; the bypass valve past them */
-        { med: 'condensate', w: W_CD, pts: [[DNX, 330], 'hin.l'], flow: 'x:MV-CD1001', arrow: false },
-        { med: 'condensate', w: W_CD, pts: ['hin.r', [DNX, 900], [WX, 900], 'h1.in'], flow: 'x:MV-CD1001' },
-        { med: 'condensate', w: W_CD, pts: ['h1.out', 'h2.in'], flow: 'x:MV-CD1001', arrow: false },
-        { med: 'condensate', w: W_CD, pts: ['h2.out', 'h3.in'], flow: 'x:MV-CD1001', arrow: false },
-        { med: 'condensate', w: W_CD, pts: ['h3.out', 'hout.l'], flow: 'x:MV-CD1002', arrow: false },
-        { med: 'condensate', w: W_CD, pts: ['hout.r', [WX, TY]], flow: 'x:MV-CD1002' },
-        { med: 'condensate', w: W_SM, pts: [[DNX, 330], [DNX, TY], 'hby.l'], flow: 'x:MV-CD1003', arrow: false },
-        { med: 'condensate', w: W_SM, pts: ['hby.r', [WX, TY]], flow: 'x:MV-CD1003', arrow: false },
+        { med: 'condensate', w: W_CD, pts: ['gsc.t', [UX, 300], [RX, 300], [RX, HAY - BO1]], flow: CD },
+        /* the three heaters, each with its inlet valve, its outlet valve and its bypass valve in the line */
+        ...H1.pipes,
+        {
+          med: 'condensate',
+          w: W_CD,
+          pts: [
+            [RX, HAY + BO1],
+            [RX, HBY - BO2]
+          ],
+          flow: CD
+        },
+        ...H2.pipes,
+        {
+          med: 'condensate',
+          w: W_CD,
+          pts: [
+            [RX, HBY + BO2],
+            [RX, HCY - BO2]
+          ],
+          flow: CD
+        },
+        ...H3.pipes,
         /* to the deaerator */
-        { med: 'condensate', w: W_CD, pts: [[WX, TY], 'dlv.l'], flow: CD },
+        { med: 'condensate', w: W_CD, pts: [[RX, HCY + BO2], [RX, TY], 'dlv.l'], flow: CD },
         { med: 'condensate', w: W_CD, pts: ['dlv.r', [1736, TY], [1736, 150], 'dal.r'], flow: 'l:LICCD1104' }
       ],
       taps: [
@@ -234,11 +294,20 @@
         { x: 1158, y: HY, side: 't', label: 'Flow', key: 'FTCD1120', unit: 't/h', tag: 'FT-CD1120' },
         { x: UX, y: 466, side: 'l', label: 'Temperature', key: 'TTCD1119', unit: '°C', dp: 0, tag: 'TT-CD1119' },
         { x: UX, y: 360, side: 'l', label: 'Temperature', key: 'TTCD1120', unit: '°C', dp: 0, tag: 'TT-CD1120' },
-        { x: 1380, y: 900, side: 'b', label: 'Heater 1 inlet', key: 'TT-CD1101', unit: '°C', dp: 0, tag: 'TT-CD1101' },
-        { x: WX, y: 722, side: 'l', label: 'After heater 1', key: 'TT-CD1102', unit: '°C', dp: 0, tag: 'TT-CD1102' },
+        { x: 1340, y: 300, side: 't', label: 'Heater 1 inlet', key: 'TT-CD1101', unit: '°C', dp: 0, tag: 'TT-CD1101' },
         {
-          x: WX,
-          y: 562,
+          x: RX,
+          y: (HAY + HBY) / 2,
+          side: 'l',
+          label: 'After heater 1',
+          key: 'TT-CD1102',
+          unit: '°C',
+          dp: 0,
+          tag: 'TT-CD1102'
+        },
+        {
+          x: RX,
+          y: (HBY + HCY) / 2,
           side: 'l',
           label: 'After heater 2',
           key: 'TT-CD1103-1',
@@ -247,8 +316,8 @@
           tag: 'TT-CD1103-1'
         },
         {
-          x: WX,
-          y: 408,
+          x: RX,
+          y: HCY + BO2 + 36,
           side: 'l',
           label: 'After heater 3',
           key: 'TT-CD1103-2',
@@ -256,9 +325,9 @@
           dp: 0,
           tag: 'TT-CD1103-2'
         },
-        { x: 1500, y: TY, side: 't', label: 'Flow', key: 'FTCD1122', unit: 't/h', tag: 'FT-CD1122' },
-        { x: 1580, y: TY, side: 't', label: 'Pressure', key: 'PTCD1122', unit: K, tag: 'PT-CD1122' },
-        { x: 1540, y: TY, side: 'b', label: 'Temperature', key: 'TT-CD1122', unit: '°C', dp: 0, tag: 'TT-CD1122' }
+        { x: 1545, y: TY, side: 't', label: 'Flow', key: 'FTCD1122', unit: 't/h', tag: 'FT-CD1122' },
+        { x: 1615, y: TY, side: 't', label: 'Pressure', key: 'PTCD1122', unit: K, tag: 'PT-CD1122' },
+        { x: 1580, y: TY, side: 'b', label: 'Temperature', key: 'TT-CD1122', unit: '°C', dp: 0, tag: 'TT-CD1122' }
       ],
       texts: [
         { x: CX, y: CY - 16, s: 'from the low pressure turbine', cls: 'hx-note', anchor: 'middle' },
@@ -269,9 +338,9 @@
         { x: 36, y: 158, s: 'Hotwell 1', key: 'TTCD11101', unit: '°C', dp: 0 },
         { x: 36, y: 174, s: 'Hotwell 2', key: 'TTCD11102', unit: '°C', dp: 0 },
         { x: 36, y: 190, s: 'Hotwell level', key: 'LTCD1110', unit: 'mm', dp: 0 },
-        { x: HX1, y: HAY - 50, s: 'Low pressure heater 1', cls: 'hx-name', anchor: 'middle' },
-        { x: HX1, y: HBY - 50, s: 'Low pressure heater 2', cls: 'hx-name', anchor: 'middle' },
-        { x: HX1, y: HCY - 50, s: 'Low pressure heater 3', cls: 'hx-name', anchor: 'middle' },
+        { x: HX1 + 14, y: HAY - 46, s: 'Low pressure heater 1', cls: 'hx-name', anchor: 'middle' },
+        { x: HX1 + 14, y: HBY - 46, s: 'Low pressure heater 2', cls: 'hx-name', anchor: 'middle' },
+        { x: HX1 + 14, y: HCY - 46, s: 'Low pressure heater 3', cls: 'hx-name', anchor: 'middle' },
         { x: 1000, y: 478, s: 'from polisher', cls: 'hx-end', anchor: 'middle' }
       ]
     }
