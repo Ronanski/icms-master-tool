@@ -139,7 +139,10 @@
         at(C('LICBR1001A', 'Drum level, one element', { sym: 'ctl', unit: 'mm', pvdp: 0, wrap: 30 }), 1270, 70, {
           id: 'lc1',
           lab: 't'
-        })
+        }),
+        /* the two push buttons of ABC-010 (drum level control): lit = the selection of M.0222 */
+        at(HX.B('3 ELEMENT', 'data-apb="ABC-010|M.054E|M.0222=0"', { press: true }), 1060, 130, { id: 'pb3' }),
+        at(HX.B('1 ELEMENT', 'data-apb="ABC-010|M.054F|M.0222=1"', { press: true }), 1270, 130, { id: 'pb1' })
       ],
       pipes: [
         /* into the deaerator */

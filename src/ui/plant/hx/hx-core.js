@@ -44,6 +44,10 @@
       o || {}
     );
   HX.L = (to, text, o) => Object.assign({ k: 'link', to, name: text }, o || {});
+  /* a push button or a state of the plant that is no machine, valve or controller: hook = the data attribute the page of
+     hmi-mock.js has for it (data-tpb="trip", data-apb="ABC-010|M.054F|M.0222=0", data-dy=..., data-fv=...), so the press and
+     the state are the ones of that page. press: true = a push button (a click presses it), else a state only */
+  HX.B = (text, hook, o) => Object.assign({ k: 'hook', name: text, hook }, o || {});
   HX.page = def => {
     def.no = HX.pages.length + 1;
     HX.pages.push(def);
@@ -168,6 +172,7 @@
   /* room of one item above and below its centre: symbol + the words the core writes around it */
   function measure(it) {
     if (it.k === 'link') return { up: 15, dn: 15 };
+    if (it.k === 'hook') return { up: 18, dn: 18 };
     const box = SYM[it.sym](Object.assign({ id: 'm' }, it)).box,
       side = it.lab === 'r' || it.lab === 'l',
       lines = it.name ? wrap(it.name, it.wrap || (side ? 22 : 19)).length : 0,
@@ -253,6 +258,14 @@
       it._box = [x - w / 2, y - 13, x + w / 2, y + 13];
       const ready = !!HX.byId[it.to];
       return `<g class="hx-link${ready ? '' : ' soon'}"${ready ? ` data-go="${esc(it.to)}" tabindex="0" role="link"` : ''} transform="translate(${n1(x)} ${n1(y)})">${ready ? '' : '<title>This page is not drawn yet</title>'}<rect x="${n1(-w / 2)}" y="-13" width="${n1(w)}" height="26" rx="13"/><text x="0" y="4" text-anchor="middle">${back ? '‹ ' : ''}${esc(t)}${back ? '' : ' ›'}</text></g>`;
+    }
+    if (it.k === 'hook') {
+      const t = it.name,
+        w = it.w || Math.max(96, t.length * 6.3 + 24),
+        h = it.press ? 30 : 36;
+      it._p = { l: [x - w / 2, y], r: [x + w / 2, y], t: [x, y - h / 2], b: [x, y + h / 2] };
+      it._box = [x - w / 2, y - h / 2, x + w / 2, y + h / 2];
+      return `<g class="hx-hook${it.press ? ' press' : ''}" data-hook="${esc(it.hook)}" data-label="${esc(t)}"${it.press ? ' data-press="1" tabindex="0" role="button"' : ''} transform="translate(${n1(x)} ${n1(y)})"><rect x="${n1(-w / 2)}" y="${-h / 2}" width="${n1(w)}" height="${h}" rx="5"/><text class="hx-hkl" x="0" y="${it.press ? 4 : -3}" text-anchor="middle">${esc(t)}</text>${it.press ? '' : '<text class="hx-hks" x="0" y="12" text-anchor="middle" data-hks="1">-----</text>'}</g>`;
     }
     const sy = ((real && REAL[it.sym]) || SYM[it.sym])(Object.assign({ id: pageId + '-' + it._id }, it)),
       rot = it.rot || 0,
@@ -809,7 +822,7 @@
       tick(true);
     };
     page.addEventListener('click', e => {
-      const t = e.target.closest('[data-view],[data-yn],[data-open],[data-go],[data-span]');
+      const t = e.target.closest('[data-view],[data-yn],[data-open],[data-go],[data-span],[data-press]');
       if (!t) return;
       if (t.dataset.view) return show(t.dataset.view);
       if (t.dataset.span) {
@@ -818,6 +831,7 @@
         return paintTrends(page, def, span);
       }
       if (t.dataset.go) return opts.go && opts.go(t.dataset.go);
+      if (t.dataset.press) return void (HX.data.press && HX.data.press(t.dataset.hook));
       if (!t.dataset.open && !t.dataset.yn) return;
       const anchor = t.closest('.hx-node') || t,
         go = (kind, id, second) =>
@@ -833,7 +847,7 @@
       go(k, r.join(':'), false);
     });
     page.addEventListener('keydown', e => {
-      if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.hx-node[data-open],.hx-link')) {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.hx-node[data-open],.hx-link,.hx-hook.press')) {
         e.preventDefault();
         e.target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       }
@@ -876,6 +890,14 @@
         Q('[data-hv]').forEach(e => {
           const t = fmt(penVal(e.dataset.hv), +e.dataset.dp);
           if (e.textContent !== t) e.textContent = t;
+        });
+        Q('[data-hook]').forEach(e => {
+          const h = (D.hook && D.hook(e.dataset.hook, e.dataset.label)) || {},
+            c = 'hx-hook' + (e.dataset.press ? ' press' : '') + (h.tone ? ' ' + h.tone : '');
+          if (e.getAttribute('class') !== c) e.setAttribute('class', c);
+          const st = e.querySelector('[data-hks]'),
+            tx = h.text || '-----';
+          if (st && st.textContent !== tx) st.textContent = tx;
         });
         Q('[data-flag]').forEach(e => {
           const f = D.flag ? D.flag(e.dataset.flag) : null;
