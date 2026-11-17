@@ -540,6 +540,16 @@
         `<path class="rxe" d="M${a} ${t + 6}H${-a}"/>`
     };
   };
+  /* agitator on top of a tank: the motor (takes the state colour) on its stool, the shaft down into the liquid with its
+     paddle. Origin = the top of the tank. Ports: t, b */
+  R.mixer = () => ({
+    box: [-11, -27, 11, 34],
+    ports: { t: [0, -26], b: [0, 33], l: [-10, -16], r: [10, -16] },
+    svg:
+      '<rect class="rxs" x="-9" y="-26" width="18" height="18" rx="3"/><path class="rxe" d="M-9 -20h18M-9 -14h18"/>' +
+      '<path class="rx" d="M-6 -8h12v6h-12z"/><path class="rxd" d="M-10 -2h20v3h-20z"/>' +
+      '<path class="rxst" d="M0 1V30"/><path class="rxd" d="M-10 27h20v4h-20z"/>'
+  });
   /* generator with its exciter, closed (seen from the side). The shaft comes in at the left. The body takes the state colour
      of the rule in "on"; the fan behind the opening of the exciter end turns while it is on. Ports: l (shaft end), t (terminals, on top), r (exciter end) */
   R.generator = () => ({
