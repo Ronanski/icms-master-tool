@@ -601,6 +601,17 @@
 .hx-hook.plain.run rect { fill: var(--hx-run); }
 .hx-hook.plain.run .hx-hkl { fill: #fff !important; font-weight: 700; }
 
+/* movement of the switchgear: the contacts of a breaker and the blade of a switch go to their open place (eased, once) */
+.rx-ct { transition: transform 0.35s ease-out; }
+.hx-stop .rx-ct, .hx-none .rx-ct { transform: translateY(-5px); }
+.rx-sw { transform-box: fill-box; transform-origin: 50% 100%; transition: transform 0.45s ease-out; }
+.hx-stop .rx-sw, .hx-none .rx-sw { transform: rotate(-34deg); }
+/* a symbol that takes a press (a hand valve): the same hover as a symbol that opens a faceplate */
+.hx-node[data-hp] { cursor: pointer; }
+.hx-node[data-hp]:hover .rxs, .hx-node[data-hp]:focus-visible .rxs { stroke: var(--hx-accent); stroke-width: 1.6; }
+@media (prefers-reduced-motion: reduce) { .rx-ct, .rx-sw { transition: none; } }
+.rx-hw { fill: none; }
+
 body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-font); }
 .wrap { padding-block: 12px 28px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); max-width: 1760px; margin: 0 auto; }
 .top { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; margin: 0 2px 10px; }
@@ -862,21 +873,21 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
       /* electric actuator: gear box, motor, hand wheel */
       top =
         BON +
-        '<path class="rxst" d="M0 -16.5V-21"/><rect class="rxd" x="-14.6" y="-31.4" width="7" height="8.4" rx="1.8"/>' +
+        '<path class="rxst" d="M0 -16.5V-21"/><rect class="rxix" data-stem="2.6" x="-2.6" y="-18.6" width="5.2" height="1.9" rx="0.6"/><rect class="rxd" x="-14.6" y="-31.4" width="7" height="8.4" rx="1.8"/>' +
         '<rect class="rx" x="-8.2" y="-33.4" width="14.6" height="12.6" rx="2.2"/><circle class="rxw" cx="10.8" cy="-27" r="4.7"/><circle class="rxk" cx="10.8" cy="-27" r="1.3"/>';
       ty = -34;
     } else if (k === 'shutoff') {
       /* air cylinder with its solenoid */
       top =
         BON +
-        '<path class="rxst" d="M0 -16.5V-21"/><rect class="rxv" x="-6" y="-35" width="12" height="15" rx="1.2"/>' +
+        '<path class="rxst" d="M0 -16.5V-21"/><rect class="rxix" data-stem="2.6" x="-2.6" y="-18.6" width="5.2" height="1.9" rx="0.6"/><rect class="rxv" x="-6" y="-35" width="12" height="15" rx="1.2"/>' +
         '<path class="rxd" d="M-7.4 -21.6h14.8v2.6h-14.8zM-7.4 -36.6h14.8v2.6h-14.8z"/><rect class="rxd" x="7.4" y="-31.4" width="4.8" height="6.2" rx="1"/>';
       ty = -37;
     } else if (k === 'manual') {
       top =
         BON +
-        '<path class="rxst" d="M0 -16.5V-25"/><ellipse class="rxw" cx="0" cy="-25.8" rx="10.6" ry="2.9"/><circle class="rxk" cx="0" cy="-25.8" r="1.3"/>';
-      ty = -29;
+        '<path class="rxst" d="M0 -16.5V-25"/><g class="rxix rx-hw" data-stem="4"><ellipse class="rxw" cx="0" cy="-23.8" rx="10.6" ry="2.9"/><circle class="rxk" cx="0" cy="-23.8" r="1.3"/></g>';
+      ty = -31;
     } else if (k === 'check') {
       top = '<path class="rxd" d="M-7.6 -16.4h15.2v4.6h-15.2z"/>';
     }
@@ -1345,7 +1356,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
     };
   };
   /* generator with its exciter, closed (seen from the side). The shaft comes in at the left. The body takes the state colour
-     of the rule in "on". Ports: l (shaft end), t (terminals, on top), r (exciter end) */
+     of the rule in "on"; the fan behind the opening of the exciter end turns while it is on. Ports: l (shaft end), t (terminals, on top), r (exciter end) */
   R.generator = () => ({
     box: [-61, -34, 71, 37],
     ports: { l: [-60, 0], t: [0, -33], r: [70, 0], b: [0, 36] },
@@ -1353,7 +1364,9 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
       '<path class="rxd" d="M-48 30h112v6h-112z"/><rect class="rx" x="-60" y="-4.5" width="130" height="9"/>' +
       '<path class="rx" d="M-52 30V-6Q-52 -14 -45 -14H-41Q-34 -14 -34 -6V30Z"/>' +
       '<rect class="rxs" x="-30" y="-27" width="62" height="54" rx="6"/><path class="rxhi" d="M-25 -22h52"/><path class="rxe" d="M-18 -27v54M-6 -27v54M6 -27v54M18 -27v54"/>' +
-      '<path class="rx" d="M-22 -33h46v7h-46zM-24 27h8v4h-8zM18 27h8v4h-8z"/><rect class="rx" x="42" y="-14" width="22" height="28" rx="3"/><path class="rxe" d="M49 -14v28M56 -14v28"/><path class="rxd" d="M40 14h26v16h-26z"/>'
+      '<path class="rx" d="M-22 -33h46v7h-46zM-24 27h8v4h-8zM18 27h8v4h-8z"/><rect class="rx" x="42" y="-14" width="22" height="28" rx="3"/><circle class="rxvoid" cx="53" cy="0" r="9"/>' +
+      wheel(53, 0, 8, 6) +
+      '<path class="rxd" d="M40 14h26v16h-26z"/>'
   });
   /* plate heat exchanger (a cooler): the pack of plates between two frames. Ports: a1 / a2 (one side, left), b1 / b2
      (the other side, right) */
@@ -1642,17 +1655,20 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
   /* Shapes are a picture only (no outline drawing of the switchgear in document-references). The line runs from the top
      terminal to the bottom terminal. The position window of a breaker and the blade of a switch take the state colour of
      the rule in "on": red = closed, green = open. */
-  /* circuit breaker: a cubicle with its three poles behind the window and the position window below. Ports: t / b */
+  /* circuit breaker: a cubicle with its three poles behind the window and the position window below. The moving contacts
+     (rx-ct) sit on the fixed ones when the breaker is closed and lift when it opens. Ports: t / b */
   R.breaker = () => ({
     box: [-27, -36, 27, 36],
     ports: { t: [0, -35], b: [0, 35], l: [-26, 0], r: [26, 0] },
     svg:
       '<path class="rxv" d="M-4 -35h8v8h-8zM-4 27h8v8h-8z"/><rect class="rx" x="-26" y="-28" width="52" height="56" rx="3"/>' +
-      '<rect class="rxvoid" x="-20" y="-22" width="40" height="24" rx="2"/><path class="rxst" d="M-12 -18v16M0 -18v16M12 -18v16"/>' +
-      '<path class="rxk" d="M-14.5 -12h5v4h-5zM-2.5 -12h5v4h-5zM9.5 -12h5v4h-5z"/>' +
+      '<rect class="rxvoid" x="-20" y="-22" width="40" height="24" rx="2"/><path class="rxst" d="M-12 -7v6M0 -7v6M12 -7v6"/>' +
+      '<path class="rxk" d="M-14.5 -8.5h5v3h-5zM-2.5 -8.5h5v3h-5zM9.5 -8.5h5v3h-5z"/>' +
+      '<g class="rx-ct"><path class="rxst" d="M-12 -19v8M0 -19v8M12 -19v8"/><path class="rxk" d="M-14.5 -13h5v3h-5zM-2.5 -13h5v3h-5zM9.5 -13h5v3h-5z"/></g>' +
       '<rect class="rxs" x="-20" y="7" width="40" height="15" rx="2"/><path class="rxe" d="M-26 4.5h52"/><path class="rxhi" d="M-22 -25.5h44"/>'
   });
-  /* disconnect switch between two post insulators; earth: true = an earth switch (the lower side goes to earth).
+  /* disconnect switch between two post insulators; earth: true = an earth switch (the lower side goes to earth). The blade
+     (rx-sw) stands in line when closed and swings out when open.
      Ports: t / b (an earth switch has no line below) */
   R.dswitch = o => ({
     box: [-22, -31, 22, o.earth ? 40 : 31],
@@ -1663,7 +1679,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
       (o.earth
         ? '<path class="rxst" d="M0 24v4M-11 28h22M-7 32h14M-3 36h6"/>'
         : '<path class="rx" d="M-4 24h8v6h-8z"/>') +
-      '<rect class="rxs" x="-3.2" y="-15" width="6.4" height="30" rx="2.2"/><path class="rxk" d="M-5 -16.5h10v3h-10zM-5 13.5h10v3h-10z"/>'
+      '<path class="rxk" d="M-5 -16.5h10v3h-10zM-5 13.5h10v3h-10z"/><rect class="rxs rx-sw" x="-3.2" y="-15" width="6.4" height="30" rx="2.2"/>'
   });
   /* oil filled power transformer seen from the front: tank, radiators on both sides, three bushings on top, the low
      voltage box below. Ports: t (high voltage), b (low voltage) */
@@ -1754,6 +1770,22 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
      its red one (a breaker closed, a valve open, a Y) */
   HX.HK = {};
   HX.hk = (name, hook) => ((HX.HK[name] = hook), 'h:' + name);
+  /* a hand valve of the plant model as a valve SYMBOL on the line (hand wheel, red = open, the stem follows): a click opens
+     its field faceplate. Use it where the valve stands on a drawn pipe; HX.H stays for a valve named beside the drawing */
+  HX.HV = (tag, name, o) =>
+    Object.assign(
+      {
+        k: 'eq',
+        sym: 'valve',
+        kind: 'manual',
+        name: name || tag,
+        tag: name ? tag : '',
+        vals: [],
+        on: HX.hk('fv-' + tag, 'fv:' + tag),
+        hp: 'fv:' + tag
+      },
+      o || {}
+    );
   /* a hand valve of the plant model (a field valve the operator sets): OPEN / CLOSED, a click opens its field faceplate */
   HX.H = (tag, text, o) => HX.B(text || tag, 'fv:' + tag, Object.assign({ press: true, state: true, w: 104 }, o || {}));
   HX.page = def => {
@@ -1790,28 +1822,30 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
   };
 
   /* ---------- flow of a line: 'm:NAME' running, 'x:VALVE' open, 'l:LOOP' output > 1 %, 'v:KEY>n', 'h:NAME' a named state
-     (HX.hk); a | b = any ---------- */
+     (HX.hk); a | b = any, x & y = both (a | b & c = (a or b) and c) ---------- */
   const flowing = spec => {
     if (!spec) return null;
     const D = HX.data;
     return String(spec)
-      .split('|')
-      .some(s => {
-        const k = s.slice(0, 2),
-          a = s.slice(2);
-        if (k === 'm:') return (D.machine(a) || {}).st === 'run';
-        if (k === 'x:') {
-          const v = D.valve(a) || {};
-          return v.open === true || v.pct > 1;
-        }
-        if (k === 'l:') return ((D.loop(a) || {}).mv || 0) > 1;
-        if (k === 'h:') return ((D.hook && HX.HK[a] && D.hook(HX.HK[a], a)) || {}).tone === 'run';
-        if (k === 'v:') {
-          const m = a.split('>');
-          return (D.value(m[0]) || 0) > +(m[1] || 0);
-        }
-        return false;
-      });
+      .split('&')
+      .every(part =>
+        part.split('|').some(s => {
+          const k = s.slice(0, 2),
+            a = s.slice(2);
+          if (k === 'm:') return (D.machine(a) || {}).st === 'run';
+          if (k === 'x:') {
+            const v = D.valve(a) || {};
+            return v.open === true || v.pct > 1;
+          }
+          if (k === 'l:') return ((D.loop(a) || {}).mv || 0) > 1;
+          if (k === 'h:') return ((D.hook && HX.HK[a] && D.hook(HX.HK[a], a)) || {}).tone === 'run';
+          if (k === 'v:') {
+            const m = a.split('>');
+            return (D.value(m[0]) || 0) > +(m[1] || 0);
+          }
+          return false;
+        })
+      );
   };
 
   /* a pipe as a tube: a darker edge, the body in the colour of its medium, a light line along its top, the moving dashes */
@@ -2114,11 +2148,13 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
     const yn = ynId
       ? `<g class="hx-yn" data-yn="${esc(ynId)}" transform="translate(${n1(ynX)} ${n1(ynY)})"><title>Permissive · trend · monitor</title><rect width="14" height="14" rx="3"/><text x="7" y="10.4" text-anchor="middle">-</text></g>`
       : '';
-    const attr = open
-      ? ` data-open="${esc(open)}" tabindex="0" role="button" aria-label="${esc(it.name || tg)}"`
-      : it.go
-        ? ` data-go="${esc(it.go)}" data-open="" tabindex="0" role="link" aria-label="${esc(it.name)}"`
-        : '';
+    const attr = it.hp
+      ? ` data-hp="${esc(it.hp)}" tabindex="0" role="button" aria-label="${esc(it.name || tg)}"`
+      : open
+        ? ` data-open="${esc(open)}" tabindex="0" role="button" aria-label="${esc(it.name || tg)}"`
+        : it.go
+          ? ` data-go="${esc(it.go)}" data-open="" tabindex="0" role="link" aria-label="${esc(it.name)}"`
+          : '';
     const on = it.on
       ? ` data-on="${esc(it.on)}"`
       : it.k === 'mach'
@@ -2533,7 +2569,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
       tick(true);
     };
     page.addEventListener('click', e => {
-      const t = e.target.closest('[data-view],[data-yn],[data-open],[data-go],[data-span],[data-press]');
+      const t = e.target.closest('[data-view],[data-yn],[data-open],[data-go],[data-span],[data-press],[data-hp]');
       if (!t) return;
       if (t.dataset.view) return show(t.dataset.view);
       if (t.dataset.span) {
@@ -2543,6 +2579,7 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
       }
       if (t.dataset.go) return opts.go && opts.go(t.dataset.go);
       if (t.dataset.press) return void (HX.data.press && HX.data.press(t.dataset.hook));
+      if (t.dataset.hp) return void (HX.data.press && HX.data.press(t.dataset.hp));
       if (!t.dataset.open && !t.dataset.yn) return;
       const anchor = t.closest('.hx-node') || t,
         go = (kind, id, second) =>
@@ -2558,7 +2595,10 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
       go(k, r.join(':'), false);
     });
     page.addEventListener('keydown', e => {
-      if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.hx-node[data-open],.hx-link,.hx-hook.press')) {
+      if (
+        (e.key === 'Enter' || e.key === ' ') &&
+        e.target.matches('.hx-node[data-open],.hx-node[data-hp],.hx-link,.hx-hook.press')
+      ) {
         e.preventDefault();
         e.target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       }
@@ -2626,7 +2666,11 @@ body { background: var(--hx-bg); color: var(--hx-ink); font-family: var(--hx-fon
           e.setAttribute('class', 'hx-st ' + (m.st || 'none'));
         });
         Q('.hx-node[data-ms]').forEach(e => setCls(e, (D.machine(e.dataset.ms) || {}).st || 'none'));
-        Q('.hx-node[data-on]').forEach(e => setCls(e, flowing(e.dataset.on) ? 'run' : 'stop'));
+        Q('.hx-node[data-on]').forEach(e => {
+          const f = flowing(e.dataset.on);
+          setCls(e, f ? 'run' : 'stop');
+          if (e.querySelector('[data-stem]')) travel(e, f ? 100 : 0);
+        });
         Q('.hx-node[data-vv]').forEach(e => {
           const v = D.valve(e.dataset.vv) || {},
             o = v.open != null ? v.open : v.pct != null ? v.pct > 1 : null;
@@ -6319,8 +6363,9 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
    Drawn simpler: the ball separators, ball vessels and V pieces of the tube cleaning are not drawn (the two tube cleaning
    systems are two machines under the condenser); the priming air ejectors Z-1131A / B are not drawn; the two paths of the
    condenser are one line with the values of path A / path B side by side.
-   The hand valves V-SW1002 ~ V-SW1020 (pump discharge, condenser inlet / outlet, booster discharge) are HX.H pieces: OPEN /
-   CLOSED of the plant model, a click opens the field faceplate. */
+   The hand valves V-SW1002 ~ V-SW1020 (pump discharge, condenser inlet / outlet of path A and path B, booster discharge)
+   are valve symbols on their lines (HX.HV): red = open, the hand wheel rises with the opening, a click opens the field
+   faceplate. */
 (function () {
   const { V, E, M, L, page } = HX;
   const K = 'kg/cm²';
@@ -6339,6 +6384,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
     CY = 380,
     CS = 1.6 /* condenser */,
     TOP = 110 /* discharge to the sea */,
+    PATH = 26 /* the two paths of the condenser: path A above, path B below the centre line */,
     BX = [1230, 1410, 1590],
     BY = 850 /* booster pumps */,
     EX = [1360, 1500, 1640],
@@ -6377,7 +6423,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
             { id: 'p' + i, sc: PS, lab: 'b' }
           )
         ),
-        at(M('strainer', 'S-1502', 'Debris filter', [], { tag: 'S-1502' }), 590, MY, { id: 'df1', sc: 1.6, lab: 'b' }),
+        at(M('strainer', 'S-1502', 'Debris filter', [], { tag: 'S-1502' }), 515, MY, { id: 'df1', sc: 1.6, lab: 'b' }),
         at(E('condenser', 'Condenser', 'H-1110', [], { id: 'cd', steam: 'v:SI-TB>50' }), CX, CY, {
           id: 'cd',
           sc: CS,
@@ -6402,23 +6448,27 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         ...N.map((n, i) => at(E('cooler', n, 'H-1107' + n, []), EX[i], EY, { id: 'e' + i, sc: 1.3, lab: 'r' })),
         at(L('makeup-cooling', 'Closed cooling water'), 1500, 290, { id: 'ccl' }),
         /* debris filters: in operation and common fail of DITL-39 (as temporary page 01) */
-        at(HX.B('Filter S-1502', 'data-do="DITL-39|3|IN OPERATION|NOT IN OPERATION|run"', { w: 150 }), 590, 650, {
+        at(HX.B('Filter S-1502', 'data-do="DITL-39|3|IN OPERATION|NOT IN OPERATION|run"', { w: 150 }), 575, 670, {
           id: 'f1s'
         }),
-        at(HX.B('Filter S-1502 fail', 'data-do="DITL-39|4|COMMON FAIL|NO|alarm"', { w: 150 }), 590, 694, { id: 'f1f' }),
-        at(HX.B('Filter S-1504', 'data-do="DITL-39|14|IN OPERATION|NOT IN OPERATION|run"', { w: 150 }), 1560, 640, {
+        at(HX.B('Filter S-1502 fail', 'data-do="DITL-39|4|COMMON FAIL|NO|alarm"', { w: 150 }), 575, 714, { id: 'f1f' }),
+        at(HX.B('Filter S-1504', 'data-do="DITL-39|14|IN OPERATION|NOT IN OPERATION|run"', { w: 150 }), 1500, 650, {
           id: 'f2s'
         }),
-        at(HX.B('Filter S-1504 fail', 'data-do="DITL-39|15|COMMON FAIL|NO|alarm"', { w: 150 }), 1560, 684, {
+        at(HX.B('Filter S-1504 fail', 'data-do="DITL-39|15|COMMON FAIL|NO|alarm"', { w: 150 }), 1500, 694, {
           id: 'f2f'
         }),
         /* hand valves of the plant model (K1AU3-PD-020): pump discharge, condenser inlet and outlet, booster pump discharge */
-        ...['V-SW1002', 'V-SW1004', 'V-SW1006'].map((t, i) => at(HX.H(t), 412, PY[i] - 16, { id: 'hv' + i })),
-        at(HX.H('V-SW1007', 'Inlet A V-SW1007', { w: 150 }), 720, MY - 150, { id: 'hi1' }),
-        at(HX.H('V-SW1008', 'Inlet B V-SW1008', { w: 150 }), 720, MY - 108, { id: 'hi2' }),
-        at(HX.H('V-SW1009', 'Outlet A V-SW1009', { w: 150 }), 1130, MY - 150, { id: 'ho1' }),
-        at(HX.H('V-SW1010', 'Outlet B V-SW1010', { w: 150 }), 1130, MY - 108, { id: 'ho2' }),
-        ...['V-SW1016', 'V-SW1018', 'V-SW1020'].map((t, i) => at(HX.H(t), BX[i] - 2, 792, { id: 'hb' + i })),
+        ...['V-SW1002', 'V-SW1004', 'V-SW1006'].map((t, i) =>
+          at(HX.HV(t), 412, PY[i] - 16, { id: 'hv' + i, lab: 'b' })
+        ),
+        at(HX.HV('V-SW1007'), 728, MY - PATH, { id: 'hi1', lab: 't' }),
+        at(HX.HV('V-SW1008'), 728, MY + PATH, { id: 'hi2', lab: 'b' }),
+        at(HX.HV('V-SW1009'), 1072, MY - PATH, { id: 'ho1', lab: 't' }),
+        at(HX.HV('V-SW1010'), 1072, MY + PATH, { id: 'ho2', lab: 'b' }),
+        ...['V-SW1016', 'V-SW1018', 'V-SW1020'].map((t, i) =>
+          at(HX.HV(t), BX[i] - 2, 792, { id: 'hb' + i, rot: -90, lab: 'r' })
+        ),
         at(M('pump', 'P-0762A', 'Hypochlorite dosing pump A', [], { tag: 'P-0762A', wrap: 12 }), 80, 740, {
           id: 'ha',
           sc: 0.9,
@@ -6464,11 +6514,24 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
         },
         /* header, debris filter, condenser, discharge */
         { med: 'sea', w: W_M, pts: [[HX0, MY], 'df1.l'], flow: SW },
-        { med: 'sea', w: W_M, pts: ['df1.r', 'cd.l'], flow: SW },
+        { med: 'sea', w: W_M, pts: ['df1.r', [680, MY]], flow: SW, arrow: false },
+        { med: 'sea', w: 6, pts: [[680, MY], [680, MY - PATH], 'hi1.l'], flow: SW, arrow: false },
+        { med: 'sea', w: 6, pts: [[680, MY], [680, MY + PATH], 'hi2.l'], flow: SW, arrow: false },
+        { med: 'sea', w: 6, pts: ['hi1.r', [CX - 80 * CS, MY - PATH]], flow: SW + '&' + 'h:fv-V-SW1007' },
+        { med: 'sea', w: 6, pts: ['hi2.r', [CX - 80 * CS, MY + PATH]], flow: SW + '&' + 'h:fv-V-SW1008' },
+        { med: 'sea', w: 6, pts: [[CX + 80 * CS, MY - PATH], 'ho1.l'], flow: SW, arrow: false },
+        { med: 'sea', w: 6, pts: [[CX + 80 * CS, MY + PATH], 'ho2.l'], flow: SW, arrow: false },
+        { med: 'sea', w: 6, pts: ['ho1.r', [1112, MY - PATH], [1112, MY]], flow: SW, arrow: false },
+        { med: 'sea', w: 6, pts: ['ho2.r', [1112, MY + PATH], [1112, MY]], flow: SW, arrow: false },
         {
           med: 'sea',
           w: W_M,
-          pts: ['cd.r', [1240, MY], [1240, TOP], [1560, TOP]],
+          pts: [
+            [1112, MY],
+            [1240, MY],
+            [1240, TOP],
+            [1560, TOP]
+          ],
           to: 'sea water discharge channel',
           flow: SW
         },
@@ -6515,7 +6578,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
       ],
       taps: [
         {
-          x: 720,
+          x: 628,
           y: MY,
           side: 't',
           label: 'Inlet pressure A / B',
@@ -6526,7 +6589,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
           tag: 'PT-SW1110-A1 / -B1'
         },
         {
-          x: 720,
+          x: 628,
           y: MY,
           side: 'b',
           label: 'Inlet temperature A / B',
@@ -6537,7 +6600,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
           tag: 'TT-SW1110-A1 / -B1'
         },
         {
-          x: 1130,
+          x: 1176,
           y: MY,
           side: 't',
           label: 'Outlet pressure A / B',
@@ -6548,7 +6611,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
           tag: 'PT-SW1110-A2 / -B2'
         },
         {
-          x: 1130,
+          x: 1176,
           y: MY,
           side: 'b',
           label: 'Outlet temperature A / B',
@@ -7354,7 +7417,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
    THE PICTURE: the back pass of the boiler cut open in the middle, the same drawing as on the Reheat steam and the Furnace
    and flue gas pages, with a sootblower lance going into the pass at each of its seven levels: the reheater pass from the
    left, the superheater pass from the right. Each level has two sootblowers (left wall and right wall): their two tags
-   stand at the lance, red while that blower blows. The steam comes down the two risers beside the casing. Below on the left
+   stand at the lance, red while that blower blows (the lance carries its steam only then). The steam comes down the two risers beside the casing. Below on the left
    the rotary air heater with its two blowers; on the right the sequence, its permissives and alarms.
    THE ARRANGEMENT, read from K1AU3-PD-015 Rev D (steam soot blowing system):
    - steam from the outlet of superheater panel 1 (PD-019), steam supply valve MV-SB1001, pressure control valve PCV-SB1053
@@ -7422,6 +7485,9 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
       })
     ]);
   const FL = 'l:PICSB1052';
+  /* a lance carries steam only while one of the two blowers of its level blows */
+  const hk = b => HX.hk('sb-' + b[0], op(b[1], b[2], b[0]));
+  const blow = r => hk(r[1]) + '|' + hk(r[2]);
   const ST = [
     ['All blowers', 'data-dy="DITL-80A|i|13" data-on="ALL RETRACTED" data-off="NOT ALL RETRACTED" data-s="1"'],
     ['Program', 'data-dy="DITL-80A|o|5" data-on="ON" data-off="OFF"'],
@@ -7533,7 +7599,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
             [RISR, py(r[0])],
             [px(92), py(r[0])]
           ],
-          flow: FL,
+          flow: blow(r),
           arrow: false
         })),
         ...SH.map(r => ({
@@ -7543,7 +7609,7 @@ window.HXCARDS = {"from":"app 3.2.3-beta.272, Start at 150 MW","valves":{"MV-MS1
             [RISS, py(r[0])],
             [px(124), py(r[0])]
           ],
-          flow: FL,
+          flow: blow(r),
           arrow: false
         })),
         /* air heater blowers */

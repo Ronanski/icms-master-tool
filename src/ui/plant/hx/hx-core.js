@@ -52,6 +52,22 @@
      its red one (a breaker closed, a valve open, a Y) */
   HX.HK = {};
   HX.hk = (name, hook) => ((HX.HK[name] = hook), 'h:' + name);
+  /* a hand valve of the plant model as a valve SYMBOL on the line (hand wheel, red = open, the stem follows): a click opens
+     its field faceplate. Use it where the valve stands on a drawn pipe; HX.H stays for a valve named beside the drawing */
+  HX.HV = (tag, name, o) =>
+    Object.assign(
+      {
+        k: 'eq',
+        sym: 'valve',
+        kind: 'manual',
+        name: name || tag,
+        tag: name ? tag : '',
+        vals: [],
+        on: HX.hk('fv-' + tag, 'fv:' + tag),
+        hp: 'fv:' + tag
+      },
+      o || {}
+    );
   /* a hand valve of the plant model (a field valve the operator sets): OPEN / CLOSED, a click opens its field faceplate */
   HX.H = (tag, text, o) => HX.B(text || tag, 'fv:' + tag, Object.assign({ press: true, state: true, w: 104 }, o || {}));
   HX.page = def => {
@@ -88,28 +104,30 @@
   };
 
   /* ---------- flow of a line: 'm:NAME' running, 'x:VALVE' open, 'l:LOOP' output > 1 %, 'v:KEY>n', 'h:NAME' a named state
-     (HX.hk); a | b = any ---------- */
+     (HX.hk); a | b = any, x & y = both (a | b & c = (a or b) and c) ---------- */
   const flowing = spec => {
     if (!spec) return null;
     const D = HX.data;
     return String(spec)
-      .split('|')
-      .some(s => {
-        const k = s.slice(0, 2),
-          a = s.slice(2);
-        if (k === 'm:') return (D.machine(a) || {}).st === 'run';
-        if (k === 'x:') {
-          const v = D.valve(a) || {};
-          return v.open === true || v.pct > 1;
-        }
-        if (k === 'l:') return ((D.loop(a) || {}).mv || 0) > 1;
-        if (k === 'h:') return ((D.hook && HX.HK[a] && D.hook(HX.HK[a], a)) || {}).tone === 'run';
-        if (k === 'v:') {
-          const m = a.split('>');
-          return (D.value(m[0]) || 0) > +(m[1] || 0);
-        }
-        return false;
-      });
+      .split('&')
+      .every(part =>
+        part.split('|').some(s => {
+          const k = s.slice(0, 2),
+            a = s.slice(2);
+          if (k === 'm:') return (D.machine(a) || {}).st === 'run';
+          if (k === 'x:') {
+            const v = D.valve(a) || {};
+            return v.open === true || v.pct > 1;
+          }
+          if (k === 'l:') return ((D.loop(a) || {}).mv || 0) > 1;
+          if (k === 'h:') return ((D.hook && HX.HK[a] && D.hook(HX.HK[a], a)) || {}).tone === 'run';
+          if (k === 'v:') {
+            const m = a.split('>');
+            return (D.value(m[0]) || 0) > +(m[1] || 0);
+          }
+          return false;
+        })
+      );
   };
 
   /* a pipe as a tube: a darker edge, the body in the colour of its medium, a light line along its top, the moving dashes */
@@ -412,11 +430,13 @@
     const yn = ynId
       ? `<g class="hx-yn" data-yn="${esc(ynId)}" transform="translate(${n1(ynX)} ${n1(ynY)})"><title>Permissive · trend · monitor</title><rect width="14" height="14" rx="3"/><text x="7" y="10.4" text-anchor="middle">-</text></g>`
       : '';
-    const attr = open
-      ? ` data-open="${esc(open)}" tabindex="0" role="button" aria-label="${esc(it.name || tg)}"`
-      : it.go
-        ? ` data-go="${esc(it.go)}" data-open="" tabindex="0" role="link" aria-label="${esc(it.name)}"`
-        : '';
+    const attr = it.hp
+      ? ` data-hp="${esc(it.hp)}" tabindex="0" role="button" aria-label="${esc(it.name || tg)}"`
+      : open
+        ? ` data-open="${esc(open)}" tabindex="0" role="button" aria-label="${esc(it.name || tg)}"`
+        : it.go
+          ? ` data-go="${esc(it.go)}" data-open="" tabindex="0" role="link" aria-label="${esc(it.name)}"`
+          : '';
     const on = it.on
       ? ` data-on="${esc(it.on)}"`
       : it.k === 'mach'
@@ -831,7 +851,7 @@
       tick(true);
     };
     page.addEventListener('click', e => {
-      const t = e.target.closest('[data-view],[data-yn],[data-open],[data-go],[data-span],[data-press]');
+      const t = e.target.closest('[data-view],[data-yn],[data-open],[data-go],[data-span],[data-press],[data-hp]');
       if (!t) return;
       if (t.dataset.view) return show(t.dataset.view);
       if (t.dataset.span) {
@@ -841,6 +861,7 @@
       }
       if (t.dataset.go) return opts.go && opts.go(t.dataset.go);
       if (t.dataset.press) return void (HX.data.press && HX.data.press(t.dataset.hook));
+      if (t.dataset.hp) return void (HX.data.press && HX.data.press(t.dataset.hp));
       if (!t.dataset.open && !t.dataset.yn) return;
       const anchor = t.closest('.hx-node') || t,
         go = (kind, id, second) =>
@@ -856,7 +877,10 @@
       go(k, r.join(':'), false);
     });
     page.addEventListener('keydown', e => {
-      if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.hx-node[data-open],.hx-link,.hx-hook.press')) {
+      if (
+        (e.key === 'Enter' || e.key === ' ') &&
+        e.target.matches('.hx-node[data-open],.hx-node[data-hp],.hx-link,.hx-hook.press')
+      ) {
         e.preventDefault();
         e.target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       }
@@ -924,7 +948,11 @@
           e.setAttribute('class', 'hx-st ' + (m.st || 'none'));
         });
         Q('.hx-node[data-ms]').forEach(e => setCls(e, (D.machine(e.dataset.ms) || {}).st || 'none'));
-        Q('.hx-node[data-on]').forEach(e => setCls(e, flowing(e.dataset.on) ? 'run' : 'stop'));
+        Q('.hx-node[data-on]').forEach(e => {
+          const f = flowing(e.dataset.on);
+          setCls(e, f ? 'run' : 'stop');
+          if (e.querySelector('[data-stem]')) travel(e, f ? 100 : 0);
+        });
         Q('.hx-node[data-vv]').forEach(e => {
           const v = D.valve(e.dataset.vv) || {},
             o = v.open != null ? v.open : v.pct != null ? v.pct > 1 : null;
