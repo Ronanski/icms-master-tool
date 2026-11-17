@@ -322,6 +322,7 @@
     MK08: 'HX-aux-steam' /* AUX STEAM AND VACUUM */,
     MK18: 'HX-extraction' /* EXTRACTION AND DRAINS */,
     MK17: 'HX-generator' /* GENERATOR: every state and value it had */,
+    MK15: 'HX-sootblowers' /* SOOTBLOWERS: every blower, state and value it had */,
     MK10: 'HX-purge-trip' /* PURGE AND TRIP: every row of DITL-01 / 02 / 03A it had */,
     /* an older page of a system whose temporary page is still needed (hand valves, states the new look has no piece for yet):
        it opens that temporary page until the new page is complete */
