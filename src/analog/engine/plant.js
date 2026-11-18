@@ -1468,6 +1468,12 @@ function anStep(S, dt) {
         if (b.vel) {
           const e1 = s.ep == null ? es : s.ep;
           u = s.inited && dt > 0 ? kp * (es - e1 + (P.ti > 0 ? (es * dt) / P.ti : 0)) : 0;
+          /* 3.2.5-beta.1 (JENNIE live Cold 2026-11-18): the station MV limits ML / MH (face data) hold in the velocity form too: the
+             step is cut so that MV(n-1) + step stays inside them. Before, a lasting deviation took the fed-back MV past 100 % */
+          {
+            const mv = b.velNet != null ? +v[b.velNet] : NaN;
+            if (isFinite(mv) && lo != null && hi != null) u = Math.max(lo - mv, Math.min(hi - mv, u));
+          }
           s.ep2 = e1;
           s.ep = es;
           s.out = u;

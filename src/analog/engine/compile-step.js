@@ -2348,6 +2348,19 @@ function anInit(S) {
           if (!(c.o || []).some(m => R.has(m))) continue;
           for (const a of c.i || [])
             if (S.aoN.has(a) && R.has(a) && (c.o || []).some(m => fwd(m).has(a))) ((b.vel = true), (b.velNet = a));
+        /* 3.2.5-beta.1 (JENNIE live Cold 2026-11-18): the velocity form also when the fed-back MV is the A / M station output and not
+           an AO net: ABC-008 PICFG108A (IDF inlet damper) is drawn MV(n) = FF + (MV(n-1) - FF) + PID, the SUB (FF - MV) going straight
+           into the SUM with the PID output. Read as a position PID, its output was added again every scan: AUTO ran the damper
+           command to 39,200 % in seconds. Only a SUB whose output enters a SUM together with THIS PID's own output is taken (the
+           tracking SUB of ABC-011 / 012 that goes to a high check is not a velocity loop) */
+        if (!b.vel)
+          for (const c of S.blk) {
+            if (c.k !== 'SUB' || !(c.o || []).length) continue;
+            const sm = (S.cns[c.o[0]] || []).find(x => x.k === 'SUM' && (x.i || []).some(n => (b.o || []).includes(n)));
+            if (!sm) continue;
+            for (const a of c.i || [])
+              if (!S.aoN.has(a) && R.has(a) && fwd(c.o[0]).has(a)) ((b.vel = true), (b.velNet = a));
+          }
         }
       }
       const LG = ['AND', 'OR', 'NOT', 'FF', 'TPS', 'TON', 'TOF', 'TPV'];
