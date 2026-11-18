@@ -137,3 +137,8 @@ html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#e0a030"] { fill: 
 html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#ff4d4d"] { stroke: #e5565a !important; }
 html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#ff4d4d"] { fill: #e5565a !important; }
 html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) text[fill="#e6edf3"] { fill: #c9d0d6 !important; }
+/* touch: the alarm line is 40 px high, so the page and the logic drawing end 40 px above the bottom */
+@media (pointer: coarse) {
+html body.st:not(#st0):not(#st1) #plantws:not(#st2) { bottom: 40px !important; }
+html body.st.st-eng:not(#st0):not(#st1) #cv:not(#st2) { bottom: 40px !important; }
+}

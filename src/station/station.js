@@ -178,9 +178,9 @@
       tabs.append(b);
     }
     for (const n of NUMS) {
-      const s = E('span', '', n[0]),
+      const s = E('span'),
         b = E('b', '', '--');
-      s.append(b, n[2]);
+      s.append(E('i', '', n[0]), b, n[2]);
       s._b = b;
       s._n = n;
       kv.append(s);
