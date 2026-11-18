@@ -262,15 +262,27 @@
 
   /* the faceplate of the page (its own popup): it takes the full name of the machine from the page, and it can be dragged by its title */
   function face() {
-    const f = $('#fpop');
-    if (!f || f._st) return;
+    faceOf($('#fpop'), '.fpo-h', f => {
+      const b = $('.fpo-tt > b', f),
+        key = b ? b.textContent.trim() : '',
+        n = [...document.querySelectorAll('#plantws .hx-node[data-ms]')].find(x => x.dataset.ms === key),
+        nm = n && $('.hx-name', n);
+      return nm ? nm.textContent : key;
+    });
+    /* a controller: the name the page gives the loop (data-name of its card) */
+    faceOf($('#plfp'), '.plfph', f => {
+      const tag = f.dataset.tag || '',
+        n = [...document.querySelectorAll('#plantws .hx-node[data-lv2]')].find(x => x.dataset.lv2 === tag);
+      return (n && n.dataset.name) || tag;
+    });
+  }
+  function faceOf(f, head, name) {
+    if (!f) return;
+    const nm = JSON.stringify(String(name(f)).replace(/\s+/g, ' ').trim());
+    if (f._nm !== nm) f.style.setProperty('--st-name', (f._nm = nm));
+    if (f._st) return;
     f._st = 1;
-    const b = $('.fpo-tt > b', f),
-      key = b ? b.textContent.trim() : '',
-      n = [...document.querySelectorAll('#plantws .hx-node[data-ms]')].find(x => x.dataset.ms === key),
-      nm = n && $('.hx-name', n);
-    f.style.setProperty('--st-name', JSON.stringify(nm ? nm.textContent.replace(/\s+/g, ' ').trim() : key));
-    const h = $('.fpo-h', f);
+    const h = $(head, f);
     if (h)
       h.addEventListener('pointerdown', e => {
         if (e.target.closest('button')) return;

@@ -60,3 +60,32 @@ html body.st:not(#st0):not(#st1) #fpop:not(#st2) :is(.fpo-seg button, .fpo-cmd):
 html body.st:not(#st0):not(#st1) #fpop:not(#st2) .fpo-seg button.on { background: #3b4651 !important; border-color: #c9d1d9 !important; color: #fff !important; font-weight: 600 !important; box-shadow: inset 0 2px 0 #fff !important; }
 html body.st:not(#st0):not(#st1) #fpop:not(#st2) :is(.fpo-seg button, .fpo-cmd):disabled { color: #6d7882 !important; border: 1px dashed #46515c !important; background: none !important; box-shadow: none !important; cursor: not-allowed !important; opacity: 1 !important; }
 html body.st:not(#st0):not(#st1) #fpop:not(#st2) :is(button, [role="button"]):focus-visible { outline: 2px solid #e6eaed !important; outline-offset: 1px !important; }
+
+/* the faceplate of a controller (the popup of the page itself), in the look of the station */
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) { width: 256px !important; background: #20262c !important; border: 1px solid #7a8692 !important; border-radius: 2px !important; box-shadow: 0 12px 32px rgba(0, 0, 0, .6) !important; color: #e6eaed !important; padding: 0 !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) * { font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif !important; letter-spacing: 0 !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .plfph { min-height: 32px !important; padding: 0 4px 0 12px !important; border-bottom: 1px solid #2b333b !important; background: none !important; cursor: move !important; user-select: none !important; touch-action: none !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .plfph > b { font-size: 0 !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .plfph > b::after { content: var(--st-name) !important; font: 600 13px "IBM Plex Sans", "Segoe UI", system-ui, sans-serif !important; color: #e6eaed !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .plfph > .b:not([data-g="x"]), html body.st:not(#st0):not(#st1) #plfp:not(#st2) .body > .hdr, html body.st:not(#st0):not(#st1) #plfp:not(#st2) .fpt { display: none !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .plfph > .b[data-g="x"] { width: 32px !important; height: 32px !important; min-width: 0 !important; padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; color: #9aa4ae !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .plfph > .b[data-g="x"]:hover { color: #fff !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .body { padding: 8px 12px 12px !important; background: none !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .sub { color: #9aa4ae !important; font-size: 12px !important; text-transform: none !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .fp { background: none !important; border: 0 !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .fl span { color: #9aa4ae !important; font-size: 12px !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .mlb { background: #14181c !important; border: 1px solid #46515c !important; border-radius: 0 !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .mlb > i { background: #e6eaed !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) input.n { background: #14181c !important; border: 1px solid #46515c !important; border-radius: 2px !important; color: #e6eaed !important; font: 600 15px "IBM Plex Mono", Consolas, monospace !important; height: 32px !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .body .b { height: 28px !important; min-height: 0 !important; min-width: 0 !important; padding: 0 8px !important; border: 1px solid #7a8692 !important; border-radius: 2px !important; background: #20262c !important; color: #e6eaed !important; font-size: 12px !important; font-weight: 500 !important; box-shadow: none !important; text-shadow: none !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .body .b:hover { background: #2b333b !important; border-color: #a9b3bd !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .body .b:is(.on, .lit, .act, [aria-pressed="true"]) { background: #3b4651 !important; border-color: #c9d1d9 !important; color: #fff !important; font-weight: 600 !important; box-shadow: inset 0 2px 0 #fff !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .body .b:disabled { color: #6d7882 !important; border: 1px dashed #46515c !important; background: none !important; cursor: not-allowed !important; opacity: 1 !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .tg { background: none !important; border: 0 !important; border-top: 1px solid #2b333b !important; padding: 8px 0 0 !important; margin-top: 8px !important; color: #9aa4ae !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .tg > b { font: 500 12px "IBM Plex Mono", Consolas, monospace !important; color: #9aa4ae !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .tg > span { font: 400 12px "IBM Plex Mono", Consolas, monospace !important; color: #9aa4ae !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) :is(button, input):focus-visible { outline: 2px solid #e6eaed !important; outline-offset: 1px !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .body > .sub { display: none !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .fl > span:first-child { font-size: 0 !important; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .fl > span:first-child::after { content: "Output"; font-size: 12px; }
+html body.st:not(#st0):not(#st1) #plfp:not(#st2) .tg { flex-wrap: wrap !important; gap: 4px 8px !important; }
