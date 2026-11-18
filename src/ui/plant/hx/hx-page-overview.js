@@ -107,11 +107,6 @@
           id: 'cm',
           lab: 'r'
         }),
-        /* the rate limit of the unit load demand: HIC-MWRL, ULD MAX RATE OF CHANGE SETTER, 0 to 10 MW/MIN (ABC-001B; DCS loop list) */
-        at(C('HIC-MWRL', 'Load change rate, MW/min', { sym: 'ctl', unit: '', pvdp: 1, wrap: 18 }), 1560, 650, {
-          id: 'mwrl',
-          lab: 'r'
-        }),
 
         /* ---- the page of every part ---- */
         at(L('coal', 'Coal'), 70, 430, { id: 'l1' }),
