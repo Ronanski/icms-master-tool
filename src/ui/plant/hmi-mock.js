@@ -322,7 +322,17 @@
             : call(() => !SIM, false);
           const cmd = e.dataset.tpb,
             nm =
-              { shutdown: 'SHUT-DOWN', holdoff: 'HOLD OFF', trip: 'TURBINE TRIP', tripreset: 'TURBINE RESET' }[cmd] ||
+              {
+                shutdown: 'SHUT-DOWN',
+                holdoff: 'HOLD OFF',
+                trip: 'TURBINE TRIP',
+                tripreset: 'TURBINE RESET',
+                roll: 'ATS ROLL',
+                excite: 'EXCITATION',
+                sync: 'SYNCH. & INITIAL LOAD',
+                loadup: 'LOAD UP',
+                normal: 'NORMAL OPERATION'
+              }[cmd] ||
               cmd;
           if (view) {
             /* VIEW: the label says why nothing happened, for 2 s */
@@ -520,6 +530,9 @@
             if (m.tcs === 'gland') return U && U.on && U.tc ? (U.tc.gland ? 'RUN' : 'STOP') : null;
             /* live Cold start 2026-11-14 (3.2.3-beta.234): the LP exhaust hood spray FV-CD1904 of the TCS (tcs.js 'hood', PR-OPE-5002 6307), in AUTO = RUN */
             if (m.tcs === 'hood') return U && U.on && U.tc ? (U.tc.hsp ? 'RUN' : 'STOP') : null;
+            /* live Cold run 2026-11-18 F-W: the turning gear of the TCS (tcs.js 'tg', ATS 1.19): selected with the shaft turning = RUN; the
+               realistic pages had no way to select it, so gland sealing (needs the shaft turning, PR-OPE-5002 6219) could not start */
+            if (m.tcs === 'tg') return U && U.on && U.tc ? (U.tc.tg && U.tb && U.tb.rpm >= 1 ? 'RUN' : 'STOP') : null;
             if (!U || !U.on || !U.loMop) return null;
             if (m.tcs === 'vex') return U.loVex ? 'RUN' : 'STOP';
             if (m.tcs === 'eop') return U.loEopR ? 'RUN' : 'STOP';
@@ -1107,9 +1120,9 @@
                   ? op === 'start' || op === 'stop'
                     ? AN.turbine(m.tcs, op === 'start' ? 1 : 0)
                     : 'no AUTO / MANUAL'
-                  : m.tcs === 'vex'
+                  : m.tcs === 'vex' || m.tcs === 'tg'
                     ? op === 'start' || op === 'stop'
-                      ? AN.turbine('vex', op === 'start' ? 1 : 0)
+                      ? AN.turbine(m.tcs, op === 'start' ? 1 : 0)
                       : 'no AUTO / MANUAL'
                     : AN.turbine('oil', { p: m.tcs, op })
           });

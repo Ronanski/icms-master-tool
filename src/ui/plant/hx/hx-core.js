@@ -740,6 +740,9 @@
             ? 'Tripped'
             : '-----';
 
+  /* the words of a state row that is not a running state (REMOTE, ROUTE OK ...), in sentence case */
+  const wordTxt = w => (w ? w.charAt(0) + w.slice(1).toLowerCase() : '-----');
+
   function drawControls(def, inv) {
     let h = '';
     if (inv.loops.length) {
@@ -1013,7 +1016,7 @@
         });
         Q('[data-st]').forEach(e => {
           const m = D.machine(e.dataset.st) || {},
-            t = stTxt(m.st, e.dataset.st) + (m.mode ? ' · ' + m.mode : '');
+            t = (m.word ? wordTxt(m.word) : stTxt(m.st, e.dataset.st)) + (m.mode ? ' · ' + m.mode : '');
           if (e.textContent !== t) e.textContent = t;
           e.setAttribute('class', 'hx-st ' + (m.st || 'none'));
         });
@@ -1094,7 +1097,7 @@
         Q('[data-card-mach]').forEach(c => {
           const m = D.machine(c.dataset.cardMach) || {},
             F = f => c.querySelector(`[data-f="${f}"]`);
-          F('st').textContent = stTxt(m.st, c.dataset.cardMach);
+          F('st').textContent = m.word ? wordTxt(m.word) : stTxt(m.st, c.dataset.cardMach);
           F('st').className = 'hx-pill ' + (m.st || '');
           F('mode').textContent = m.mode || '';
           const y = c.querySelector('.hx-ynb');

@@ -550,6 +550,17 @@
       '<path class="rx" d="M-6 -8h12v6h-12z"/><path class="rxd" d="M-10 -2h20v3h-20z"/>' +
       '<path class="rxst" d="M0 1V30"/><path class="rxd" d="M-10 27h20v4h-20z"/>'
   });
+  /* a drive motor with its reduction gearbox on a base (turning gear of the turbine, seen from the side): the motor (takes
+     the state colour) on the left, the gearbox with its output pinion on the right. Ports: l / r / t / b */
+  R.motor = () => ({
+    box: [-27, -17, 27, 17],
+    ports: { l: [-26, 0], r: [26, 0], t: [0, -16], b: [0, 16] },
+    svg:
+      '<path class="rxd" d="M-26 11h52v5h-52z"/><rect class="rxs" x="-25" y="-11" width="26" height="22" rx="3"/>' +
+      '<path class="rxe" d="M-20 -11v22M-14 -11v22M-8 -11v22"/><path class="rx" d="M1 -3h4v6h-4z"/>' +
+      '<rect class="rx" x="5" y="-15" width="18" height="26" rx="2"/><path class="rxhi" d="M8 -12h12"/>' +
+      '<circle class="rxvoid" cx="14" cy="3" r="5"/><path class="rx" d="M23 1h3v4h-3z"/>'
+  });
   /* generator with its exciter, closed (seen from the side). The shaft comes in at the left. The body takes the state colour
      of the rule in "on"; the fan behind the opening of the exciter end turns while it is on. Ports: l (shaft end), t (terminals, on top), r (exciter end) */
   R.generator = () => ({

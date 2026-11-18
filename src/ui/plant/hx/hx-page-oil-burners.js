@@ -171,8 +171,16 @@
         }),
         at(C('PICDO1008', 'Oil return valve', { tag: 'PCV-DO1009' }), 430, 90, { id: 'ret', lab: 'b' }),
         at(C('FIC-OM', 'Oil master', { sym: 'ctl', unit: 't/h', pvdp: 2 }), 900, 940, { id: 'om', lab: 't' }),
+        /* 3.2.5-beta.1 (JENNIE live Cold 2026-11-18, F-N): the two CRT push buttons of ABC-003E (OIL MASTER USE M.008C, OIL MASTER
+           NOT USE M.008D, TPs 2 s -> FF M.008F, which lets FICDO1043A ~ D go to AUTO under FIC-OM); lit = the selection of M.008F.
+           No operator page had them: the burner oil valves stayed forced to MANUAL */
+        at(HX.B('OIL MASTER USE', 'data-apb="ABC-003E|M.008C|M.008F=1"', { press: true }), 1100, 915, { id: 'omu' }),
+        at(HX.B('NOT USE', 'data-apb="ABC-003E|M.008D|M.008F=0"', { press: true }), 1100, 965, { id: 'omn' }),
         ...B.flatMap(b => b.items),
-        at(L('combustion-air', 'Hot secondary air', { back: true }), AIRX + 80, 90, { id: 'hsa' })
+        at(L('combustion-air', 'Hot secondary air', { back: true }), AIRX + 80, 90, { id: 'hsa' }),
+        /* 3.2.5-beta.1 (JENNIE live Cold 2026-11-18, F-M): the atomizing air of the burners is plant air (DITL-07 row 11
+           PSL-PA1043-x1): the burners stayed not ready with no plant air compressor running, and no page of the burners led to it */
+        at(L('compressed-air', 'Plant air (atomizing air)'), 1350, 960, { id: 'pal' })
       ],
       pipes: [
         /* tank outlet, strainer, the suction header and the suction valve of each pump */

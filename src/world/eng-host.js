@@ -109,7 +109,25 @@
         busy = true;
         const t0 = performance.now();
         try {
-          for (let i = 0; i < n; i++) K > 1 ? AN.stepTier(sh, dt / n, K) : G.ENGINE.E.stepSet(sh, dt / n);
+          /* Jennie 2026-11-18 (F-AN, sched.js worldWithPlant): the world scans between the steps of the plant, never more than 1 s of
+             plant ahead while a timer counts or a device moves (WORLD.busy), 3 s when it is quiet */
+          let wAcc = 0;
+          for (let i = 0; i < n; i++) {
+            K > 1 ? AN.stepTier(sh, dt / n, K) : G.ENGINE.E.stepSet(sh, dt / n);
+            wAcc += dt / n;
+            if (WORLD.on && WORLD.scanJob && AN.cat === 'an' && (i === n - 1 || wAcc >= (WORLD.busy ? 1 : 3))) {
+              wAcc = 0;
+              const g = WORLD.scanJob();
+              WORLD._drvT = performance.now();
+              if (g)
+                try {
+                  for (const _ of g);
+                  N.world++;
+                } catch (e) {
+                  say({ t: 'error', where: 'DITL scan', text: String((e && e.stack) || e) });
+                }
+            }
+          }
         } catch (e) {
           say({ t: 'error', where: 'ABC scan', text: String((e && e.stack) || e) });
         }
@@ -128,6 +146,8 @@
     timers.push(
       setInterval(() => {
         if (busy || !WORLD.scanJob) return;
+        /* while the plant runs, its tick scans the world between its steps (above) */
+        if (WORLD._drvT && performance.now() - WORLD._drvT < 400) return;
         const g = WORLD.scanJob();
         if (!g) {
           /* paused: scanJob turned WORLD.live off, but no job runs to send it, so the page kept "live" (Rosé, 1 of 3 runs) */

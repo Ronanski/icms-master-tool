@@ -117,6 +117,26 @@ const anSteps = dt => {
   return Math.max(1, Math.min(want, Math.max(fit, Math.ceil(dt / AN_STEP_MAX))));
 };
 AN.anSteps = anSteps;
+/* Jennie 2026-11-18 (F-AN, live x60 at 85 MW, sand system of DITL-771 / 774 / 777): the plant tick of x60 went 6 s and the world job
+   after it scanned up to 12 s of DITL against field contacts the plant had worked out BEFORE the command (one world = one time, but
+   the plant led by a whole frame). A START of the sand system: BA21 vent filter run command and inlet dome valve OPEN given in the first
+   scans, the plant model answered only after the 10 s TR386 (VENT FILTER RUNNING FAULT) and the INLET DV OPEN FAULT had timed out:
+   SYSTEM TRIP. Every device with a fault timer shorter than the frame had the same fault. The world now scans between the steps of the
+   plant: never more than 1 s of plant ahead while a timer counts or a device moves (W.busy), 3 s when the world is quiet */
+const worldChunk = () => (window.WORLD && WORLD.busy ? 1 : 3);
+function worldWithPlant() {
+  const W = window.WORLD;
+  if (!W || !W.on || !W.scanJob || AN.cat !== 'an' || anMirror()) return;
+  const g = W.scanJob();
+  W._drvT = performance.now();
+  if (!g) return;
+  try {
+    for (const _ of g);
+  } catch (e) {
+    console.error(e);
+  }
+}
+AN.worldWithPlant = worldWithPlant;
 AN.suFw = anSuFw; /* the start-up feedwater valve formula (unit.js), read by tests/regress/sufw_p1.js */
 setInterval(() => {
   if (!live() || !AN.run || AN._loading || anMirror()) return void (anLastT = 0);
@@ -133,6 +153,7 @@ setInterval(() => {
   histRec(sh, 1);
   const t0_ = performance.now(),
     K = AN.tierK || 1;
+  let wAcc = 0;
   for (let i = 0; i < n; i++) {
     if (K > 1) stepTier(sh, dt / n, K);
     else stepSet(sh, dt / n);
@@ -141,6 +162,11 @@ setInterval(() => {
       try {
         AN.onStep(dt / n);
       } catch (e) {}
+    wAcc += dt / n;
+    if (i === n - 1 || wAcc >= worldChunk()) {
+      worldWithPlant();
+      wAcc = 0;
+    }
   }
   /* speed (user 2026-11-01, 6x CPU): the drawing and the side panel are painted only while the Logic page shows them; on Home,
      Training or a plant page only the trends and the hooks run (a faceplate, the plant window), and the drawing is painted when it
@@ -165,10 +191,12 @@ setInterval(() => {
   }
 }, 100);
 
-/* group 2: DITL world, one whole scan every 200 ms as before 18f7a64 (world.js setInterval): the scan job run to the end at once */
+/* group 2: DITL world, one whole scan every 200 ms as before 18f7a64 (world.js setInterval): the scan job run to the end at once.
+   While the plant model runs, group 1 scans the world between its steps (worldWithPlant) and this group stands */
 setInterval(() => {
   const W = window.WORLD;
   if (!W || !W.scanJob || anMirror()) return;
+  if (W._drvT && performance.now() - W._drvT < 400) return;
   const g = W.scanJob();
   if (!g) return;
   AN.sched.flush();
