@@ -34,3 +34,29 @@ body.st .hx-app, body.st .hx { border: 0 !important; box-shadow: none !important
 body.st #plsvg, body.st #plmid { background: #1b1f27 !important; }
 /* the condition boxes of a page are shown in the Conditions popup of the station, not on the picture; push buttons stay */
 body.st .hx-process .hx-hook:not([data-press]) { display: none !important; }
+
+/* the faceplate of a machine: the popup of the page itself, in the look of the station (same commands, same logic).
+   The old frame styles it with !important, so every line here is !important too. */
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) { width: 256px !important; background: #20262c !important; border: 1px solid #7a8692 !important; border-radius: 2px !important; box-shadow: 0 12px 32px rgba(0, 0, 0, .6) !important; color: #e6eaed !important; padding: 0 !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) * { font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif !important; font-size: 12px !important; letter-spacing: 0 !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) .fpo-h { min-height: 32px !important; padding: 4px 4px 4px 12px !important; border-bottom: 1px solid #2b333b !important; background: none !important; cursor: move !important; user-select: none !important; touch-action: none !important; gap: 8px !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) .fpo-tt > b { font-size: 0 !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) .fpo-tt > b::after { content: var(--st-name) !important; font: 600 13px "IBM Plex Sans", "Segoe UI", system-ui, sans-serif !important; color: #e6eaed !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) .fpo-tt > small { font-family: "IBM Plex Mono", Consolas, monospace !important; color: #9aa4ae !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) :is(.fpo-k, .fpo-ln) { display: none !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) .fpo-chip { border: 0 !important; background: none !important; padding: 0 !important; font-weight: 600 !important; color: #f08285 !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) .fpo-x { width: 32px !important; height: 32px !important; min-width: 0 !important; padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; color: #9aa4ae !important; font-size: 0 !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) .fpo-x:hover { color: #fff !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) .fpo-b { padding: 8px 12px 12px !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) :is(.fpo-l, .fpo-lp, .fpo-fld, .fpo-sh, .fpo-why, .fpo-nd) { color: #9aa4ae !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) .fpo-lp.run { color: #f08285 !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) :is(.fpo-fld, .fpo-seg) { border: 0 !important; background: none !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) .fpo-seg { gap: 4px !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) .fpo-l { white-space: nowrap !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) .fpo-why { overflow: hidden !important; text-overflow: ellipsis !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) :is(.fpo-sh, .fpo-why) { background: none !important; border-color: #2b333b !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) :is(.fpo-seg button, .fpo-cmd) { height: 28px !important; min-height: 0 !important; padding: 0 8px !important; border: 1px solid #7a8692 !important; border-radius: 2px !important; background: #20262c !important; color: #e6eaed !important; font-weight: 500 !important; box-shadow: none !important; text-shadow: none !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) :is(.fpo-seg button, .fpo-cmd):hover { background: #2b333b !important; border-color: #a9b3bd !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) .fpo-seg button.on { background: #3b4651 !important; border-color: #c9d1d9 !important; color: #fff !important; font-weight: 600 !important; box-shadow: inset 0 2px 0 #fff !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) :is(.fpo-seg button, .fpo-cmd):disabled { color: #6d7882 !important; border: 1px dashed #46515c !important; background: none !important; box-shadow: none !important; cursor: not-allowed !important; opacity: 1 !important; }
+html body.st:not(#st0):not(#st1) #fpop:not(#st2) :is(button, [role="button"]):focus-visible { outline: 2px solid #e6eaed !important; outline-offset: 1px !important; }

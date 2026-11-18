@@ -260,6 +260,38 @@
   const GROUPS_OF = { PP: 'Purge permissive' };
   const title1 = t => t || 'Conditions';
 
+  /* the faceplate of the page (its own popup): it takes the full name of the machine from the page, and it can be dragged by its title */
+  function face() {
+    const f = $('#fpop');
+    if (!f || f._st) return;
+    f._st = 1;
+    const b = $('.fpo-tt > b', f),
+      key = b ? b.textContent.trim() : '',
+      n = [...document.querySelectorAll('#plantws .hx-node[data-ms]')].find(x => x.dataset.ms === key),
+      nm = n && $('.hx-name', n);
+    f.style.setProperty('--st-name', JSON.stringify(nm ? nm.textContent.replace(/\s+/g, ' ').trim() : key));
+    const h = $('.fpo-h', f);
+    if (h)
+      h.addEventListener('pointerdown', e => {
+        if (e.target.closest('button')) return;
+        const x0 = e.clientX,
+          y0 = e.clientY,
+          l = f.offsetLeft,
+          t = f.offsetTop;
+        h.setPointerCapture(e.pointerId);
+        const mv = ev => {
+          f.style.left = l + ev.clientX - x0 + 'px';
+          f.style.top = t + ev.clientY - y0 + 'px';
+        };
+        const up = () => {
+          h.removeEventListener('pointermove', mv);
+          h.removeEventListener('pointerup', up);
+        };
+        h.addEventListener('pointermove', mv);
+        h.addEventListener('pointerup', up);
+      });
+  }
+
   /* the views of a plant page: its own Process and Trends views */
   function view(v) {
     const t = document.querySelectorAll('#plantws .hx-tabs button')[v];
@@ -342,6 +374,7 @@
         }
       }
     }
+    face();
     if (cur() !== tick._c) {
       tick._c = cur();
       tabs._v = 0;
