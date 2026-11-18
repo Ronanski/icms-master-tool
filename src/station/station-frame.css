@@ -79,3 +79,5 @@ button:focus-visible { outline: 2px solid var(--st-tx); outline-offset: -2px; }
 .st-rail .st-list { flex: 1 1 auto; }
 .st-tools { position: absolute; left: calc(var(--st-rail) + 12px); bottom: 44px; display: flex; gap: 4px; padding: 4px; background: var(--st-pop); border: 1px solid var(--st-line2); border-radius: 2px; box-shadow: 0 12px 32px rgba(0, 0, 0, .6); }
 .st-tools .st-b { height: 28px; padding: 0 8px; min-width: 28px; }
+.st-fam { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; padding: 12px 12px 0; }
+.st-fam .st-b { padding: 0 2px; font-size: 12px; }

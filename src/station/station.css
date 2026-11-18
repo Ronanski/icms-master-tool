@@ -123,3 +123,17 @@ html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#ffb24a"] { stro
 html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#ffb24a"] { fill: #e8b04c !important; }
 html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke^="rgb(247"] { stroke: #1f2428 !important; }
 html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) :is(path, circle, rect)[fill^="rgb(2"] { fill: #1f2428 !important; }
+/* the digital and turbine sheets: the same one ink (their own greens become ink, their red stays the live signal) */
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#4fd18b"] { stroke: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#4fd18b"] { fill: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#2b5f46"] { stroke: #7a8692 !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#2b5f46"] { fill: #7a8692 !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#35505f"] { stroke: #4a545e !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#35505f"] { fill: #4a545e !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#ffd24a"] { stroke: #e8b04c !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#ffd24a"] { fill: #e8b04c !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#e0a030"] { stroke: #e8b04c !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#e0a030"] { fill: #e8b04c !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#ff4d4d"] { stroke: #e5565a !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#ff4d4d"] { fill: #e5565a !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) text[fill="#e6edf3"] { fill: #c9d0d6 !important; }

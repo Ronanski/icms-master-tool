@@ -280,49 +280,157 @@
     }
     if (condPop) condPop.hidden = true;
     tools.hidden = !eng;
+    paint();
     setTimeout(() => dispatchEvent(new Event('resize')), 60);
-    setTimeout(tick, 120);
+    setTimeout(() => {
+      tick();
+      paint();
+    }, 120);
   }
   function zoom(k) {
+    if (k === 'read') return readable();
     const B = [...document.querySelectorAll('button')],
       b =
         k === 'out'
           ? B.find(x => x.title === 'Zoom out' && x.closest('#zbar'))
           : k === 'in'
             ? B.find(x => x.title === 'Zoom in' && x.closest('#zbar'))
-            : k === 'read'
-              ? B.find(x => /^Zoom in until the drawing text is readable/.test(x.title))
-              : B.find(x => x.closest('#zbar') && x.textContent.trim() === 'Fit');
+            : B.find(x => x.closest('#zbar') && x.textContent.trim() === 'Fit');
     if (b) b.click();
+  }
+  /* readable: the wheel zoom of the drawing itself, around the top left of what is drawn, until its text is about 12 px high
+     (the Readable size of the app stops at the height of the sheet in its Engineer layout) */
+  function readable() {
+    const sv = $('#svg');
+    if (!sv) return;
+    const R = [...sv.querySelectorAll('text')].map(t => t.getBoundingClientRect()).filter(r => r.height > 0);
+    if (!R.length) return;
+    const hs = R.map(r => r.height).sort((a, b) => a - b),
+      px = hs[hs.length >> 1],
+      box = sv.getBoundingClientRect();
+    if (px >= 11.5) return;
+    const x = Math.min(box.right - 4, Math.max(box.left + 4, Math.min(...R.map(r => r.left)) - 16)),
+      y = Math.min(box.bottom - 4, Math.max(box.top + 4, Math.min(...R.map(r => r.top)) - 16)),
+      n = Math.min(16, Math.ceil(Math.log(12 / px) / Math.log(1.15)));
+    for (let i = 0; i < n; i++)
+      sv.dispatchEvent(
+        new WheelEvent('wheel', { deltaY: -100, clientX: x, clientY: y, bubbles: true, cancelable: true })
+      );
+    /* then the drag of the drawing itself, so that what is drawn starts at the top left of the view */
+    const T = [...sv.querySelectorAll('text')].map(t => t.getBoundingClientRect()).filter(r => r.height > 0),
+      dx = Math.min(...T.map(r => r.left)) - (box.left + 24),
+      dy = Math.min(...T.map(r => r.top)) - (box.top + 24);
+    if (Math.hypot(dx, dy) < 8) return;
+    const cx = box.left + box.width / 2,
+      cy = box.top + box.height / 2,
+      o = { bubbles: true, cancelable: true, pointerId: 92, pointerType: 'mouse', isPrimary: true, button: 0 };
+    /* a made pointer event has no live pointer, so the capture the drawing asks for is skipped for this one drag */
+    const P = Element.prototype,
+      cap = P.setPointerCapture,
+      rel = P.releasePointerCapture;
+    P.setPointerCapture = P.releasePointerCapture = function () {};
+    try {
+      sv.dispatchEvent(new PointerEvent('pointerdown', { ...o, buttons: 1, clientX: cx, clientY: cy }));
+      sv.dispatchEvent(new PointerEvent('pointermove', { ...o, buttons: 1, clientX: cx - dx, clientY: cy - dy }));
+      sv.dispatchEvent(new PointerEvent('pointerup', { ...o, buttons: 0, clientX: cx - dx, clientY: cy - dy }));
+      sv.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true, clientX: cx - dx, clientY: cy - dy })
+      );
+    } finally {
+      P.setPointerCapture = cap;
+      P.releasePointerCapture = rel;
+    }
   }
   const sheetName = x => String((x && (x.name || x.id)) || '');
   const sheetTitle = x => String((x && (x.title || x.desc || x.t)) || '');
+  /* the three families of logic sheets, as the app names them (its own family buttons and its own sheet list do the work) */
+  const FAMS = [
+    ['an', 'Analog', 'Analog logic'],
+    ['dig', 'Digital', 'Digital interlock logic'],
+    ['tcs', 'Turbine', 'Turbine control system']
+  ];
+  let fam = 'an';
+  const shsel = () => $('#shsel');
+  /* an entry of the sheet list of the app: "(6)DITL-01 · FURNACE PURGE CONDITION" */
+  const optName = t =>
+    String(t)
+      .replace(/^\(\d+\)/, '')
+      .split(' · ')[0]
+      .trim();
+  const optTitle = t => String(t).split(' · ').slice(1).join(' · ').trim();
+  function setFam(f) {
+    fam = f;
+    const b = [...document.querySelectorAll('#gsbar button')].find(x =>
+      x.title.startsWith(FAMS.find(y => y[0] === f)[2])
+    );
+    if (b) b.click();
+    setTimeout(() => {
+      fillSheets();
+      tick();
+      paint();
+      zoom('read');
+    }, 700);
+  }
   function fillSheets() {
+    const q0 = sheets._find ? sheets._find.value : '';
+    sheets.textContent = '';
+    const seg = E('div', 'st-fam');
+    for (const [k, t] of FAMS) {
+      const b = E('button', 'st-b' + (k === fam ? ' on' : ''), t);
+      b.setAttribute('aria-pressed', String(k === fam));
+      b.onclick = () => setFam(k);
+      seg.append(b);
+    }
     const find = E('input', 'st-find');
     find.type = 'search';
     find.placeholder = 'Find a sheet…';
     find.setAttribute('aria-label', 'Find a logic sheet');
-    sheets.append(find, E('div', 'st-grp', 'Analog control'));
-    const S = (window.AN && AN.sheets) || [];
-    S.forEach((x, i) => {
-      const b = E('button', 'st-nav', sheetName(x));
+    find.value = q0;
+    sheets._find = find;
+    sheets.append(seg, find);
+    const add = (name, title, i, open) => {
+      const b = E('button', 'st-nav', name);
       b._i = i;
-      b.title = sheetTitle(x);
-      b._q = (sheetName(x) + ' ' + sheetTitle(x)).toLowerCase();
+      b.title = title;
+      b._q = (name + ' ' + title).toLowerCase();
       b.onclick = () => {
-        call(() => AN.go(i));
+        call(open);
         setTimeout(tick, 150);
-        setTimeout(() => zoom('read'), 400);
+        setTimeout(() => zoom('read'), 500);
       };
       sheets.append(b);
-    });
+    };
+    if (fam === 'an')
+      ((window.AN && AN.sheets) || []).forEach((x, i) => add(sheetName(x), sheetTitle(x), i, () => AN.go(i)));
+    else {
+      const sel = shsel();
+      if (sel)
+        for (const o of sel.options) {
+          const tcs = /TCS-/.test(o.textContent);
+          if (tcs !== (fam === 'tcs')) continue;
+          add(optName(o.textContent), optTitle(o.textContent), o.value, () => {
+            sel.value = o.value;
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+          });
+        }
+    }
     find.oninput = () => {
       const q = find.value.trim().toLowerCase();
       for (const b of sheets.querySelectorAll('.st-nav')) b.hidden = !!q && !b._q.includes(q);
     };
+    find.oninput();
   }
-  /* the sheet the logic view shows (AN.i, set by AN.go) */
-  const curSheet = () => (window.AN && typeof AN.i === 'number' ? AN.i : -1);
+  /* the sheet the logic view shows: AN.i (set by AN.go) for the analog sheets, the entry of the sheet list of the app for the others */
+  const curSheet = () =>
+    fam === 'an' ? (window.AN && typeof AN.i === 'number' ? AN.i : -1) : shsel() ? shsel().value : -1;
+  const curTitle = () => {
+    if (fam === 'an') {
+      const x = ((window.AN && AN.sheets) || [])[curSheet()];
+      return sheetName(x) + (sheetTitle(x) ? ' · ' + sheetTitle(x) : '');
+    }
+    const o = shsel() && shsel().selectedOptions[0];
+    return o ? optName(o.textContent) + (optTitle(o.textContent) ? ' · ' + optTitle(o.textContent) : '') : '';
+  };
 
   /* acknowledge: the Acknowledge all of the alarm list of the app (it also acknowledges the unit and logic rows); the list stays hidden */
   function ackAll() {
@@ -467,9 +575,8 @@
   function paint() {
     const c = cur(),
       P = pages();
-    const ci = eng ? curSheet() : -1,
-      cs = eng ? ((window.AN && AN.sheets) || [])[ci] : null;
-    title.textContent = eng ? sheetName(cs) + (sheetTitle(cs) ? ' · ' + sheetTitle(cs) : '') : P[c] || '';
+    const ci = eng ? curSheet() : -1;
+    title.textContent = eng ? curTitle() : P[c] || '';
     tabs.hidden = eng;
     for (const b of mode.children) {
       b.classList.toggle('on', b._e === eng);
