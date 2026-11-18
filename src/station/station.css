@@ -1,0 +1,34 @@
+/* Operator station (user 2026-11-18, mockup "Operator Station Popups"): a new frame around the same plant pages, logic and plant model.
+   One dark grey look; colour is kept for the state of the plant. Sizes: text 12 px or more, controls 32 px (40 px on touch),
+   spacing 4 / 8 / 12 / 16 px, one outer margin of 12 px. */
+body.st {
+  --st-rail: 176px;
+  --st-bar: #14181c;
+  --st-pop: #20262c;
+  --st-line: #2b333b;
+  --st-line2: #7a8692;
+  --st-tx: #e6eaed;
+  --st-dim: #9aa4ae;
+  --st-alm: #e0a43a;
+  --st-sel: #3b4651;
+  --st-ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --st-num: "IBM Plex Mono", Consolas, monospace;
+  background: #1b1f27 !important;
+}
+body.st.st-norail { --st-rail: 0px; }
+/* the old frame is not shown: only the plant page (and, until the new faceplate is built, the faceplate of the page) stays */
+body.st > *:not(#station):not(#plantws) { visibility: hidden !important; pointer-events: none !important; }
+body.st #plfp, body.st #plfp *, body.st .fpo-box, body.st .fpo-box * { visibility: visible !important; pointer-events: auto !important; }
+html body.st:not(#st0):not(#st1) #plantws:not(#st2) { left: var(--st-rail) !important; top: 44px !important; right: 0 !important; bottom: 32px !important; width: auto !important; height: auto !important; background: #1b1f27 !important; }
+html body.st:not(#st0):not(#st1) #plantws:not(#st2) > *:not(#plmid) { display: none !important; }
+body.st #plmid { position: absolute !important; inset: 0 !important; }
+body.st #plsvg { width: 100% !important; height: 100% !important; }
+body.st .hx-head { display: none !important; }
+
+#station { position: fixed; inset: 0; z-index: 900; pointer-events: none; }
+body.st .hx-app, body.st .hx { border: 0 !important; box-shadow: none !important; }
+#stationwait { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; background: #171b1f; color: #9aa4ae; font: 500 14px "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; }
+#station .st-b, #station .st-t { display: inline-flex; align-items: center; justify-content: center; }
+#station .st-nav { line-height: 32px; }
+#station .st-tabs button { display: flex; align-items: center; }
+body.st #plsvg, body.st #plmid { background: #1b1f27 !important; }
