@@ -20,7 +20,7 @@
    NO-SOURCE in the app, as on page 13 (not shown): disconnecting switch, differential expansion, rotor position, thermal
    stress. The warming limits of PR-OPE-5002 that page 13 lists as text are in the procedure, not on this page. */
 (function () {
-  const { V, E, L, page } = HX;
+  const { V, E, L, C, page } = HX;
   const B = HX.B;
   const K = 'kg/cm²';
   const at = (it, x, y, o) => Object.assign(it, { x, y }, o || {});
@@ -151,6 +151,22 @@
         }),
         at(L('generator', 'Generator page'), GX, 470, { id: 'gnl' }),
         at(L('turbine-oil', 'Turbine oil'), VX + 60, 720, { id: 'tol' }),
+        /* the operator's load target and load rate (Jennie live run 2026-11-18, finding Target MW): the unit load demand station
+           HIC-ULD (ABC-001A, MW) and the load change rate station HIC-MWRL (ABC-001B, 0 ~ 10 MW/min). In CCS the turbine master and
+           the boiler master follow the demand at this rate (PR-OPE-5002 load up / load change); before, no plant page had them */
+        at(C('HIC-ULD', 'Unit load demand (target)', { sym: 'ctl', unit: 'MW', pvdp: 1, wrap: 16 }), 1240, 676, {
+          id: 'uld',
+          lab: 'b'
+        }),
+        at(C('HIC-MWRL', 'Load change rate', { sym: 'ctl', unit: 'MW/min', pvdp: 1, wrap: 16 }), 1420, 676, {
+          id: 'mwrl',
+          lab: 'b'
+        }),
+        /* the turbine master EIC-TM (ABC-001C): in AUTO it moves the control valves to the load demand (CCS / turbine follow) */
+        at(C('EIC-TM', 'Turbine master', { sym: 'ctl', unit: 'MW', pvdp: 1, wrap: 16 }), 1600, 676, {
+          id: 'tm',
+          lab: 'b'
+        }),
         /* automatic turbine start-up */
         at(B('Start-up mode', 'data-ut="tcs.mode"', { w: 150 }), 330, 784, { id: 'mode' }),
         ...STEP.map((s, i) => at(HX.S(i, s[0], s[1], { w: 184 }), 104 + i * 194, SY, { id: 'st' + i })),
