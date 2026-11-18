@@ -15,6 +15,15 @@ jobs:
           node tools/build/app-folder.js "dist/logic-sim-v$V.html" /tmp/app-folder
           test -f /tmp/app-folder/index.html && test -f /tmp/app-folder/js/06-analogjs.js && test -f /tmp/app-folder/js/data-pre.js
           grep -q 'src="js/06-analogjs.js"' /tmp/app-folder/index.html
+      - name: The Operator Station page (src/station) builds from the html, and its app folder too
+        run: |
+          V=$(node tools/version.js)
+          node tools/station/build.js "dist/logic-sim-v$V.html" /tmp/station/index.html
+          grep -q 'window.LS_STATION=1' /tmp/station/index.html
+          grep -q "icms-master-tool/station/'" /tmp/station/index.html
+          grep -q "<title>Logic Sim v$V</title>" /tmp/station/index.html
+          node tools/build/app-folder.js /tmp/station/index.html /tmp/station-folder
+          test -f /tmp/station-folder/index.html && test -f /tmp/station-folder/js/06-analogjs.js
       - name: One html, version in file name and title
         run: |
           V=$(node tools/version.js)

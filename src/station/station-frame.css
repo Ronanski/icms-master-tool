@@ -94,3 +94,6 @@ button:focus-visible { outline: 2px solid var(--st-tx); outline-offset: -2px; }
 .st-svr span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .st-row.st-col { display: grid; gap: 4px; }
 @media (pointer: coarse) { .st-row .st-b, .st-find { min-height: 40px; } .st-alm { height: 40px; } .st-tools { bottom: 52px; } }
+.st-railfoot .st-ver { display: block; width: 100%; margin-top: 8px; text-align: center; font: 500 12px var(--st-num); color: var(--st-dim); }
+.st-railfoot .st-ver:hover { color: var(--st-tx); }
+.st-upd { margin: 0; font-weight: 600; }

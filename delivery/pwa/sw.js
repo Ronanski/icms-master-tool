@@ -6,5 +6,7 @@ const SCOPE=self.registration.scope,CACHE='logic-sim-'+SCOPE;
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>FRESH().then(r=>c.put(SCOPE,r))).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{const r=e.request;if(r.mode!=='navigate')return;const u=new URL(r.url);if(!u.href.startsWith(SCOPE))return;if(!SCOPE.endsWith('/beta/')&&u.pathname.indexOf('/beta/')>=0)return;
+ /* the Operator Station (/station/, /station/beta/) is its own app with its own copy of this worker: the worker of the simulator leaves its pages alone */
+ if(SCOPE.indexOf('/station/')<0&&u.pathname.indexOf('/station/')>=0)return;
  e.respondWith(caches.open(CACHE).then(c=>c.match(SCOPE).then(hit=>hit||fetch(r).then(n=>{c.put(SCOPE,n.clone());return n}))))});
 self.addEventListener('message',e=>{if(e.data==='update'){e.waitUntil(caches.open(CACHE).then(c=>FRESH().then(r=>c.put(SCOPE,r))).then(()=>self.clients.matchAll()).then(cl=>cl.forEach(x=>x.postMessage('updated'))).catch(()=>self.clients.matchAll().then(cl=>cl.forEach(x=>x.postMessage('failed')))))}});

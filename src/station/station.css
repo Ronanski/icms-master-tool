@@ -142,3 +142,5 @@ html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) text[fill="#e6edf3"] { fi
 html body.st:not(#st0):not(#st1) #plantws:not(#st2) { bottom: 40px !important; }
 html body.st.st-eng:not(#st0):not(#st1) #cv:not(#st2) { bottom: 40px !important; }
 }
+/* the short notes of the update check of the app (src/boot/update-question.js) stay visible over the station; its question is shown by the station itself (station.js updAsk) */
+html body.st:not(#st0):not(#st1) > #updtoast:not(#st2) { visibility: visible !important; pointer-events: auto !important; z-index: 2147483000 !important; }

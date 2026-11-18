@@ -154,7 +154,10 @@
     const insB = E('button', 'st-b st-ins', 'Instructor');
     insB.title = 'Starting point, save points, faults and trips';
     insB.onclick = instructor;
-    foot.append(mode, insB);
+    const verB = E('button', 'st-t st-ver', VER || 'Version');
+    verB.title = 'Version, update and channel';
+    verB.onclick = about;
+    foot.append(mode, insB, verB);
     rail.append(unit, list, sheets, foot);
     const top = E('header', 'st-top'),
       show = E('button', 'st-b', 'Pages ›');
@@ -445,6 +448,103 @@
   }
   /* speed: the Simulation speed control of the app, its own choices */
   const speedSel = () => [...document.querySelectorAll('select')].find(x => x.title === 'Simulation speed') || null;
+  /* the name and the version the build wrote (tools/station/build.js). The <title> of the page keeps its version: the update check
+     and the channel switch of the app read it */
+  const NAME = window.LS_STATION_NAME || 'Unit 1 Operator Station',
+    VER = window.LS_STATION_VER || (document.title.match(/v\d+(\.\d+)+(-beta\.\d+)?/) || [''])[0];
+  document.title = NAME + (VER ? ' ' + VER : '');
+  /* version popup: check for a new version (the update check of the app) and the channel (its own Stable / Beta switch) */
+  let verPop = null;
+  function about() {
+    if (!verPop) {
+      verPop = popup(NAME, '', 300);
+      verPop.style.left = 'calc(var(--st-rail) + 12px)';
+      verPop.style.bottom = '44px';
+      verPop.hidden = true;
+    }
+    verPop.hidden = !verPop.hidden;
+    if (verPop.hidden) return;
+    const body = verPop._body,
+      sel = document.getElementById('chsel');
+    body.textContent = '';
+    body.append(
+      E(
+        'p',
+        'st-none',
+        'Version ' + (VER || 'not known') + (sel ? ' · ' + (sel.value === 'beta' ? 'Beta' : 'Stable') + ' channel' : '')
+      )
+    );
+    const r = E('div', 'st-row'),
+      up = E('button', 'st-b', 'Check for update');
+    up.title = 'Asks the site for a newer version; nothing is installed before you agree';
+    up.disabled = typeof window.lsCheckUpdate !== 'function';
+    up.onclick = () => {
+      verPop.hidden = true;
+      call(() => lsCheckUpdate(true));
+    };
+    r.append(up);
+    body.append(r);
+    if (sel) {
+      const h = E('h2', 'st-h', 'Channel'),
+        c = E('div', 'st-row');
+      for (const [v, t, tip] of [
+        ['stable', 'Stable', 'The released version'],
+        ['beta', 'Beta', 'The newest fixes, still under test']
+      ]) {
+        const b = E('button', 'st-b' + (sel.value === v ? ' on' : ''), t);
+        b.title = tip + (sel.value === v ? ' (in use)' : ': the app reloads, the running plant is lost');
+        b.setAttribute('aria-pressed', String(sel.value === v));
+        if (sel.value !== v)
+          arm(b, t, () => {
+            sel.value = v;
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+          });
+        c.append(b);
+      }
+      body.append(h, c);
+    }
+  }
+  /* the update question of the app (#updask of src/boot/update-question.js, hidden under the station): the station shows the same
+     question in its own popup; its buttons press the buttons of the app, so the update itself is the app's own */
+  let updPop = null;
+  function updAsk() {
+    const ua = document.getElementById('updask');
+    if (!ua) {
+      if (updPop) updPop.hidden = true;
+      return;
+    }
+    if (updPop && updPop._for === ua) return;
+    if (!updPop) {
+      updPop = popup('New version', '', 340);
+      updPop.style.right = '12px';
+      updPop.style.top = '56px';
+    }
+    updPop._for = ua;
+    updPop.hidden = false;
+    const body = updPop._body,
+      b0 = ua.querySelector('b');
+    body.textContent = '';
+    body.append(
+      E('p', 'st-upd', b0 ? b0.textContent : 'A new version is available'),
+      E(
+        'p',
+        'st-none',
+        'Installed: ' +
+          (VER || 'not known') +
+          '. Update now reloads the app and the running plant is lost. To keep it, save a save point in Instructor first.'
+      )
+    );
+    const r = E('div', 'st-row');
+    for (const o of ua.querySelectorAll('button')) {
+      const b = E('button', 'st-b', o.textContent);
+      b.onclick = () => {
+        o.click();
+        setTimeout(updAsk, 100);
+      };
+      r.append(b);
+    }
+    body.append(r);
+  }
   /* Instructor: the starting point, the save points, the faults and the trips of the app, through its own controls and functions
      (the same ones its Instructor console presses: shellc-ins.js). A press that changes the plant asks for a second press within 5 s */
   let insPop = null;
@@ -764,6 +864,7 @@
       .replace(/\s+/g, ' ')
       .trim();
   function tick() {
+    updAsk();
     /* the reader of the unit overview of the app (LS_LIVE.getV); the plant model value where the reader has none.
        After a start state is loaded and before the first Run the reader still holds the numbers of the state before (shellc-home.js
        "stale"): only the 150 MW state is its own snapshot, so the other states show the plant model value, or "--", until Run */
@@ -904,19 +1005,19 @@
   ws.append(wm);
   const ask = () => {
     wm.textContent = '';
-    wm.append(E('h1', '', 'Unit 1 Operator Station'), E('p', '', 'Choose the state the plant starts from.'));
+    wm.append(E('h1', '', NAME), E('p', '', 'Choose the state the plant starts from.'));
     for (const [k, d] of STATES) {
       const b = E('button');
       b.append(E('b', '', k), E('span', '', d));
       b.onclick = () => {
         wm.textContent = '';
-        wm.append(E('h1', '', 'Unit 1 Operator Station'), E('p', '', 'Loading the plant: ' + k + '…'));
+        wm.append(E('h1', '', NAME), E('p', '', 'Loading the plant: ' + k + '…'));
         start(k);
       };
       wm.append(b);
     }
   };
-  wm.append(E('h1', '', 'Unit 1 Operator Station'), E('p', '', 'Starting…'));
+  wm.append(E('h1', '', NAME), E('p', '', 'Starting…'));
   document.body.append(wait);
   const boot = setInterval(() => {
     const st = $('#scstart');

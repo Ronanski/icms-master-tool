@@ -36,6 +36,18 @@ jobs:
           for f in sw.js manifest.webmanifest icon-192.png icon-512.png; do for d in delivery/pwa .; do [ -f "stable/$d/$f" ] && { cp "stable/$d/$f" site/; break; }; done; for d in delivery/pwa .; do [ -f "beta/$d/$f" ] && { cp "beta/$d/$f" site/beta/; break; }; done; [ -f "site/beta/$f" ] || cp "site/$f" site/beta/; done
           # 2026-11-16: the Plant Tools web app (docs/plant-tools/app, built by docs/plant-tools/build-app.js) is served from main at /tools/. It does not touch the simulator pages.
           [ -d beta/docs/plant-tools/app ] && cp -r beta/docs/plant-tools/app site/tools || echo "no Plant Tools app in this commit"
+          # 2026-11-18: the Operator Station (src/station, built by tools/station/build.js from the same html) is its own app at /station/ (Stable)
+          # and /station/beta/ (Beta), with its own version.json, manifest, icons and copy of the service worker. It does not touch the simulator pages.
+          # A Stable tag from before the station has no tools/station: /station/ then only points to the Beta.
+          if [ -f beta/tools/station/build.js ]; then
+            mkdir -p site/station/beta
+            node beta/tools/station/build.js "$B" site/station/beta/index.html; tb=$bv; ts=""
+            if [ -f stable/tools/station/build.js ]; then node stable/tools/station/build.js "$S" site/station/index.html; ts=$sv; P=stable
+            else P=beta; printf '%s' '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unit 1 Operator Station</title><meta http-equiv="refresh" content="0;url=beta/"><p style="font:16px system-ui;margin:24px">Unit 1 Operator Station has no Stable release yet. <a href="beta/">Open the Beta</a>.</p>' > site/station/index.html; fi
+            echo "{\"stable\":\"$ts\",\"beta\":\"$tb\"}" > site/station/version.json
+            for f in manifest.webmanifest icon-192.png icon-512.png; do cp "beta/delivery/station/pwa/$f" site/station/beta/; cp "$P/delivery/station/pwa/$f" site/station/; done
+            cp beta/delivery/pwa/sw.js site/station/beta/sw.js; cp "$P/delivery/pwa/sw.js" site/station/sw.js
+          else echo "no Operator Station in this commit"; fi
           touch site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

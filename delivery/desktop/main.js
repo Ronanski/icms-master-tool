@@ -2,7 +2,7 @@
 // The page itself checks the site for a newer version and asks the user (I-update ngayon / Huwag muna).
 const{app,BrowserWindow}=require('electron');const path=require('path');const cfg=require('./config.json');
 // 2.4.0: the app is named DCS Logic Simulator; the saved settings stay in the folder of the old name (Logic Sim)
-app.setPath('userData',path.join(app.getPath('appData'),'Logic Sim'));
+app.setPath('userData',path.join(app.getPath('appData'),cfg.data||'Logic Sim'));
 function make(){const w=new BrowserWindow({width:1400,height:900,backgroundColor:'#10151c',title:cfg.name,autoHideMenuBar:true,icon:path.join(__dirname,'icon.png')});
  // 2.4.0: the PLANT VIEW opens in its own window (window.open from the page): same look and icon as the main window
  w.webContents.setWindowOpenHandler(()=>({action:'allow',overrideBrowserWindowOptions:{autoHideMenuBar:true,backgroundColor:'#10151c',icon:path.join(__dirname,'icon.png')}}));

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Operator Station icon C: "U1" (Unit 1) as on a control desk nameplate, with the three state marks: running, stopped, alarm -->
+  <rect x="16" y="16" width="480" height="480" rx="88" fill="#14181c"/>
+  <rect x="16" y="16" width="480" height="480" rx="88" fill="none" stroke="#3b4651" stroke-width="8"/>
+  <path d="M116 132v132a64 64 0 0 0 128 0V132" fill="none" stroke="#e6eaed" stroke-width="36" stroke-linecap="butt"/>
+  <path d="M306 176l62 -44v196" fill="none" stroke="#e6eaed" stroke-width="36" stroke-linejoin="miter"/>
+  <path d="M100 368h312" stroke="#3b4651" stroke-width="8"/>
+  <circle cx="152" cy="420" r="22" fill="#e5565a"/>
+  <circle cx="256" cy="420" r="18" fill="none" stroke="#45b06d" stroke-width="9"/>
+  <rect x="340" y="400" width="40" height="40" fill="#e0a43a"/>
+</svg>

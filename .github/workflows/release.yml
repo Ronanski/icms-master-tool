@@ -31,7 +31,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - { chan: stable, id: com.ronanski.logicsim, name: 'DCS Logic Simulator', url: 'https://ronanski.github.io/icms-master-tool/' }
+          - { chan: stable, app: sim, icons: icons, id: com.ronanski.logicsim, name: 'DCS Logic Simulator', url: 'https://ronanski.github.io/icms-master-tool/' }
+          # 2026-11-18: the Operator Station is a second app (own id, so it installs beside the simulator and keeps its own data); same html plus the station frame
+          - { chan: station, app: station, icons: station/icons, id: com.ronanski.operatorstation, name: 'Unit 1 Operator Station', url: 'https://ronanski.github.io/icms-master-tool/station/' }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -45,12 +47,14 @@ jobs:
           {"appId":"${{ matrix.id }}","appName":"${{ matrix.name }}","webDir":"www","server":{"androidScheme":"https"}}
           EOF
           # the simulator is built into the apk as a FOLDER (index.html + js/*.js, same content as the single html; opens at once, works without internet); the page asks the site for updates
-          node ../../tools/build/app-folder.js "../../dist/logic-sim-v${{ needs.gate.outputs.version }}.html" www
+          SRC="../../dist/logic-sim-v${{ needs.gate.outputs.version }}.html"
+          if [ "${{ matrix.app }}" = station ]; then node ../../tools/station/build.js "$SRC" station-page/index.html; SRC=station-page/index.html; fi
+          node ../../tools/build/app-folder.js "$SRC" www
           npm install --no-audit --no-fund
           npx cap add android
           npx cap sync android
           # app icon (delivery/icons): launcher icons of every density + adaptive icon background
-          cp -r ../icons/android/res/. android/app/src/main/res/
+          cp -r ../${{ matrix.icons }}/android/res/. android/app/src/main/res/
           sed -i "s/versionName \".*\"/versionName \"${{ needs.gate.outputs.version }}\"/" android/app/build.gradle
       - name: Build + sign
         working-directory: delivery/android/android
@@ -68,7 +72,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - { chan: stable, name: 'DCS Logic Simulator', url: 'https://ronanski.github.io/icms-master-tool/' }
+          - { chan: stable, app: sim, icons: icons, id: com.ronanski.logicsim, data: 'Logic Sim', name: 'DCS Logic Simulator', url: 'https://ronanski.github.io/icms-master-tool/' }
+          - { chan: station, app: station, icons: station/icons, id: com.ronanski.operatorstation, data: 'Unit 1 Operator Station', name: 'Unit 1 Operator Station', url: 'https://ronanski.github.io/icms-master-tool/station/' }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -77,12 +82,14 @@ jobs:
         working-directory: delivery/desktop
         shell: bash
         run: |
-          echo '{"name":"${{ matrix.name }}","url":"${{ matrix.url }}"}' > config.json
-          node ../../tools/build/app-folder.js "../../dist/logic-sim-v${{ needs.gate.outputs.version }}.html" www
+          echo '{"name":"${{ matrix.name }}","url":"${{ matrix.url }}","data":"${{ matrix.data }}"}' > config.json
+          SRC="../../dist/logic-sim-v${{ needs.gate.outputs.version }}.html"
+          if [ "${{ matrix.app }}" = station ]; then node ../../tools/station/build.js "$SRC" station-page/index.html; SRC=station-page/index.html; fi
+          node ../../tools/build/app-folder.js "$SRC" www
           # app icon (delivery/icons): the exe file icon and the window icon
-          mkdir -p build && cp ../icons/icon.ico build/icon.ico && cp ../icons/png/icon-256.png icon.png
+          mkdir -p build && cp ../${{ matrix.icons }}/icon.ico build/icon.ico && cp ../${{ matrix.icons }}/png/icon-256.png icon.png
           npm install --no-audit --no-fund
-          npx electron-builder --win portable -c.productName="${{ matrix.name }}" -c.extraMetadata.version=${{ needs.gate.outputs.version }}
+          npx electron-builder --win portable -c.productName="${{ matrix.name }}" -c.appId=${{ matrix.id }} -c.extraMetadata.version=${{ needs.gate.outputs.version }}
           ls dist
       - uses: actions/upload-artifact@v4
         with: { name: 'exe-${{ matrix.chan }}', path: 'delivery/desktop/dist/*-portable.exe' }
@@ -100,8 +107,11 @@ jobs:
           V=${{ needs.gate.outputs.version }}
           T=${{ needs.gate.outputs.tag }}
           mkdir rel
-          find out -type f -name '*.apk' -print0 | while IFS= read -r -d '' f; do cp "$f" "rel/DCS-Logic-Simulator-$V.apk"; done
-          find out -type f -name '*.exe' -print0 | while IFS= read -r -d '' f; do cp "$f" "rel/DCS-Logic-Simulator-$V-Windows.exe"; done
+          # one folder per artifact (apk-stable, exe-stable = the simulator; apk-station, exe-station = the Operator Station)
+          find out/apk-stable -type f -name '*.apk' -print0 | while IFS= read -r -d '' f; do cp "$f" "rel/DCS-Logic-Simulator-$V.apk"; done
+          find out/exe-stable -type f -name '*.exe' -print0 | while IFS= read -r -d '' f; do cp "$f" "rel/DCS-Logic-Simulator-$V-Windows.exe"; done
+          find out/apk-station -type f -name '*.apk' -print0 | while IFS= read -r -d '' f; do cp "$f" "rel/Unit-1-Operator-Station-$V.apk"; done
+          find out/exe-station -type f -name '*.exe' -print0 | while IFS= read -r -d '' f; do cp "$f" "rel/Unit-1-Operator-Station-$V-Windows.exe"; done
           # no Beta in the releases: remove beta assets and beta pre-releases of earlier uploads
           for r in $(gh release list --json tagName -q '.[].tagName'); do
             for n in $(gh release view "$r" --json assets -q '.assets[].name' | grep -i beta || true); do gh release delete-asset "$r" "$n" -y || true; done
@@ -110,7 +120,7 @@ jobs:
           cp "dist/logic-sim-v$V.html" "rel/DCS-Logic-Simulator-$V.html"
           cp "docs/versions/v$V/Release-Report-v$V.pdf" "rel/DCS-Logic-Simulator-$V-Report.pdf"
           ls rel
-          NOTES="DCS Logic Simulator $V (Stable). Files: DCS-Logic-Simulator-$V.apk (Android), DCS-Logic-Simulator-$V-Windows.exe (Windows, portable, no install), DCS-Logic-Simulator-$V.html (opens in a browser). The apps load the site and update by themselves; inside the app, the Channel box (top right) switches between Stable and Beta. DCS-Logic-Simulator-$V-Report.pdf (what changed and what was checked)."
+          NOTES="DCS Logic Simulator $V (Stable). Files: DCS-Logic-Simulator-$V.apk (Android), DCS-Logic-Simulator-$V-Windows.exe (Windows, portable, no install), DCS-Logic-Simulator-$V.html (opens in a browser). The apps load the site and update by themselves; inside the app, the Channel box (top right) switches between Stable and Beta. DCS-Logic-Simulator-$V-Report.pdf (what changed and what was checked). Unit-1-Operator-Station-$V.apk and Unit-1-Operator-Station-$V-Windows.exe: the Operator Station, a second app on the same simulator (installs beside it, updates from its own page)."
           if gh release view "$T" >/dev/null 2>&1; then
             gh release upload "$T" rel/* --clobber
           else
