@@ -27,7 +27,6 @@ body.st .hx-head { display: none !important; }
 
 #station { position: fixed; inset: 0; z-index: 900; pointer-events: none; }
 body.st .hx-app, body.st .hx { border: 0 !important; box-shadow: none !important; }
-#stationwait { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; background: #171b1f; color: #9aa4ae; font: 500 14px "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; }
 #station .st-b, #station .st-t { display: inline-flex; align-items: center; justify-content: center; }
 #station .st-nav { line-height: 32px; }
 #station .st-tabs button { display: flex; align-items: center; }

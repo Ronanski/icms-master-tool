@@ -329,10 +329,19 @@
       .replace(/\s+/g, ' ')
       .trim();
   function tick() {
-    /* the reader of the unit overview of the app (LS_LIVE.getV); the plant model value where the reader has none */
-    const U = (window.AN && AN.unit) || {};
+    /* the reader of the unit overview of the app (LS_LIVE.getV); the plant model value where the reader has none.
+       After a start state is loaded and before the first Run the reader still holds the numbers of the state before (shellc-home.js
+       "stale"): only the 150 MW state is its own snapshot, so the other states show the plant model value, or "--", until Run */
+    const U = (window.AN && AN.unit) || {},
+      ss = window.AN ? AN.startState : null;
+    if (ss !== tick._ss) {
+      tick._ss = ss;
+      tick._fresh = ss === 'plantLoad150';
+    }
+    if (window.AN && AN.run && !AN.view) tick._fresh = true;
+    kv.title = tick._fresh ? '' : 'Press Paused to run the plant: the numbers are read on the first scan';
     for (const s of kv.children) {
-      const v = call(() => +LS_LIVE.getV(s._n[1]), NaN);
+      const v = tick._fresh ? call(() => +LS_LIVE.getV(s._n[1]), NaN) : NaN;
       s._b.textContent = fmt(isFinite(v) ? v : U[s._n[1]], s._n[3]);
     }
     const on = !!(window.AN && AN.run && !AN.view);
@@ -394,16 +403,22 @@
     }
   }
 
-  /* until the station has its own start screen: the 150 MW state, as the start screen of the app loads it */
-  function start() {
+  /* the start: the state of the plant is chosen on the start screen of the station, and loaded by the start screen of the app under it */
+  function start(state) {
     const st = $('#scstart');
     if (vis(st)) {
-      const chip = [...st.querySelectorAll('.scchips button')].find(b => /150 MW/.test(b.textContent)),
+      const chip = [...st.querySelectorAll('.scchips button')].find(b => b.textContent.trim() === state),
         card = [...st.querySelectorAll('.sccard')].find(b => /Operator/.test(b.textContent));
       if (chip) chip.click();
       if (card) card.click();
     }
-    const loaded = () => window.AN && AN.startState && window.DITL150 && DITL150.on && !AN._loading;
+    /* loaded = the start screen of the app has shown its overview (shellc-home.js loadState, then showOv); at 150 MW the logic of that state is on too */
+    const loaded = () =>
+      window.AN &&
+      !AN._loading &&
+      AN.startState &&
+      (document.body.classList.contains('scov') || !state) &&
+      (state !== '150 MW' || (window.DITL150 && DITL150.on));
     let asked = 0;
     const t = setInterval(() => {
       if (!loaded()) return;
@@ -414,7 +429,7 @@
       }
       clearInterval(t);
       document.body.classList.add('st');
-      if (wait) wait.remove();
+      wait.remove();
       build();
       const P = pages(),
         want = mem.get('page');
@@ -424,15 +439,62 @@
       setTimeout(() => dispatchEvent(new Event('resize')), 200);
     }, 300);
   }
-  /* while the plant state loads, the start screen of the app is covered */
-  const wait = E('div', '', 'Loading the plant at 150 MW…');
+  /* the start states of the app, in its own words (shellc-home.js) */
+  const STATES = [
+    ['150 MW', 'Normal operation at full load'],
+    ['Hot', 'Hot restart: drum 100 kg/cm², bed about 700 °C'],
+    ['Warm', 'Warm restart: drum 40 kg/cm², bed about 360 °C'],
+    ['Cold', 'Start-up from zero: drum 0 kg/cm², bed and water 30 °C']
+  ];
+  const wait = E('div');
   wait.id = 'stationwait';
+  const ws = wait.attachShadow({ mode: 'open' });
+  ws.append(
+    E(
+      'style',
+      '',
+      ':host{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;background:#171b1f;color:#e6eaed;font:400 14px/1.4 "IBM Plex Sans","Segoe UI",system-ui,sans-serif}' +
+        'main{width:min(560px,calc(100vw - 32px));display:grid;gap:8px}h1{font:600 20px/1.3 inherit;font-family:inherit;margin:0}p{margin:0 0 8px;color:#9aa4ae}' +
+        'button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;min-height:48px;padding:8px 12px;border:1px solid #7a8692;border-radius:2px;background:#20262c;cursor:pointer}' +
+        'button:hover{background:#2b333b;border-color:#a9b3bd}button:focus-visible{outline:2px solid #e6eaed;outline-offset:2px}button b{font-weight:600}button span{color:#9aa4ae;font-size:13px}small{color:#9aa4ae;font-size:12px}'
+    )
+  );
+  const wm = E('main');
+  ws.append(wm);
+  const ask = () => {
+    wm.textContent = '';
+    wm.append(E('h1', '', 'Unit 1 Operator Station'), E('p', '', 'Choose the state the plant starts from.'));
+    for (const [k, d] of STATES) {
+      const b = E('button');
+      b.append(E('b', '', k), E('span', '', d));
+      b.onclick = () => {
+        wm.textContent = '';
+        wm.append(E('h1', '', 'Unit 1 Operator Station'), E('p', '', 'Loading the plant: ' + k + '…'));
+        start(k);
+      };
+      wm.append(b);
+    }
+  };
+  wm.append(E('h1', '', 'Unit 1 Operator Station'), E('p', '', 'Starting…'));
   document.body.append(wait);
   const boot = setInterval(() => {
     const st = $('#scstart');
-    if (vis(st) || (window.AN && AN.startState && pick())) {
+    if (vis(st)) {
       clearInterval(boot);
-      start();
+      /* ?state=... opens one state at once (the tests, a shortcut of the desktop) */
+      const q = (/[?&]state=([^&]+)/.exec(location.search) || [])[1],
+        k =
+          q &&
+          STATES.map(x => x[0]).find(
+            x => x.toLowerCase().replace(/\s/g, '') === decodeURIComponent(q).toLowerCase().replace(/\s/g, '')
+          );
+      if (k) {
+        wm.lastChild.textContent = 'Loading the plant: ' + k + '…';
+        start(k);
+      } else ask();
+    } else if (window.AN && AN.startState && pick()) {
+      clearInterval(boot);
+      start('');
     }
   }, 200);
 })();
