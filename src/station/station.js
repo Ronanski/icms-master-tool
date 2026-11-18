@@ -151,7 +151,10 @@
       b.onclick = () => setEng(e);
       mode.append(b);
     }
-    foot.append(mode);
+    const insB = E('button', 'st-b st-ins', 'Instructor');
+    insB.title = 'Starting point, save points, faults and trips';
+    insB.onclick = instructor;
+    foot.append(mode, insB);
     rail.append(unit, list, sheets, foot);
     const top = E('header', 'st-top'),
       show = E('button', 'st-b', 'Pages ›');
@@ -442,6 +445,170 @@
   }
   /* speed: the Simulation speed control of the app, its own choices */
   const speedSel = () => [...document.querySelectorAll('select')].find(x => x.title === 'Simulation speed') || null;
+  /* Instructor: the starting point, the save points, the faults and the trips of the app, through its own controls and functions
+     (the same ones its Instructor console presses: shellc-ins.js). A press that changes the plant asks for a second press within 5 s */
+  let insPop = null;
+  const pressId = id => {
+    const b = document.getElementById(id);
+    if (b) b.click();
+    return !!b;
+  };
+  function arm(b, label, fn) {
+    b.onclick = () => {
+      if (!b._arm) {
+        b._arm = setTimeout(() => {
+          b._arm = 0;
+          b.textContent = label;
+          b.classList.remove('arm');
+        }, 5000);
+        b.textContent = 'Press again: ' + label;
+        b.classList.add('arm');
+        return;
+      }
+      clearTimeout(b._arm);
+      b._arm = 0;
+      b.textContent = label;
+      b.classList.remove('arm');
+      fn();
+    };
+  }
+  function instructor() {
+    if (!insPop) {
+      insPop = popup('Instructor', '', 360);
+      insPop.style.left = 'calc(var(--st-rail) + 12px)';
+      insPop.style.bottom = '44px';
+      insPop.hidden = true;
+    }
+    insPop.hidden = !insPop.hidden;
+    if (!insPop.hidden) fillIns();
+  }
+  function fillIns() {
+    const body = insPop._body,
+      keep = body.scrollTop;
+    body.textContent = '';
+    const head = t => body.append(E('h2', 'st-h', t));
+    const row = () => {
+      const r = E('div', 'st-row');
+      body.append(r);
+      return r;
+    };
+    const again = () => setTimeout(fillIns, 300);
+    head('Starting point');
+    let r = row();
+    for (const [t, id] of [
+      ['150 MW', 'load150'],
+      ['Cold', 'loadcold']
+    ]) {
+      const b = E('button', 'st-b', t);
+      b.title = 'The running plant is replaced by the ' + t + ' starting point';
+      arm(b, t, () => {
+        call(() => AN.run && !AN.view && AN.pauseOn());
+        pressId(id);
+        insPop.hidden = true;
+        setTimeout(tick, 1500);
+      });
+      r.append(b);
+    }
+    head('Save points');
+    r = row();
+    const nm = E('input', 'st-find');
+    nm.type = 'text';
+    nm.setAttribute('aria-label', 'Name of the save point');
+    nm.placeholder = 'Name…';
+    nm.value = call(() => lsSaves.name(), '') || '';
+    const sv = E('button', 'st-b', 'Save now');
+    sv.title = 'Keeps the whole plant at this moment under this name';
+    sv.onclick = () => {
+      const t = nm.value.trim();
+      if (!t) return nm.focus();
+      sv.disabled = true;
+      Promise.resolve(call(() => lsSaves.save(t))).then(fillIns, fillIns);
+    };
+    r.classList.add('st-save');
+    r.append(nm, sv);
+    const svl = E('div', 'st-svl');
+    body.append(svl);
+    Promise.resolve(call(() => lsSaves.list(), [])).then(
+      L => {
+        svl.textContent = '';
+        if (!L || !L.length) return svl.append(E('p', 'st-none', 'No save point yet.'));
+        for (const e of L.slice().reverse()) {
+          const rr = E('div', 'st-svr'),
+            ld = E('button', 'st-b', 'Load'),
+            dl = E('button', 'st-b', 'Delete');
+          ld.title = 'Puts the whole plant back as it was saved, then pauses';
+          dl.title = 'Removes this save point; it cannot be undone';
+          arm(ld, 'Load', () => {
+            insPop.hidden = true;
+            call(() => lsSaves.load(e));
+            setTimeout(tick, 1500);
+          });
+          arm(dl, 'Delete', () => Promise.resolve(call(() => lsSaves.del(e))).then(fillIns, fillIns));
+          rr.append(E('span', '', e.name), ld, dl);
+          svl.append(rr);
+        }
+        body.scrollTop = keep;
+      },
+      () => svl.append(E('p', 'st-none', 'No save point yet.'))
+    );
+    head('Trips');
+    r = row();
+    const tt = E('button', 'st-b', 'Turbine trip');
+    tt.title = 'The turbine trips now and the plant reacts to it';
+    arm(tt, 'Turbine trip', () => {
+      call(() => AN.turbine('trip'));
+      call(() => lsEventAdd('TCS', 'TCS', 'Instructor: TURBINE TRIP (TA-1)'));
+      again();
+    });
+    r.append(tt);
+    const el = call(() => (AN.elec ? AN.elec() : null), null);
+    if (el) {
+      const t = el.l52 ? 'Open line breaker' : 'Close line breaker',
+        lb = E('button', 'st-b', t);
+      lb.title = el.l52
+        ? '230 kV line breaker 52L1 opens: the generator carries the house load only'
+        : '230 kV line breaker 52L1 closes: the unit is on the grid again';
+      arm(lb, t, () => {
+        const x = call(() => AN.turbine('52l', el.l52 ? 0 : 1), '');
+        call(() =>
+          lsEventAdd('TCS', 'TCS', 'Instructor: ' + (el.l52 ? 'open' : 'close') + ' 52L1' + (x ? ': ' + x : ''))
+        );
+        again();
+      });
+      r.append(lb);
+    }
+    head('Faults');
+    r = row();
+    r.classList.add('st-col');
+    const FL = [...call(() => AN.fault(), []), ...call(() => WORLD.ftrip(), [])];
+    if (!FL.length) r.append(E('p', 'st-none', 'No fault in this starting point.'));
+    for (const f of FL) {
+      const id = 'flt-' + String(f.id).replace(/\W/g, '-'),
+        b = E('button', 'st-b' + (f.on ? ' on' : ''), f.t);
+      b.setAttribute('aria-pressed', String(!!f.on));
+      b.title = f.on ? 'On: press to clear it' : 'Puts the fault on the running plant until it is cleared';
+      if (f.on)
+        b.onclick = () => {
+          pressId(id);
+          again();
+        };
+      else
+        arm(b, f.t, () => {
+          pressId(id);
+          again();
+        });
+      r.append(b);
+    }
+    if (FL.some(f => f.on)) {
+      const c = E('button', 'st-b', 'Clear all faults');
+      c.onclick = () => {
+        pressId('flt-clear');
+        again();
+      };
+      r.append(c);
+    }
+    body.scrollTop = keep;
+  }
   function speeds() {
     const sel = speedSel();
     if (!sel) return;

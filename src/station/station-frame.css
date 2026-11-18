@@ -81,3 +81,14 @@ button:focus-visible { outline: 2px solid var(--st-tx); outline-offset: -2px; }
 .st-tools .st-b { height: 28px; padding: 0 8px; min-width: 28px; }
 .st-fam { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; padding: 12px 12px 0; }
 .st-fam .st-b { padding: 0 2px; font-size: 12px; }
+.st-railfoot .st-ins { width: 100%; margin-top: 8px; }
+.st-h { margin: 12px 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--st-dim); }
+.st-h:first-child { margin-top: 0; }
+.st-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.st-row .st-b { height: auto; min-height: 32px; padding: 4px 12px; white-space: normal; text-align: left; }
+.st-row .st-b.arm { border-color: var(--st-alm); color: var(--st-alm); }
+.st-save .st-find { flex: 1; min-width: 0; margin: 0; }
+.st-svl { margin-top: 8px; display: grid; gap: 4px; }
+.st-svr { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; }
+.st-svr span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-row.st-col { display: grid; gap: 4px; }
