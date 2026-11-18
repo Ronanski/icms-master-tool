@@ -1,6 +1,6 @@
 # HANDOFF — iisang file ng estado (para sa kahit sinong Claude o account)
 
-Huling update: **2026-11-17 PHT** (HX nasa app na: ang Reheat steam page ng bagong HMI ay page na ng Plant view, totoong signal; sources sa `src/ui/plant/hx/`).
+Huling update: **2026-11-18 PHT** (3.2.5-beta.1, ROSÉ cloud: overview page, link fix, tablet readable size at bilis ng HX, nakapatong sa Stable 3.2.4; report `docs/versions/v3.2.5/UPDATE_REPORT.md`). Dati: **2026-11-17 PHT** (HX nasa app na: ang Reheat steam page ng bagong HMI ay page na ng Plant view, totoong signal; sources sa `src/ui/plant/hx/`).
 
 Patakaran: palitan ang luma, huwag magtambak ng kasaysayan. Kasaysayan ng bawat Beta: `docs/versions/v3.2.1/UPDATE_REPORT.md` at git log.
 

@@ -86,7 +86,8 @@ html body.sc #gsbar:not(#scnone) #scstrip .sck :is(i,b,small){line-height:24px!i
 html body.sc #gsbar:not(#scnone) #scstrip .sck.scgrp{border-left:0!important;padding-left:0!important}
 html body.sc #gsbar:not(#scnone) #scstrip .sck.scgrp i{display:none!important}
 /* a realistic plant page fills the pane by itself (Fit): no locator and no "Readable size" over the picture */
-html body.sc:has(#plsvg .hx-app) #sczoom{display:none!important}
+/* on a narrower screen (a tablet, 1280 wide) the fitted page has 9 px words: there the locator and "Readable size" stay */
+@media (min-width:1500px){html body.sc:has(#plsvg .hx-app) #sczoom{display:none!important}}
 /* its own header gives its place: the title is in the tool bar, the views are the selector #scview */
 html body.sc #plsvg .hx-app .hx-head{display:none!important}
 html body.sc .plbar:not(#scnone) #scview{min-height:22px!important;height:22px!important;border-radius:2px!important;font:500 12px var(--sc-ui)!important;padding:0 6px!important;background:var(--sc-white)!important;color:var(--sc-ink)!important;border:1px solid var(--sc-line2)!important;margin-left:6px}

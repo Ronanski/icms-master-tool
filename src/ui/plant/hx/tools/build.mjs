@@ -15,7 +15,7 @@ const rd = f => fs.readFileSync(path.join(dir, f), 'utf8');
    folder as the list of what each system holds, and its page titles are shown in the rail as "to be drawn". */
 const ARGS = Object.fromEntries(process.argv.slice(2).map(a => a.replace(/^--/, '').split('=')));
 /* every hx-page-*.js of the folder is a page of the mockup; ORDER = the order of the rail (others follow by name) */
-const ORDER = ['hx-page-reheat.js', 'hx-page-boiler-steam.js', 'hx-page-feedwater.js', 'hx-page-condensate.js', 'hx-page-furnace-gas.js', 'hx-page-combustion-air.js', 'hx-page-coal.js', 'hx-page-limestone-sand.js', 'hx-page-ash.js', 'hx-page-sampling.js', 'hx-page-oil-burners.js', 'hx-page-aux-steam.js', 'hx-page-extraction.js', 'hx-page-turbine-oil.js', 'hx-page-sea-water.js', 'hx-page-makeup-cooling.js', 'hx-page-turbine.js', 'hx-page-purge-trip.js', 'hx-page-generator.js', 'hx-page-sootblowers.js', 'hx-page-compressed-air.js'];
+const ORDER = ['hx-page-reheat.js', 'hx-page-boiler-steam.js', 'hx-page-feedwater.js', 'hx-page-condensate.js', 'hx-page-furnace-gas.js', 'hx-page-combustion-air.js', 'hx-page-coal.js', 'hx-page-limestone-sand.js', 'hx-page-ash.js', 'hx-page-sampling.js', 'hx-page-overview.js', 'hx-page-oil-burners.js', 'hx-page-aux-steam.js', 'hx-page-extraction.js', 'hx-page-turbine-oil.js', 'hx-page-sea-water.js', 'hx-page-makeup-cooling.js', 'hx-page-turbine.js', 'hx-page-purge-trip.js', 'hx-page-generator.js', 'hx-page-sootblowers.js', 'hx-page-compressed-air.js'];
 const found = fs
   .readdirSync(dir)
   .filter(f => /^hx-page-.+\.js$/.test(f))
@@ -70,6 +70,9 @@ HX.pages.length = 0;
 HX.pages.push(...realPages);
 for (const k of Object.keys(HX.byId)) if (!done.has(k)) delete HX.byId[k];
 const soonIds = new Set(soon.map(p => p.id));
+/* value keys the app binds that no temporary page showed, so tools/make-registry.py does not list them (each one checked in
+   the running app): TCS-AI1001 = the target load of the turbine control system, 151.0 MW at 150 MW (old UNIT page) */
+const EXTRA = new Set(['TCS-AI1001']);
 const bad = [],
   used = { m: new Set(), l: new Set(), v: new Set(), k: new Set() };
 const key = (p, k) => {
@@ -79,7 +82,7 @@ const key = (p, k) => {
     return;
   }
   used.k.add(k);
-  if (!(k in R.sample.values)) bad.push(`${p}: value key ${k}`);
+  if (!(k in R.sample.values) && !EXTRA.has(k)) bad.push(`${p}: value key ${k}`);
 };
 for (const p of HX.pages) {
   const items = p.plan ? p.plan.items : p.lanes.flatMap(l => l.items.flatMap(i => (Array.isArray(i) ? i : [i])));
