@@ -284,7 +284,7 @@ function anUnitStop() {
   U.iaRun = U.paRun = null; /* 3.2.1: the compressors are read again from the DITL (anAirStep) */
   U.acT1 = U.acT2 = NaN; /* 3.2.0-beta.69: the aux cooling water temperatures start again (AN_ACW) */
   for (const m of U.mul || []) for (const p of m.pr) p.mul = undefined;
-  for (const z of U.spr || []) z.pr.uf = undefined;
+  for (const z of U.spr || []) z.pr.uf = z.pr.hx = undefined;
   U.lpbSp = null; /* 3.2.1 anCdTagStep: the LP bypass spray controller is found again */
   U.fwC = null; /* 3.2.1 anFwTagStep: its controllers and F(X) are found again */
   U.asC = null; /* 3.2.1 anAsTagStep: page 08 values */
@@ -727,6 +727,12 @@ function anUnitStart() {
     const X = U.xt,
       a = L => (L && L.a0 && isFinite(L.a0[0]) ? L.a0[0] : NaN);
     X.cr0 = a(X.cr);
+    /* TT-MS1022 at the anchor: the HMI snapshot TIMS10221 359 C (bypass shut: the HP exhaust it sees); the a0 of the start state is
+       the old snapshot loop, not a plant reading */
+    {
+      const q = typeof AN_HMI_AI !== 'undefined' ? Object.values(AN_HMI_AI).find(x => x[1] === 'TIMS10221') : null;
+      X.byo0 = q && isFinite(+q[0]) ? +q[0] : a(X.byo);
+    }
     X.rhi0 = X.rhi.map(L => a(L));
     X.rhv0 = X.rhPv && X.rhPv.c.q ? +X.rhPv.S.rt.v[X.rhPv.n] : NaN; /* RH spray MV at the anchor */
     X.hrOff = X.rhPv && X.rhPv.c.q && X.rhPv.c.q.pv != null ? a(X.hr) - +X.rhPv.S.rt.v[X.rhPv.c.q.pv] : 0;
@@ -3518,6 +3524,7 @@ function anFwTagStep(U) {
   U.w1s = isFinite(w1) ? Math.max(0, w1) : 0;
   U.w2s = isFinite(w2) ? Math.max(0, w2) : 0;
   U.wrhs = isFinite(wrh) ? Math.max(0, wrh) : 0;
+  U.whps = isFinite(whp) ? Math.max(0, whp) : 0; /* 3.2.4: HP bypass spray water, T/H (TT-MS1022 below, anUnitStepX) */
   U.mEco = ffw;
   U.tSp = isFinite(Pda) && Pda > 0.05 ? steamTsat(Pda) : isFinite(U.Tamb) ? U.Tamb : 30;
   const dA = mvOf('ABC-020', 'HICHR1002A'),
@@ -5581,8 +5588,38 @@ function anUnitStepX(dt, mso) {
     /* cold reheat: the HP turbine exhaust and the HP bypass outlet, mixed by their steam */
     const mst = pvOf(X.mst),
       thx = isFinite(X.cr0) ? X.cr0 + (isFinite(mst) ? mst - X.MST0 : 0) : NaN,
-      tby = val(X.byo),
       w = (U.ms || 0) + (U.mhp || 0);
+    /* 3.2.4 (live Cold start F-T: HP bypass outlet TT-MS1022 64 C with the bypass 8 % open at 60 kg/cm2): the outlet of the HP bypass
+       is an energy balance, not the snapshot loop gated by 3 % of the MCR flow (source.js R.TICMS1022). The main steam (PT-MS1006
+       pressure U.Pms, SH outlet TICMS1004 PV) is throttled at constant enthalpy to the cold reheat pressure and mixed with the spray
+       water of TCV-FW1060 (U.whps, 67 T/H at 100 %, L21) at the deaerator water temperature (the spray comes from the BFP discharge,
+       before the HP heaters); IF97 steam table (steam.js), wet = saturation. TT-MS1022 sits on the cold reheat side: it also sees the
+       HP exhaust (snapshot 359 C at 150 MW with the bypass shut), mixed by their steam; no steam = the pipe cools to the room */
+    const mhp = U.mhp || 0,
+      whp = U.whps || 0,
+      Pms = isFinite(U.Pms) ? U.Pms : NaN,
+      Prh = isFinite(U.Prh) ? Math.max(0, U.Prh) : 0;
+    let tby = val(X.byo);
+    if (mhp > 0.05 && isFinite(Pms) && isFinite(mst)) {
+      const hs = steamH(Pms, mst),
+        hw = 4.19 * (isFinite(U.tSp) ? U.tSp : U.Tamb),
+        h = (mhp * hs + whp * hw) / (mhp + whp);
+      tby = steamTph(Prh, h);
+    }
+    const spB = U.spr && U.spr.find(z => z.v[0] === 'DITL-79');
+    if (spB) {
+      const tex = isFinite(thx) && isFinite(X.byo0) && isFinite(X.cr0) ? thx + X.byo0 - X.cr0 : thx,
+        t1022 = lag(
+          'by',
+          w > 1
+            ? ((U.ms || 0) * Math.max(U.Tamb, isFinite(tex) ? tex : U.Tamb) + mhp * (isFinite(tby) ? tby : U.Tamb)) / w
+            : X.T.by != null
+              ? X.T.by + ((U.Tamb - X.T.by) * dt) / (20 * U.tauT)
+              : U.Tamb,
+          U.tauT
+        );
+      if (isFinite(t1022)) spB.pr.hx = Math.max(U.Tamb, t1022);
+    }
     const tcr = lag(
       'cr',
       w > 1
