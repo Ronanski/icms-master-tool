@@ -1792,7 +1792,12 @@
       /* 3.2.1: 2 s scans at x10 jumped over DITL timers of 1.5 to 3 s: TR150 hid a stroke fault (F74), TR164 missed the end of a 3 s pulse and left
          M.040A set, so one REINSTATE did not open MV-CD1001 (Mina a7). Up to x60 a busy world scans each 0.5 s */
       const scanH = dt <= 12 ? 0.5 : 2;
-      if (!W.busy || dt <= scanH) {
+      /* Jennie 2026-11-18 (F-AN, live x60 at 85 MW: sand system START tripped at once by DITL-777 VENT FILTER RUNNING FAULT, TR386 ON DELAY
+         10 s, E10210-3-777): a world that was not busy scanned the whole 12 s of a x60 frame in one scan, so a timer that the press started
+         in that scan counted 12 s before the plant model could answer (the fan running contact of F-1301 comes from the plant model
+         between jobs). The first scan of a frame is now one short scan; the rest of the frame goes in one scan only when that first scan
+         left nothing counting or moving */
+      if (dt <= scanH) {
         TMBUSY = false;
         yield* tickG(dt);
         W.busy = TMBUSY;
@@ -1800,7 +1805,7 @@
         let used = 0;
         const t0 = performance.now();
         for (let n = 0; n < 12 && used < dt - 1e-6 && (n < 2 || performance.now() - t0 < 120); n++) {
-          const h = W.busy ? Math.min(scanH, dt - used) : dt - used;
+          const h = n === 0 || W.busy ? Math.min(scanH, dt - used) : dt - used;
           TMBUSY = false;
           yield* tickG(h);
           W.busy = TMBUSY;

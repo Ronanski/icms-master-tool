@@ -341,7 +341,14 @@ function fnRow(n, r) {
 function fnOut(n, r) {
   try {
     const s = fnSh(n);
-    return s && typeof DUI !== 'undefined' ? DUI.outVal(s, r) : null;
+    if (!s) return null;
+    /* F-AN (Jennie live run 2026-11-18): the plant reads the output the one world scanned (WORLD.out = ON output rows), not a new solve
+       of the sheet. At x60 a world frame runs many 0.5 s scans between two plant steps: a solve from the plant missed the 774 START
+       pulse (TR385) that set the run FF, so the BA21 fan never ran and TR386 (10 s) gave SYSTEM TRIP on DITL-777. */
+    const W = typeof WORLD !== 'undefined' ? WORLD : null,
+      o = W && W.on && W.out && W.out[s.name];
+    if (o && s.nl && s.nl.outs.some(x => x.row === r)) return (o instanceof Set ? o.has(r) : o.includes(r)) ? 1 : 0;
+    return typeof DUI !== 'undefined' ? DUI.outVal(s, r) : null;
   } catch (e) {
     return null;
   }

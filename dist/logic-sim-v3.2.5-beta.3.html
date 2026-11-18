@@ -22888,7 +22888,14 @@ function fnRow(n, r) {
 function fnOut(n, r) {
   try {
     const s = fnSh(n);
-    return s && typeof DUI !== 'undefined' ? DUI.outVal(s, r) : null;
+    if (!s) return null;
+    /* F-AN (Jennie live run 2026-11-18): the plant reads the output the one world scanned (WORLD.out = ON output rows), not a new solve
+       of the sheet. At x60 a world frame runs many 0.5 s scans between two plant steps: a solve from the plant missed the 774 START
+       pulse (TR385) that set the run FF, so the BA21 fan never ran and TR386 (10 s) gave SYSTEM TRIP on DITL-777. */
+    const W = typeof WORLD !== 'undefined' ? WORLD : null,
+      o = W && W.on && W.out && W.out[s.name];
+    if (o && s.nl && s.nl.outs.some(x => x.row === r)) return (o instanceof Set ? o.has(r) : o.includes(r)) ? 1 : 0;
+    return typeof DUI !== 'undefined' ? DUI.outVal(s, r) : null;
   } catch (e) {
     return null;
   }
@@ -40378,7 +40385,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.5-beta.3';
-      c3.textContent += ' · build 6ed4515'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 97b6593'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -44649,6 +44656,26 @@ const anSteps = dt => {
   return Math.max(1, Math.min(want, Math.max(fit, Math.ceil(dt / AN_STEP_MAX))));
 };
 AN.anSteps = anSteps;
+/* Jennie 2026-11-18 (F-AN, live x60 at 85 MW, sand system of DITL-771 / 774 / 777): the plant tick of x60 went 6 s and the world job
+   after it scanned up to 12 s of DITL against field contacts the plant had worked out BEFORE the command (one world = one time, but
+   the plant led by a whole frame). A START of the sand system: BA21 vent filter run command and inlet dome valve OPEN given in the first
+   scans, the plant model answered only after the 10 s TR386 (VENT FILTER RUNNING FAULT) and the INLET DV OPEN FAULT had timed out:
+   SYSTEM TRIP. Every device with a fault timer shorter than the frame had the same fault. The world now scans between the steps of the
+   plant: never more than 1 s of plant ahead while a timer counts or a device moves (W.busy), 3 s when the world is quiet */
+const worldChunk = () => (window.WORLD && WORLD.busy ? 1 : 3);
+function worldWithPlant() {
+  const W = window.WORLD;
+  if (!W || !W.on || !W.scanJob || AN.cat !== 'an' || anMirror()) return;
+  const g = W.scanJob();
+  W._drvT = performance.now();
+  if (!g) return;
+  try {
+    for (const _ of g);
+  } catch (e) {
+    console.error(e);
+  }
+}
+AN.worldWithPlant = worldWithPlant;
 AN.suFw = anSuFw; /* the start-up feedwater valve formula (unit.js), read by tests/regress/sufw_p1.js */
 setInterval(() => {
   if (!live() || !AN.run || AN._loading || anMirror()) return void (anLastT = 0);
@@ -44665,6 +44692,7 @@ setInterval(() => {
   histRec(sh, 1);
   const t0_ = performance.now(),
     K = AN.tierK || 1;
+  let wAcc = 0;
   for (let i = 0; i < n; i++) {
     if (K > 1) stepTier(sh, dt / n, K);
     else stepSet(sh, dt / n);
@@ -44673,6 +44701,11 @@ setInterval(() => {
       try {
         AN.onStep(dt / n);
       } catch (e) {}
+    wAcc += dt / n;
+    if (i === n - 1 || wAcc >= worldChunk()) {
+      worldWithPlant();
+      wAcc = 0;
+    }
   }
   /* speed (user 2026-11-01, 6x CPU): the drawing and the side panel are painted only while the Logic page shows them; on Home,
      Training or a plant page only the trends and the hooks run (a faceplate, the plant window), and the drawing is painted when it
@@ -44697,10 +44730,12 @@ setInterval(() => {
   }
 }, 100);
 
-/* group 2: DITL world, one whole scan every 200 ms as before 18f7a64 (world.js setInterval): the scan job run to the end at once */
+/* group 2: DITL world, one whole scan every 200 ms as before 18f7a64 (world.js setInterval): the scan job run to the end at once.
+   While the plant model runs, group 1 scans the world between its steps (worldWithPlant) and this group stands */
 setInterval(() => {
   const W = window.WORLD;
   if (!W || !W.scanJob || anMirror()) return;
+  if (W._drvT && performance.now() - W._drvT < 400) return;
   const g = W.scanJob();
   if (!g) return;
   AN.sched.flush();
@@ -58272,7 +58307,12 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
       /* 3.2.1: 2 s scans at x10 jumped over DITL timers of 1.5 to 3 s: TR150 hid a stroke fault (F74), TR164 missed the end of a 3 s pulse and left
          M.040A set, so one REINSTATE did not open MV-CD1001 (Mina a7). Up to x60 a busy world scans each 0.5 s */
       const scanH = dt <= 12 ? 0.5 : 2;
-      if (!W.busy || dt <= scanH) {
+      /* Jennie 2026-11-18 (F-AN, live x60 at 85 MW: sand system START tripped at once by DITL-777 VENT FILTER RUNNING FAULT, TR386 ON DELAY
+         10 s, E10210-3-777): a world that was not busy scanned the whole 12 s of a x60 frame in one scan, so a timer that the press started
+         in that scan counted 12 s before the plant model could answer (the fan running contact of F-1301 comes from the plant model
+         between jobs). The first scan of a frame is now one short scan; the rest of the frame goes in one scan only when that first scan
+         left nothing counting or moving */
+      if (dt <= scanH) {
         TMBUSY = false;
         yield* tickG(dt);
         W.busy = TMBUSY;
@@ -58280,7 +58320,7 @@ jV1eHpSLHlIJuUKcZC50d65hZRirjTo8uYFaEuMHYZh93x7z7vT58xHtJk75Y7HQrrsSLQX2BdoSnYyU
         let used = 0;
         const t0 = performance.now();
         for (let n = 0; n < 12 && used < dt - 1e-6 && (n < 2 || performance.now() - t0 < 120); n++) {
-          const h = W.busy ? Math.min(scanH, dt - used) : dt - used;
+          const h = n === 0 || W.busy ? Math.min(scanH, dt - used) : dt - used;
           TMBUSY = false;
           yield* tickG(h);
           W.busy = TMBUSY;
@@ -78160,7 +78200,14 @@ function fnRow(n, r) {
 function fnOut(n, r) {
   try {
     const s = fnSh(n);
-    return s && typeof DUI !== 'undefined' ? DUI.outVal(s, r) : null;
+    if (!s) return null;
+    /* F-AN (Jennie live run 2026-11-18): the plant reads the output the one world scanned (WORLD.out = ON output rows), not a new solve
+       of the sheet. At x60 a world frame runs many 0.5 s scans between two plant steps: a solve from the plant missed the 774 START
+       pulse (TR385) that set the run FF, so the BA21 fan never ran and TR386 (10 s) gave SYSTEM TRIP on DITL-777. */
+    const W = typeof WORLD !== 'undefined' ? WORLD : null,
+      o = W && W.on && W.out && W.out[s.name];
+    if (o && s.nl && s.nl.outs.some(x => x.row === r)) return (o instanceof Set ? o.has(r) : o.includes(r)) ? 1 : 0;
+    return typeof DUI !== 'undefined' ? DUI.outVal(s, r) : null;
   } catch (e) {
     return null;
   }
@@ -93257,7 +93304,12 @@ window.WIRING=[["DI","1","I.0000","ZSO-BD1002"],["DI","1","I.0001","ZSC-BD1002"]
       /* 3.2.1: 2 s scans at x10 jumped over DITL timers of 1.5 to 3 s: TR150 hid a stroke fault (F74), TR164 missed the end of a 3 s pulse and left
          M.040A set, so one REINSTATE did not open MV-CD1001 (Mina a7). Up to x60 a busy world scans each 0.5 s */
       const scanH = dt <= 12 ? 0.5 : 2;
-      if (!W.busy || dt <= scanH) {
+      /* Jennie 2026-11-18 (F-AN, live x60 at 85 MW: sand system START tripped at once by DITL-777 VENT FILTER RUNNING FAULT, TR386 ON DELAY
+         10 s, E10210-3-777): a world that was not busy scanned the whole 12 s of a x60 frame in one scan, so a timer that the press started
+         in that scan counted 12 s before the plant model could answer (the fan running contact of F-1301 comes from the plant model
+         between jobs). The first scan of a frame is now one short scan; the rest of the frame goes in one scan only when that first scan
+         left nothing counting or moving */
+      if (dt <= scanH) {
         TMBUSY = false;
         yield* tickG(dt);
         W.busy = TMBUSY;
@@ -93265,7 +93317,7 @@ window.WIRING=[["DI","1","I.0000","ZSO-BD1002"],["DI","1","I.0001","ZSC-BD1002"]
         let used = 0;
         const t0 = performance.now();
         for (let n = 0; n < 12 && used < dt - 1e-6 && (n < 2 || performance.now() - t0 < 120); n++) {
-          const h = W.busy ? Math.min(scanH, dt - used) : dt - used;
+          const h = n === 0 || W.busy ? Math.min(scanH, dt - used) : dt - used;
           TMBUSY = false;
           yield* tickG(h);
           W.busy = TMBUSY;
@@ -95057,7 +95109,25 @@ window.WIRING=[["DI","1","I.0000","ZSO-BD1002"],["DI","1","I.0001","ZSC-BD1002"]
         busy = true;
         const t0 = performance.now();
         try {
-          for (let i = 0; i < n; i++) K > 1 ? AN.stepTier(sh, dt / n, K) : G.ENGINE.E.stepSet(sh, dt / n);
+          /* Jennie 2026-11-18 (F-AN, sched.js worldWithPlant): the world scans between the steps of the plant, never more than 1 s of
+             plant ahead while a timer counts or a device moves (WORLD.busy), 3 s when it is quiet */
+          let wAcc = 0;
+          for (let i = 0; i < n; i++) {
+            K > 1 ? AN.stepTier(sh, dt / n, K) : G.ENGINE.E.stepSet(sh, dt / n);
+            wAcc += dt / n;
+            if (WORLD.on && WORLD.scanJob && AN.cat === 'an' && (i === n - 1 || wAcc >= (WORLD.busy ? 1 : 3))) {
+              wAcc = 0;
+              const g = WORLD.scanJob();
+              WORLD._drvT = performance.now();
+              if (g)
+                try {
+                  for (const _ of g);
+                  N.world++;
+                } catch (e) {
+                  say({ t: 'error', where: 'DITL scan', text: String((e && e.stack) || e) });
+                }
+            }
+          }
         } catch (e) {
           say({ t: 'error', where: 'ABC scan', text: String((e && e.stack) || e) });
         }
@@ -95076,6 +95146,8 @@ window.WIRING=[["DI","1","I.0000","ZSO-BD1002"],["DI","1","I.0001","ZSC-BD1002"]
     timers.push(
       setInterval(() => {
         if (busy || !WORLD.scanJob) return;
+        /* while the plant runs, its tick scans the world between its steps (above) */
+        if (WORLD._drvT && performance.now() - WORLD._drvT < 400) return;
         const g = WORLD.scanJob();
         if (!g) {
           /* paused: scanJob turned WORLD.live off, but no job runs to send it, so the page kept "live" (Rosé, 1 of 3 runs) */
@@ -122383,7 +122455,7 @@ window.LS_GUIDE = (function () {
         'Engineering = white symbols, only wires, values and valves coloured'
       );
     const ver = (document.title.match(/v\d[\w.-]*/) || [''])[0];
-    row('Version', E('span', 'scsver', ver + ' · build 6ed4515'));
+    row('Version', E('span', 'scsver', ver + ' · build 97b6593'));
   }
   function openSet(near) {
     if (!set) {
@@ -136113,7 +136185,17 @@ window.PLANT_SYS = [
             : call(() => !SIM, false);
           const cmd = e.dataset.tpb,
             nm =
-              { shutdown: 'SHUT-DOWN', holdoff: 'HOLD OFF', trip: 'TURBINE TRIP', tripreset: 'TURBINE RESET' }[cmd] ||
+              {
+                shutdown: 'SHUT-DOWN',
+                holdoff: 'HOLD OFF',
+                trip: 'TURBINE TRIP',
+                tripreset: 'TURBINE RESET',
+                roll: 'ATS ROLL',
+                excite: 'EXCITATION',
+                sync: 'SYNCH. & INITIAL LOAD',
+                loadup: 'LOAD UP',
+                normal: 'NORMAL OPERATION'
+              }[cmd] ||
               cmd;
           if (view) {
             /* VIEW: the label says why nothing happened, for 2 s */
@@ -142866,9 +142948,10 @@ window.HXREG = {"from":"app 3.2.3-beta.272, Start at 150 MW, 20 s after Run","ma
    isolating valves (DITL-LS212 switch row 10; DITL-776 row 3) and the limestone feeder (DITL-LS110 rows 8 / 9). The order in the
    notes on the page is the one that starts the system in the app (headless 2026-11-18: isolating valves, feeder, system;
    the system START pressed first does not latch).
+   The SOx controller AICFG10571 (ABC-005) that sets the feeder speed has its faceplate next to the feeder (F-AM 2026-11-18).
    NO-SOURCE in the app: the speed of the limestone feeder (ST-M1311 has no signal in hx-registry.js). */
 (function () {
-  const { V, E, M, L, page } = HX;
+  const { V, E, M, C, L, page } = HX;
   const B = HX.B;
   const K = 'kg/cm²';
   const at = (it, x, y, o) => Object.assign(it, { x, y }, o || {});
@@ -142937,6 +143020,12 @@ window.HXREG = {"from":"app 3.2.3-beta.272, Start at 150 MW, 20 s after Run","ma
           lab: 'l'
         }),
         at(M('rotary', 'L-1311', 'Limestone feeder', []), LX, 812, { id: 'lfd', sc: 1.5, lab: 'l' }),
+        /* the SOx control sets the feeder speed (ABC-005 AICFG10571, PV = stack SOx AT-FG1057-1 0 ~ 500 ppm, I/O list STN101 AI0466;
+           HMI snapshot 19.PNG SV 200 ppm): the operator puts it in AUTO here (F-AM, Jennie live run 2026-11-18) */
+        at(C('AICFG10571', 'Limestone feed, stack SOx control', { sym: 'ctl', unit: 'ppm', pvdp: 0, wrap: 26 }), LX + 190, 790, {
+          id: 'sox',
+          lab: 'r'
+        }),
         at(M('valve', 'XV-LM1811A ~ H', 'Isolating valves A to H', [], { kind: 'shutoff', wrap: 12 }), 370, 890, {
           id: 'liso',
           lab: 't'
@@ -145207,6 +145296,16 @@ window.HXREG = {"from":"app 3.2.3-beta.272, Start at 150 MW, 20 s after Run","ma
         at(B('Trip first out', 'data-tt="fo"', { w: 560 }), 460, PY, { id: 'tfo' }),
         at(B('TURBINE TRIP', 'data-tpb="trip"', { press: true, w: 170 }), 860, PY, { id: 'pbtr' }),
         at(B('TURBINE RESET', 'data-tpb="tripreset"', { press: true, w: 170 }), 1050, PY, { id: 'pbrs' }),
+        /* live run 2026-11-18 (F-AD): the ATS push buttons of the TCS operator panel (310SC90-775 page 5: ATS AUTO from the next step
+           up to 3600 rpm, EXCITATION page 23, SYNCH. & INITIAL LOAD page 24, LOAD UP page 26, NORMAL OPERATION page 28). Before, the page
+           showed the steps but had no button to start them: the turbine could be started only from the Training guide */
+        ...[
+          ['ATS ROLL', 'roll'],
+          ['EXCITATION', 'excite'],
+          ['SYNCH.', 'sync'],
+          ['LOAD UP', 'loadup'],
+          ['NORMAL', 'normal']
+        ].map((b, i) => at(B(b[0], 'data-tpb="' + b[1] + '"', { press: true, w: 114 }), 1206 + i * 124, PY, { id: 'pba' + i })),
         ...TRIP.map((t, i) =>
           at(B(t[0], 'data-tfo="' + t[1] + '"', { plain: true, w: 330 }), 1570, 92 + i * 26, { id: 'tf' + i })
         )

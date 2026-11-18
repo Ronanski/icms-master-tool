@@ -23,9 +23,10 @@
    isolating valves (DITL-LS212 switch row 10; DITL-776 row 3) and the limestone feeder (DITL-LS110 rows 8 / 9). The order in the
    notes on the page is the one that starts the system in the app (headless 2026-11-18: isolating valves, feeder, system;
    the system START pressed first does not latch).
+   The SOx controller AICFG10571 (ABC-005) that sets the feeder speed has its faceplate next to the feeder (F-AM 2026-11-18).
    NO-SOURCE in the app: the speed of the limestone feeder (ST-M1311 has no signal in hx-registry.js). */
 (function () {
-  const { V, E, M, L, page } = HX;
+  const { V, E, M, C, L, page } = HX;
   const B = HX.B;
   const K = 'kg/cm²';
   const at = (it, x, y, o) => Object.assign(it, { x, y }, o || {});
@@ -94,6 +95,12 @@
           lab: 'l'
         }),
         at(M('rotary', 'L-1311', 'Limestone feeder', []), LX, 812, { id: 'lfd', sc: 1.5, lab: 'l' }),
+        /* the SOx control sets the feeder speed (ABC-005 AICFG10571, PV = stack SOx AT-FG1057-1 0 ~ 500 ppm, I/O list STN101 AI0466;
+           HMI snapshot 19.PNG SV 200 ppm): the operator puts it in AUTO here (F-AM, Jennie live run 2026-11-18) */
+        at(C('AICFG10571', 'Limestone feed, stack SOx control', { sym: 'ctl', unit: 'ppm', pvdp: 0, wrap: 26 }), LX + 190, 790, {
+          id: 'sox',
+          lab: 'r'
+        }),
         at(M('valve', 'XV-LM1811A ~ H', 'Isolating valves A to H', [], { kind: 'shutoff', wrap: 12 }), 370, 890, {
           id: 'liso',
           lab: 't'
