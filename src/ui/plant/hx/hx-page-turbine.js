@@ -162,6 +162,16 @@
         at(B('Trip first out', 'data-tt="fo"', { w: 560 }), 460, PY, { id: 'tfo' }),
         at(B('TURBINE TRIP', 'data-tpb="trip"', { press: true, w: 170 }), 860, PY, { id: 'pbtr' }),
         at(B('TURBINE RESET', 'data-tpb="tripreset"', { press: true, w: 170 }), 1050, PY, { id: 'pbrs' }),
+        /* live run 2026-11-18 (F-AD): the ATS push buttons of the TCS operator panel (310SC90-775 page 5: ATS AUTO from the next step
+           up to 3600 rpm, EXCITATION page 23, SYNCH. & INITIAL LOAD page 24, LOAD UP page 26, NORMAL OPERATION page 28). Before, the page
+           showed the steps but had no button to start them: the turbine could be started only from the Training guide */
+        ...[
+          ['ATS ROLL', 'roll'],
+          ['EXCITATION', 'excite'],
+          ['SYNCH.', 'sync'],
+          ['LOAD UP', 'loadup'],
+          ['NORMAL', 'normal']
+        ].map((b, i) => at(B(b[0], 'data-tpb="' + b[1] + '"', { press: true, w: 114 }), 1206 + i * 124, PY, { id: 'pba' + i })),
         ...TRIP.map((t, i) =>
           at(B(t[0], 'data-tfo="' + t[1] + '"', { plain: true, w: 330 }), 1570, 92 + i * 26, { id: 'tf' + i })
         )

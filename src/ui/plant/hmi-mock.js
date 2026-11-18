@@ -322,7 +322,17 @@
             : call(() => !SIM, false);
           const cmd = e.dataset.tpb,
             nm =
-              { shutdown: 'SHUT-DOWN', holdoff: 'HOLD OFF', trip: 'TURBINE TRIP', tripreset: 'TURBINE RESET' }[cmd] ||
+              {
+                shutdown: 'SHUT-DOWN',
+                holdoff: 'HOLD OFF',
+                trip: 'TURBINE TRIP',
+                tripreset: 'TURBINE RESET',
+                roll: 'ATS ROLL',
+                excite: 'EXCITATION',
+                sync: 'SYNCH. & INITIAL LOAD',
+                loadup: 'LOAD UP',
+                normal: 'NORMAL OPERATION'
+              }[cmd] ||
               cmd;
           if (view) {
             /* VIEW: the label says why nothing happened, for 2 s */
