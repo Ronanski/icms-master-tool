@@ -61,7 +61,7 @@
     mem.set('page', id);
     setTimeout(paint, 50);
   };
-  let root, list, title, tabs, kv, runB, almX, almT, almM, almN, almPop;
+  let root, list, title, tabs, kv, runB, almX, almT, almM, almN, almPop, condB, condPop;
 
   function drag(pop) {
     const h = $('header', pop);
@@ -146,7 +146,18 @@
       s._n = n;
       kv.append(s);
     }
-    top.append(show, title, tabs, kv, sim);
+    condB = E('button', 'st-b');
+    condB.hidden = true;
+    condB.onclick = () => {
+      if (!condPop) {
+        condPop = popup('Conditions', '', 420);
+        condPop.style.left = 'calc(var(--st-rail) + 12px)';
+        condPop.style.top = '56px';
+      }
+      condPop.hidden = false;
+      tick();
+    };
+    top.append(show, title, tabs, condB, kv, sim);
     const alm = E('footer', 'st-alm');
     almM = E('i', 'st-mk');
     almT = E('span', 'st-tm');
@@ -194,6 +205,61 @@
       }
     }
   }
+  /* the condition boxes of a plant page (state only, not its push buttons) are not drawn on the picture: they are read here and shown
+     in one popup, under the section title the page gives them */
+  const xy = e => {
+    const m = /translate\(([-\d.]+)[ ,]+([-\d.]+)/.exec(e.getAttribute('transform') || '');
+    return m ? [+m[1], +m[2]] : [+e.getAttribute('x') || 0, +e.getAttribute('y') || 0];
+  };
+  function conds() {
+    const pg = $('#plantws .hx-process');
+    if (!pg) return [];
+    const Z = [...pg.querySelectorAll('.hx-zone')].map(z => ({
+      z,
+      p: xy(z),
+      t: z.textContent.replace(/\s+/g, ' ').trim(),
+      n: 0
+    }));
+    const out = [];
+    for (const h of pg.querySelectorAll('.hx-hook:not([data-press])')) {
+      const p = xy(h),
+        st = h.querySelector('.hx-hks');
+      let g = null;
+      for (const z of Z) if (z.p[1] < p[1] && Math.abs(z.p[0] - p[0]) < 360 && (!g || z.p[1] > g.p[1])) g = z;
+      if (g) {
+        g.n++;
+        if (p[1] - g.p[1] < 80) g.near = 1;
+      }
+      /* the group of a condition = the logic sheet it is read from (the boxes of one sheet belong together on every page) */
+      const hk = h.dataset.hook || '',
+        sh = (/"((?:DITL|ABC)-[\w]+)\|/.exec(hk) || [])[1] || '',
+        grp = (/data-g="(\w+)"/.exec(hk) || [])[1] || '';
+      out.push({
+        g: GROUPS_OF[grp] || SHEETS[sh] || '',
+        label: h.dataset.label || '',
+        state: st ? st.textContent.trim() : '',
+        k: h.classList.contains('run') ? 'run' : h.classList.contains('stop') ? 'stop' : ''
+      });
+    }
+    /* a section title that only headed boxes has nothing under it now */
+    for (const z of Z) z.z.style.visibility = z.n && z.near ? 'hidden' : '';
+    /* one block per group, in the order the groups first appear on the page */
+    const ord = [...new Set(out.map(c => c.g))];
+    return out
+      .map((c, i) => [c, i])
+      .sort((a, b) => ord.indexOf(a[0].g) - ord.indexOf(b[0].g) || a[1] - b[1])
+      .map(x => x[0]);
+  }
+  /* the name of the group of a logic sheet, in the words of its plant page (hx-page-purge-trip.js); other sheets: one plain list */
+  const SHEETS = {
+    'DITL-01': 'Purge permissive',
+    'DITL-02': 'Furnace purge sequence',
+    'DITL-03A': 'Master fuel trip'
+  };
+  /* a page can mark the boxes of one group itself (data-g of the box): PP = the purge permissives */
+  const GROUPS_OF = { PP: 'Purge permissive' };
+  const title1 = t => t || 'Conditions';
+
   /* the views of a plant page: its own Process and Trends views */
   function view(v) {
     const t = document.querySelectorAll('#plantws .hx-tabs button')[v];
@@ -254,6 +320,26 @@
           E('small', '', x.ack ? 'acknowledged' : 'not acknowledged')
         );
         almPop._body.append(r);
+      }
+    }
+    const C = conds();
+    condB.hidden = !C.length || (tabs._v || 0) !== 0;
+    condB.textContent = 'Conditions · ' + C.length;
+    if (condPop && !C.length) condPop.hidden = true;
+    if (condPop && !condPop.hidden) {
+      const key = C.map(c => c.g + c.label + c.state + c.k).join('|');
+      if (key !== condPop._key) {
+        condPop._key = key;
+        condPop._sub.textContent = pages()[cur()] || '';
+        condPop._body.textContent = '';
+        let last = null;
+        for (const c of C) {
+          if (c.g !== last) condPop._body.append(E('div', 'st-cg', title1(c.g)));
+          last = c.g;
+          const r = E('div', 'st-cond');
+          r.append(E('i', c.k ? 'st-dot ' + c.k : 'st-dot'), E('span', '', c.label), E('em', '', c.state));
+          condPop._body.append(r);
+        }
       }
     }
     if (cur() !== tick._c) {
