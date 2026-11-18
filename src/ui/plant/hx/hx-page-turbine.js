@@ -154,16 +154,16 @@
         /* the operator's load target and load rate (Jennie live run 2026-11-18, finding Target MW): the unit load demand station
            HIC-ULD (ABC-001A, MW) and the load change rate station HIC-MWRL (ABC-001B, 0 ~ 10 MW/min). In CCS the turbine master and
            the boiler master follow the demand at this rate (PR-OPE-5002 load up / load change); before, no plant page had them */
-        at(C('HIC-ULD', 'Unit load demand (target)', { sym: 'ctl', unit: 'MW', pvdp: 1, wrap: 16 }), 1240, 676, {
+        at(C('HIC-ULD', 'Unit load demand (target)', { sym: 'ctl', unit: 'MW', pvdp: 1, wrap: 16 }), 1240, 724, {
           id: 'uld',
           lab: 'b'
         }),
-        at(C('HIC-MWRL', 'Load change rate', { sym: 'ctl', unit: 'MW/min', pvdp: 1, wrap: 16 }), 1420, 676, {
+        at(C('HIC-MWRL', 'Load change rate', { sym: 'ctl', unit: 'MW/min', pvdp: 1, wrap: 16 }), 1420, 724, {
           id: 'mwrl',
           lab: 'b'
         }),
         /* the turbine master EIC-TM (ABC-001C): in AUTO it moves the control valves to the load demand (CCS / turbine follow) */
-        at(C('EIC-TM', 'Turbine master', { sym: 'ctl', unit: 'MW', pvdp: 1, wrap: 16 }), 1600, 676, {
+        at(C('EIC-TM', 'Turbine master', { sym: 'ctl', unit: 'MW', pvdp: 1, wrap: 16 }), 1600, 724, {
           id: 'tm',
           lab: 'b'
         }),

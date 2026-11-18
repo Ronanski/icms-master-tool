@@ -40385,7 +40385,7 @@ document.head.appendChild(
       const sh = an ? AN.sheets[AN.i] : S.sheets[S.cur];
       c2.textContent = sh && sh.name ? sh.name : '';
       c3.textContent = 'v3.2.5-beta.3';
-      c3.textContent += ' · build 5df6d94'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
+      c3.textContent += ' · build 801de51'; /* 3.2.0 retest #24 (the version label stays the one the CI checks) */
     } catch (e) {}
   };
   upd();
@@ -122455,7 +122455,7 @@ window.LS_GUIDE = (function () {
         'Engineering = white symbols, only wires, values and valves coloured'
       );
     const ver = (document.title.match(/v\d[\w.-]*/) || [''])[0];
-    row('Version', E('span', 'scsver', ver + ' · build 5df6d94'));
+    row('Version', E('span', 'scsver', ver + ' · build 801de51'));
   }
   function openSet(near) {
     if (!set) {
@@ -145293,16 +145293,16 @@ window.HXREG = {"from":"app 3.2.3-beta.272, Start at 150 MW, 20 s after Run","ma
         /* the operator's load target and load rate (Jennie live run 2026-11-18, finding Target MW): the unit load demand station
            HIC-ULD (ABC-001A, MW) and the load change rate station HIC-MWRL (ABC-001B, 0 ~ 10 MW/min). In CCS the turbine master and
            the boiler master follow the demand at this rate (PR-OPE-5002 load up / load change); before, no plant page had them */
-        at(C('HIC-ULD', 'Unit load demand (target)', { sym: 'ctl', unit: 'MW', pvdp: 1, wrap: 16 }), 1240, 676, {
+        at(C('HIC-ULD', 'Unit load demand (target)', { sym: 'ctl', unit: 'MW', pvdp: 1, wrap: 16 }), 1240, 724, {
           id: 'uld',
           lab: 'b'
         }),
-        at(C('HIC-MWRL', 'Load change rate', { sym: 'ctl', unit: 'MW/min', pvdp: 1, wrap: 16 }), 1420, 676, {
+        at(C('HIC-MWRL', 'Load change rate', { sym: 'ctl', unit: 'MW/min', pvdp: 1, wrap: 16 }), 1420, 724, {
           id: 'mwrl',
           lab: 'b'
         }),
         /* the turbine master EIC-TM (ABC-001C): in AUTO it moves the control valves to the load demand (CCS / turbine follow) */
-        at(C('EIC-TM', 'Turbine master', { sym: 'ctl', unit: 'MW', pvdp: 1, wrap: 16 }), 1600, 676, {
+        at(C('EIC-TM', 'Turbine master', { sym: 'ctl', unit: 'MW', pvdp: 1, wrap: 16 }), 1600, 724, {
           id: 'tm',
           lab: 'b'
         }),
