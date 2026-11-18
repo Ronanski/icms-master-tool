@@ -61,7 +61,25 @@
     mem.set('page', id);
     setTimeout(paint, 50);
   };
-  let root, list, title, tabs, kv, runB, almX, almT, almM, almN, almPop, condB, condPop, spdB, spdPop;
+  let root,
+    list,
+    title,
+    tabs,
+    kv,
+    runB,
+    almX,
+    almT,
+    almM,
+    almN,
+    almPop,
+    condB,
+    condPop,
+    spdB,
+    spdPop,
+    sheets,
+    mode,
+    tools,
+    eng = false;
 
   function drag(pop) {
     const h = $('header', pop);
@@ -119,7 +137,22 @@
     hide.setAttribute('aria-label', 'Hide the page list');
     unit.append(hide);
     list = E('div', 'st-list');
-    rail.append(unit, list);
+    /* Engineer: the logic sheets instead of the plant pages */
+    sheets = E('div', 'st-list');
+    sheets.hidden = true;
+    const foot = E('div', 'st-railfoot');
+    mode = E('div', 'st-seg');
+    for (const [t, e] of [
+      ['Operator', false],
+      ['Engineer', true]
+    ]) {
+      const b = E('button', 'st-b', t);
+      b._e = e;
+      b.onclick = () => setEng(e);
+      mode.append(b);
+    }
+    foot.append(mode);
+    rail.append(unit, list, sheets, foot);
     const top = E('header', 'st-top'),
       show = E('button', 'st-b', 'Pages ›');
     show.hidden = true;
@@ -168,7 +201,22 @@
     almN = E('span', 'st-n');
     const open = E('button', 'st-t', 'Alarm list');
     alm.append(almM, almT, almX, almN, open);
-    root.append(rail, top, alm);
+    /* the tools of a logic sheet: the zoom controls the app already has, as one small bar */
+    tools = E('div', 'st-tools');
+    tools.hidden = true;
+    for (const [t, lab, k] of [
+      ['−', 'Zoom out', 'out'],
+      ['+', 'Zoom in', 'in'],
+      ['Readable', 'Zoom until the text of the drawing can be read', 'read'],
+      ['Whole sheet', 'Show the whole sheet', 'fit']
+    ]) {
+      const b = E('button', 'st-b', t);
+      b.title = lab;
+      b.setAttribute('aria-label', lab);
+      b.onclick = () => zoom(k);
+      tools.append(b);
+    }
+    root.append(rail, top, alm, tools);
     document.body.append(host);
     const setRail = on => {
       document.body.classList.toggle('st-norail', !on);
@@ -216,6 +264,66 @@
       }
     }
   }
+  /* Engineer shows the logic view of the app (its own drawing, zoom and trace) inside the station; Operator shows the plant pages */
+  function setEng(on) {
+    eng = !!on;
+    document.body.classList.toggle('st-eng', eng);
+    list.hidden = eng;
+    sheets.hidden = !eng;
+    if (eng) {
+      call(() => lsSetTab('logic'));
+      if (!sheets.firstChild) fillSheets();
+      setTimeout(() => zoom('read'), 500);
+    } else {
+      call(() => lsSetTab('operate'));
+      call(() => lsPlant(true));
+    }
+    if (condPop) condPop.hidden = true;
+    tools.hidden = !eng;
+    setTimeout(() => dispatchEvent(new Event('resize')), 60);
+    setTimeout(tick, 120);
+  }
+  function zoom(k) {
+    const B = [...document.querySelectorAll('button')],
+      b =
+        k === 'out'
+          ? B.find(x => x.title === 'Zoom out' && x.closest('#zbar'))
+          : k === 'in'
+            ? B.find(x => x.title === 'Zoom in' && x.closest('#zbar'))
+            : k === 'read'
+              ? B.find(x => /^Zoom in until the drawing text is readable/.test(x.title))
+              : B.find(x => x.closest('#zbar') && x.textContent.trim() === 'Fit');
+    if (b) b.click();
+  }
+  const sheetName = x => String((x && (x.name || x.id)) || '');
+  const sheetTitle = x => String((x && (x.title || x.desc || x.t)) || '');
+  function fillSheets() {
+    const find = E('input', 'st-find');
+    find.type = 'search';
+    find.placeholder = 'Find a sheet…';
+    find.setAttribute('aria-label', 'Find a logic sheet');
+    sheets.append(find, E('div', 'st-grp', 'Analog control'));
+    const S = (window.AN && AN.sheets) || [];
+    S.forEach((x, i) => {
+      const b = E('button', 'st-nav', sheetName(x));
+      b._i = i;
+      b.title = sheetTitle(x);
+      b._q = (sheetName(x) + ' ' + sheetTitle(x)).toLowerCase();
+      b.onclick = () => {
+        call(() => AN.go(i));
+        setTimeout(tick, 150);
+        setTimeout(() => zoom('read'), 400);
+      };
+      sheets.append(b);
+    });
+    find.oninput = () => {
+      const q = find.value.trim().toLowerCase();
+      for (const b of sheets.querySelectorAll('.st-nav')) b.hidden = !!q && !b._q.includes(q);
+    };
+  }
+  /* the sheet the logic view shows (AN.i, set by AN.go) */
+  const curSheet = () => (window.AN && typeof AN.i === 'number' ? AN.i : -1);
+
   /* acknowledge: the Acknowledge all of the alarm list of the app (it also acknowledges the unit and logic rows); the list stays hidden */
   function ackAll() {
     call(() => lsShellC.openAl('alarms'));
@@ -359,7 +467,15 @@
   function paint() {
     const c = cur(),
       P = pages();
-    title.textContent = P[c] || '';
+    const ci = eng ? curSheet() : -1,
+      cs = eng ? ((window.AN && AN.sheets) || [])[ci] : null;
+    title.textContent = eng ? sheetName(cs) + (sheetTitle(cs) ? ' · ' + sheetTitle(cs) : '') : P[c] || '';
+    tabs.hidden = eng;
+    for (const b of mode.children) {
+      b.classList.toggle('on', b._e === eng);
+      b.setAttribute('aria-pressed', String(b._e === eng));
+    }
+    for (const b of sheets.querySelectorAll('.st-nav')) b.classList.toggle('on', b._i === ci);
     for (const b of list.querySelectorAll('.st-nav')) {
       const on = b._id === c;
       b.classList.toggle('on', on);
@@ -425,7 +541,7 @@
       }
     }
     const C = conds();
-    condB.hidden = !C.length || (tabs._v || 0) !== 0;
+    condB.hidden = eng || !C.length || (tabs._v || 0) !== 0;
     condB.textContent = 'Conditions · ' + C.length;
     if (condPop && !C.length) condPop.hidden = true;
     if (condPop && !condPop.hidden) {
@@ -445,6 +561,10 @@
       }
     }
     face();
+    if (eng && curSheet() !== tick._s) {
+      tick._s = curSheet();
+      paint();
+    }
     if (cur() !== tick._c) {
       tick._c = cur();
       tabs._v = 0;
@@ -488,11 +608,9 @@
       setTimeout(() => dispatchEvent(new Event('resize')), 200);
     }, 300);
   }
-  /* the start states of the app, in its own words (shellc-home.js) */
+  /* the two starting points of the spec (docs/SPEC.md S5, S6): full load and cold start; Warm and Hot are not in the spec */
   const STATES = [
     ['150 MW', 'Normal operation at full load'],
-    ['Hot', 'Hot restart: drum 100 kg/cm², bed about 700 °C'],
-    ['Warm', 'Warm restart: drum 40 kg/cm², bed about 360 °C'],
     ['Cold', 'Start-up from zero: drum 0 kg/cm², bed and water 30 °C']
   ];
   const wait = E('div');

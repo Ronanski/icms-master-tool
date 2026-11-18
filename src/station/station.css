@@ -88,3 +88,38 @@ html body.st:not(#st0):not(#st1) #plfp:not(#st2) .body > .sub { display: none !i
 html body.st:not(#st0):not(#st1) #plfp:not(#st2) .fl > span:first-child { font-size: 0 !important; }
 html body.st:not(#st0):not(#st1) #plfp:not(#st2) .fl > span:first-child::after { content: "Output"; font-size: 12px; }
 html body.st:not(#st0):not(#st1) #plfp:not(#st2) .tg { flex-wrap: wrap !important; gap: 4px 8px !important; }
+
+/* Engineer: the logic drawing of the app inside the station, as an engineering drawing: one ink on dark grey paper, no fill.
+   Amber stays for alarm blocks; the live colours of a traced or forced signal are left as the app sets them. */
+html body.st.st-eng:not(#st0):not(#st1) #plantws:not(#st2) { display: none !important; }
+html body.st.st-eng:not(#st0):not(#st1) #cv:not(#st2) { visibility: visible !important; pointer-events: auto !important; position: fixed !important; left: var(--st-rail) !important; top: 44px !important; right: 0 !important; bottom: 32px !important; width: auto !important; height: auto !important; margin: 0 !important; border: 0 !important; background: #1f2428 !important; z-index: 5 !important; }
+html body.st.st-eng:not(#st0):not(#st1) #cv:not(#st2) * { visibility: visible !important; pointer-events: auto !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) { background: #1f2428 !important; width: 100% !important; height: 100% !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) text { stroke: #1f2428 !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) text[fill="#d5dde3"] { fill: #e6eaed !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#5aa9ff"] { stroke: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#5aa9ff"] { fill: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#35d6c8"] { stroke: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#35d6c8"] { fill: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#b4e04a"] { stroke: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#b4e04a"] { fill: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#4be08a"] { stroke: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#4be08a"] { fill: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#b48cff"] { stroke: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#b48cff"] { fill: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#aeb9c3"] { stroke: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#aeb9c3"] { fill: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#7f8d99"] { stroke: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#7f8d99"] { fill: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#c9d3dc"] { stroke: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#c9d3dc"] { fill: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#3b4651"] { stroke: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#3b4651"] { fill: #a9b2bb !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#e8c9a0"] { stroke: #e8b04c !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#e8c9a0"] { fill: #e8b04c !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#ffc233"] { stroke: #e8b04c !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#ffc233"] { fill: #e8b04c !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke="#ffb24a"] { stroke: #e8b04c !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [fill="#ffb24a"] { fill: #e8b04c !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) [stroke^="rgb(247"] { stroke: #1f2428 !important; }
+html body.st.st-eng:not(#st0):not(#st1) #svg:not(#st2) :is(path, circle, rect)[fill^="rgb(2"] { fill: #1f2428 !important; }
