@@ -61,7 +61,7 @@
     mem.set('page', id);
     setTimeout(paint, 50);
   };
-  let root, list, title, tabs, kv, runB, almX, almT, almM, almN, almPop, condB, condPop;
+  let root, list, title, tabs, kv, runB, almX, almT, almM, almN, almPop, condB, condPop, spdB, spdPop;
 
   function drag(pop) {
     const h = $('header', pop);
@@ -128,7 +128,10 @@
     kv = E('div', 'st-kv');
     const sim = E('div', 'st-sim');
     runB = E('button', 'st-b');
-    sim.append(runB);
+    spdB = E('button', 'st-b');
+    spdB.title = 'Simulation speed';
+    spdB.onclick = speeds;
+    sim.append(runB, spdB);
     for (const [name, v] of [
       ['Process', 0],
       ['Trends', 2]
@@ -188,6 +191,14 @@
         almPop = popup('Alarms', '', 600);
         almPop.style.right = '12px';
         almPop.style.bottom = '44px';
+        const ft = E('footer', 'st-foot');
+        almPop._ack = E('button', 'st-b', 'Acknowledge all');
+        almPop._ack.onclick = () => {
+          ackAll();
+          setTimeout(tick, 150);
+        };
+        ft.append(almPop._ack);
+        almPop.append(ft);
       }
       almPop.hidden = false;
       tick();
@@ -205,6 +216,40 @@
       }
     }
   }
+  /* acknowledge: the Acknowledge all of the alarm list of the app (it also acknowledges the unit and logic rows); the list stays hidden */
+  function ackAll() {
+    call(() => lsShellC.openAl('alarms'));
+    const al = $('#scal'),
+      b = al && $('.scack', al);
+    if (b && !b.disabled) b.click();
+    if (al) al.hidden = true;
+  }
+  /* speed: the Simulation speed control of the app, its own choices */
+  const speedSel = () => [...document.querySelectorAll('select')].find(x => x.title === 'Simulation speed') || null;
+  function speeds() {
+    const sel = speedSel();
+    if (!sel) return;
+    if (!spdPop) {
+      spdPop = popup('Simulation speed', '', 220);
+      spdPop.style.right = '12px';
+      spdPop.style.top = '56px';
+      spdPop._body.classList.add('st-two');
+    }
+    spdPop._body.textContent = '';
+    const now = String((window.AN && AN.spd) || sel.value);
+    for (const o of sel.options) {
+      const b = E('button', 'st-b' + (String(o.value) === now ? ' on' : ''), '×' + o.value);
+      b.onclick = () => {
+        sel.value = o.value;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        spdPop.hidden = true;
+        setTimeout(tick, 100);
+      };
+      spdPop._body.append(b);
+    }
+    spdPop.hidden = false;
+  }
+
   /* the condition boxes of a plant page (state only, not its push buttons) are not drawn on the picture: they are read here and shown
      in one popup, under the section title the page gives them */
   const xy = e => {
@@ -349,6 +394,9 @@
     runB.classList.toggle('on', on);
     runB.setAttribute('aria-pressed', String(on));
     runB.title = on ? 'Press to pause the simulation' : 'Press to run the simulation';
+    const sel = speedSel();
+    spdB.hidden = !sel;
+    spdB.textContent = 'Speed ×' + ((window.AN && AN.spd) || (sel && sel.value) || 1);
     const A = call(() => lsShellC.alarms(), [])
         .slice()
         .reverse(),
@@ -360,6 +408,7 @@
     almX.textContent = a ? text(a) : 'No standing alarm';
     almN.textContent = '';
     almN.append(E('b', '', A.length), ' standing · ', E('b', '', nw), ' not acknowledged');
+    if (almPop && almPop._ack) almPop._ack.disabled = !nw;
     if (almPop && !almPop.hidden) {
       almPop._sub.textContent = A.length + ' standing';
       almPop._body.textContent = '';

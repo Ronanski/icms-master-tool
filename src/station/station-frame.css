@@ -68,3 +68,5 @@ button:focus-visible { outline: 2px solid var(--st-tx); outline-offset: -2px; }
 .st-dot.run { background: #e5565a; }
 .st-dot.stop { border: 2px solid #45b06d; }
 .st-body { grid-auto-rows: min-content; }
+.st-foot { border-top: 1px solid var(--st-line); padding: 8px 12px; display: flex; justify-content: flex-end; }
+.st-body.st-two { grid-template-columns: 1fr 1fr 1fr; }
